@@ -1,0 +1,101 @@
+// Kademlia rpc arguments and responses and callback results for FindNode, Join and Leave 
+import "contact_info.proto";
+
+package kad;
+
+message PingRequest {
+  required string ping = 1;
+  required ContactInfo sender_info = 2;
+}
+
+message PingResponse {
+  required string result = 1;
+  optional string echo = 2;
+  optional string node_id = 3;
+};
+
+message FindRequest {
+  required string key = 1;
+  required ContactInfo sender_info = 2;
+  optional bool is_boostrap = 3;
+  optional string sender_ext_ip = 4;
+  optional int32 sender_ext_port = 5;
+};
+
+message FindResponse {
+  required string result = 1;
+  repeated string closest_nodes = 2;
+  repeated string values = 3;
+  optional string requester_ext_addr = 4;
+  optional string node_id = 5;
+};
+
+message FindNodeResult {
+  required string result = 1;
+  optional string contact = 2;
+  optional string node_id = 3;
+};
+  
+
+message StoreRequest {
+  required string key = 1;
+  required string value = 2;
+  required string public_key = 3;
+  required string signed_public_key = 4;
+  required string signed_request = 5;
+  required ContactInfo sender_info = 6;
+};
+
+message StoreResponse {
+  required string result = 1;
+  optional string node_id = 2;
+};
+
+message DownlistRequest {
+  repeated string downlist = 1;
+  required ContactInfo sender_info = 2;
+};
+
+message DownlistResponse {
+  required string result = 1;
+  optional string node_id = 2;
+};
+
+message BootstrapRequest {
+  required string newcomer_id = 1;
+  required string newcomer_local_ip = 2;
+  required int32 newcomer_local_port = 3;
+  optional string newcomer_ext_ip = 4;
+  optional int32 newcomer_ext_port = 5;
+};
+
+message BootstrapResponse {
+  required string result = 1;
+  optional string bootstrap_id = 2;
+  optional string newcomer_ext_ip = 3;
+  optional int32 newcomer_ext_port = 4;
+  optional int32 nat_type = 5; // 1: directly connected or behind full-cone router or ... 
+                               // 2: need rendezvous server to punch the hole
+                               // 3. no connection
+};
+
+message NatDetectionRequest {
+  required string newcomer = 1;
+  required string bootstrap_node = 2;
+  required int32 type = 3;  //1: Node B asks C to try ping A; 2: Node B asks C to try a rendezvous to A with B as rendezvous 
+  required string sender_id = 4;
+};
+
+message NatDetectionResponse {
+  required string result = 1;
+};
+
+message NatDetectionPingRequest {
+  required string ping = 1;
+  required ContactInfo sender_info = 2;
+};
+
+message NatDetectionPingResponse {
+  required string result = 1;
+  optional string echo = 2;
+};

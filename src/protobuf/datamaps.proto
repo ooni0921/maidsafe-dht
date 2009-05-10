@@ -1,0 +1,112 @@
+package maidsafe;
+
+enum itemtype {
+  REGULAR_FILE = 0;
+  SMALL_FILE = 1;
+  EMPTY_FILE = 2;
+  LOCKED_FILE = 3;
+  DIRECTORY = 4;
+  EMPTY_DIRECTORY = 5;
+  LINK = 6;
+  NOT_FOR_PROCESSING = 7;
+  UNKNOWN = 8;
+};
+
+enum ShareOperation {
+  SHARE_ADD = 0;
+  SHARE_REMOVE = 1;
+  SHARE_ADD_ITEM = 2;
+  SHARE_DEL_ITEM = 3;
+};
+
+enum PacketType {
+  ANMID = 0;
+  ANTMID = 1;
+  ANSMID = 2;
+  MAID = 3;
+  PMID = 4;
+  ANMPID = 5;
+  MPID = 6;
+};
+
+message Key {
+  required string id = 1;
+  required PacketType type = 2;
+  required string private_key = 3;
+  required string public_key = 4;
+}
+
+message DataMap {
+  required string file_hash = 1;
+  optional string se_version = 2;
+  repeated string chunk_name = 3;
+  repeated string encrypted_chunk_name = 4;
+  repeated uint64 chunk_size = 5;
+  optional bool compression_on = 6 [default=false];
+}
+
+message MetaDataMap {
+  required int32 id = 1;
+  required string display_name = 2;
+  required itemtype type = 3;
+  repeated string file_hash = 4;
+  optional string stats = 5;
+  optional string tag = 6;
+  optional int32 file_size_high = 7;
+  optional int32 file_size_low = 8;
+  optional int32 creation_time = 9;
+  optional int32 last_modified = 10;
+  optional int32 last_access = 11;
+}
+
+message MetaData {
+  required string ms_path = 1;
+  required string file_hash = 2;
+  optional string stats = 3;
+  optional int32 file_size = 4;
+  optional string outname = 5;
+}
+
+
+message Chunk {
+  optional string compression_type = 1;
+  repeated string chunklet = 2;
+  repeated int32 pre_compression_chunklet_size_ = 3;
+}
+
+
+message ShareFromMe {
+  required int32 share_id = 1;
+  required string share_name = 2;
+  optional string owner = 3;
+  repeated int32 meta_data_map_id = 4;
+  repeated string users = 5;
+}
+
+message ShareToMe {
+  required int32 share_id = 1;
+  required string share_name = 2;
+  required string owner = 3;
+  repeated MetaDataMap mdms = 4;
+  repeated DataMap dms = 5;
+}
+
+message ShareToMeBufferMessage {
+  required int32 share_id = 1;
+  optional string share_name = 2;
+  required string owner = 3;
+  required ShareOperation op = 4;
+  repeated MetaDataMap mdms = 5;
+  repeated DataMap dms = 6;
+}
+
+message DataAtlas {
+  optional string root_db_key = 1;
+  repeated Key keys = 2;
+  repeated MetaDataMap mdms = 3;
+  repeated DataMap dms = 4;
+  repeated ShareFromMe offered_share = 5;
+  repeated ShareToMe accepted_share = 6;
+}
+
+

@@ -1,0 +1,8 @@
+// Arguments for results of callback function of the network layer
+package net;
+
+message NetStartResult {
+  required string result = 1;
+  optional string ip = 2;
+  optional int32 port = 3;
+};
