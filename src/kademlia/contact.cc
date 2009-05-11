@@ -149,7 +149,7 @@ std::string Contact::ToString() {
   if (rendezvous_ip_ != "") {
     std::string dec_rip(base::inet_btoa(rendezvous_ip_));
     std::string rport(base::itos(rendezvous_port_));
-    ser_contact += ("Local IP address: " + dec_rip + ":" + rport + "\n");
+    ser_contact += ("RV IP address: " + dec_rip + ":" + rport + "\n");
   }
 
   return ser_contact;

@@ -135,6 +135,8 @@ void KadRpcs::NatDetection(const std::string &newcomer,
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
       pchannel_manager_->ptransport(), pchannel_manager_.get(), remote_ip,
       remote_port, false));
+  if (type == 2)
+    controller.set_timeout(18);
   KademliaService::Stub service(channel.get());
   service.NatDetection(&controller, &args, resp, cb);
 }
@@ -167,6 +169,7 @@ void KadRpcs::Bootstrap(const std::string &local_id,
   args.set_newcomer_local_ip(local_ip);
   args.set_newcomer_local_port(local_port);
   rpcprotocol::Controller controller;
+  controller.set_timeout(20);
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
       pchannel_manager_->ptransport(), pchannel_manager_.get(), remote_ip,
       remote_port, false));

@@ -225,16 +225,40 @@ int Transport::Send(const std::string &remote_ip,
     std::string ser_msg;
     msg.SerializeToString(&ser_msg);
     int64_t rend_data_size = ser_msg.size();
-    struct OutgoingData out_rend_data = {rend_skt, rend_data_size, 0,
-      boost::shared_array<char>(new char[rend_data_size]), false};
-    memcpy(out_rend_data.data.get(),
-      const_cast<char*>(static_cast<const char*>(ser_msg.c_str())),
-      rend_data_size);
-    {
-      boost::mutex::scoped_lock(out_mutex_);
-      outgoing_queue_.push_back(out_rend_data);
+
+    // send file size information
+    if (UDT::ERROR == UDT::send(rend_skt,
+        reinterpret_cast<char*>(&rend_data_size),
+        sizeof(int64_t), 0)) {
+      UDT::close(rend_skt);
+      return 1;
     }
-    if (!Connect(&skt, remote_ip, remote_port)) {
+
+    if (UDT::ERROR == UDT::send(rend_skt, ser_msg.c_str(), rend_data_size, 0)){
+      UDT::close(rend_skt);
+      return 0;
+    }
+    // TODO(jose): establish connect in a thread or in another asynchronous
+    // way to avoid blocking in the upper layers
+//    struct OutgoingData out_rend_data = {rend_skt, rend_data_size, 0,
+//      boost::shared_array<char>(new char[rend_data_size]), false};
+//    memcpy(out_rend_data.data.get(),
+//      const_cast<char*>(static_cast<const char*>(ser_msg.c_str())),
+//      rend_data_size);
+//    {
+//      boost::mutex::scoped_lock(out_mutex_);
+//      outgoing_queue_.push_back(out_rend_data);
+//    }
+//    printf("time: %s\n", make_daytime_string().c_str());
+//    boost::this_thread::sleep(boost::posix_time::seconds(2));
+//    printf("time: %s\n", make_daytime_string().c_str());
+    int retries = 4;
+    bool connected = false;
+    for (int i = 0; i < retries && !connected; i++) {
+      if (Connect(&skt, remote_ip, remote_port, false))
+        connected = true;
+    }
+    if (!connected) {
       UDT::close(skt);
       return 1;
     }
@@ -542,10 +566,14 @@ bool Transport::HandleRendezvousMsgs(const std::string &message) {
     std::string ser_msg;
     forward_msg.SerializeToString(&ser_msg);
     boost::uint32_t conn_id;
+    printf("sending HP_FORW_REQ\n");
     Send(msg.ip(), msg.port(),"", 0, ser_msg, STRING, &conn_id, false);
   } else if (msg.type() == FORWARD_MSG) {
+    printf("received HP_FORW_MSG\n");
+    printf("trying to connect to %s:%d\n", msg.ip().c_str(), msg.port());
     UDTSOCKET skt;
     if (Connect(&skt, msg.ip(), msg.port())) {
+      printf("connection OK\n");
       // AddIncomingConnection(skt);
       UDT::close(skt);
     }

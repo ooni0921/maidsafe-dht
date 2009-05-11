@@ -101,7 +101,11 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor *method,
     if (0 == routingtable_->GetTupleInfo(ip_, port_, &tuple)) {
       rendezvous_ip = tuple.rendezvous_ip();
       rendezvous_port = tuple.rendezvous_port();
+//      if (rendezvous_ip != "" && rendezvous_port !=0)
+//        printf("node has rendezvous information\n");
     }
+  // Set the RPC request timeout
+  Controller *ctrl = static_cast<Controller*>(controller);
   if (0 != ptransport_->Send(ip_,
                         port_,
                         rendezvous_ip,
@@ -111,10 +115,9 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor *method,
                         &conn_id,
                         true)) {
     printf("Failed to send request\n");
+    ctrl->set_timeout(1);
   }
   pmanager_->AddConnectionToReq(req_id, conn_id);
-  // Set the RPC request timeout
-  Controller *ctrl = static_cast<Controller*>(controller);
   // in case no timeout was set in the controller use the default one
   if (ctrl->timeout() != 0) {
     pmanager_->AddReqToTimer(msg.message_id(), ctrl->timeout());
@@ -191,7 +194,7 @@ void Channel::SendResponse(const google::protobuf::Message *response,
 //  if (0 != ptransport_->Send(info.ctrl->remote_ip(), info.ctrl->remote_port(),
 //      ser_msg, transport::Transport::STRING)) {
 //  printf("transport: %d - sending the response to req %d\n",
-//    ptransport_->listening_port(), info.rpc_id);
+//    ptransport_->listening_port(), info.connection_id);
   if (0 != ptransport_->Send(info.connection_id, ser_msg,
                              transport::Transport::STRING)) {
 #ifdef DEBUG

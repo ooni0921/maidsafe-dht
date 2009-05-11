@@ -184,11 +184,12 @@ struct BootstrapArgs {
   BootstrapArgs(): cached_nodes(),
                    cb(),
                    active_process(0),
-                   is_callbacked(false) {}
+                   is_callbacked(false),
+                   port_fw(false) {}
   std::vector<Contact> cached_nodes;
   base::callback_func_type cb;
   int active_process;
-  bool is_callbacked;
+  bool is_callbacked, port_fw;
 };
 // a dummy callback function
 void dummy_callback(const std::string& result);
@@ -199,7 +200,8 @@ class KademliaInterface {
   virtual ~KademliaInterface() {}
   virtual void Join(const std::string &node_id,
                     const std::string &kad_config_file,
-                    base::callback_func_type cb)=0;
+                    base::callback_func_type cb,
+                    const bool &port_forwarded = false)=0;
   virtual void Leave()=0;
   virtual void StoreValue(const std::string &key,
                           const std::string &value,
@@ -262,7 +264,8 @@ class KNode: public KademliaInterface {
   // if node_id is equal to "", node_id will be generated
   void Join(const std::string &node_id,
             const std::string &kad_config_file,
-            base::callback_func_type cb);
+            base::callback_func_type cb,
+            const bool &port_forwarded = false);
   void Leave();
   void StoreValue(const std::string &key,
                   const std::string &value,
@@ -315,9 +318,11 @@ class KNode: public KademliaInterface {
   void SaveBootstrapContacts();  // save the routing table into .kadconfig file
   int LoadBootstrapContacts();
   inline void CallbackWithFailure(base::callback_func_type cb);
-  void Join_RefreshNode(base::callback_func_type cb);
+  void Join_RefreshNode(base::callback_func_type cb,
+      const bool &port_forwarded);
   void Join_Bootstrapping(base::callback_func_type cb,
-                          std::vector<Contact> &cached_nodes);
+                          std::vector<Contact> &cached_nodes,
+                          const bool &port_forwarded);
   void Join_Bootstrapping_Iteration(const std::string& result,
       boost::shared_ptr<struct BootstrapArgs> args,
       const std::string bootstrap_ip, const boost::uint16_t bootstrap_port,
@@ -327,7 +332,8 @@ class KNode: public KademliaInterface {
       const std::string bootstrap_ip, const boost::uint16_t bootstrap_port,
       const std::string local_bs_ip, const boost::uint16_t local_bs_port);
   void Bootstrap(const std::string &bootstrap_ip,
-      const boost::uint16_t &bootstrap_port, base::callback_func_type cb);
+      const boost::uint16_t &bootstrap_port, base::callback_func_type cb,
+      const bool &port_forwarded);
   void Bootstrap_Callback(const BootstrapResponse *response,
       BootstrapData data);
   void IterativeLookUp_Callback(boost::shared_ptr<IterativeLookUpData> data);

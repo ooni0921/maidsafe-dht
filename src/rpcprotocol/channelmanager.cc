@@ -167,8 +167,9 @@ void ChannelManager::MessageArrive(const std::string &message,
       channels_[decoded_msg.service()]->HandleRequest(decoded_msg,
         connection_id);
     } else {
-      printf("servicio no registrado\n");
+      printf("service not registered\n");
     }
+//    printf("finished request -- %d\n", connection_id);
   } else if (decoded_msg.rpc_type() == RESPONSE) {
     // printf(" %s response arrived id %d \n", decoded_msg.method().c_str(),
     //     decoded_msg.message_id());
@@ -252,6 +253,7 @@ bool ChannelManager::CheckConnection(const std::string &ip,
   } else {
     dec_lip = ip;
   }
+//  printf("checking connection to %s:%d\n", dec_lip.c_str(), port);
   return ptransport_->CanConnect(dec_lip, port);
 }
 }

@@ -123,7 +123,8 @@ class KNodeTest: public testing::Test {
                      kad_config_file,
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
     wait_result(&cb, recursive_mutices_[1].get());
-    EXPECT_EQ(kad::kRpcResultSuccess, cb.result());
+    ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+    ASSERT_TRUE(knodes_[1]->is_joined());
     printf("Node 1 joined.\n");
     base::KadConfig kad_config;
     base::KadConfig::Contact *kad_contact_ = kad_config.add_contact();
@@ -145,7 +146,8 @@ class KNodeTest: public testing::Test {
                      kad_config_file,
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
     wait_result(&cb, recursive_mutices_[0].get());
-    EXPECT_EQ(kad::kRpcResultSuccess, cb.result());
+    ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+    ASSERT_TRUE(knodes_[0]->is_joined());
     printf("Node 0 joined.\n");
     kad_config.Clear();
     kad_contact_ = kad_config.add_contact();
@@ -182,6 +184,7 @@ class KNodeTest: public testing::Test {
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
       wait_result(&cb, recursive_mutices_[i].get());
       ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+      ASSERT_TRUE(knodes_[i]->is_joined());
       printf("Node %i joined.\n", i);
     }
     cb.Reset();
@@ -304,6 +307,7 @@ TEST_F(KNodeTest, BEH_KAD_StoreAndLoadSmallValue) {
 //  printf("***********Found value via node 17***********\n");
   // load the value from no.1 node
   cb1.Reset();
+  ASSERT_TRUE(knodes_[0]->is_joined());
   knodes_[0]->FindValue(key, boost::bind(&FakeCallback::CallbackFunc,
                                          &cb1,
                                          _1));

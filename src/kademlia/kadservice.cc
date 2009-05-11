@@ -86,6 +86,9 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
     data.done->Run();
   } else {
     // Node B asks C to try a rendezvous to A with B as rendezvous
+    // printf("node A is not directly connected, ");
+    // printf("sending B request to ping via rend\n");
+    // printf("newcomer data\n %s", data.newcomer.ToString().c_str());
     NatDetectionResponse *resp = new NatDetectionResponse();
     google::protobuf::Closure *done = google::protobuf::NewCallback<
       KadService, const NatDetectionResponse*, struct NatDetectionData>(this,
@@ -222,6 +225,7 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
       google::protobuf::Closure *done) {
   kad::Contact sender;
   bool add_contact =  false;
+  response->set_node_id(knode_->node_id());
   if (!request->IsInitialized()) {
     response->set_result(kad::kRpcResultFailure);
   } else if (GetSender(request->sender_info(), &sender)) {
@@ -255,7 +259,6 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
     knode_->AddContact(sender);
   // Try to get the sender's address from the local routingtable
   // if find no result in the local routingtable, do a find node
-  response->set_node_id(knode_->node_id());
   if (sender.node_id() != client_node_id()) {
     kad::Contact sender_contact;
     if (knode_->GetContact(sender.node_id(), &sender_contact)) {
@@ -633,9 +636,11 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
   std::vector<Contact> exclude_contacts;
   std::vector<Contact> random_contacts;
   knode_->GetRandomContacts(1, exclude_contacts, &random_contacts);
+  // printf("newcomer \n%s", newcomer.ToString().c_str());
   if (random_contacts.size() == 1
       && random_contacts.front() != newcomer ) {
     Contact node_c = random_contacts.front();
+    // printf("node c\n%s", node_c.ToString().c_str());
     // Node B asks C to try ping A
     Contact this_node(knode_->node_id(), knode_->host_ip(),
       knode_->host_port(), knode_->local_host_ip(), knode_->local_host_port(),
@@ -665,6 +670,7 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
       rpc_controller->set_remote_ip(newcomer.host_ip());
       rpc_controller->set_remote_port(newcomer.host_port());
     }
+    // printf("still no random nodes\n");
     done->Run();
   }
 }
