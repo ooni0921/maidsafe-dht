@@ -8,5 +8,5 @@ enum msg_type {
 message HolePunchingMsg {
   optional string ip = 1;
   optional int32 port = 2;
-  required msg_type type = 3;
+  optional msg_type type = 3;
 }

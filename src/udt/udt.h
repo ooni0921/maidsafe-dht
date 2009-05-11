@@ -49,7 +49,8 @@ written by
 #else
    #include <windows.h>
    #ifdef __MINGW__
-      #include <ws2tcpip.h>
+        #include <ws2tcpip.h>
+	#include <winsock2.h>
    #endif
 #endif
 #include <fstream>
@@ -67,7 +68,7 @@ written by
 
 
 #ifdef WIN32
-   #ifndef __MINGW__
+ #ifndef __MINGW__
       // Explicitly define 32-bit and 64-bit numbers
       typedef __int32 int32_t;
       typedef __int64 int64_t;
@@ -78,15 +79,17 @@ written by
          // VC 6.0 does not support unsigned __int64: may cause potential problems.
          typedef __int64 uint64_t;
       #endif
-   #endif
 
    #ifdef UDT_EXPORTS
       #define UDT_API __declspec(dllexport)
    #else
       #define UDT_API __declspec(dllimport)
    #endif
+ #else 
+  #define UDT_API
+ #endif
 #else
-   #define UDT_API
+ #define UDT_API
 #endif
 
 #define NO_BUSY_WAITING

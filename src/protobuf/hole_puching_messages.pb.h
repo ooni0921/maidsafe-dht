@@ -95,7 +95,7 @@ class HolePunchingMsg : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 port() const;
   inline void set_port(::google::protobuf::int32 value);
   
-  // required .transport.msg_type type = 3;
+  // optional .transport.msg_type type = 3;
   inline bool has_type() const;
   inline void clear_type();
   inline transport::msg_type type() const;
@@ -188,7 +188,7 @@ inline void HolePunchingMsg::set_port(::google::protobuf::int32 value) {
   port_ = value;
 }
 
-// required .transport.msg_type type = 3;
+// optional .transport.msg_type type = 3;
 inline bool HolePunchingMsg::has_type() const {
   return _has_bit(2);
 }

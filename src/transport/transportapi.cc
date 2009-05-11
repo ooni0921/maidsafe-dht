@@ -22,6 +22,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 // maidsafe libs
 #include "base/routingtable.h"
 #include "base/utils.h"
+#include "udt/udt.h"
 
 namespace transport {
 void RecvData(Transport *tsport) {
@@ -255,7 +256,7 @@ int Transport::Send(const std::string &remote_ip,
     int retries = 4;
     bool connected = false;
     for (int i = 0; i < retries && !connected; i++) {
-      if (Connect(&skt, remote_ip, remote_port, false))
+      if (Connect(&skt, remote_ip, remote_port))
         connected = true;
     }
     if (!connected) {

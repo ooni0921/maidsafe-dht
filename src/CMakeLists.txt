@@ -156,10 +156,6 @@ ELSEIF (WIN32)
 		c:/usr/lib/dokan.lib
 		c:/usr/lib/libcryptopp.a
 		c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
-		-lmingw32 -ladvapi32 -lmingwex -lkernel32  -lmingwex -lgcc
-		-lwinspool -lwinmm -ladvapi32
-		-lrpcrt4 -luuid -lwinspool -lwinmm -lshell32 -lcomctl32 -lcomdlg32
-		-lctl3d32 -ladvapi32 -lwsock32 -lgdi32 -liphlpapi -lmsvcrt
 		)
 	ENDIF(MSVC)
 ENDIF(APPLE)
@@ -194,7 +190,7 @@ ELSE(MSVC)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 ")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wfloat-equal -Wlong-long  -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector  -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -DLEGACY_WIN32 -DWIN32_LEAN_AND_MEAN  -D__MINGW__  -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static   -mthreads -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501  -Ic:\\usr\\lib\\wx\\include\\msw-unicode-release-static-2.8 -I c:\\usr\\include\\wx-2.8 -D__WXMSW__ -mthreads ")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -DWIN32_LEAN_AND_MEAN  -D__MINGW__  -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static   -mthreads -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501  -Ic:\\usr\\lib\\wx\\include\\msw-unicode-release-static-2.8 -I c:\\usr\\include\\wx-2.8 -D__WXMSW__ -mthreads ")
   SET_TARGET_PROPERTIES(PDpbmsgslib PROPERTIES COMPILE_FLAGS -w )
 ENDIF(MSVC)
 ENDIF(APPLE)
