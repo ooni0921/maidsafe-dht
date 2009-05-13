@@ -260,16 +260,11 @@ message("You can set the build type by: cmake ../../ -DCMAKE_BUILD_TYPE=")
 message("Release (default) Debug RelWithDebInfo MinSizeRel")
 message ("#############################################")
 
-IF(APPLE)
+install(FILES maidsafe-dht.h
+        DESTINATION /usr/include/maidsafe)
 install(TARGETS maidsafe-dht
-  RUNTIME
-  BUNDLE DESTINATION "Perpetual Data")
-ENDIF(APPLE)
-   install(FILES maidsafe-dht.h
-         DESTINATION /usr/include/maidsafe)
-  install(TARGETS maidsafe-dht
-  ARCHIVE
-  DESTINATION /usr/lib/)
+       ARCHIVE
+       DESTINATION /usr/lib/)
 
 set(CPACK_PACKAGE_NAME "maidsafe-dht")
 set(CPACK_PACKAGE_CONTACT "info@maidsafe.net")
