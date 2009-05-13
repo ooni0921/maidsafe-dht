@@ -264,11 +264,12 @@ IF(APPLE)
 install(TARGETS maidsafe-dht
   RUNTIME
   BUNDLE DESTINATION "Perpetual Data")
-ELSE(APPLE)
-install(TARGETS maidsafe-dht
-  ARCHIVE
-  DESTINATION lib)
 ENDIF(APPLE)
+   install(FILES maidsafe-dht.h
+         DESTINATION /usr/include/maidsafe)
+  install(TARGETS maidsafe-dht
+  ARCHIVE
+  DESTINATION /usr/lib/)
 
 set(CPACK_PACKAGE_NAME "maidsafe-dht")
 set(CPACK_PACKAGE_CONTACT "info@maidsafe.net")
@@ -348,9 +349,6 @@ SET(CPACK_NSIS_CONTACT "contact@maidsafe.net")
 ELSEIF(UNIX)
 	SET(CMAKE_INSTALL_PREFIX "/usr")
   SET(CPACK_SET_DESTDIR on)
-
   SET(CPACK_GENERATOR DEB;RPM;TGZ)
 ENDIF()
-   install(FILES ${PD_SOURCE_DIR}/build/install_files/maidsafe_logo.xpm
-   DESTINATION share/usr/pixmaps)
 INCLUDE(CPack)
