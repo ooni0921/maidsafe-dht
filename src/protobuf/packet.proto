@@ -12,22 +12,22 @@ enum MessageType {
 }
 
 message GenericPacket {
-  required string data = 1;
-  required string signature = 2;
+  required bytes data = 1;
+  required bytes signature = 2;
 }
 
 message BufferPacketInfo {
-  required string owner = 1;
-  required string ownerPublicKey = 2;
-  repeated string users = 3;
+  required bytes owner = 1;
+  required bytes ownerPublicKey = 2;
+  repeated bytes users = 3;
   optional bool online = 4;
 }
 
 message BufferPacketMessage {
-  required string sender_id = 1;
-  optional string sender_public_key = 2;
-  required string RSAenc_key = 3;
-  required string AESenc_message = 4;
+  required bytes sender_id = 1;
+  optional bytes sender_public_key = 2;
+  required bytes RSAenc_key = 3;
+  required bytes AESenc_message = 4;
   required MessageType type = 5;
 }
 
@@ -37,55 +37,55 @@ message BufferPacket {
 }
 
 message ValidatedBufferPacketMessage {
-  required string sender = 1;
-  required string message = 2;
-  required string index = 3;
+  required bytes sender = 1;
+  required bytes message = 2;
+  required bytes index = 3;
   required MessageType type = 4;
 }
 
 message ContactInfo {
-  optional string name = 1;
-  optional string birthday = 2;
-  optional string office_number = 3;
-  optional string gender = 4;
+  optional bytes name = 1;
+  optional bytes birthday = 2;
+  optional bytes office_number = 3;
+  optional bytes gender = 4;
   optional int32 country = 5;
-  optional string city = 6;
+  optional bytes city = 6;
   optional int32 language = 7;
 }
 
 message InstantMessage {
-  required string sender = 1;
-  required string message = 2;
+  required bytes sender = 1;
+  required bytes message = 2;
   required int32 date = 3;
   required MessageType type = 4;
 }
 
 message InstantFileMessage {
-  required string ser_mdm = 1;
-  required string ser_dm = 2;
-  required string filename = 3;
-  optional string sender_msg = 4;
+  required bytes ser_mdm = 1;
+  required bytes ser_dm = 2;
+  required bytes filename = 3;
+  optional bytes sender_msg = 4;
 }
 
 message StoreMessagesResult {
-  required string result = 1;
+  required bytes result = 1;
   required int32 stored_msgs = 2;
-  repeated string failed = 3;
+  repeated bytes failed = 3;
 }
 
 message CreateMSIDResult {
-  required string result = 1;
-  optional string name = 2;
-  optional string private_key = 3;
-  optional string public_key = 4;
+  required bytes result = 1;
+  optional bytes name = 2;
+  optional bytes private_key = 3;
+  optional bytes public_key = 4;
 }
 
 message PrivateShareNotification {
-  required string name = 1;
-  required string msid = 2;
-  required string public_key = 3;
-  optional string private_key = 4;
-  repeated string admins = 5;
-  repeated string readonlys = 6;
-  required string dir_db_key = 7;
+  required bytes name = 1;
+  required bytes msid = 2;
+  required bytes public_key = 3;
+  optional bytes private_key = 4;
+  repeated bytes admins = 5;
+  repeated bytes readonlys = 6;
+  required bytes dir_db_key = 7;
 }

@@ -87,12 +87,13 @@ class PingRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string ping = 1;
+  // required bytes ping = 1;
   inline bool has_ping() const;
   inline void clear_ping();
   inline const ::std::string& ping() const;
   inline void set_ping(const ::std::string& value);
   inline void set_ping(const char* value);
+  inline void set_ping(const void* value, size_t size);
   inline ::std::string* mutable_ping();
   
   // required .kad.ContactInfo sender_info = 2;
@@ -167,28 +168,31 @@ class PingResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string echo = 2;
+  // optional bytes echo = 2;
   inline bool has_echo() const;
   inline void clear_echo();
   inline const ::std::string& echo() const;
   inline void set_echo(const ::std::string& value);
   inline void set_echo(const char* value);
+  inline void set_echo(const void* value, size_t size);
   inline ::std::string* mutable_echo();
   
-  // optional string node_id = 3;
+  // optional bytes node_id = 3;
   inline bool has_node_id() const;
   inline void clear_node_id();
   inline const ::std::string& node_id() const;
   inline void set_node_id(const ::std::string& value);
   inline void set_node_id(const char* value);
+  inline void set_node_id(const void* value, size_t size);
   inline ::std::string* mutable_node_id();
   
  private:
@@ -260,12 +264,13 @@ class FindRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string key = 1;
+  // required bytes key = 1;
   inline bool has_key() const;
   inline void clear_key();
   inline const ::std::string& key() const;
   inline void set_key(const ::std::string& value);
   inline void set_key(const char* value);
+  inline void set_key(const void* value, size_t size);
   inline ::std::string* mutable_key();
   
   // required .kad.ContactInfo sender_info = 2;
@@ -280,12 +285,13 @@ class FindRequest : public ::google::protobuf::Message {
   inline bool is_boostrap() const;
   inline void set_is_boostrap(bool value);
   
-  // optional string sender_ext_ip = 4;
+  // optional bytes sender_ext_ip = 4;
   inline bool has_sender_ext_ip() const;
   inline void clear_sender_ext_ip();
   inline const ::std::string& sender_ext_ip() const;
   inline void set_sender_ext_ip(const ::std::string& value);
   inline void set_sender_ext_ip(const char* value);
+  inline void set_sender_ext_ip(const void* value, size_t size);
   inline ::std::string* mutable_sender_ext_ip();
   
   // optional int32 sender_ext_port = 5;
@@ -364,15 +370,16 @@ class FindResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // repeated string closest_nodes = 2;
+  // repeated bytes closest_nodes = 2;
   inline int closest_nodes_size() const;
   inline void clear_closest_nodes();
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& closest_nodes() const;
@@ -384,8 +391,10 @@ class FindResponse : public ::google::protobuf::Message {
   inline ::std::string* add_closest_nodes();
   inline void add_closest_nodes(const ::std::string& value);
   inline void add_closest_nodes(const char* value);
+  inline void set_closest_nodes(int index, const void* value, size_t size);
+  inline void add_closest_nodes(const void* value, size_t size);
   
-  // repeated string values = 3;
+  // repeated bytes values = 3;
   inline int values_size() const;
   inline void clear_values();
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& values() const;
@@ -397,21 +406,25 @@ class FindResponse : public ::google::protobuf::Message {
   inline ::std::string* add_values();
   inline void add_values(const ::std::string& value);
   inline void add_values(const char* value);
+  inline void set_values(int index, const void* value, size_t size);
+  inline void add_values(const void* value, size_t size);
   
-  // optional string requester_ext_addr = 4;
+  // optional bytes requester_ext_addr = 4;
   inline bool has_requester_ext_addr() const;
   inline void clear_requester_ext_addr();
   inline const ::std::string& requester_ext_addr() const;
   inline void set_requester_ext_addr(const ::std::string& value);
   inline void set_requester_ext_addr(const char* value);
+  inline void set_requester_ext_addr(const void* value, size_t size);
   inline ::std::string* mutable_requester_ext_addr();
   
-  // optional string node_id = 5;
+  // optional bytes node_id = 5;
   inline bool has_node_id() const;
   inline void clear_node_id();
   inline const ::std::string& node_id() const;
   inline void set_node_id(const ::std::string& value);
   inline void set_node_id(const char* value);
+  inline void set_node_id(const void* value, size_t size);
   inline ::std::string* mutable_node_id();
   
  private:
@@ -485,28 +498,31 @@ class FindNodeResult : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string contact = 2;
+  // optional bytes contact = 2;
   inline bool has_contact() const;
   inline void clear_contact();
   inline const ::std::string& contact() const;
   inline void set_contact(const ::std::string& value);
   inline void set_contact(const char* value);
+  inline void set_contact(const void* value, size_t size);
   inline ::std::string* mutable_contact();
   
-  // optional string node_id = 3;
+  // optional bytes node_id = 3;
   inline bool has_node_id() const;
   inline void clear_node_id();
   inline const ::std::string& node_id() const;
   inline void set_node_id(const ::std::string& value);
   inline void set_node_id(const char* value);
+  inline void set_node_id(const void* value, size_t size);
   inline ::std::string* mutable_node_id();
   
  private:
@@ -578,44 +594,49 @@ class StoreRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string key = 1;
+  // required bytes key = 1;
   inline bool has_key() const;
   inline void clear_key();
   inline const ::std::string& key() const;
   inline void set_key(const ::std::string& value);
   inline void set_key(const char* value);
+  inline void set_key(const void* value, size_t size);
   inline ::std::string* mutable_key();
   
-  // required string value = 2;
+  // required bytes value = 2;
   inline bool has_value() const;
   inline void clear_value();
   inline const ::std::string& value() const;
   inline void set_value(const ::std::string& value);
   inline void set_value(const char* value);
+  inline void set_value(const void* value, size_t size);
   inline ::std::string* mutable_value();
   
-  // required string public_key = 3;
+  // required bytes public_key = 3;
   inline bool has_public_key() const;
   inline void clear_public_key();
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required string signed_public_key = 4;
+  // required bytes signed_public_key = 4;
   inline bool has_signed_public_key() const;
   inline void clear_signed_public_key();
   inline const ::std::string& signed_public_key() const;
   inline void set_signed_public_key(const ::std::string& value);
   inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
   
-  // required string signed_request = 5;
+  // required bytes signed_request = 5;
   inline bool has_signed_request() const;
   inline void clear_signed_request();
   inline const ::std::string& signed_request() const;
   inline void set_signed_request(const ::std::string& value);
   inline void set_signed_request(const char* value);
+  inline void set_signed_request(const void* value, size_t size);
   inline ::std::string* mutable_signed_request();
   
   // required .kad.ContactInfo sender_info = 6;
@@ -698,20 +719,22 @@ class StoreResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string node_id = 2;
+  // optional bytes node_id = 2;
   inline bool has_node_id() const;
   inline void clear_node_id();
   inline const ::std::string& node_id() const;
   inline void set_node_id(const ::std::string& value);
   inline void set_node_id(const char* value);
+  inline void set_node_id(const void* value, size_t size);
   inline ::std::string* mutable_node_id();
   
  private:
@@ -781,7 +804,7 @@ class DownlistRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // repeated string downlist = 1;
+  // repeated bytes downlist = 1;
   inline int downlist_size() const;
   inline void clear_downlist();
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& downlist() const;
@@ -793,6 +816,8 @@ class DownlistRequest : public ::google::protobuf::Message {
   inline ::std::string* add_downlist();
   inline void add_downlist(const ::std::string& value);
   inline void add_downlist(const char* value);
+  inline void set_downlist(int index, const void* value, size_t size);
+  inline void add_downlist(const void* value, size_t size);
   
   // required .kad.ContactInfo sender_info = 2;
   inline bool has_sender_info() const;
@@ -865,20 +890,22 @@ class DownlistResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string node_id = 2;
+  // optional bytes node_id = 2;
   inline bool has_node_id() const;
   inline void clear_node_id();
   inline const ::std::string& node_id() const;
   inline void set_node_id(const ::std::string& value);
   inline void set_node_id(const char* value);
+  inline void set_node_id(const void* value, size_t size);
   inline ::std::string* mutable_node_id();
   
  private:
@@ -948,20 +975,22 @@ class BootstrapRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string newcomer_id = 1;
+  // required bytes newcomer_id = 1;
   inline bool has_newcomer_id() const;
   inline void clear_newcomer_id();
   inline const ::std::string& newcomer_id() const;
   inline void set_newcomer_id(const ::std::string& value);
   inline void set_newcomer_id(const char* value);
+  inline void set_newcomer_id(const void* value, size_t size);
   inline ::std::string* mutable_newcomer_id();
   
-  // required string newcomer_local_ip = 2;
+  // required bytes newcomer_local_ip = 2;
   inline bool has_newcomer_local_ip() const;
   inline void clear_newcomer_local_ip();
   inline const ::std::string& newcomer_local_ip() const;
   inline void set_newcomer_local_ip(const ::std::string& value);
   inline void set_newcomer_local_ip(const char* value);
+  inline void set_newcomer_local_ip(const void* value, size_t size);
   inline ::std::string* mutable_newcomer_local_ip();
   
   // required int32 newcomer_local_port = 3;
@@ -970,12 +999,13 @@ class BootstrapRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 newcomer_local_port() const;
   inline void set_newcomer_local_port(::google::protobuf::int32 value);
   
-  // optional string newcomer_ext_ip = 4;
+  // optional bytes newcomer_ext_ip = 4;
   inline bool has_newcomer_ext_ip() const;
   inline void clear_newcomer_ext_ip();
   inline const ::std::string& newcomer_ext_ip() const;
   inline void set_newcomer_ext_ip(const ::std::string& value);
   inline void set_newcomer_ext_ip(const char* value);
+  inline void set_newcomer_ext_ip(const void* value, size_t size);
   inline ::std::string* mutable_newcomer_ext_ip();
   
   // optional int32 newcomer_ext_port = 5;
@@ -1055,28 +1085,31 @@ class BootstrapResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string bootstrap_id = 2;
+  // optional bytes bootstrap_id = 2;
   inline bool has_bootstrap_id() const;
   inline void clear_bootstrap_id();
   inline const ::std::string& bootstrap_id() const;
   inline void set_bootstrap_id(const ::std::string& value);
   inline void set_bootstrap_id(const char* value);
+  inline void set_bootstrap_id(const void* value, size_t size);
   inline ::std::string* mutable_bootstrap_id();
   
-  // optional string newcomer_ext_ip = 3;
+  // optional bytes newcomer_ext_ip = 3;
   inline bool has_newcomer_ext_ip() const;
   inline void clear_newcomer_ext_ip();
   inline const ::std::string& newcomer_ext_ip() const;
   inline void set_newcomer_ext_ip(const ::std::string& value);
   inline void set_newcomer_ext_ip(const char* value);
+  inline void set_newcomer_ext_ip(const void* value, size_t size);
   inline ::std::string* mutable_newcomer_ext_ip();
   
   // optional int32 newcomer_ext_port = 4;
@@ -1162,20 +1195,22 @@ class NatDetectionRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string newcomer = 1;
+  // required bytes newcomer = 1;
   inline bool has_newcomer() const;
   inline void clear_newcomer();
   inline const ::std::string& newcomer() const;
   inline void set_newcomer(const ::std::string& value);
   inline void set_newcomer(const char* value);
+  inline void set_newcomer(const void* value, size_t size);
   inline ::std::string* mutable_newcomer();
   
-  // required string bootstrap_node = 2;
+  // required bytes bootstrap_node = 2;
   inline bool has_bootstrap_node() const;
   inline void clear_bootstrap_node();
   inline const ::std::string& bootstrap_node() const;
   inline void set_bootstrap_node(const ::std::string& value);
   inline void set_bootstrap_node(const char* value);
+  inline void set_bootstrap_node(const void* value, size_t size);
   inline ::std::string* mutable_bootstrap_node();
   
   // required int32 type = 3;
@@ -1184,12 +1219,13 @@ class NatDetectionRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 type() const;
   inline void set_type(::google::protobuf::int32 value);
   
-  // required string sender_id = 4;
+  // required bytes sender_id = 4;
   inline bool has_sender_id() const;
   inline void clear_sender_id();
   inline const ::std::string& sender_id() const;
   inline void set_sender_id(const ::std::string& value);
   inline void set_sender_id(const char* value);
+  inline void set_sender_id(const void* value, size_t size);
   inline ::std::string* mutable_sender_id();
   
  private:
@@ -1262,12 +1298,13 @@ class NatDetectionResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
  private:
@@ -1335,12 +1372,13 @@ class NatDetectionPingRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string ping = 1;
+  // required bytes ping = 1;
   inline bool has_ping() const;
   inline void clear_ping();
   inline const ::std::string& ping() const;
   inline void set_ping(const ::std::string& value);
   inline void set_ping(const char* value);
+  inline void set_ping(const void* value, size_t size);
   inline ::std::string* mutable_ping();
   
   // required .kad.ContactInfo sender_info = 2;
@@ -1415,20 +1453,22 @@ class NatDetectionPingResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string echo = 2;
+  // optional bytes echo = 2;
   inline bool has_echo() const;
   inline void clear_echo();
   inline const ::std::string& echo() const;
   inline void set_echo(const ::std::string& value);
   inline void set_echo(const char* value);
+  inline void set_echo(const void* value, size_t size);
   inline ::std::string* mutable_echo();
   
  private:
@@ -1467,7 +1507,7 @@ class NatDetectionPingResponse : public ::google::protobuf::Message {
 
 // PingRequest
 
-// required string ping = 1;
+// required bytes ping = 1;
 inline bool PingRequest::has_ping() const {
   return _has_bit(0);
 }
@@ -1493,6 +1533,13 @@ inline void PingRequest::set_ping(const char* value) {
     ping_ = new ::std::string;
   }
   ping_->assign(value);
+}
+inline void PingRequest::set_ping(const void* value, size_t size) {
+  _set_bit(0);
+  if (ping_ == &_default_ping_) {
+    ping_ = new ::std::string;
+  }
+  ping_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* PingRequest::mutable_ping() {
   _set_bit(0);
@@ -1523,7 +1570,7 @@ inline ::kad::ContactInfo* PingRequest::mutable_sender_info() {
 
 // PingResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool PingResponse::has_result() const {
   return _has_bit(0);
 }
@@ -1550,6 +1597,13 @@ inline void PingResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void PingResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* PingResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -1558,7 +1612,7 @@ inline ::std::string* PingResponse::mutable_result() {
   return result_;
 }
 
-// optional string echo = 2;
+// optional bytes echo = 2;
 inline bool PingResponse::has_echo() const {
   return _has_bit(1);
 }
@@ -1585,6 +1639,13 @@ inline void PingResponse::set_echo(const char* value) {
   }
   echo_->assign(value);
 }
+inline void PingResponse::set_echo(const void* value, size_t size) {
+  _set_bit(1);
+  if (echo_ == &_default_echo_) {
+    echo_ = new ::std::string;
+  }
+  echo_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* PingResponse::mutable_echo() {
   _set_bit(1);
   if (echo_ == &_default_echo_) {
@@ -1593,7 +1654,7 @@ inline ::std::string* PingResponse::mutable_echo() {
   return echo_;
 }
 
-// optional string node_id = 3;
+// optional bytes node_id = 3;
 inline bool PingResponse::has_node_id() const {
   return _has_bit(2);
 }
@@ -1620,6 +1681,13 @@ inline void PingResponse::set_node_id(const char* value) {
   }
   node_id_->assign(value);
 }
+inline void PingResponse::set_node_id(const void* value, size_t size) {
+  _set_bit(2);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  node_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* PingResponse::mutable_node_id() {
   _set_bit(2);
   if (node_id_ == &_default_node_id_) {
@@ -1632,7 +1700,7 @@ inline ::std::string* PingResponse::mutable_node_id() {
 
 // FindRequest
 
-// required string key = 1;
+// required bytes key = 1;
 inline bool FindRequest::has_key() const {
   return _has_bit(0);
 }
@@ -1658,6 +1726,13 @@ inline void FindRequest::set_key(const char* value) {
     key_ = new ::std::string;
   }
   key_->assign(value);
+}
+inline void FindRequest::set_key(const void* value, size_t size) {
+  _set_bit(0);
+  if (key_ == &_default_key_) {
+    key_ = new ::std::string;
+  }
+  key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* FindRequest::mutable_key() {
   _set_bit(0);
@@ -1700,7 +1775,7 @@ inline void FindRequest::set_is_boostrap(bool value) {
   is_boostrap_ = value;
 }
 
-// optional string sender_ext_ip = 4;
+// optional bytes sender_ext_ip = 4;
 inline bool FindRequest::has_sender_ext_ip() const {
   return _has_bit(3);
 }
@@ -1726,6 +1801,13 @@ inline void FindRequest::set_sender_ext_ip(const char* value) {
     sender_ext_ip_ = new ::std::string;
   }
   sender_ext_ip_->assign(value);
+}
+inline void FindRequest::set_sender_ext_ip(const void* value, size_t size) {
+  _set_bit(3);
+  if (sender_ext_ip_ == &_default_sender_ext_ip_) {
+    sender_ext_ip_ = new ::std::string;
+  }
+  sender_ext_ip_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* FindRequest::mutable_sender_ext_ip() {
   _set_bit(3);
@@ -1755,7 +1837,7 @@ inline void FindRequest::set_sender_ext_port(::google::protobuf::int32 value) {
 
 // FindResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool FindResponse::has_result() const {
   return _has_bit(0);
 }
@@ -1782,6 +1864,13 @@ inline void FindResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void FindResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* FindResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -1790,7 +1879,7 @@ inline ::std::string* FindResponse::mutable_result() {
   return result_;
 }
 
-// repeated string closest_nodes = 2;
+// repeated bytes closest_nodes = 2;
 inline int FindResponse::closest_nodes_size() const {
   return closest_nodes_.size();
 }
@@ -1826,8 +1915,15 @@ inline void FindResponse::add_closest_nodes(const ::std::string& value) {
 inline void FindResponse::add_closest_nodes(const char* value) {
   closest_nodes_.Add()->assign(value);
 }
+inline void FindResponse::set_closest_nodes(int index, const void* value, size_t size) {
+  closest_nodes_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline void FindResponse::add_closest_nodes(const void* value, size_t size) {
+  closest_nodes_.Add()->assign(reinterpret_cast<const char*>(value), size);
+}
 
-// repeated string values = 3;
+// repeated bytes values = 3;
 inline int FindResponse::values_size() const {
   return values_.size();
 }
@@ -1863,8 +1959,15 @@ inline void FindResponse::add_values(const ::std::string& value) {
 inline void FindResponse::add_values(const char* value) {
   values_.Add()->assign(value);
 }
+inline void FindResponse::set_values(int index, const void* value, size_t size) {
+  values_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline void FindResponse::add_values(const void* value, size_t size) {
+  values_.Add()->assign(reinterpret_cast<const char*>(value), size);
+}
 
-// optional string requester_ext_addr = 4;
+// optional bytes requester_ext_addr = 4;
 inline bool FindResponse::has_requester_ext_addr() const {
   return _has_bit(3);
 }
@@ -1891,6 +1994,13 @@ inline void FindResponse::set_requester_ext_addr(const char* value) {
   }
   requester_ext_addr_->assign(value);
 }
+inline void FindResponse::set_requester_ext_addr(const void* value, size_t size) {
+  _set_bit(3);
+  if (requester_ext_addr_ == &_default_requester_ext_addr_) {
+    requester_ext_addr_ = new ::std::string;
+  }
+  requester_ext_addr_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* FindResponse::mutable_requester_ext_addr() {
   _set_bit(3);
   if (requester_ext_addr_ == &_default_requester_ext_addr_) {
@@ -1899,7 +2009,7 @@ inline ::std::string* FindResponse::mutable_requester_ext_addr() {
   return requester_ext_addr_;
 }
 
-// optional string node_id = 5;
+// optional bytes node_id = 5;
 inline bool FindResponse::has_node_id() const {
   return _has_bit(4);
 }
@@ -1926,6 +2036,13 @@ inline void FindResponse::set_node_id(const char* value) {
   }
   node_id_->assign(value);
 }
+inline void FindResponse::set_node_id(const void* value, size_t size) {
+  _set_bit(4);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  node_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* FindResponse::mutable_node_id() {
   _set_bit(4);
   if (node_id_ == &_default_node_id_) {
@@ -1938,7 +2055,7 @@ inline ::std::string* FindResponse::mutable_node_id() {
 
 // FindNodeResult
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool FindNodeResult::has_result() const {
   return _has_bit(0);
 }
@@ -1965,6 +2082,13 @@ inline void FindNodeResult::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void FindNodeResult::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* FindNodeResult::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -1973,7 +2097,7 @@ inline ::std::string* FindNodeResult::mutable_result() {
   return result_;
 }
 
-// optional string contact = 2;
+// optional bytes contact = 2;
 inline bool FindNodeResult::has_contact() const {
   return _has_bit(1);
 }
@@ -2000,6 +2124,13 @@ inline void FindNodeResult::set_contact(const char* value) {
   }
   contact_->assign(value);
 }
+inline void FindNodeResult::set_contact(const void* value, size_t size) {
+  _set_bit(1);
+  if (contact_ == &_default_contact_) {
+    contact_ = new ::std::string;
+  }
+  contact_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* FindNodeResult::mutable_contact() {
   _set_bit(1);
   if (contact_ == &_default_contact_) {
@@ -2008,7 +2139,7 @@ inline ::std::string* FindNodeResult::mutable_contact() {
   return contact_;
 }
 
-// optional string node_id = 3;
+// optional bytes node_id = 3;
 inline bool FindNodeResult::has_node_id() const {
   return _has_bit(2);
 }
@@ -2035,6 +2166,13 @@ inline void FindNodeResult::set_node_id(const char* value) {
   }
   node_id_->assign(value);
 }
+inline void FindNodeResult::set_node_id(const void* value, size_t size) {
+  _set_bit(2);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  node_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* FindNodeResult::mutable_node_id() {
   _set_bit(2);
   if (node_id_ == &_default_node_id_) {
@@ -2047,7 +2185,7 @@ inline ::std::string* FindNodeResult::mutable_node_id() {
 
 // StoreRequest
 
-// required string key = 1;
+// required bytes key = 1;
 inline bool StoreRequest::has_key() const {
   return _has_bit(0);
 }
@@ -2074,6 +2212,13 @@ inline void StoreRequest::set_key(const char* value) {
   }
   key_->assign(value);
 }
+inline void StoreRequest::set_key(const void* value, size_t size) {
+  _set_bit(0);
+  if (key_ == &_default_key_) {
+    key_ = new ::std::string;
+  }
+  key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreRequest::mutable_key() {
   _set_bit(0);
   if (key_ == &_default_key_) {
@@ -2082,7 +2227,7 @@ inline ::std::string* StoreRequest::mutable_key() {
   return key_;
 }
 
-// required string value = 2;
+// required bytes value = 2;
 inline bool StoreRequest::has_value() const {
   return _has_bit(1);
 }
@@ -2109,6 +2254,13 @@ inline void StoreRequest::set_value(const char* value) {
   }
   value_->assign(value);
 }
+inline void StoreRequest::set_value(const void* value, size_t size) {
+  _set_bit(1);
+  if (value_ == &_default_value_) {
+    value_ = new ::std::string;
+  }
+  value_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreRequest::mutable_value() {
   _set_bit(1);
   if (value_ == &_default_value_) {
@@ -2117,7 +2269,7 @@ inline ::std::string* StoreRequest::mutable_value() {
   return value_;
 }
 
-// required string public_key = 3;
+// required bytes public_key = 3;
 inline bool StoreRequest::has_public_key() const {
   return _has_bit(2);
 }
@@ -2144,6 +2296,13 @@ inline void StoreRequest::set_public_key(const char* value) {
   }
   public_key_->assign(value);
 }
+inline void StoreRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreRequest::mutable_public_key() {
   _set_bit(2);
   if (public_key_ == &_default_public_key_) {
@@ -2152,7 +2311,7 @@ inline ::std::string* StoreRequest::mutable_public_key() {
   return public_key_;
 }
 
-// required string signed_public_key = 4;
+// required bytes signed_public_key = 4;
 inline bool StoreRequest::has_signed_public_key() const {
   return _has_bit(3);
 }
@@ -2179,6 +2338,13 @@ inline void StoreRequest::set_signed_public_key(const char* value) {
   }
   signed_public_key_->assign(value);
 }
+inline void StoreRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreRequest::mutable_signed_public_key() {
   _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
@@ -2187,7 +2353,7 @@ inline ::std::string* StoreRequest::mutable_signed_public_key() {
   return signed_public_key_;
 }
 
-// required string signed_request = 5;
+// required bytes signed_request = 5;
 inline bool StoreRequest::has_signed_request() const {
   return _has_bit(4);
 }
@@ -2213,6 +2379,13 @@ inline void StoreRequest::set_signed_request(const char* value) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
+}
+inline void StoreRequest::set_signed_request(const void* value, size_t size) {
+  _set_bit(4);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* StoreRequest::mutable_signed_request() {
   _set_bit(4);
@@ -2243,7 +2416,7 @@ inline ::kad::ContactInfo* StoreRequest::mutable_sender_info() {
 
 // StoreResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool StoreResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2270,6 +2443,13 @@ inline void StoreResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void StoreResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2278,7 +2458,7 @@ inline ::std::string* StoreResponse::mutable_result() {
   return result_;
 }
 
-// optional string node_id = 2;
+// optional bytes node_id = 2;
 inline bool StoreResponse::has_node_id() const {
   return _has_bit(1);
 }
@@ -2305,6 +2485,13 @@ inline void StoreResponse::set_node_id(const char* value) {
   }
   node_id_->assign(value);
 }
+inline void StoreResponse::set_node_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  node_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreResponse::mutable_node_id() {
   _set_bit(1);
   if (node_id_ == &_default_node_id_) {
@@ -2317,7 +2504,7 @@ inline ::std::string* StoreResponse::mutable_node_id() {
 
 // DownlistRequest
 
-// repeated string downlist = 1;
+// repeated bytes downlist = 1;
 inline int DownlistRequest::downlist_size() const {
   return downlist_.size();
 }
@@ -2353,6 +2540,13 @@ inline void DownlistRequest::add_downlist(const ::std::string& value) {
 inline void DownlistRequest::add_downlist(const char* value) {
   downlist_.Add()->assign(value);
 }
+inline void DownlistRequest::set_downlist(int index, const void* value, size_t size) {
+  downlist_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline void DownlistRequest::add_downlist(const void* value, size_t size) {
+  downlist_.Add()->assign(reinterpret_cast<const char*>(value), size);
+}
 
 // required .kad.ContactInfo sender_info = 2;
 inline bool DownlistRequest::has_sender_info() const {
@@ -2375,7 +2569,7 @@ inline ::kad::ContactInfo* DownlistRequest::mutable_sender_info() {
 
 // DownlistResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool DownlistResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2402,6 +2596,13 @@ inline void DownlistResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void DownlistResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* DownlistResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2410,7 +2611,7 @@ inline ::std::string* DownlistResponse::mutable_result() {
   return result_;
 }
 
-// optional string node_id = 2;
+// optional bytes node_id = 2;
 inline bool DownlistResponse::has_node_id() const {
   return _has_bit(1);
 }
@@ -2437,6 +2638,13 @@ inline void DownlistResponse::set_node_id(const char* value) {
   }
   node_id_->assign(value);
 }
+inline void DownlistResponse::set_node_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  node_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* DownlistResponse::mutable_node_id() {
   _set_bit(1);
   if (node_id_ == &_default_node_id_) {
@@ -2449,7 +2657,7 @@ inline ::std::string* DownlistResponse::mutable_node_id() {
 
 // BootstrapRequest
 
-// required string newcomer_id = 1;
+// required bytes newcomer_id = 1;
 inline bool BootstrapRequest::has_newcomer_id() const {
   return _has_bit(0);
 }
@@ -2476,6 +2684,13 @@ inline void BootstrapRequest::set_newcomer_id(const char* value) {
   }
   newcomer_id_->assign(value);
 }
+inline void BootstrapRequest::set_newcomer_id(const void* value, size_t size) {
+  _set_bit(0);
+  if (newcomer_id_ == &_default_newcomer_id_) {
+    newcomer_id_ = new ::std::string;
+  }
+  newcomer_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* BootstrapRequest::mutable_newcomer_id() {
   _set_bit(0);
   if (newcomer_id_ == &_default_newcomer_id_) {
@@ -2484,7 +2699,7 @@ inline ::std::string* BootstrapRequest::mutable_newcomer_id() {
   return newcomer_id_;
 }
 
-// required string newcomer_local_ip = 2;
+// required bytes newcomer_local_ip = 2;
 inline bool BootstrapRequest::has_newcomer_local_ip() const {
   return _has_bit(1);
 }
@@ -2511,6 +2726,13 @@ inline void BootstrapRequest::set_newcomer_local_ip(const char* value) {
   }
   newcomer_local_ip_->assign(value);
 }
+inline void BootstrapRequest::set_newcomer_local_ip(const void* value, size_t size) {
+  _set_bit(1);
+  if (newcomer_local_ip_ == &_default_newcomer_local_ip_) {
+    newcomer_local_ip_ = new ::std::string;
+  }
+  newcomer_local_ip_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* BootstrapRequest::mutable_newcomer_local_ip() {
   _set_bit(1);
   if (newcomer_local_ip_ == &_default_newcomer_local_ip_) {
@@ -2535,7 +2757,7 @@ inline void BootstrapRequest::set_newcomer_local_port(::google::protobuf::int32 
   newcomer_local_port_ = value;
 }
 
-// optional string newcomer_ext_ip = 4;
+// optional bytes newcomer_ext_ip = 4;
 inline bool BootstrapRequest::has_newcomer_ext_ip() const {
   return _has_bit(3);
 }
@@ -2561,6 +2783,13 @@ inline void BootstrapRequest::set_newcomer_ext_ip(const char* value) {
     newcomer_ext_ip_ = new ::std::string;
   }
   newcomer_ext_ip_->assign(value);
+}
+inline void BootstrapRequest::set_newcomer_ext_ip(const void* value, size_t size) {
+  _set_bit(3);
+  if (newcomer_ext_ip_ == &_default_newcomer_ext_ip_) {
+    newcomer_ext_ip_ = new ::std::string;
+  }
+  newcomer_ext_ip_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* BootstrapRequest::mutable_newcomer_ext_ip() {
   _set_bit(3);
@@ -2590,7 +2819,7 @@ inline void BootstrapRequest::set_newcomer_ext_port(::google::protobuf::int32 va
 
 // BootstrapResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool BootstrapResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2617,6 +2846,13 @@ inline void BootstrapResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void BootstrapResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* BootstrapResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2625,7 +2861,7 @@ inline ::std::string* BootstrapResponse::mutable_result() {
   return result_;
 }
 
-// optional string bootstrap_id = 2;
+// optional bytes bootstrap_id = 2;
 inline bool BootstrapResponse::has_bootstrap_id() const {
   return _has_bit(1);
 }
@@ -2652,6 +2888,13 @@ inline void BootstrapResponse::set_bootstrap_id(const char* value) {
   }
   bootstrap_id_->assign(value);
 }
+inline void BootstrapResponse::set_bootstrap_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (bootstrap_id_ == &_default_bootstrap_id_) {
+    bootstrap_id_ = new ::std::string;
+  }
+  bootstrap_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* BootstrapResponse::mutable_bootstrap_id() {
   _set_bit(1);
   if (bootstrap_id_ == &_default_bootstrap_id_) {
@@ -2660,7 +2903,7 @@ inline ::std::string* BootstrapResponse::mutable_bootstrap_id() {
   return bootstrap_id_;
 }
 
-// optional string newcomer_ext_ip = 3;
+// optional bytes newcomer_ext_ip = 3;
 inline bool BootstrapResponse::has_newcomer_ext_ip() const {
   return _has_bit(2);
 }
@@ -2686,6 +2929,13 @@ inline void BootstrapResponse::set_newcomer_ext_ip(const char* value) {
     newcomer_ext_ip_ = new ::std::string;
   }
   newcomer_ext_ip_->assign(value);
+}
+inline void BootstrapResponse::set_newcomer_ext_ip(const void* value, size_t size) {
+  _set_bit(2);
+  if (newcomer_ext_ip_ == &_default_newcomer_ext_ip_) {
+    newcomer_ext_ip_ = new ::std::string;
+  }
+  newcomer_ext_ip_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* BootstrapResponse::mutable_newcomer_ext_ip() {
   _set_bit(2);
@@ -2731,7 +2981,7 @@ inline void BootstrapResponse::set_nat_type(::google::protobuf::int32 value) {
 
 // NatDetectionRequest
 
-// required string newcomer = 1;
+// required bytes newcomer = 1;
 inline bool NatDetectionRequest::has_newcomer() const {
   return _has_bit(0);
 }
@@ -2758,6 +3008,13 @@ inline void NatDetectionRequest::set_newcomer(const char* value) {
   }
   newcomer_->assign(value);
 }
+inline void NatDetectionRequest::set_newcomer(const void* value, size_t size) {
+  _set_bit(0);
+  if (newcomer_ == &_default_newcomer_) {
+    newcomer_ = new ::std::string;
+  }
+  newcomer_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* NatDetectionRequest::mutable_newcomer() {
   _set_bit(0);
   if (newcomer_ == &_default_newcomer_) {
@@ -2766,7 +3023,7 @@ inline ::std::string* NatDetectionRequest::mutable_newcomer() {
   return newcomer_;
 }
 
-// required string bootstrap_node = 2;
+// required bytes bootstrap_node = 2;
 inline bool NatDetectionRequest::has_bootstrap_node() const {
   return _has_bit(1);
 }
@@ -2793,6 +3050,13 @@ inline void NatDetectionRequest::set_bootstrap_node(const char* value) {
   }
   bootstrap_node_->assign(value);
 }
+inline void NatDetectionRequest::set_bootstrap_node(const void* value, size_t size) {
+  _set_bit(1);
+  if (bootstrap_node_ == &_default_bootstrap_node_) {
+    bootstrap_node_ = new ::std::string;
+  }
+  bootstrap_node_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* NatDetectionRequest::mutable_bootstrap_node() {
   _set_bit(1);
   if (bootstrap_node_ == &_default_bootstrap_node_) {
@@ -2817,7 +3081,7 @@ inline void NatDetectionRequest::set_type(::google::protobuf::int32 value) {
   type_ = value;
 }
 
-// required string sender_id = 4;
+// required bytes sender_id = 4;
 inline bool NatDetectionRequest::has_sender_id() const {
   return _has_bit(3);
 }
@@ -2844,6 +3108,13 @@ inline void NatDetectionRequest::set_sender_id(const char* value) {
   }
   sender_id_->assign(value);
 }
+inline void NatDetectionRequest::set_sender_id(const void* value, size_t size) {
+  _set_bit(3);
+  if (sender_id_ == &_default_sender_id_) {
+    sender_id_ = new ::std::string;
+  }
+  sender_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* NatDetectionRequest::mutable_sender_id() {
   _set_bit(3);
   if (sender_id_ == &_default_sender_id_) {
@@ -2856,7 +3127,7 @@ inline ::std::string* NatDetectionRequest::mutable_sender_id() {
 
 // NatDetectionResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool NatDetectionResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2883,6 +3154,13 @@ inline void NatDetectionResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void NatDetectionResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* NatDetectionResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2895,7 +3173,7 @@ inline ::std::string* NatDetectionResponse::mutable_result() {
 
 // NatDetectionPingRequest
 
-// required string ping = 1;
+// required bytes ping = 1;
 inline bool NatDetectionPingRequest::has_ping() const {
   return _has_bit(0);
 }
@@ -2921,6 +3199,13 @@ inline void NatDetectionPingRequest::set_ping(const char* value) {
     ping_ = new ::std::string;
   }
   ping_->assign(value);
+}
+inline void NatDetectionPingRequest::set_ping(const void* value, size_t size) {
+  _set_bit(0);
+  if (ping_ == &_default_ping_) {
+    ping_ = new ::std::string;
+  }
+  ping_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* NatDetectionPingRequest::mutable_ping() {
   _set_bit(0);
@@ -2951,7 +3236,7 @@ inline ::kad::ContactInfo* NatDetectionPingRequest::mutable_sender_info() {
 
 // NatDetectionPingResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool NatDetectionPingResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2978,6 +3263,13 @@ inline void NatDetectionPingResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void NatDetectionPingResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* NatDetectionPingResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2986,7 +3278,7 @@ inline ::std::string* NatDetectionPingResponse::mutable_result() {
   return result_;
 }
 
-// optional string echo = 2;
+// optional bytes echo = 2;
 inline bool NatDetectionPingResponse::has_echo() const {
   return _has_bit(1);
 }
@@ -3012,6 +3304,13 @@ inline void NatDetectionPingResponse::set_echo(const char* value) {
     echo_ = new ::std::string;
   }
   echo_->assign(value);
+}
+inline void NatDetectionPingResponse::set_echo(const void* value, size_t size) {
+  _set_bit(1);
+  if (echo_ == &_default_echo_) {
+    echo_ = new ::std::string;
+  }
+  echo_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* NatDetectionPingResponse::mutable_echo() {
   _set_bit(1);

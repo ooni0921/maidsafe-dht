@@ -93,28 +93,31 @@ class RpcMessage : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 message_id() const;
   inline void set_message_id(::google::protobuf::int32 value);
   
-  // required string args = 3;
+  // required bytes args = 3;
   inline bool has_args() const;
   inline void clear_args();
   inline const ::std::string& args() const;
   inline void set_args(const ::std::string& value);
   inline void set_args(const char* value);
+  inline void set_args(const void* value, size_t size);
   inline ::std::string* mutable_args();
   
-  // optional string service = 4;
+  // optional bytes service = 4;
   inline bool has_service() const;
   inline void clear_service();
   inline const ::std::string& service() const;
   inline void set_service(const ::std::string& value);
   inline void set_service(const char* value);
+  inline void set_service(const void* value, size_t size);
   inline ::std::string* mutable_service();
   
-  // optional string method = 5;
+  // optional bytes method = 5;
   inline bool has_method() const;
   inline void clear_method();
   inline const ::std::string& method() const;
   inline void set_method(const ::std::string& value);
   inline void set_method(const char* value);
+  inline void set_method(const void* value, size_t size);
   inline ::std::string* mutable_method();
   
  private:
@@ -190,7 +193,7 @@ inline void RpcMessage::set_message_id(::google::protobuf::int32 value) {
   message_id_ = value;
 }
 
-// required string args = 3;
+// required bytes args = 3;
 inline bool RpcMessage::has_args() const {
   return _has_bit(2);
 }
@@ -217,6 +220,13 @@ inline void RpcMessage::set_args(const char* value) {
   }
   args_->assign(value);
 }
+inline void RpcMessage::set_args(const void* value, size_t size) {
+  _set_bit(2);
+  if (args_ == &_default_args_) {
+    args_ = new ::std::string;
+  }
+  args_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* RpcMessage::mutable_args() {
   _set_bit(2);
   if (args_ == &_default_args_) {
@@ -225,7 +235,7 @@ inline ::std::string* RpcMessage::mutable_args() {
   return args_;
 }
 
-// optional string service = 4;
+// optional bytes service = 4;
 inline bool RpcMessage::has_service() const {
   return _has_bit(3);
 }
@@ -252,6 +262,13 @@ inline void RpcMessage::set_service(const char* value) {
   }
   service_->assign(value);
 }
+inline void RpcMessage::set_service(const void* value, size_t size) {
+  _set_bit(3);
+  if (service_ == &_default_service_) {
+    service_ = new ::std::string;
+  }
+  service_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* RpcMessage::mutable_service() {
   _set_bit(3);
   if (service_ == &_default_service_) {
@@ -260,7 +277,7 @@ inline ::std::string* RpcMessage::mutable_service() {
   return service_;
 }
 
-// optional string method = 5;
+// optional bytes method = 5;
 inline bool RpcMessage::has_method() const {
   return _has_bit(4);
 }
@@ -286,6 +303,13 @@ inline void RpcMessage::set_method(const char* value) {
     method_ = new ::std::string;
   }
   method_->assign(value);
+}
+inline void RpcMessage::set_method(const void* value, size_t size) {
+  _set_bit(4);
+  if (method_ == &_default_method_) {
+    method_ = new ::std::string;
+  }
+  method_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* RpcMessage::mutable_method() {
   _set_bit(4);

@@ -72,20 +72,22 @@ class ContactInfo : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string node_id = 1;
+  // required bytes node_id = 1;
   inline bool has_node_id() const;
   inline void clear_node_id();
   inline const ::std::string& node_id() const;
   inline void set_node_id(const ::std::string& value);
   inline void set_node_id(const char* value);
+  inline void set_node_id(const void* value, size_t size);
   inline ::std::string* mutable_node_id();
   
-  // required string ip = 2;
+  // required bytes ip = 2;
   inline bool has_ip() const;
   inline void clear_ip();
   inline const ::std::string& ip() const;
   inline void set_ip(const ::std::string& value);
   inline void set_ip(const char* value);
+  inline void set_ip(const void* value, size_t size);
   inline ::std::string* mutable_ip();
   
   // required int32 port = 3;
@@ -94,12 +96,13 @@ class ContactInfo : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 port() const;
   inline void set_port(::google::protobuf::int32 value);
   
-  // optional string local_ip = 4;
+  // optional bytes local_ip = 4;
   inline bool has_local_ip() const;
   inline void clear_local_ip();
   inline const ::std::string& local_ip() const;
   inline void set_local_ip(const ::std::string& value);
   inline void set_local_ip(const char* value);
+  inline void set_local_ip(const void* value, size_t size);
   inline ::std::string* mutable_local_ip();
   
   // optional int32 local_port = 5;
@@ -108,12 +111,13 @@ class ContactInfo : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 local_port() const;
   inline void set_local_port(::google::protobuf::int32 value);
   
-  // optional string rv_ip = 6;
+  // optional bytes rv_ip = 6;
   inline bool has_rv_ip() const;
   inline void clear_rv_ip();
   inline const ::std::string& rv_ip() const;
   inline void set_rv_ip(const ::std::string& value);
   inline void set_rv_ip(const char* value);
+  inline void set_rv_ip(const void* value, size_t size);
   inline ::std::string* mutable_rv_ip();
   
   // optional int32 rv_port = 7;
@@ -165,7 +169,7 @@ class ContactInfo : public ::google::protobuf::Message {
 
 // ContactInfo
 
-// required string node_id = 1;
+// required bytes node_id = 1;
 inline bool ContactInfo::has_node_id() const {
   return _has_bit(0);
 }
@@ -192,6 +196,13 @@ inline void ContactInfo::set_node_id(const char* value) {
   }
   node_id_->assign(value);
 }
+inline void ContactInfo::set_node_id(const void* value, size_t size) {
+  _set_bit(0);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  node_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ContactInfo::mutable_node_id() {
   _set_bit(0);
   if (node_id_ == &_default_node_id_) {
@@ -200,7 +211,7 @@ inline ::std::string* ContactInfo::mutable_node_id() {
   return node_id_;
 }
 
-// required string ip = 2;
+// required bytes ip = 2;
 inline bool ContactInfo::has_ip() const {
   return _has_bit(1);
 }
@@ -227,6 +238,13 @@ inline void ContactInfo::set_ip(const char* value) {
   }
   ip_->assign(value);
 }
+inline void ContactInfo::set_ip(const void* value, size_t size) {
+  _set_bit(1);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ContactInfo::mutable_ip() {
   _set_bit(1);
   if (ip_ == &_default_ip_) {
@@ -251,7 +269,7 @@ inline void ContactInfo::set_port(::google::protobuf::int32 value) {
   port_ = value;
 }
 
-// optional string local_ip = 4;
+// optional bytes local_ip = 4;
 inline bool ContactInfo::has_local_ip() const {
   return _has_bit(3);
 }
@@ -278,6 +296,13 @@ inline void ContactInfo::set_local_ip(const char* value) {
   }
   local_ip_->assign(value);
 }
+inline void ContactInfo::set_local_ip(const void* value, size_t size) {
+  _set_bit(3);
+  if (local_ip_ == &_default_local_ip_) {
+    local_ip_ = new ::std::string;
+  }
+  local_ip_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ContactInfo::mutable_local_ip() {
   _set_bit(3);
   if (local_ip_ == &_default_local_ip_) {
@@ -302,7 +327,7 @@ inline void ContactInfo::set_local_port(::google::protobuf::int32 value) {
   local_port_ = value;
 }
 
-// optional string rv_ip = 6;
+// optional bytes rv_ip = 6;
 inline bool ContactInfo::has_rv_ip() const {
   return _has_bit(5);
 }
@@ -328,6 +353,13 @@ inline void ContactInfo::set_rv_ip(const char* value) {
     rv_ip_ = new ::std::string;
   }
   rv_ip_->assign(value);
+}
+inline void ContactInfo::set_rv_ip(const void* value, size_t size) {
+  _set_bit(5);
+  if (rv_ip_ == &_default_rv_ip_) {
+    rv_ip_ = new ::std::string;
+  }
+  rv_ip_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* ContactInfo::mutable_rv_ip() {
   _set_bit(5);

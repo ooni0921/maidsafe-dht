@@ -8,8 +8,8 @@ enum rpc_message_type {
 message RpcMessage {
   required rpc_message_type rpc_type = 1;
   required int32 message_id = 2;
-  required string args = 3;
-  optional string service = 4;
-  optional string method = 5;
+  required bytes args = 3;
+  optional bytes service = 4;
+  optional bytes method = 5;
 };
 

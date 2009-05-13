@@ -30,28 +30,28 @@ enum PacketType {
 };
 
 message Key {
-  required string id = 1;
+  required bytes id = 1;
   required PacketType type = 2;
-  required string private_key = 3;
-  required string public_key = 4;
+  required bytes private_key = 3;
+  required bytes public_key = 4;
 }
 
 message DataMap {
-  required string file_hash = 1;
-  optional string se_version = 2;
-  repeated string chunk_name = 3;
-  repeated string encrypted_chunk_name = 4;
+  required bytes file_hash = 1;
+  optional bytes se_version = 2;
+  repeated bytes chunk_name = 3;
+  repeated bytes encrypted_chunk_name = 4;
   repeated uint64 chunk_size = 5;
   optional bool compression_on = 6 [default=false];
 }
 
 message MetaDataMap {
   required int32 id = 1;
-  required string display_name = 2;
+  required bytes display_name = 2;
   required itemtype type = 3;
-  repeated string file_hash = 4;
-  optional string stats = 5;
-  optional string tag = 6;
+  repeated bytes file_hash = 4;
+  optional bytes stats = 5;
+  optional bytes tag = 6;
   optional int32 file_size_high = 7;
   optional int32 file_size_low = 8;
   optional int32 creation_time = 9;
@@ -60,48 +60,48 @@ message MetaDataMap {
 }
 
 message MetaData {
-  required string ms_path = 1;
-  required string file_hash = 2;
-  optional string stats = 3;
+  required bytes ms_path = 1;
+  required bytes file_hash = 2;
+  optional bytes stats = 3;
   optional int32 file_size = 4;
-  optional string outname = 5;
+  optional bytes outname = 5;
 }
 
 
 message Chunk {
-  optional string compression_type = 1;
-  repeated string chunklet = 2;
+  optional bytes compression_type = 1;
+  repeated bytes chunklet = 2;
   repeated int32 pre_compression_chunklet_size_ = 3;
 }
 
 
 message ShareFromMe {
   required int32 share_id = 1;
-  required string share_name = 2;
-  optional string owner = 3;
+  required bytes share_name = 2;
+  optional bytes owner = 3;
   repeated int32 meta_data_map_id = 4;
-  repeated string users = 5;
+  repeated bytes users = 5;
 }
 
 message ShareToMe {
   required int32 share_id = 1;
-  required string share_name = 2;
-  required string owner = 3;
+  required bytes share_name = 2;
+  required bytes owner = 3;
   repeated MetaDataMap mdms = 4;
   repeated DataMap dms = 5;
 }
 
 message ShareToMeBufferMessage {
   required int32 share_id = 1;
-  optional string share_name = 2;
-  required string owner = 3;
+  optional bytes share_name = 2;
+  required bytes owner = 3;
   required ShareOperation op = 4;
   repeated MetaDataMap mdms = 5;
   repeated DataMap dms = 6;
 }
 
 message DataAtlas {
-  optional string root_db_key = 1;
+  optional bytes root_db_key = 1;
   repeated Key keys = 2;
   repeated MetaDataMap mdms = 3;
   repeated DataMap dms = 4;

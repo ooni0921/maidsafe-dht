@@ -52,8 +52,8 @@ void protobuf_BuildDesc_hole_5fpuching_5fmessages_2eproto() {
 
   pool->InternalBuildGeneratedFile(
     "\n\033hole_puching_messages.proto\022\ttransport"
-    "\"N\n\017HolePunchingMsg\022\n\n\002ip\030\001 \001(\t\022\014\n\004port\030"
-    "\002 \001(\005\022!\n\004type\030\003 \001(\0162\023.transport.msg_type"
+    "\"N\n\017HolePunchingMsg\022\n\n\002ip\030\001 \002(\014\022\014\n\004port\030"
+    "\002 \002(\005\022!\n\004type\030\003 \002(\0162\023.transport.msg_type"
     "*,\n\010msg_type\022\017\n\013FORWARD_REQ\020\000\022\017\n\013FORWARD"
     "_MSG\020\001", 166,
   &protobuf_BuildDesc_hole_5fpuching_5fmessages_2eproto_AssignGlobalDescriptors);

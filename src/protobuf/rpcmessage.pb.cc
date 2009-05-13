@@ -56,8 +56,8 @@ void protobuf_BuildDesc_rpcmessage_2eproto() {
     "\n\020rpcmessage.proto\022\013rpcprotocol\"\200\001\n\nRpcM"
     "essage\022/\n\010rpc_type\030\001 \002(\0162\035.rpcprotocol.r"
     "pc_message_type\022\022\n\nmessage_id\030\002 \002(\005\022\014\n\004a"
-    "rgs\030\003 \002(\t\022\017\n\007service\030\004 \001(\t\022\016\n\006method\030\005 \001"
-    "(\t*-\n\020rpc_message_type\022\013\n\007REQUEST\020\000\022\014\n\010R"
+    "rgs\030\003 \002(\014\022\017\n\007service\030\004 \001(\014\022\016\n\006method\030\005 \001"
+    "(\014*-\n\020rpc_message_type\022\013\n\007REQUEST\020\000\022\014\n\010R"
     "ESPONSE\020\001", 209,
   &protobuf_BuildDesc_rpcmessage_2eproto_AssignGlobalDescriptors);
 }

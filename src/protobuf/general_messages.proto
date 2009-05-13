@@ -4,28 +4,28 @@ package base;
 // and used for a failure response for Store, FindNode, FindValue, Ping, operations
 // executed by the "client" NOT RPC's
 message GeneralResponse {
-  required string result = 1;
+  required bytes result = 1;
 }
 
 // vault configuration details for adding to config file.
 message VaultConfig {
-  required string pmid_public = 1;
-  required string pmid_private = 2;
-  required string signed_pmid_public = 3;
-  optional string chunkstore_dir = 4;
-  optional string datastore_dir = 5;
+  required bytes pmid_public = 1;
+  required bytes pmid_private = 2;
+  required bytes signed_pmid_public = 3;
+  optional bytes chunkstore_dir = 4;
+  optional bytes datastore_dir = 5;
   optional int32 port = 6;
 }
 
 // kademlia configuration details (mainly list of bootstrap nodes).
 message KadConfig {
   message Contact {
-    required string node_id = 1;
-    required string ip = 2;
+    required bytes node_id = 1;
+    required bytes ip = 2;
     required int32 port = 3;
-    optional string local_ip = 4;
+    optional bytes local_ip = 4;
     optional int32 local_port = 5;
-    optional string rendezvouz_ip = 6;
+    optional bytes rendezvouz_ip = 6;
     optional int32 rendezvouz_port = 7;
   }
   optional int32 port = 1;

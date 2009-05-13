@@ -72,20 +72,22 @@ class NetStartResult : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string ip = 2;
+  // optional bytes ip = 2;
   inline bool has_ip() const;
   inline void clear_ip();
   inline const ::std::string& ip() const;
   inline void set_ip(const ::std::string& value);
   inline void set_ip(const char* value);
+  inline void set_ip(const void* value, size_t size);
   inline ::std::string* mutable_ip();
   
   // optional int32 port = 3;
@@ -131,7 +133,7 @@ class NetStartResult : public ::google::protobuf::Message {
 
 // NetStartResult
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool NetStartResult::has_result() const {
   return _has_bit(0);
 }
@@ -158,6 +160,13 @@ inline void NetStartResult::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void NetStartResult::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* NetStartResult::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -166,7 +175,7 @@ inline ::std::string* NetStartResult::mutable_result() {
   return result_;
 }
 
-// optional string ip = 2;
+// optional bytes ip = 2;
 inline bool NetStartResult::has_ip() const {
   return _has_bit(1);
 }
@@ -192,6 +201,13 @@ inline void NetStartResult::set_ip(const char* value) {
     ip_ = new ::std::string;
   }
   ip_->assign(value);
+}
+inline void NetStartResult::set_ip(const void* value, size_t size) {
+  _set_bit(1);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* NetStartResult::mutable_ip() {
   _set_bit(1);

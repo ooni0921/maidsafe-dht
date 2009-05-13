@@ -75,12 +75,13 @@ class GeneralResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
  private:
@@ -148,44 +149,49 @@ class VaultConfig : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string pmid_public = 1;
+  // required bytes pmid_public = 1;
   inline bool has_pmid_public() const;
   inline void clear_pmid_public();
   inline const ::std::string& pmid_public() const;
   inline void set_pmid_public(const ::std::string& value);
   inline void set_pmid_public(const char* value);
+  inline void set_pmid_public(const void* value, size_t size);
   inline ::std::string* mutable_pmid_public();
   
-  // required string pmid_private = 2;
+  // required bytes pmid_private = 2;
   inline bool has_pmid_private() const;
   inline void clear_pmid_private();
   inline const ::std::string& pmid_private() const;
   inline void set_pmid_private(const ::std::string& value);
   inline void set_pmid_private(const char* value);
+  inline void set_pmid_private(const void* value, size_t size);
   inline ::std::string* mutable_pmid_private();
   
-  // required string signed_pmid_public = 3;
+  // required bytes signed_pmid_public = 3;
   inline bool has_signed_pmid_public() const;
   inline void clear_signed_pmid_public();
   inline const ::std::string& signed_pmid_public() const;
   inline void set_signed_pmid_public(const ::std::string& value);
   inline void set_signed_pmid_public(const char* value);
+  inline void set_signed_pmid_public(const void* value, size_t size);
   inline ::std::string* mutable_signed_pmid_public();
   
-  // optional string chunkstore_dir = 4;
+  // optional bytes chunkstore_dir = 4;
   inline bool has_chunkstore_dir() const;
   inline void clear_chunkstore_dir();
   inline const ::std::string& chunkstore_dir() const;
   inline void set_chunkstore_dir(const ::std::string& value);
   inline void set_chunkstore_dir(const char* value);
+  inline void set_chunkstore_dir(const void* value, size_t size);
   inline ::std::string* mutable_chunkstore_dir();
   
-  // optional string datastore_dir = 5;
+  // optional bytes datastore_dir = 5;
   inline bool has_datastore_dir() const;
   inline void clear_datastore_dir();
   inline const ::std::string& datastore_dir() const;
   inline void set_datastore_dir(const ::std::string& value);
   inline void set_datastore_dir(const char* value);
+  inline void set_datastore_dir(const void* value, size_t size);
   inline ::std::string* mutable_datastore_dir();
   
   // optional int32 port = 6;
@@ -268,20 +274,22 @@ class KadConfig_Contact : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string node_id = 1;
+  // required bytes node_id = 1;
   inline bool has_node_id() const;
   inline void clear_node_id();
   inline const ::std::string& node_id() const;
   inline void set_node_id(const ::std::string& value);
   inline void set_node_id(const char* value);
+  inline void set_node_id(const void* value, size_t size);
   inline ::std::string* mutable_node_id();
   
-  // required string ip = 2;
+  // required bytes ip = 2;
   inline bool has_ip() const;
   inline void clear_ip();
   inline const ::std::string& ip() const;
   inline void set_ip(const ::std::string& value);
   inline void set_ip(const char* value);
+  inline void set_ip(const void* value, size_t size);
   inline ::std::string* mutable_ip();
   
   // required int32 port = 3;
@@ -290,12 +298,13 @@ class KadConfig_Contact : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 port() const;
   inline void set_port(::google::protobuf::int32 value);
   
-  // optional string local_ip = 4;
+  // optional bytes local_ip = 4;
   inline bool has_local_ip() const;
   inline void clear_local_ip();
   inline const ::std::string& local_ip() const;
   inline void set_local_ip(const ::std::string& value);
   inline void set_local_ip(const char* value);
+  inline void set_local_ip(const void* value, size_t size);
   inline ::std::string* mutable_local_ip();
   
   // optional int32 local_port = 5;
@@ -304,12 +313,13 @@ class KadConfig_Contact : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 local_port() const;
   inline void set_local_port(::google::protobuf::int32 value);
   
-  // optional string rendezvouz_ip = 6;
+  // optional bytes rendezvouz_ip = 6;
   inline bool has_rendezvouz_ip() const;
   inline void clear_rendezvouz_ip();
   inline const ::std::string& rendezvouz_ip() const;
   inline void set_rendezvouz_ip(const ::std::string& value);
   inline void set_rendezvouz_ip(const char* value);
+  inline void set_rendezvouz_ip(const void* value, size_t size);
   inline ::std::string* mutable_rendezvouz_ip();
   
   // optional int32 rendezvouz_port = 7;
@@ -443,7 +453,7 @@ class KadConfig : public ::google::protobuf::Message {
 
 // GeneralResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool GeneralResponse::has_result() const {
   return _has_bit(0);
 }
@@ -470,6 +480,13 @@ inline void GeneralResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void GeneralResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* GeneralResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -482,7 +499,7 @@ inline ::std::string* GeneralResponse::mutable_result() {
 
 // VaultConfig
 
-// required string pmid_public = 1;
+// required bytes pmid_public = 1;
 inline bool VaultConfig::has_pmid_public() const {
   return _has_bit(0);
 }
@@ -509,6 +526,13 @@ inline void VaultConfig::set_pmid_public(const char* value) {
   }
   pmid_public_->assign(value);
 }
+inline void VaultConfig::set_pmid_public(const void* value, size_t size) {
+  _set_bit(0);
+  if (pmid_public_ == &_default_pmid_public_) {
+    pmid_public_ = new ::std::string;
+  }
+  pmid_public_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* VaultConfig::mutable_pmid_public() {
   _set_bit(0);
   if (pmid_public_ == &_default_pmid_public_) {
@@ -517,7 +541,7 @@ inline ::std::string* VaultConfig::mutable_pmid_public() {
   return pmid_public_;
 }
 
-// required string pmid_private = 2;
+// required bytes pmid_private = 2;
 inline bool VaultConfig::has_pmid_private() const {
   return _has_bit(1);
 }
@@ -544,6 +568,13 @@ inline void VaultConfig::set_pmid_private(const char* value) {
   }
   pmid_private_->assign(value);
 }
+inline void VaultConfig::set_pmid_private(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_private_ == &_default_pmid_private_) {
+    pmid_private_ = new ::std::string;
+  }
+  pmid_private_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* VaultConfig::mutable_pmid_private() {
   _set_bit(1);
   if (pmid_private_ == &_default_pmid_private_) {
@@ -552,7 +583,7 @@ inline ::std::string* VaultConfig::mutable_pmid_private() {
   return pmid_private_;
 }
 
-// required string signed_pmid_public = 3;
+// required bytes signed_pmid_public = 3;
 inline bool VaultConfig::has_signed_pmid_public() const {
   return _has_bit(2);
 }
@@ -579,6 +610,13 @@ inline void VaultConfig::set_signed_pmid_public(const char* value) {
   }
   signed_pmid_public_->assign(value);
 }
+inline void VaultConfig::set_signed_pmid_public(const void* value, size_t size) {
+  _set_bit(2);
+  if (signed_pmid_public_ == &_default_signed_pmid_public_) {
+    signed_pmid_public_ = new ::std::string;
+  }
+  signed_pmid_public_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* VaultConfig::mutable_signed_pmid_public() {
   _set_bit(2);
   if (signed_pmid_public_ == &_default_signed_pmid_public_) {
@@ -587,7 +625,7 @@ inline ::std::string* VaultConfig::mutable_signed_pmid_public() {
   return signed_pmid_public_;
 }
 
-// optional string chunkstore_dir = 4;
+// optional bytes chunkstore_dir = 4;
 inline bool VaultConfig::has_chunkstore_dir() const {
   return _has_bit(3);
 }
@@ -614,6 +652,13 @@ inline void VaultConfig::set_chunkstore_dir(const char* value) {
   }
   chunkstore_dir_->assign(value);
 }
+inline void VaultConfig::set_chunkstore_dir(const void* value, size_t size) {
+  _set_bit(3);
+  if (chunkstore_dir_ == &_default_chunkstore_dir_) {
+    chunkstore_dir_ = new ::std::string;
+  }
+  chunkstore_dir_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* VaultConfig::mutable_chunkstore_dir() {
   _set_bit(3);
   if (chunkstore_dir_ == &_default_chunkstore_dir_) {
@@ -622,7 +667,7 @@ inline ::std::string* VaultConfig::mutable_chunkstore_dir() {
   return chunkstore_dir_;
 }
 
-// optional string datastore_dir = 5;
+// optional bytes datastore_dir = 5;
 inline bool VaultConfig::has_datastore_dir() const {
   return _has_bit(4);
 }
@@ -648,6 +693,13 @@ inline void VaultConfig::set_datastore_dir(const char* value) {
     datastore_dir_ = new ::std::string;
   }
   datastore_dir_->assign(value);
+}
+inline void VaultConfig::set_datastore_dir(const void* value, size_t size) {
+  _set_bit(4);
+  if (datastore_dir_ == &_default_datastore_dir_) {
+    datastore_dir_ = new ::std::string;
+  }
+  datastore_dir_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* VaultConfig::mutable_datastore_dir() {
   _set_bit(4);
@@ -677,7 +729,7 @@ inline void VaultConfig::set_port(::google::protobuf::int32 value) {
 
 // KadConfig_Contact
 
-// required string node_id = 1;
+// required bytes node_id = 1;
 inline bool KadConfig_Contact::has_node_id() const {
   return _has_bit(0);
 }
@@ -704,6 +756,13 @@ inline void KadConfig_Contact::set_node_id(const char* value) {
   }
   node_id_->assign(value);
 }
+inline void KadConfig_Contact::set_node_id(const void* value, size_t size) {
+  _set_bit(0);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  node_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* KadConfig_Contact::mutable_node_id() {
   _set_bit(0);
   if (node_id_ == &_default_node_id_) {
@@ -712,7 +771,7 @@ inline ::std::string* KadConfig_Contact::mutable_node_id() {
   return node_id_;
 }
 
-// required string ip = 2;
+// required bytes ip = 2;
 inline bool KadConfig_Contact::has_ip() const {
   return _has_bit(1);
 }
@@ -739,6 +798,13 @@ inline void KadConfig_Contact::set_ip(const char* value) {
   }
   ip_->assign(value);
 }
+inline void KadConfig_Contact::set_ip(const void* value, size_t size) {
+  _set_bit(1);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* KadConfig_Contact::mutable_ip() {
   _set_bit(1);
   if (ip_ == &_default_ip_) {
@@ -763,7 +829,7 @@ inline void KadConfig_Contact::set_port(::google::protobuf::int32 value) {
   port_ = value;
 }
 
-// optional string local_ip = 4;
+// optional bytes local_ip = 4;
 inline bool KadConfig_Contact::has_local_ip() const {
   return _has_bit(3);
 }
@@ -790,6 +856,13 @@ inline void KadConfig_Contact::set_local_ip(const char* value) {
   }
   local_ip_->assign(value);
 }
+inline void KadConfig_Contact::set_local_ip(const void* value, size_t size) {
+  _set_bit(3);
+  if (local_ip_ == &_default_local_ip_) {
+    local_ip_ = new ::std::string;
+  }
+  local_ip_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* KadConfig_Contact::mutable_local_ip() {
   _set_bit(3);
   if (local_ip_ == &_default_local_ip_) {
@@ -814,7 +887,7 @@ inline void KadConfig_Contact::set_local_port(::google::protobuf::int32 value) {
   local_port_ = value;
 }
 
-// optional string rendezvouz_ip = 6;
+// optional bytes rendezvouz_ip = 6;
 inline bool KadConfig_Contact::has_rendezvouz_ip() const {
   return _has_bit(5);
 }
@@ -840,6 +913,13 @@ inline void KadConfig_Contact::set_rendezvouz_ip(const char* value) {
     rendezvouz_ip_ = new ::std::string;
   }
   rendezvouz_ip_->assign(value);
+}
+inline void KadConfig_Contact::set_rendezvouz_ip(const void* value, size_t size) {
+  _set_bit(5);
+  if (rendezvouz_ip_ == &_default_rendezvouz_ip_) {
+    rendezvouz_ip_ = new ::std::string;
+  }
+  rendezvouz_ip_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* KadConfig_Contact::mutable_rendezvouz_ip() {
   _set_bit(5);

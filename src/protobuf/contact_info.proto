@@ -1,11 +1,11 @@
 package kad;
 
 message ContactInfo {
-  required string node_id = 1;
-  required string ip = 2;
+  required bytes node_id = 1;
+  required bytes ip = 2;
   required int32 port = 3;
-  optional string local_ip = 4;
+  optional bytes local_ip = 4;
   optional int32 local_port = 5;
-  optional string rv_ip = 6;
+  optional bytes rv_ip = 6;
   optional int32 rv_port = 7;
 }

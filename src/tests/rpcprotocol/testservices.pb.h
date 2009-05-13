@@ -78,20 +78,22 @@ class PingRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string ping = 1;
+  // required bytes ping = 1;
   inline bool has_ping() const;
   inline void clear_ping();
   inline const ::std::string& ping() const;
   inline void set_ping(const ::std::string& value);
   inline void set_ping(const char* value);
+  inline void set_ping(const void* value, size_t size);
   inline ::std::string* mutable_ping();
   
-  // required string ip = 2;
+  // required bytes ip = 2;
   inline bool has_ip() const;
   inline void clear_ip();
   inline const ::std::string& ip() const;
   inline void set_ip(const ::std::string& value);
   inline void set_ip(const char* value);
+  inline void set_ip(const void* value, size_t size);
   inline ::std::string* mutable_ip();
   
   // required int32 port = 3;
@@ -168,20 +170,22 @@ class PingResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // required string pong = 2;
+  // required bytes pong = 2;
   inline bool has_pong() const;
   inline void clear_pong();
   inline const ::std::string& pong() const;
   inline void set_pong(const ::std::string& value);
   inline void set_pong(const char* value);
+  inline void set_pong(const void* value, size_t size);
   inline ::std::string* mutable_pong();
   
  private:
@@ -263,12 +267,13 @@ class BinaryOpRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 second() const;
   inline void set_second(::google::protobuf::int32 value);
   
-  // required string ip = 3;
+  // required bytes ip = 3;
   inline bool has_ip() const;
   inline void clear_ip();
   inline const ::std::string& ip() const;
   inline void set_ip(const ::std::string& value);
   inline void set_ip(const char* value);
+  inline void set_ip(const void* value, size_t size);
   inline ::std::string* mutable_ip();
   
   // required int32 port = 4;
@@ -415,20 +420,22 @@ class StringMirrorRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string message = 1;
+  // required bytes message = 1;
   inline bool has_message() const;
   inline void clear_message();
   inline const ::std::string& message() const;
   inline void set_message(const ::std::string& value);
   inline void set_message(const char* value);
+  inline void set_message(const void* value, size_t size);
   inline ::std::string* mutable_message();
   
-  // required string ip = 2;
+  // required bytes ip = 2;
   inline bool has_ip() const;
   inline void clear_ip();
   inline const ::std::string& ip() const;
   inline void set_ip(const ::std::string& value);
   inline void set_ip(const char* value);
+  inline void set_ip(const void* value, size_t size);
   inline ::std::string* mutable_ip();
   
   // required int32 port = 3;
@@ -505,12 +512,13 @@ class StringMirrorResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string mirrored_string = 1;
+  // required bytes mirrored_string = 1;
   inline bool has_mirrored_string() const;
   inline void clear_mirrored_string();
   inline const ::std::string& mirrored_string() const;
   inline void set_mirrored_string(const ::std::string& value);
   inline void set_mirrored_string(const char* value);
+  inline void set_mirrored_string(const void* value, size_t size);
   inline ::std::string* mutable_mirrored_string();
   
  private:
@@ -729,7 +737,7 @@ class MirrorTest_Stub : public MirrorTest {
 
 // PingRequest
 
-// required string ping = 1;
+// required bytes ping = 1;
 inline bool PingRequest::has_ping() const {
   return _has_bit(0);
 }
@@ -756,6 +764,13 @@ inline void PingRequest::set_ping(const char* value) {
   }
   ping_->assign(value);
 }
+inline void PingRequest::set_ping(const void* value, size_t size) {
+  _set_bit(0);
+  if (ping_ == &_default_ping_) {
+    ping_ = new ::std::string;
+  }
+  ping_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* PingRequest::mutable_ping() {
   _set_bit(0);
   if (ping_ == &_default_ping_) {
@@ -764,7 +779,7 @@ inline ::std::string* PingRequest::mutable_ping() {
   return ping_;
 }
 
-// required string ip = 2;
+// required bytes ip = 2;
 inline bool PingRequest::has_ip() const {
   return _has_bit(1);
 }
@@ -790,6 +805,13 @@ inline void PingRequest::set_ip(const char* value) {
     ip_ = new ::std::string;
   }
   ip_->assign(value);
+}
+inline void PingRequest::set_ip(const void* value, size_t size) {
+  _set_bit(1);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* PingRequest::mutable_ip() {
   _set_bit(1);
@@ -819,7 +841,7 @@ inline void PingRequest::set_port(::google::protobuf::int32 value) {
 
 // PingResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool PingResponse::has_result() const {
   return _has_bit(0);
 }
@@ -846,6 +868,13 @@ inline void PingResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void PingResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* PingResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -854,7 +883,7 @@ inline ::std::string* PingResponse::mutable_result() {
   return result_;
 }
 
-// required string pong = 2;
+// required bytes pong = 2;
 inline bool PingResponse::has_pong() const {
   return _has_bit(1);
 }
@@ -880,6 +909,13 @@ inline void PingResponse::set_pong(const char* value) {
     pong_ = new ::std::string;
   }
   pong_->assign(value);
+}
+inline void PingResponse::set_pong(const void* value, size_t size) {
+  _set_bit(1);
+  if (pong_ == &_default_pong_) {
+    pong_ = new ::std::string;
+  }
+  pong_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* PingResponse::mutable_pong() {
   _set_bit(1);
@@ -925,7 +961,7 @@ inline void BinaryOpRequest::set_second(::google::protobuf::int32 value) {
   second_ = value;
 }
 
-// required string ip = 3;
+// required bytes ip = 3;
 inline bool BinaryOpRequest::has_ip() const {
   return _has_bit(2);
 }
@@ -951,6 +987,13 @@ inline void BinaryOpRequest::set_ip(const char* value) {
     ip_ = new ::std::string;
   }
   ip_->assign(value);
+}
+inline void BinaryOpRequest::set_ip(const void* value, size_t size) {
+  _set_bit(2);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* BinaryOpRequest::mutable_ip() {
   _set_bit(2);
@@ -1000,7 +1043,7 @@ inline void BinaryOpResponse::set_result(::google::protobuf::int32 value) {
 
 // StringMirrorRequest
 
-// required string message = 1;
+// required bytes message = 1;
 inline bool StringMirrorRequest::has_message() const {
   return _has_bit(0);
 }
@@ -1027,6 +1070,13 @@ inline void StringMirrorRequest::set_message(const char* value) {
   }
   message_->assign(value);
 }
+inline void StringMirrorRequest::set_message(const void* value, size_t size) {
+  _set_bit(0);
+  if (message_ == &_default_message_) {
+    message_ = new ::std::string;
+  }
+  message_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StringMirrorRequest::mutable_message() {
   _set_bit(0);
   if (message_ == &_default_message_) {
@@ -1035,7 +1085,7 @@ inline ::std::string* StringMirrorRequest::mutable_message() {
   return message_;
 }
 
-// required string ip = 2;
+// required bytes ip = 2;
 inline bool StringMirrorRequest::has_ip() const {
   return _has_bit(1);
 }
@@ -1061,6 +1111,13 @@ inline void StringMirrorRequest::set_ip(const char* value) {
     ip_ = new ::std::string;
   }
   ip_->assign(value);
+}
+inline void StringMirrorRequest::set_ip(const void* value, size_t size) {
+  _set_bit(1);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* StringMirrorRequest::mutable_ip() {
   _set_bit(1);
@@ -1090,7 +1147,7 @@ inline void StringMirrorRequest::set_port(::google::protobuf::int32 value) {
 
 // StringMirrorResponse
 
-// required string mirrored_string = 1;
+// required bytes mirrored_string = 1;
 inline bool StringMirrorResponse::has_mirrored_string() const {
   return _has_bit(0);
 }
@@ -1116,6 +1173,13 @@ inline void StringMirrorResponse::set_mirrored_string(const char* value) {
     mirrored_string_ = new ::std::string;
   }
   mirrored_string_->assign(value);
+}
+inline void StringMirrorResponse::set_mirrored_string(const void* value, size_t size) {
+  _set_bit(0);
+  if (mirrored_string_ == &_default_mirrored_string_) {
+    mirrored_string_ = new ::std::string;
+  }
+  mirrored_string_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* StringMirrorResponse::mutable_mirrored_string() {
   _set_bit(0);

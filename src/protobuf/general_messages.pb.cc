@@ -123,15 +123,15 @@ void protobuf_BuildDesc_general_5fmessages_2eproto() {
 
   pool->InternalBuildGeneratedFile(
     "\n\026general_messages.proto\022\004base\"!\n\017Genera"
-    "lResponse\022\016\n\006result\030\001 \002(\t\"\221\001\n\013VaultConfi"
-    "g\022\023\n\013pmid_public\030\001 \002(\t\022\024\n\014pmid_private\030\002"
-    " \002(\t\022\032\n\022signed_pmid_public\030\003 \002(\t\022\026\n\016chun"
-    "kstore_dir\030\004 \001(\t\022\025\n\rdatastore_dir\030\005 \001(\t\022"
+    "lResponse\022\016\n\006result\030\001 \002(\014\"\221\001\n\013VaultConfi"
+    "g\022\023\n\013pmid_public\030\001 \002(\014\022\024\n\014pmid_private\030\002"
+    " \002(\014\022\032\n\022signed_pmid_public\030\003 \002(\014\022\026\n\016chun"
+    "kstore_dir\030\004 \001(\014\022\025\n\rdatastore_dir\030\005 \001(\014\022"
     "\014\n\004port\030\006 \001(\005\"\320\001\n\tKadConfig\022\014\n\004port\030\001 \001("
     "\005\022(\n\007contact\030\002 \003(\0132\027.base.KadConfig.Cont"
-    "act\032\212\001\n\007Contact\022\017\n\007node_id\030\001 \002(\t\022\n\n\002ip\030\002"
-    " \002(\t\022\014\n\004port\030\003 \002(\005\022\020\n\010local_ip\030\004 \001(\t\022\022\n\n"
-    "local_port\030\005 \001(\005\022\025\n\rrendezvouz_ip\030\006 \001(\t\022"
+    "act\032\212\001\n\007Contact\022\017\n\007node_id\030\001 \002(\014\022\n\n\002ip\030\002"
+    " \002(\014\022\014\n\004port\030\003 \002(\005\022\020\n\010local_ip\030\004 \001(\014\022\022\n\n"
+    "local_port\030\005 \001(\005\022\025\n\rrendezvouz_ip\030\006 \001(\014\022"
     "\027\n\017rendezvouz_port\030\007 \001(\005", 424,
   &protobuf_BuildDesc_general_5fmessages_2eproto_AssignGlobalDescriptors);
 }

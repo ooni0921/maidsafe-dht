@@ -87,44 +87,49 @@ class StoreRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string chunkname = 1;
+  // required bytes chunkname = 1;
   inline bool has_chunkname() const;
   inline void clear_chunkname();
   inline const ::std::string& chunkname() const;
   inline void set_chunkname(const ::std::string& value);
   inline void set_chunkname(const char* value);
+  inline void set_chunkname(const void* value, size_t size);
   inline ::std::string* mutable_chunkname();
   
-  // required string data = 2;
+  // required bytes data = 2;
   inline bool has_data() const;
   inline void clear_data();
   inline const ::std::string& data() const;
   inline void set_data(const ::std::string& value);
   inline void set_data(const char* value);
+  inline void set_data(const void* value, size_t size);
   inline ::std::string* mutable_data();
   
-  // required string public_key = 3;
+  // required bytes public_key = 3;
   inline bool has_public_key() const;
   inline void clear_public_key();
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required string signed_public_key = 4;
+  // required bytes signed_public_key = 4;
   inline bool has_signed_public_key() const;
   inline void clear_signed_public_key();
   inline const ::std::string& signed_public_key() const;
   inline void set_signed_public_key(const ::std::string& value);
   inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
   
-  // required string signed_request = 5;
+  // required bytes signed_request = 5;
   inline bool has_signed_request() const;
   inline void clear_signed_request();
   inline const ::std::string& signed_request() const;
   inline void set_signed_request(const ::std::string& value);
   inline void set_signed_request(const char* value);
+  inline void set_signed_request(const void* value, size_t size);
   inline ::std::string* mutable_signed_request();
   
   // required int32 data_type = 6;
@@ -207,20 +212,22 @@ class StoreResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string pmid_id = 2;
+  // optional bytes pmid_id = 2;
   inline bool has_pmid_id() const;
   inline void clear_pmid_id();
   inline const ::std::string& pmid_id() const;
   inline void set_pmid_id(const ::std::string& value);
   inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
  private:
@@ -290,36 +297,40 @@ class DeleteRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string chunkname = 1;
+  // required bytes chunkname = 1;
   inline bool has_chunkname() const;
   inline void clear_chunkname();
   inline const ::std::string& chunkname() const;
   inline void set_chunkname(const ::std::string& value);
   inline void set_chunkname(const char* value);
+  inline void set_chunkname(const void* value, size_t size);
   inline ::std::string* mutable_chunkname();
   
-  // required string public_key = 2;
+  // required bytes public_key = 2;
   inline bool has_public_key() const;
   inline void clear_public_key();
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required string signed_public_key = 3;
+  // required bytes signed_public_key = 3;
   inline bool has_signed_public_key() const;
   inline void clear_signed_public_key();
   inline const ::std::string& signed_public_key() const;
   inline void set_signed_public_key(const ::std::string& value);
   inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
   
-  // required string signed_request = 4;
+  // required bytes signed_request = 4;
   inline bool has_signed_request() const;
   inline void clear_signed_request();
   inline const ::std::string& signed_request() const;
   inline void set_signed_request(const ::std::string& value);
   inline void set_signed_request(const char* value);
+  inline void set_signed_request(const void* value, size_t size);
   inline ::std::string* mutable_signed_request();
   
   // required int32 data_type = 5;
@@ -400,20 +411,22 @@ class DeleteResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string pmid_id = 2;
+  // optional bytes pmid_id = 2;
   inline bool has_pmid_id() const;
   inline void clear_pmid_id();
   inline const ::std::string& pmid_id() const;
   inline void set_pmid_id(const ::std::string& value);
   inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
  private:
@@ -483,12 +496,13 @@ class GetRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string chunkname = 1;
+  // required bytes chunkname = 1;
   inline bool has_chunkname() const;
   inline void clear_chunkname();
   inline const ::std::string& chunkname() const;
   inline void set_chunkname(const ::std::string& value);
   inline void set_chunkname(const char* value);
+  inline void set_chunkname(const void* value, size_t size);
   inline ::std::string* mutable_chunkname();
   
  private:
@@ -556,28 +570,31 @@ class GetResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string content = 2;
+  // optional bytes content = 2;
   inline bool has_content() const;
   inline void clear_content();
   inline const ::std::string& content() const;
   inline void set_content(const ::std::string& value);
   inline void set_content(const char* value);
+  inline void set_content(const void* value, size_t size);
   inline ::std::string* mutable_content();
   
-  // optional string pmid_id = 3;
+  // optional bytes pmid_id = 3;
   inline bool has_pmid_id() const;
   inline void clear_pmid_id();
   inline const ::std::string& pmid_id() const;
   inline void set_pmid_id(const ::std::string& value);
   inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
  private:
@@ -649,12 +666,13 @@ class CheckChunkRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string chunkname = 1;
+  // required bytes chunkname = 1;
   inline bool has_chunkname() const;
   inline void clear_chunkname();
   inline const ::std::string& chunkname() const;
   inline void set_chunkname(const ::std::string& value);
   inline void set_chunkname(const char* value);
+  inline void set_chunkname(const void* value, size_t size);
   inline ::std::string* mutable_chunkname();
   
  private:
@@ -722,20 +740,22 @@ class CheckChunkResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // required string pmid_id = 2;
+  // required bytes pmid_id = 2;
   inline bool has_pmid_id() const;
   inline void clear_pmid_id();
   inline const ::std::string& pmid_id() const;
   inline void set_pmid_id(const ::std::string& value);
   inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
  private:
@@ -805,20 +825,22 @@ class ValidityCheckRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string chunkname = 1;
+  // required bytes chunkname = 1;
   inline bool has_chunkname() const;
   inline void clear_chunkname();
   inline const ::std::string& chunkname() const;
   inline void set_chunkname(const ::std::string& value);
   inline void set_chunkname(const char* value);
+  inline void set_chunkname(const void* value, size_t size);
   inline ::std::string* mutable_chunkname();
   
-  // required string random_data = 2;
+  // required bytes random_data = 2;
   inline bool has_random_data() const;
   inline void clear_random_data();
   inline const ::std::string& random_data() const;
   inline void set_random_data(const ::std::string& value);
   inline void set_random_data(const char* value);
+  inline void set_random_data(const void* value, size_t size);
   inline ::std::string* mutable_random_data();
   
  private:
@@ -888,28 +910,31 @@ class ValidityCheckResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string hash_content = 2;
+  // optional bytes hash_content = 2;
   inline bool has_hash_content() const;
   inline void clear_hash_content();
   inline const ::std::string& hash_content() const;
   inline void set_hash_content(const ::std::string& value);
   inline void set_hash_content(const char* value);
+  inline void set_hash_content(const void* value, size_t size);
   inline ::std::string* mutable_hash_content();
   
-  // required string pmid_id = 3;
+  // required bytes pmid_id = 3;
   inline bool has_pmid_id() const;
   inline void clear_pmid_id();
   inline const ::std::string& pmid_id() const;
   inline void set_pmid_id(const ::std::string& value);
   inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
  private:
@@ -981,44 +1006,49 @@ class UpdateRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string chunkname = 1;
+  // required bytes chunkname = 1;
   inline bool has_chunkname() const;
   inline void clear_chunkname();
   inline const ::std::string& chunkname() const;
   inline void set_chunkname(const ::std::string& value);
   inline void set_chunkname(const char* value);
+  inline void set_chunkname(const void* value, size_t size);
   inline ::std::string* mutable_chunkname();
   
-  // required string data = 2;
+  // required bytes data = 2;
   inline bool has_data() const;
   inline void clear_data();
   inline const ::std::string& data() const;
   inline void set_data(const ::std::string& value);
   inline void set_data(const char* value);
+  inline void set_data(const void* value, size_t size);
   inline ::std::string* mutable_data();
   
-  // required string public_key = 3;
+  // required bytes public_key = 3;
   inline bool has_public_key() const;
   inline void clear_public_key();
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required string signed_public_key = 4;
+  // required bytes signed_public_key = 4;
   inline bool has_signed_public_key() const;
   inline void clear_signed_public_key();
   inline const ::std::string& signed_public_key() const;
   inline void set_signed_public_key(const ::std::string& value);
   inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
   
-  // required string signed_request = 5;
+  // required bytes signed_request = 5;
   inline bool has_signed_request() const;
   inline void clear_signed_request();
   inline const ::std::string& signed_request() const;
   inline void set_signed_request(const ::std::string& value);
   inline void set_signed_request(const char* value);
+  inline void set_signed_request(const void* value, size_t size);
   inline ::std::string* mutable_signed_request();
   
   // required int32 data_type = 6;
@@ -1101,20 +1131,22 @@ class UpdateResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string pmid_id = 2;
+  // optional bytes pmid_id = 2;
   inline bool has_pmid_id() const;
   inline void clear_pmid_id();
   inline const ::std::string& pmid_id() const;
   inline void set_pmid_id(const ::std::string& value);
   inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
  private:
@@ -1184,28 +1216,31 @@ class GetMessagesRequest : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string buffer_packet_name = 1;
+  // required bytes buffer_packet_name = 1;
   inline bool has_buffer_packet_name() const;
   inline void clear_buffer_packet_name();
   inline const ::std::string& buffer_packet_name() const;
   inline void set_buffer_packet_name(const ::std::string& value);
   inline void set_buffer_packet_name(const char* value);
+  inline void set_buffer_packet_name(const void* value, size_t size);
   inline ::std::string* mutable_buffer_packet_name();
   
-  // required string public_key = 2;
+  // required bytes public_key = 2;
   inline bool has_public_key() const;
   inline void clear_public_key();
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // required string signed_public_key = 3;
+  // required bytes signed_public_key = 3;
   inline bool has_signed_public_key() const;
   inline void clear_signed_public_key();
   inline const ::std::string& signed_public_key() const;
   inline void set_signed_public_key(const ::std::string& value);
   inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
   
  private:
@@ -1277,15 +1312,16 @@ class GetMessagesResponse : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string result = 1;
+  // required bytes result = 1;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // repeated string messages = 2;
+  // repeated bytes messages = 2;
   inline int messages_size() const;
   inline void clear_messages();
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& messages() const;
@@ -1297,13 +1333,16 @@ class GetMessagesResponse : public ::google::protobuf::Message {
   inline ::std::string* add_messages();
   inline void add_messages(const ::std::string& value);
   inline void add_messages(const char* value);
+  inline void set_messages(int index, const void* value, size_t size);
+  inline void add_messages(const void* value, size_t size);
   
-  // optional string pmid_id = 3;
+  // optional bytes pmid_id = 3;
   inline bool has_pmid_id() const;
   inline void clear_pmid_id();
   inline const ::std::string& pmid_id() const;
   inline void set_pmid_id(const ::std::string& value);
   inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
  private:
@@ -1380,20 +1419,22 @@ class SwapChunkRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 request_type() const;
   inline void set_request_type(::google::protobuf::int32 value);
   
-  // required string chunkname1 = 2;
+  // required bytes chunkname1 = 2;
   inline bool has_chunkname1() const;
   inline void clear_chunkname1();
   inline const ::std::string& chunkname1() const;
   inline void set_chunkname1(const ::std::string& value);
   inline void set_chunkname1(const char* value);
+  inline void set_chunkname1(const void* value, size_t size);
   inline ::std::string* mutable_chunkname1();
   
-  // optional string chunkcontent1 = 3;
+  // optional bytes chunkcontent1 = 3;
   inline bool has_chunkcontent1() const;
   inline void clear_chunkcontent1();
   inline const ::std::string& chunkcontent1() const;
   inline void set_chunkcontent1(const ::std::string& value);
   inline void set_chunkcontent1(const char* value);
+  inline void set_chunkcontent1(const void* value, size_t size);
   inline ::std::string* mutable_chunkcontent1();
   
   // optional int32 size1 = 4;
@@ -1402,12 +1443,13 @@ class SwapChunkRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 size1() const;
   inline void set_size1(::google::protobuf::int32 value);
   
-  // optional string chunkname2 = 5;
+  // optional bytes chunkname2 = 5;
   inline bool has_chunkname2() const;
   inline void clear_chunkname2();
   inline const ::std::string& chunkname2() const;
   inline void set_chunkname2(const ::std::string& value);
   inline void set_chunkname2(const char* value);
+  inline void set_chunkname2(const void* value, size_t size);
   inline ::std::string* mutable_chunkname2();
   
  private:
@@ -1487,28 +1529,31 @@ class SwapChunkResponse : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 request_type() const;
   inline void set_request_type(::google::protobuf::int32 value);
   
-  // required string result = 2;
+  // required bytes result = 2;
   inline bool has_result() const;
   inline void clear_result();
   inline const ::std::string& result() const;
   inline void set_result(const ::std::string& value);
   inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
   inline ::std::string* mutable_result();
   
-  // optional string chunkname1 = 3;
+  // optional bytes chunkname1 = 3;
   inline bool has_chunkname1() const;
   inline void clear_chunkname1();
   inline const ::std::string& chunkname1() const;
   inline void set_chunkname1(const ::std::string& value);
   inline void set_chunkname1(const char* value);
+  inline void set_chunkname1(const void* value, size_t size);
   inline ::std::string* mutable_chunkname1();
   
-  // optional string chunkcontent1 = 4;
+  // optional bytes chunkcontent1 = 4;
   inline bool has_chunkcontent1() const;
   inline void clear_chunkcontent1();
   inline const ::std::string& chunkcontent1() const;
   inline void set_chunkcontent1(const ::std::string& value);
   inline void set_chunkcontent1(const char* value);
+  inline void set_chunkcontent1(const void* value, size_t size);
   inline ::std::string* mutable_chunkcontent1();
   
   // optional int32 size1 = 5;
@@ -1517,20 +1562,22 @@ class SwapChunkResponse : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 size1() const;
   inline void set_size1(::google::protobuf::int32 value);
   
-  // optional string chunkname2 = 6;
+  // optional bytes chunkname2 = 6;
   inline bool has_chunkname2() const;
   inline void clear_chunkname2();
   inline const ::std::string& chunkname2() const;
   inline void set_chunkname2(const ::std::string& value);
   inline void set_chunkname2(const char* value);
+  inline void set_chunkname2(const void* value, size_t size);
   inline ::std::string* mutable_chunkname2();
   
-  // optional string chunkcontent2 = 7;
+  // optional bytes chunkcontent2 = 7;
   inline bool has_chunkcontent2() const;
   inline void clear_chunkcontent2();
   inline const ::std::string& chunkcontent2() const;
   inline void set_chunkcontent2(const ::std::string& value);
   inline void set_chunkcontent2(const char* value);
+  inline void set_chunkcontent2(const void* value, size_t size);
   inline ::std::string* mutable_chunkcontent2();
   
   // optional int32 size2 = 8;
@@ -1539,12 +1586,13 @@ class SwapChunkResponse : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 size2() const;
   inline void set_size2(::google::protobuf::int32 value);
   
-  // required string pmid_id = 9;
+  // required bytes pmid_id = 9;
   inline bool has_pmid_id() const;
   inline void clear_pmid_id();
   inline const ::std::string& pmid_id() const;
   inline void set_pmid_id(const ::std::string& value);
   inline void set_pmid_id(const char* value);
+  inline void set_pmid_id(const void* value, size_t size);
   inline ::std::string* mutable_pmid_id();
   
  private:
@@ -1594,7 +1642,7 @@ class SwapChunkResponse : public ::google::protobuf::Message {
 
 // StoreRequest
 
-// required string chunkname = 1;
+// required bytes chunkname = 1;
 inline bool StoreRequest::has_chunkname() const {
   return _has_bit(0);
 }
@@ -1621,6 +1669,13 @@ inline void StoreRequest::set_chunkname(const char* value) {
   }
   chunkname_->assign(value);
 }
+inline void StoreRequest::set_chunkname(const void* value, size_t size) {
+  _set_bit(0);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreRequest::mutable_chunkname() {
   _set_bit(0);
   if (chunkname_ == &_default_chunkname_) {
@@ -1629,7 +1684,7 @@ inline ::std::string* StoreRequest::mutable_chunkname() {
   return chunkname_;
 }
 
-// required string data = 2;
+// required bytes data = 2;
 inline bool StoreRequest::has_data() const {
   return _has_bit(1);
 }
@@ -1656,6 +1711,13 @@ inline void StoreRequest::set_data(const char* value) {
   }
   data_->assign(value);
 }
+inline void StoreRequest::set_data(const void* value, size_t size) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreRequest::mutable_data() {
   _set_bit(1);
   if (data_ == &_default_data_) {
@@ -1664,7 +1726,7 @@ inline ::std::string* StoreRequest::mutable_data() {
   return data_;
 }
 
-// required string public_key = 3;
+// required bytes public_key = 3;
 inline bool StoreRequest::has_public_key() const {
   return _has_bit(2);
 }
@@ -1691,6 +1753,13 @@ inline void StoreRequest::set_public_key(const char* value) {
   }
   public_key_->assign(value);
 }
+inline void StoreRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreRequest::mutable_public_key() {
   _set_bit(2);
   if (public_key_ == &_default_public_key_) {
@@ -1699,7 +1768,7 @@ inline ::std::string* StoreRequest::mutable_public_key() {
   return public_key_;
 }
 
-// required string signed_public_key = 4;
+// required bytes signed_public_key = 4;
 inline bool StoreRequest::has_signed_public_key() const {
   return _has_bit(3);
 }
@@ -1726,6 +1795,13 @@ inline void StoreRequest::set_signed_public_key(const char* value) {
   }
   signed_public_key_->assign(value);
 }
+inline void StoreRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreRequest::mutable_signed_public_key() {
   _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
@@ -1734,7 +1810,7 @@ inline ::std::string* StoreRequest::mutable_signed_public_key() {
   return signed_public_key_;
 }
 
-// required string signed_request = 5;
+// required bytes signed_request = 5;
 inline bool StoreRequest::has_signed_request() const {
   return _has_bit(4);
 }
@@ -1760,6 +1836,13 @@ inline void StoreRequest::set_signed_request(const char* value) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
+}
+inline void StoreRequest::set_signed_request(const void* value, size_t size) {
+  _set_bit(4);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* StoreRequest::mutable_signed_request() {
   _set_bit(4);
@@ -1789,7 +1872,7 @@ inline void StoreRequest::set_data_type(::google::protobuf::int32 value) {
 
 // StoreResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool StoreResponse::has_result() const {
   return _has_bit(0);
 }
@@ -1816,6 +1899,13 @@ inline void StoreResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void StoreResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -1824,7 +1914,7 @@ inline ::std::string* StoreResponse::mutable_result() {
   return result_;
 }
 
-// optional string pmid_id = 2;
+// optional bytes pmid_id = 2;
 inline bool StoreResponse::has_pmid_id() const {
   return _has_bit(1);
 }
@@ -1851,6 +1941,13 @@ inline void StoreResponse::set_pmid_id(const char* value) {
   }
   pmid_id_->assign(value);
 }
+inline void StoreResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* StoreResponse::mutable_pmid_id() {
   _set_bit(1);
   if (pmid_id_ == &_default_pmid_id_) {
@@ -1863,7 +1960,7 @@ inline ::std::string* StoreResponse::mutable_pmid_id() {
 
 // DeleteRequest
 
-// required string chunkname = 1;
+// required bytes chunkname = 1;
 inline bool DeleteRequest::has_chunkname() const {
   return _has_bit(0);
 }
@@ -1890,6 +1987,13 @@ inline void DeleteRequest::set_chunkname(const char* value) {
   }
   chunkname_->assign(value);
 }
+inline void DeleteRequest::set_chunkname(const void* value, size_t size) {
+  _set_bit(0);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* DeleteRequest::mutable_chunkname() {
   _set_bit(0);
   if (chunkname_ == &_default_chunkname_) {
@@ -1898,7 +2002,7 @@ inline ::std::string* DeleteRequest::mutable_chunkname() {
   return chunkname_;
 }
 
-// required string public_key = 2;
+// required bytes public_key = 2;
 inline bool DeleteRequest::has_public_key() const {
   return _has_bit(1);
 }
@@ -1925,6 +2029,13 @@ inline void DeleteRequest::set_public_key(const char* value) {
   }
   public_key_->assign(value);
 }
+inline void DeleteRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(1);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* DeleteRequest::mutable_public_key() {
   _set_bit(1);
   if (public_key_ == &_default_public_key_) {
@@ -1933,7 +2044,7 @@ inline ::std::string* DeleteRequest::mutable_public_key() {
   return public_key_;
 }
 
-// required string signed_public_key = 3;
+// required bytes signed_public_key = 3;
 inline bool DeleteRequest::has_signed_public_key() const {
   return _has_bit(2);
 }
@@ -1960,6 +2071,13 @@ inline void DeleteRequest::set_signed_public_key(const char* value) {
   }
   signed_public_key_->assign(value);
 }
+inline void DeleteRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* DeleteRequest::mutable_signed_public_key() {
   _set_bit(2);
   if (signed_public_key_ == &_default_signed_public_key_) {
@@ -1968,7 +2086,7 @@ inline ::std::string* DeleteRequest::mutable_signed_public_key() {
   return signed_public_key_;
 }
 
-// required string signed_request = 4;
+// required bytes signed_request = 4;
 inline bool DeleteRequest::has_signed_request() const {
   return _has_bit(3);
 }
@@ -1994,6 +2112,13 @@ inline void DeleteRequest::set_signed_request(const char* value) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
+}
+inline void DeleteRequest::set_signed_request(const void* value, size_t size) {
+  _set_bit(3);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* DeleteRequest::mutable_signed_request() {
   _set_bit(3);
@@ -2023,7 +2148,7 @@ inline void DeleteRequest::set_data_type(::google::protobuf::int32 value) {
 
 // DeleteResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool DeleteResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2050,6 +2175,13 @@ inline void DeleteResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void DeleteResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* DeleteResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2058,7 +2190,7 @@ inline ::std::string* DeleteResponse::mutable_result() {
   return result_;
 }
 
-// optional string pmid_id = 2;
+// optional bytes pmid_id = 2;
 inline bool DeleteResponse::has_pmid_id() const {
   return _has_bit(1);
 }
@@ -2085,6 +2217,13 @@ inline void DeleteResponse::set_pmid_id(const char* value) {
   }
   pmid_id_->assign(value);
 }
+inline void DeleteResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* DeleteResponse::mutable_pmid_id() {
   _set_bit(1);
   if (pmid_id_ == &_default_pmid_id_) {
@@ -2097,7 +2236,7 @@ inline ::std::string* DeleteResponse::mutable_pmid_id() {
 
 // GetRequest
 
-// required string chunkname = 1;
+// required bytes chunkname = 1;
 inline bool GetRequest::has_chunkname() const {
   return _has_bit(0);
 }
@@ -2124,6 +2263,13 @@ inline void GetRequest::set_chunkname(const char* value) {
   }
   chunkname_->assign(value);
 }
+inline void GetRequest::set_chunkname(const void* value, size_t size) {
+  _set_bit(0);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* GetRequest::mutable_chunkname() {
   _set_bit(0);
   if (chunkname_ == &_default_chunkname_) {
@@ -2136,7 +2282,7 @@ inline ::std::string* GetRequest::mutable_chunkname() {
 
 // GetResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool GetResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2163,6 +2309,13 @@ inline void GetResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void GetResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* GetResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2171,7 +2324,7 @@ inline ::std::string* GetResponse::mutable_result() {
   return result_;
 }
 
-// optional string content = 2;
+// optional bytes content = 2;
 inline bool GetResponse::has_content() const {
   return _has_bit(1);
 }
@@ -2198,6 +2351,13 @@ inline void GetResponse::set_content(const char* value) {
   }
   content_->assign(value);
 }
+inline void GetResponse::set_content(const void* value, size_t size) {
+  _set_bit(1);
+  if (content_ == &_default_content_) {
+    content_ = new ::std::string;
+  }
+  content_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* GetResponse::mutable_content() {
   _set_bit(1);
   if (content_ == &_default_content_) {
@@ -2206,7 +2366,7 @@ inline ::std::string* GetResponse::mutable_content() {
   return content_;
 }
 
-// optional string pmid_id = 3;
+// optional bytes pmid_id = 3;
 inline bool GetResponse::has_pmid_id() const {
   return _has_bit(2);
 }
@@ -2233,6 +2393,13 @@ inline void GetResponse::set_pmid_id(const char* value) {
   }
   pmid_id_->assign(value);
 }
+inline void GetResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* GetResponse::mutable_pmid_id() {
   _set_bit(2);
   if (pmid_id_ == &_default_pmid_id_) {
@@ -2245,7 +2412,7 @@ inline ::std::string* GetResponse::mutable_pmid_id() {
 
 // CheckChunkRequest
 
-// required string chunkname = 1;
+// required bytes chunkname = 1;
 inline bool CheckChunkRequest::has_chunkname() const {
   return _has_bit(0);
 }
@@ -2272,6 +2439,13 @@ inline void CheckChunkRequest::set_chunkname(const char* value) {
   }
   chunkname_->assign(value);
 }
+inline void CheckChunkRequest::set_chunkname(const void* value, size_t size) {
+  _set_bit(0);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* CheckChunkRequest::mutable_chunkname() {
   _set_bit(0);
   if (chunkname_ == &_default_chunkname_) {
@@ -2284,7 +2458,7 @@ inline ::std::string* CheckChunkRequest::mutable_chunkname() {
 
 // CheckChunkResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool CheckChunkResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2311,6 +2485,13 @@ inline void CheckChunkResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void CheckChunkResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* CheckChunkResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2319,7 +2500,7 @@ inline ::std::string* CheckChunkResponse::mutable_result() {
   return result_;
 }
 
-// required string pmid_id = 2;
+// required bytes pmid_id = 2;
 inline bool CheckChunkResponse::has_pmid_id() const {
   return _has_bit(1);
 }
@@ -2346,6 +2527,13 @@ inline void CheckChunkResponse::set_pmid_id(const char* value) {
   }
   pmid_id_->assign(value);
 }
+inline void CheckChunkResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* CheckChunkResponse::mutable_pmid_id() {
   _set_bit(1);
   if (pmid_id_ == &_default_pmid_id_) {
@@ -2358,7 +2546,7 @@ inline ::std::string* CheckChunkResponse::mutable_pmid_id() {
 
 // ValidityCheckRequest
 
-// required string chunkname = 1;
+// required bytes chunkname = 1;
 inline bool ValidityCheckRequest::has_chunkname() const {
   return _has_bit(0);
 }
@@ -2385,6 +2573,13 @@ inline void ValidityCheckRequest::set_chunkname(const char* value) {
   }
   chunkname_->assign(value);
 }
+inline void ValidityCheckRequest::set_chunkname(const void* value, size_t size) {
+  _set_bit(0);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ValidityCheckRequest::mutable_chunkname() {
   _set_bit(0);
   if (chunkname_ == &_default_chunkname_) {
@@ -2393,7 +2588,7 @@ inline ::std::string* ValidityCheckRequest::mutable_chunkname() {
   return chunkname_;
 }
 
-// required string random_data = 2;
+// required bytes random_data = 2;
 inline bool ValidityCheckRequest::has_random_data() const {
   return _has_bit(1);
 }
@@ -2420,6 +2615,13 @@ inline void ValidityCheckRequest::set_random_data(const char* value) {
   }
   random_data_->assign(value);
 }
+inline void ValidityCheckRequest::set_random_data(const void* value, size_t size) {
+  _set_bit(1);
+  if (random_data_ == &_default_random_data_) {
+    random_data_ = new ::std::string;
+  }
+  random_data_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ValidityCheckRequest::mutable_random_data() {
   _set_bit(1);
   if (random_data_ == &_default_random_data_) {
@@ -2432,7 +2634,7 @@ inline ::std::string* ValidityCheckRequest::mutable_random_data() {
 
 // ValidityCheckResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool ValidityCheckResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2459,6 +2661,13 @@ inline void ValidityCheckResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void ValidityCheckResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ValidityCheckResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2467,7 +2676,7 @@ inline ::std::string* ValidityCheckResponse::mutable_result() {
   return result_;
 }
 
-// optional string hash_content = 2;
+// optional bytes hash_content = 2;
 inline bool ValidityCheckResponse::has_hash_content() const {
   return _has_bit(1);
 }
@@ -2494,6 +2703,13 @@ inline void ValidityCheckResponse::set_hash_content(const char* value) {
   }
   hash_content_->assign(value);
 }
+inline void ValidityCheckResponse::set_hash_content(const void* value, size_t size) {
+  _set_bit(1);
+  if (hash_content_ == &_default_hash_content_) {
+    hash_content_ = new ::std::string;
+  }
+  hash_content_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ValidityCheckResponse::mutable_hash_content() {
   _set_bit(1);
   if (hash_content_ == &_default_hash_content_) {
@@ -2502,7 +2718,7 @@ inline ::std::string* ValidityCheckResponse::mutable_hash_content() {
   return hash_content_;
 }
 
-// required string pmid_id = 3;
+// required bytes pmid_id = 3;
 inline bool ValidityCheckResponse::has_pmid_id() const {
   return _has_bit(2);
 }
@@ -2529,6 +2745,13 @@ inline void ValidityCheckResponse::set_pmid_id(const char* value) {
   }
   pmid_id_->assign(value);
 }
+inline void ValidityCheckResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ValidityCheckResponse::mutable_pmid_id() {
   _set_bit(2);
   if (pmid_id_ == &_default_pmid_id_) {
@@ -2541,7 +2764,7 @@ inline ::std::string* ValidityCheckResponse::mutable_pmid_id() {
 
 // UpdateRequest
 
-// required string chunkname = 1;
+// required bytes chunkname = 1;
 inline bool UpdateRequest::has_chunkname() const {
   return _has_bit(0);
 }
@@ -2568,6 +2791,13 @@ inline void UpdateRequest::set_chunkname(const char* value) {
   }
   chunkname_->assign(value);
 }
+inline void UpdateRequest::set_chunkname(const void* value, size_t size) {
+  _set_bit(0);
+  if (chunkname_ == &_default_chunkname_) {
+    chunkname_ = new ::std::string;
+  }
+  chunkname_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* UpdateRequest::mutable_chunkname() {
   _set_bit(0);
   if (chunkname_ == &_default_chunkname_) {
@@ -2576,7 +2806,7 @@ inline ::std::string* UpdateRequest::mutable_chunkname() {
   return chunkname_;
 }
 
-// required string data = 2;
+// required bytes data = 2;
 inline bool UpdateRequest::has_data() const {
   return _has_bit(1);
 }
@@ -2603,6 +2833,13 @@ inline void UpdateRequest::set_data(const char* value) {
   }
   data_->assign(value);
 }
+inline void UpdateRequest::set_data(const void* value, size_t size) {
+  _set_bit(1);
+  if (data_ == &_default_data_) {
+    data_ = new ::std::string;
+  }
+  data_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* UpdateRequest::mutable_data() {
   _set_bit(1);
   if (data_ == &_default_data_) {
@@ -2611,7 +2848,7 @@ inline ::std::string* UpdateRequest::mutable_data() {
   return data_;
 }
 
-// required string public_key = 3;
+// required bytes public_key = 3;
 inline bool UpdateRequest::has_public_key() const {
   return _has_bit(2);
 }
@@ -2638,6 +2875,13 @@ inline void UpdateRequest::set_public_key(const char* value) {
   }
   public_key_->assign(value);
 }
+inline void UpdateRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* UpdateRequest::mutable_public_key() {
   _set_bit(2);
   if (public_key_ == &_default_public_key_) {
@@ -2646,7 +2890,7 @@ inline ::std::string* UpdateRequest::mutable_public_key() {
   return public_key_;
 }
 
-// required string signed_public_key = 4;
+// required bytes signed_public_key = 4;
 inline bool UpdateRequest::has_signed_public_key() const {
   return _has_bit(3);
 }
@@ -2673,6 +2917,13 @@ inline void UpdateRequest::set_signed_public_key(const char* value) {
   }
   signed_public_key_->assign(value);
 }
+inline void UpdateRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* UpdateRequest::mutable_signed_public_key() {
   _set_bit(3);
   if (signed_public_key_ == &_default_signed_public_key_) {
@@ -2681,7 +2932,7 @@ inline ::std::string* UpdateRequest::mutable_signed_public_key() {
   return signed_public_key_;
 }
 
-// required string signed_request = 5;
+// required bytes signed_request = 5;
 inline bool UpdateRequest::has_signed_request() const {
   return _has_bit(4);
 }
@@ -2707,6 +2958,13 @@ inline void UpdateRequest::set_signed_request(const char* value) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
+}
+inline void UpdateRequest::set_signed_request(const void* value, size_t size) {
+  _set_bit(4);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* UpdateRequest::mutable_signed_request() {
   _set_bit(4);
@@ -2736,7 +2994,7 @@ inline void UpdateRequest::set_data_type(::google::protobuf::int32 value) {
 
 // UpdateResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool UpdateResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2763,6 +3021,13 @@ inline void UpdateResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void UpdateResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* UpdateResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2771,7 +3036,7 @@ inline ::std::string* UpdateResponse::mutable_result() {
   return result_;
 }
 
-// optional string pmid_id = 2;
+// optional bytes pmid_id = 2;
 inline bool UpdateResponse::has_pmid_id() const {
   return _has_bit(1);
 }
@@ -2798,6 +3063,13 @@ inline void UpdateResponse::set_pmid_id(const char* value) {
   }
   pmid_id_->assign(value);
 }
+inline void UpdateResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* UpdateResponse::mutable_pmid_id() {
   _set_bit(1);
   if (pmid_id_ == &_default_pmid_id_) {
@@ -2810,7 +3082,7 @@ inline ::std::string* UpdateResponse::mutable_pmid_id() {
 
 // GetMessagesRequest
 
-// required string buffer_packet_name = 1;
+// required bytes buffer_packet_name = 1;
 inline bool GetMessagesRequest::has_buffer_packet_name() const {
   return _has_bit(0);
 }
@@ -2837,6 +3109,13 @@ inline void GetMessagesRequest::set_buffer_packet_name(const char* value) {
   }
   buffer_packet_name_->assign(value);
 }
+inline void GetMessagesRequest::set_buffer_packet_name(const void* value, size_t size) {
+  _set_bit(0);
+  if (buffer_packet_name_ == &_default_buffer_packet_name_) {
+    buffer_packet_name_ = new ::std::string;
+  }
+  buffer_packet_name_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* GetMessagesRequest::mutable_buffer_packet_name() {
   _set_bit(0);
   if (buffer_packet_name_ == &_default_buffer_packet_name_) {
@@ -2845,7 +3124,7 @@ inline ::std::string* GetMessagesRequest::mutable_buffer_packet_name() {
   return buffer_packet_name_;
 }
 
-// required string public_key = 2;
+// required bytes public_key = 2;
 inline bool GetMessagesRequest::has_public_key() const {
   return _has_bit(1);
 }
@@ -2872,6 +3151,13 @@ inline void GetMessagesRequest::set_public_key(const char* value) {
   }
   public_key_->assign(value);
 }
+inline void GetMessagesRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(1);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* GetMessagesRequest::mutable_public_key() {
   _set_bit(1);
   if (public_key_ == &_default_public_key_) {
@@ -2880,7 +3166,7 @@ inline ::std::string* GetMessagesRequest::mutable_public_key() {
   return public_key_;
 }
 
-// required string signed_public_key = 3;
+// required bytes signed_public_key = 3;
 inline bool GetMessagesRequest::has_signed_public_key() const {
   return _has_bit(2);
 }
@@ -2907,6 +3193,13 @@ inline void GetMessagesRequest::set_signed_public_key(const char* value) {
   }
   signed_public_key_->assign(value);
 }
+inline void GetMessagesRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* GetMessagesRequest::mutable_signed_public_key() {
   _set_bit(2);
   if (signed_public_key_ == &_default_signed_public_key_) {
@@ -2919,7 +3212,7 @@ inline ::std::string* GetMessagesRequest::mutable_signed_public_key() {
 
 // GetMessagesResponse
 
-// required string result = 1;
+// required bytes result = 1;
 inline bool GetMessagesResponse::has_result() const {
   return _has_bit(0);
 }
@@ -2946,6 +3239,13 @@ inline void GetMessagesResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void GetMessagesResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* GetMessagesResponse::mutable_result() {
   _set_bit(0);
   if (result_ == &_default_result_) {
@@ -2954,7 +3254,7 @@ inline ::std::string* GetMessagesResponse::mutable_result() {
   return result_;
 }
 
-// repeated string messages = 2;
+// repeated bytes messages = 2;
 inline int GetMessagesResponse::messages_size() const {
   return messages_.size();
 }
@@ -2990,8 +3290,15 @@ inline void GetMessagesResponse::add_messages(const ::std::string& value) {
 inline void GetMessagesResponse::add_messages(const char* value) {
   messages_.Add()->assign(value);
 }
+inline void GetMessagesResponse::set_messages(int index, const void* value, size_t size) {
+  messages_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline void GetMessagesResponse::add_messages(const void* value, size_t size) {
+  messages_.Add()->assign(reinterpret_cast<const char*>(value), size);
+}
 
-// optional string pmid_id = 3;
+// optional bytes pmid_id = 3;
 inline bool GetMessagesResponse::has_pmid_id() const {
   return _has_bit(2);
 }
@@ -3017,6 +3324,13 @@ inline void GetMessagesResponse::set_pmid_id(const char* value) {
     pmid_id_ = new ::std::string;
   }
   pmid_id_->assign(value);
+}
+inline void GetMessagesResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(2);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* GetMessagesResponse::mutable_pmid_id() {
   _set_bit(2);
@@ -3046,7 +3360,7 @@ inline void SwapChunkRequest::set_request_type(::google::protobuf::int32 value) 
   request_type_ = value;
 }
 
-// required string chunkname1 = 2;
+// required bytes chunkname1 = 2;
 inline bool SwapChunkRequest::has_chunkname1() const {
   return _has_bit(1);
 }
@@ -3073,6 +3387,13 @@ inline void SwapChunkRequest::set_chunkname1(const char* value) {
   }
   chunkname1_->assign(value);
 }
+inline void SwapChunkRequest::set_chunkname1(const void* value, size_t size) {
+  _set_bit(1);
+  if (chunkname1_ == &_default_chunkname1_) {
+    chunkname1_ = new ::std::string;
+  }
+  chunkname1_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* SwapChunkRequest::mutable_chunkname1() {
   _set_bit(1);
   if (chunkname1_ == &_default_chunkname1_) {
@@ -3081,7 +3402,7 @@ inline ::std::string* SwapChunkRequest::mutable_chunkname1() {
   return chunkname1_;
 }
 
-// optional string chunkcontent1 = 3;
+// optional bytes chunkcontent1 = 3;
 inline bool SwapChunkRequest::has_chunkcontent1() const {
   return _has_bit(2);
 }
@@ -3108,6 +3429,13 @@ inline void SwapChunkRequest::set_chunkcontent1(const char* value) {
   }
   chunkcontent1_->assign(value);
 }
+inline void SwapChunkRequest::set_chunkcontent1(const void* value, size_t size) {
+  _set_bit(2);
+  if (chunkcontent1_ == &_default_chunkcontent1_) {
+    chunkcontent1_ = new ::std::string;
+  }
+  chunkcontent1_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* SwapChunkRequest::mutable_chunkcontent1() {
   _set_bit(2);
   if (chunkcontent1_ == &_default_chunkcontent1_) {
@@ -3132,7 +3460,7 @@ inline void SwapChunkRequest::set_size1(::google::protobuf::int32 value) {
   size1_ = value;
 }
 
-// optional string chunkname2 = 5;
+// optional bytes chunkname2 = 5;
 inline bool SwapChunkRequest::has_chunkname2() const {
   return _has_bit(4);
 }
@@ -3158,6 +3486,13 @@ inline void SwapChunkRequest::set_chunkname2(const char* value) {
     chunkname2_ = new ::std::string;
   }
   chunkname2_->assign(value);
+}
+inline void SwapChunkRequest::set_chunkname2(const void* value, size_t size) {
+  _set_bit(4);
+  if (chunkname2_ == &_default_chunkname2_) {
+    chunkname2_ = new ::std::string;
+  }
+  chunkname2_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* SwapChunkRequest::mutable_chunkname2() {
   _set_bit(4);
@@ -3187,7 +3522,7 @@ inline void SwapChunkResponse::set_request_type(::google::protobuf::int32 value)
   request_type_ = value;
 }
 
-// required string result = 2;
+// required bytes result = 2;
 inline bool SwapChunkResponse::has_result() const {
   return _has_bit(1);
 }
@@ -3214,6 +3549,13 @@ inline void SwapChunkResponse::set_result(const char* value) {
   }
   result_->assign(value);
 }
+inline void SwapChunkResponse::set_result(const void* value, size_t size) {
+  _set_bit(1);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* SwapChunkResponse::mutable_result() {
   _set_bit(1);
   if (result_ == &_default_result_) {
@@ -3222,7 +3564,7 @@ inline ::std::string* SwapChunkResponse::mutable_result() {
   return result_;
 }
 
-// optional string chunkname1 = 3;
+// optional bytes chunkname1 = 3;
 inline bool SwapChunkResponse::has_chunkname1() const {
   return _has_bit(2);
 }
@@ -3249,6 +3591,13 @@ inline void SwapChunkResponse::set_chunkname1(const char* value) {
   }
   chunkname1_->assign(value);
 }
+inline void SwapChunkResponse::set_chunkname1(const void* value, size_t size) {
+  _set_bit(2);
+  if (chunkname1_ == &_default_chunkname1_) {
+    chunkname1_ = new ::std::string;
+  }
+  chunkname1_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* SwapChunkResponse::mutable_chunkname1() {
   _set_bit(2);
   if (chunkname1_ == &_default_chunkname1_) {
@@ -3257,7 +3606,7 @@ inline ::std::string* SwapChunkResponse::mutable_chunkname1() {
   return chunkname1_;
 }
 
-// optional string chunkcontent1 = 4;
+// optional bytes chunkcontent1 = 4;
 inline bool SwapChunkResponse::has_chunkcontent1() const {
   return _has_bit(3);
 }
@@ -3284,6 +3633,13 @@ inline void SwapChunkResponse::set_chunkcontent1(const char* value) {
   }
   chunkcontent1_->assign(value);
 }
+inline void SwapChunkResponse::set_chunkcontent1(const void* value, size_t size) {
+  _set_bit(3);
+  if (chunkcontent1_ == &_default_chunkcontent1_) {
+    chunkcontent1_ = new ::std::string;
+  }
+  chunkcontent1_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* SwapChunkResponse::mutable_chunkcontent1() {
   _set_bit(3);
   if (chunkcontent1_ == &_default_chunkcontent1_) {
@@ -3308,7 +3664,7 @@ inline void SwapChunkResponse::set_size1(::google::protobuf::int32 value) {
   size1_ = value;
 }
 
-// optional string chunkname2 = 6;
+// optional bytes chunkname2 = 6;
 inline bool SwapChunkResponse::has_chunkname2() const {
   return _has_bit(5);
 }
@@ -3335,6 +3691,13 @@ inline void SwapChunkResponse::set_chunkname2(const char* value) {
   }
   chunkname2_->assign(value);
 }
+inline void SwapChunkResponse::set_chunkname2(const void* value, size_t size) {
+  _set_bit(5);
+  if (chunkname2_ == &_default_chunkname2_) {
+    chunkname2_ = new ::std::string;
+  }
+  chunkname2_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* SwapChunkResponse::mutable_chunkname2() {
   _set_bit(5);
   if (chunkname2_ == &_default_chunkname2_) {
@@ -3343,7 +3706,7 @@ inline ::std::string* SwapChunkResponse::mutable_chunkname2() {
   return chunkname2_;
 }
 
-// optional string chunkcontent2 = 7;
+// optional bytes chunkcontent2 = 7;
 inline bool SwapChunkResponse::has_chunkcontent2() const {
   return _has_bit(6);
 }
@@ -3370,6 +3733,13 @@ inline void SwapChunkResponse::set_chunkcontent2(const char* value) {
   }
   chunkcontent2_->assign(value);
 }
+inline void SwapChunkResponse::set_chunkcontent2(const void* value, size_t size) {
+  _set_bit(6);
+  if (chunkcontent2_ == &_default_chunkcontent2_) {
+    chunkcontent2_ = new ::std::string;
+  }
+  chunkcontent2_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* SwapChunkResponse::mutable_chunkcontent2() {
   _set_bit(6);
   if (chunkcontent2_ == &_default_chunkcontent2_) {
@@ -3394,7 +3764,7 @@ inline void SwapChunkResponse::set_size2(::google::protobuf::int32 value) {
   size2_ = value;
 }
 
-// required string pmid_id = 9;
+// required bytes pmid_id = 9;
 inline bool SwapChunkResponse::has_pmid_id() const {
   return _has_bit(8);
 }
@@ -3420,6 +3790,13 @@ inline void SwapChunkResponse::set_pmid_id(const char* value) {
     pmid_id_ = new ::std::string;
   }
   pmid_id_->assign(value);
+}
+inline void SwapChunkResponse::set_pmid_id(const void* value, size_t size) {
+  _set_bit(8);
+  if (pmid_id_ == &_default_pmid_id_) {
+    pmid_id_ = new ::std::string;
+  }
+  pmid_id_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* SwapChunkResponse::mutable_pmid_id() {
   _set_bit(8);

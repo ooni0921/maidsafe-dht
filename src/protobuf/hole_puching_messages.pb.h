@@ -81,21 +81,22 @@ class HolePunchingMsg : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // optional string ip = 1;
+  // required bytes ip = 1;
   inline bool has_ip() const;
   inline void clear_ip();
   inline const ::std::string& ip() const;
   inline void set_ip(const ::std::string& value);
   inline void set_ip(const char* value);
+  inline void set_ip(const void* value, size_t size);
   inline ::std::string* mutable_ip();
   
-  // optional int32 port = 2;
+  // required int32 port = 2;
   inline bool has_port() const;
   inline void clear_port();
   inline ::google::protobuf::int32 port() const;
   inline void set_port(::google::protobuf::int32 value);
   
-  // optional .transport.msg_type type = 3;
+  // required .transport.msg_type type = 3;
   inline bool has_type() const;
   inline void clear_type();
   inline transport::msg_type type() const;
@@ -137,7 +138,7 @@ class HolePunchingMsg : public ::google::protobuf::Message {
 
 // HolePunchingMsg
 
-// optional string ip = 1;
+// required bytes ip = 1;
 inline bool HolePunchingMsg::has_ip() const {
   return _has_bit(0);
 }
@@ -164,6 +165,13 @@ inline void HolePunchingMsg::set_ip(const char* value) {
   }
   ip_->assign(value);
 }
+inline void HolePunchingMsg::set_ip(const void* value, size_t size) {
+  _set_bit(0);
+  if (ip_ == &_default_ip_) {
+    ip_ = new ::std::string;
+  }
+  ip_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* HolePunchingMsg::mutable_ip() {
   _set_bit(0);
   if (ip_ == &_default_ip_) {
@@ -172,7 +180,7 @@ inline ::std::string* HolePunchingMsg::mutable_ip() {
   return ip_;
 }
 
-// optional int32 port = 2;
+// required int32 port = 2;
 inline bool HolePunchingMsg::has_port() const {
   return _has_bit(1);
 }
@@ -188,7 +196,7 @@ inline void HolePunchingMsg::set_port(::google::protobuf::int32 value) {
   port_ = value;
 }
 
-// optional .transport.msg_type type = 3;
+// required .transport.msg_type type = 3;
 inline bool HolePunchingMsg::has_type() const {
   return _has_bit(2);
 }

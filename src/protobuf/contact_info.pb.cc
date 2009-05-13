@@ -54,9 +54,9 @@ void protobuf_BuildDesc_contact_5finfo_2eproto() {
 
   pool->InternalBuildGeneratedFile(
     "\n\022contact_info.proto\022\003kad\"~\n\013ContactInfo"
-    "\022\017\n\007node_id\030\001 \002(\t\022\n\n\002ip\030\002 \002(\t\022\014\n\004port\030\003 "
-    "\002(\005\022\020\n\010local_ip\030\004 \001(\t\022\022\n\nlocal_port\030\005 \001("
-    "\005\022\r\n\005rv_ip\030\006 \001(\t\022\017\n\007rv_port\030\007 \001(\005", 153,
+    "\022\017\n\007node_id\030\001 \002(\014\022\n\n\002ip\030\002 \002(\014\022\014\n\004port\030\003 "
+    "\002(\005\022\020\n\010local_ip\030\004 \001(\014\022\022\n\nlocal_port\030\005 \001("
+    "\005\022\r\n\005rv_ip\030\006 \001(\014\022\017\n\007rv_port\030\007 \001(\005", 153,
   &protobuf_BuildDesc_contact_5finfo_2eproto_AssignGlobalDescriptors);
 }
 

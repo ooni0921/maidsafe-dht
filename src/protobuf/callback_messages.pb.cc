@@ -50,7 +50,7 @@ void protobuf_BuildDesc_callback_5fmessages_2eproto() {
 
   pool->InternalBuildGeneratedFile(
     "\n\027callback_messages.proto\022\003net\":\n\016NetSta"
-    "rtResult\022\016\n\006result\030\001 \002(\t\022\n\n\002ip\030\002 \001(\t\022\014\n\004"
+    "rtResult\022\016\n\006result\030\001 \002(\014\022\n\n\002ip\030\002 \001(\014\022\014\n\004"
     "port\030\003 \001(\005", 90,
   &protobuf_BuildDesc_callback_5fmessages_2eproto_AssignGlobalDescriptors);
 }

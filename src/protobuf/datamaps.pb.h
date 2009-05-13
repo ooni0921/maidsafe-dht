@@ -121,12 +121,13 @@ class Key : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string id = 1;
+  // required bytes id = 1;
   inline bool has_id() const;
   inline void clear_id();
   inline const ::std::string& id() const;
   inline void set_id(const ::std::string& value);
   inline void set_id(const char* value);
+  inline void set_id(const void* value, size_t size);
   inline ::std::string* mutable_id();
   
   // required .maidsafe.PacketType type = 2;
@@ -135,20 +136,22 @@ class Key : public ::google::protobuf::Message {
   inline maidsafe::PacketType type() const;
   inline void set_type(maidsafe::PacketType value);
   
-  // required string private_key = 3;
+  // required bytes private_key = 3;
   inline bool has_private_key() const;
   inline void clear_private_key();
   inline const ::std::string& private_key() const;
   inline void set_private_key(const ::std::string& value);
   inline void set_private_key(const char* value);
+  inline void set_private_key(const void* value, size_t size);
   inline ::std::string* mutable_private_key();
   
-  // required string public_key = 4;
+  // required bytes public_key = 4;
   inline bool has_public_key() const;
   inline void clear_public_key();
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
  private:
@@ -221,23 +224,25 @@ class DataMap : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string file_hash = 1;
+  // required bytes file_hash = 1;
   inline bool has_file_hash() const;
   inline void clear_file_hash();
   inline const ::std::string& file_hash() const;
   inline void set_file_hash(const ::std::string& value);
   inline void set_file_hash(const char* value);
+  inline void set_file_hash(const void* value, size_t size);
   inline ::std::string* mutable_file_hash();
   
-  // optional string se_version = 2;
+  // optional bytes se_version = 2;
   inline bool has_se_version() const;
   inline void clear_se_version();
   inline const ::std::string& se_version() const;
   inline void set_se_version(const ::std::string& value);
   inline void set_se_version(const char* value);
+  inline void set_se_version(const void* value, size_t size);
   inline ::std::string* mutable_se_version();
   
-  // repeated string chunk_name = 3;
+  // repeated bytes chunk_name = 3;
   inline int chunk_name_size() const;
   inline void clear_chunk_name();
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& chunk_name() const;
@@ -249,8 +254,10 @@ class DataMap : public ::google::protobuf::Message {
   inline ::std::string* add_chunk_name();
   inline void add_chunk_name(const ::std::string& value);
   inline void add_chunk_name(const char* value);
+  inline void set_chunk_name(int index, const void* value, size_t size);
+  inline void add_chunk_name(const void* value, size_t size);
   
-  // repeated string encrypted_chunk_name = 4;
+  // repeated bytes encrypted_chunk_name = 4;
   inline int encrypted_chunk_name_size() const;
   inline void clear_encrypted_chunk_name();
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& encrypted_chunk_name() const;
@@ -262,6 +269,8 @@ class DataMap : public ::google::protobuf::Message {
   inline ::std::string* add_encrypted_chunk_name();
   inline void add_encrypted_chunk_name(const ::std::string& value);
   inline void add_encrypted_chunk_name(const char* value);
+  inline void set_encrypted_chunk_name(int index, const void* value, size_t size);
+  inline void add_encrypted_chunk_name(const void* value, size_t size);
   
   // repeated uint64 chunk_size = 5;
   inline int chunk_size_size() const;
@@ -355,12 +364,13 @@ class MetaDataMap : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 id() const;
   inline void set_id(::google::protobuf::int32 value);
   
-  // required string display_name = 2;
+  // required bytes display_name = 2;
   inline bool has_display_name() const;
   inline void clear_display_name();
   inline const ::std::string& display_name() const;
   inline void set_display_name(const ::std::string& value);
   inline void set_display_name(const char* value);
+  inline void set_display_name(const void* value, size_t size);
   inline ::std::string* mutable_display_name();
   
   // required .maidsafe.itemtype type = 3;
@@ -369,7 +379,7 @@ class MetaDataMap : public ::google::protobuf::Message {
   inline maidsafe::itemtype type() const;
   inline void set_type(maidsafe::itemtype value);
   
-  // repeated string file_hash = 4;
+  // repeated bytes file_hash = 4;
   inline int file_hash_size() const;
   inline void clear_file_hash();
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& file_hash() const;
@@ -381,21 +391,25 @@ class MetaDataMap : public ::google::protobuf::Message {
   inline ::std::string* add_file_hash();
   inline void add_file_hash(const ::std::string& value);
   inline void add_file_hash(const char* value);
+  inline void set_file_hash(int index, const void* value, size_t size);
+  inline void add_file_hash(const void* value, size_t size);
   
-  // optional string stats = 5;
+  // optional bytes stats = 5;
   inline bool has_stats() const;
   inline void clear_stats();
   inline const ::std::string& stats() const;
   inline void set_stats(const ::std::string& value);
   inline void set_stats(const char* value);
+  inline void set_stats(const void* value, size_t size);
   inline ::std::string* mutable_stats();
   
-  // optional string tag = 6;
+  // optional bytes tag = 6;
   inline bool has_tag() const;
   inline void clear_tag();
   inline const ::std::string& tag() const;
   inline void set_tag(const ::std::string& value);
   inline void set_tag(const char* value);
+  inline void set_tag(const void* value, size_t size);
   inline ::std::string* mutable_tag();
   
   // optional int32 file_size_high = 7;
@@ -505,28 +519,31 @@ class MetaData : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // required string ms_path = 1;
+  // required bytes ms_path = 1;
   inline bool has_ms_path() const;
   inline void clear_ms_path();
   inline const ::std::string& ms_path() const;
   inline void set_ms_path(const ::std::string& value);
   inline void set_ms_path(const char* value);
+  inline void set_ms_path(const void* value, size_t size);
   inline ::std::string* mutable_ms_path();
   
-  // required string file_hash = 2;
+  // required bytes file_hash = 2;
   inline bool has_file_hash() const;
   inline void clear_file_hash();
   inline const ::std::string& file_hash() const;
   inline void set_file_hash(const ::std::string& value);
   inline void set_file_hash(const char* value);
+  inline void set_file_hash(const void* value, size_t size);
   inline ::std::string* mutable_file_hash();
   
-  // optional string stats = 3;
+  // optional bytes stats = 3;
   inline bool has_stats() const;
   inline void clear_stats();
   inline const ::std::string& stats() const;
   inline void set_stats(const ::std::string& value);
   inline void set_stats(const char* value);
+  inline void set_stats(const void* value, size_t size);
   inline ::std::string* mutable_stats();
   
   // optional int32 file_size = 4;
@@ -535,12 +552,13 @@ class MetaData : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 file_size() const;
   inline void set_file_size(::google::protobuf::int32 value);
   
-  // optional string outname = 5;
+  // optional bytes outname = 5;
   inline bool has_outname() const;
   inline void clear_outname();
   inline const ::std::string& outname() const;
   inline void set_outname(const ::std::string& value);
   inline void set_outname(const char* value);
+  inline void set_outname(const void* value, size_t size);
   inline ::std::string* mutable_outname();
   
  private:
@@ -615,15 +633,16 @@ class Chunk : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // optional string compression_type = 1;
+  // optional bytes compression_type = 1;
   inline bool has_compression_type() const;
   inline void clear_compression_type();
   inline const ::std::string& compression_type() const;
   inline void set_compression_type(const ::std::string& value);
   inline void set_compression_type(const char* value);
+  inline void set_compression_type(const void* value, size_t size);
   inline ::std::string* mutable_compression_type();
   
-  // repeated string chunklet = 2;
+  // repeated bytes chunklet = 2;
   inline int chunklet_size() const;
   inline void clear_chunklet();
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& chunklet() const;
@@ -635,6 +654,8 @@ class Chunk : public ::google::protobuf::Message {
   inline ::std::string* add_chunklet();
   inline void add_chunklet(const ::std::string& value);
   inline void add_chunklet(const char* value);
+  inline void set_chunklet(int index, const void* value, size_t size);
+  inline void add_chunklet(const void* value, size_t size);
   
   // repeated int32 pre_compression_chunklet_size_ = 3;
   inline int pre_compression_chunklet_size__size() const;
@@ -718,20 +739,22 @@ class ShareFromMe : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 share_id() const;
   inline void set_share_id(::google::protobuf::int32 value);
   
-  // required string share_name = 2;
+  // required bytes share_name = 2;
   inline bool has_share_name() const;
   inline void clear_share_name();
   inline const ::std::string& share_name() const;
   inline void set_share_name(const ::std::string& value);
   inline void set_share_name(const char* value);
+  inline void set_share_name(const void* value, size_t size);
   inline ::std::string* mutable_share_name();
   
-  // optional string owner = 3;
+  // optional bytes owner = 3;
   inline bool has_owner() const;
   inline void clear_owner();
   inline const ::std::string& owner() const;
   inline void set_owner(const ::std::string& value);
   inline void set_owner(const char* value);
+  inline void set_owner(const void* value, size_t size);
   inline ::std::string* mutable_owner();
   
   // repeated int32 meta_data_map_id = 4;
@@ -743,7 +766,7 @@ class ShareFromMe : public ::google::protobuf::Message {
   inline void set_meta_data_map_id(int index, ::google::protobuf::int32 value);
   inline void add_meta_data_map_id(::google::protobuf::int32 value);
   
-  // repeated string users = 5;
+  // repeated bytes users = 5;
   inline int users_size() const;
   inline void clear_users();
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& users() const;
@@ -755,6 +778,8 @@ class ShareFromMe : public ::google::protobuf::Message {
   inline ::std::string* add_users();
   inline void add_users(const ::std::string& value);
   inline void add_users(const char* value);
+  inline void set_users(int index, const void* value, size_t size);
+  inline void add_users(const void* value, size_t size);
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -832,20 +857,22 @@ class ShareToMe : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 share_id() const;
   inline void set_share_id(::google::protobuf::int32 value);
   
-  // required string share_name = 2;
+  // required bytes share_name = 2;
   inline bool has_share_name() const;
   inline void clear_share_name();
   inline const ::std::string& share_name() const;
   inline void set_share_name(const ::std::string& value);
   inline void set_share_name(const char* value);
+  inline void set_share_name(const void* value, size_t size);
   inline ::std::string* mutable_share_name();
   
-  // required string owner = 3;
+  // required bytes owner = 3;
   inline bool has_owner() const;
   inline void clear_owner();
   inline const ::std::string& owner() const;
   inline void set_owner(const ::std::string& value);
   inline void set_owner(const char* value);
+  inline void set_owner(const void* value, size_t size);
   inline ::std::string* mutable_owner();
   
   // repeated .maidsafe.MetaDataMap mdms = 4;
@@ -942,20 +969,22 @@ class ShareToMeBufferMessage : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 share_id() const;
   inline void set_share_id(::google::protobuf::int32 value);
   
-  // optional string share_name = 2;
+  // optional bytes share_name = 2;
   inline bool has_share_name() const;
   inline void clear_share_name();
   inline const ::std::string& share_name() const;
   inline void set_share_name(const ::std::string& value);
   inline void set_share_name(const char* value);
+  inline void set_share_name(const void* value, size_t size);
   inline ::std::string* mutable_share_name();
   
-  // required string owner = 3;
+  // required bytes owner = 3;
   inline bool has_owner() const;
   inline void clear_owner();
   inline const ::std::string& owner() const;
   inline void set_owner(const ::std::string& value);
   inline void set_owner(const char* value);
+  inline void set_owner(const void* value, size_t size);
   inline ::std::string* mutable_owner();
   
   // required .maidsafe.ShareOperation op = 4;
@@ -1053,12 +1082,13 @@ class DataAtlas : public ::google::protobuf::Message {
   
   // accessors -------------------------------------------------------
   
-  // optional string root_db_key = 1;
+  // optional bytes root_db_key = 1;
   inline bool has_root_db_key() const;
   inline void clear_root_db_key();
   inline const ::std::string& root_db_key() const;
   inline void set_root_db_key(const ::std::string& value);
   inline void set_root_db_key(const char* value);
+  inline void set_root_db_key(const void* value, size_t size);
   inline ::std::string* mutable_root_db_key();
   
   // repeated .maidsafe.Key keys = 2;
@@ -1145,7 +1175,7 @@ class DataAtlas : public ::google::protobuf::Message {
 
 // Key
 
-// required string id = 1;
+// required bytes id = 1;
 inline bool Key::has_id() const {
   return _has_bit(0);
 }
@@ -1172,6 +1202,13 @@ inline void Key::set_id(const char* value) {
   }
   id_->assign(value);
 }
+inline void Key::set_id(const void* value, size_t size) {
+  _set_bit(0);
+  if (id_ == &_default_id_) {
+    id_ = new ::std::string;
+  }
+  id_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* Key::mutable_id() {
   _set_bit(0);
   if (id_ == &_default_id_) {
@@ -1197,7 +1234,7 @@ inline void Key::set_type(maidsafe::PacketType value) {
   type_ = value;
 }
 
-// required string private_key = 3;
+// required bytes private_key = 3;
 inline bool Key::has_private_key() const {
   return _has_bit(2);
 }
@@ -1224,6 +1261,13 @@ inline void Key::set_private_key(const char* value) {
   }
   private_key_->assign(value);
 }
+inline void Key::set_private_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (private_key_ == &_default_private_key_) {
+    private_key_ = new ::std::string;
+  }
+  private_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* Key::mutable_private_key() {
   _set_bit(2);
   if (private_key_ == &_default_private_key_) {
@@ -1232,7 +1276,7 @@ inline ::std::string* Key::mutable_private_key() {
   return private_key_;
 }
 
-// required string public_key = 4;
+// required bytes public_key = 4;
 inline bool Key::has_public_key() const {
   return _has_bit(3);
 }
@@ -1259,6 +1303,13 @@ inline void Key::set_public_key(const char* value) {
   }
   public_key_->assign(value);
 }
+inline void Key::set_public_key(const void* value, size_t size) {
+  _set_bit(3);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* Key::mutable_public_key() {
   _set_bit(3);
   if (public_key_ == &_default_public_key_) {
@@ -1271,7 +1322,7 @@ inline ::std::string* Key::mutable_public_key() {
 
 // DataMap
 
-// required string file_hash = 1;
+// required bytes file_hash = 1;
 inline bool DataMap::has_file_hash() const {
   return _has_bit(0);
 }
@@ -1298,6 +1349,13 @@ inline void DataMap::set_file_hash(const char* value) {
   }
   file_hash_->assign(value);
 }
+inline void DataMap::set_file_hash(const void* value, size_t size) {
+  _set_bit(0);
+  if (file_hash_ == &_default_file_hash_) {
+    file_hash_ = new ::std::string;
+  }
+  file_hash_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* DataMap::mutable_file_hash() {
   _set_bit(0);
   if (file_hash_ == &_default_file_hash_) {
@@ -1306,7 +1364,7 @@ inline ::std::string* DataMap::mutable_file_hash() {
   return file_hash_;
 }
 
-// optional string se_version = 2;
+// optional bytes se_version = 2;
 inline bool DataMap::has_se_version() const {
   return _has_bit(1);
 }
@@ -1333,6 +1391,13 @@ inline void DataMap::set_se_version(const char* value) {
   }
   se_version_->assign(value);
 }
+inline void DataMap::set_se_version(const void* value, size_t size) {
+  _set_bit(1);
+  if (se_version_ == &_default_se_version_) {
+    se_version_ = new ::std::string;
+  }
+  se_version_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* DataMap::mutable_se_version() {
   _set_bit(1);
   if (se_version_ == &_default_se_version_) {
@@ -1341,7 +1406,7 @@ inline ::std::string* DataMap::mutable_se_version() {
   return se_version_;
 }
 
-// repeated string chunk_name = 3;
+// repeated bytes chunk_name = 3;
 inline int DataMap::chunk_name_size() const {
   return chunk_name_.size();
 }
@@ -1377,8 +1442,15 @@ inline void DataMap::add_chunk_name(const ::std::string& value) {
 inline void DataMap::add_chunk_name(const char* value) {
   chunk_name_.Add()->assign(value);
 }
+inline void DataMap::set_chunk_name(int index, const void* value, size_t size) {
+  chunk_name_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline void DataMap::add_chunk_name(const void* value, size_t size) {
+  chunk_name_.Add()->assign(reinterpret_cast<const char*>(value), size);
+}
 
-// repeated string encrypted_chunk_name = 4;
+// repeated bytes encrypted_chunk_name = 4;
 inline int DataMap::encrypted_chunk_name_size() const {
   return encrypted_chunk_name_.size();
 }
@@ -1413,6 +1485,13 @@ inline void DataMap::add_encrypted_chunk_name(const ::std::string& value) {
 }
 inline void DataMap::add_encrypted_chunk_name(const char* value) {
   encrypted_chunk_name_.Add()->assign(value);
+}
+inline void DataMap::set_encrypted_chunk_name(int index, const void* value, size_t size) {
+  encrypted_chunk_name_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline void DataMap::add_encrypted_chunk_name(const void* value, size_t size) {
+  encrypted_chunk_name_.Add()->assign(reinterpret_cast<const char*>(value), size);
 }
 
 // repeated uint64 chunk_size = 5;
@@ -1476,7 +1555,7 @@ inline void MetaDataMap::set_id(::google::protobuf::int32 value) {
   id_ = value;
 }
 
-// required string display_name = 2;
+// required bytes display_name = 2;
 inline bool MetaDataMap::has_display_name() const {
   return _has_bit(1);
 }
@@ -1503,6 +1582,13 @@ inline void MetaDataMap::set_display_name(const char* value) {
   }
   display_name_->assign(value);
 }
+inline void MetaDataMap::set_display_name(const void* value, size_t size) {
+  _set_bit(1);
+  if (display_name_ == &_default_display_name_) {
+    display_name_ = new ::std::string;
+  }
+  display_name_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* MetaDataMap::mutable_display_name() {
   _set_bit(1);
   if (display_name_ == &_default_display_name_) {
@@ -1528,7 +1614,7 @@ inline void MetaDataMap::set_type(maidsafe::itemtype value) {
   type_ = value;
 }
 
-// repeated string file_hash = 4;
+// repeated bytes file_hash = 4;
 inline int MetaDataMap::file_hash_size() const {
   return file_hash_.size();
 }
@@ -1564,8 +1650,15 @@ inline void MetaDataMap::add_file_hash(const ::std::string& value) {
 inline void MetaDataMap::add_file_hash(const char* value) {
   file_hash_.Add()->assign(value);
 }
+inline void MetaDataMap::set_file_hash(int index, const void* value, size_t size) {
+  file_hash_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline void MetaDataMap::add_file_hash(const void* value, size_t size) {
+  file_hash_.Add()->assign(reinterpret_cast<const char*>(value), size);
+}
 
-// optional string stats = 5;
+// optional bytes stats = 5;
 inline bool MetaDataMap::has_stats() const {
   return _has_bit(4);
 }
@@ -1592,6 +1685,13 @@ inline void MetaDataMap::set_stats(const char* value) {
   }
   stats_->assign(value);
 }
+inline void MetaDataMap::set_stats(const void* value, size_t size) {
+  _set_bit(4);
+  if (stats_ == &_default_stats_) {
+    stats_ = new ::std::string;
+  }
+  stats_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* MetaDataMap::mutable_stats() {
   _set_bit(4);
   if (stats_ == &_default_stats_) {
@@ -1600,7 +1700,7 @@ inline ::std::string* MetaDataMap::mutable_stats() {
   return stats_;
 }
 
-// optional string tag = 6;
+// optional bytes tag = 6;
 inline bool MetaDataMap::has_tag() const {
   return _has_bit(5);
 }
@@ -1626,6 +1726,13 @@ inline void MetaDataMap::set_tag(const char* value) {
     tag_ = new ::std::string;
   }
   tag_->assign(value);
+}
+inline void MetaDataMap::set_tag(const void* value, size_t size) {
+  _set_bit(5);
+  if (tag_ == &_default_tag_) {
+    tag_ = new ::std::string;
+  }
+  tag_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* MetaDataMap::mutable_tag() {
   _set_bit(5);
@@ -1719,7 +1826,7 @@ inline void MetaDataMap::set_last_access(::google::protobuf::int32 value) {
 
 // MetaData
 
-// required string ms_path = 1;
+// required bytes ms_path = 1;
 inline bool MetaData::has_ms_path() const {
   return _has_bit(0);
 }
@@ -1746,6 +1853,13 @@ inline void MetaData::set_ms_path(const char* value) {
   }
   ms_path_->assign(value);
 }
+inline void MetaData::set_ms_path(const void* value, size_t size) {
+  _set_bit(0);
+  if (ms_path_ == &_default_ms_path_) {
+    ms_path_ = new ::std::string;
+  }
+  ms_path_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* MetaData::mutable_ms_path() {
   _set_bit(0);
   if (ms_path_ == &_default_ms_path_) {
@@ -1754,7 +1868,7 @@ inline ::std::string* MetaData::mutable_ms_path() {
   return ms_path_;
 }
 
-// required string file_hash = 2;
+// required bytes file_hash = 2;
 inline bool MetaData::has_file_hash() const {
   return _has_bit(1);
 }
@@ -1781,6 +1895,13 @@ inline void MetaData::set_file_hash(const char* value) {
   }
   file_hash_->assign(value);
 }
+inline void MetaData::set_file_hash(const void* value, size_t size) {
+  _set_bit(1);
+  if (file_hash_ == &_default_file_hash_) {
+    file_hash_ = new ::std::string;
+  }
+  file_hash_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* MetaData::mutable_file_hash() {
   _set_bit(1);
   if (file_hash_ == &_default_file_hash_) {
@@ -1789,7 +1910,7 @@ inline ::std::string* MetaData::mutable_file_hash() {
   return file_hash_;
 }
 
-// optional string stats = 3;
+// optional bytes stats = 3;
 inline bool MetaData::has_stats() const {
   return _has_bit(2);
 }
@@ -1816,6 +1937,13 @@ inline void MetaData::set_stats(const char* value) {
   }
   stats_->assign(value);
 }
+inline void MetaData::set_stats(const void* value, size_t size) {
+  _set_bit(2);
+  if (stats_ == &_default_stats_) {
+    stats_ = new ::std::string;
+  }
+  stats_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* MetaData::mutable_stats() {
   _set_bit(2);
   if (stats_ == &_default_stats_) {
@@ -1840,7 +1968,7 @@ inline void MetaData::set_file_size(::google::protobuf::int32 value) {
   file_size_ = value;
 }
 
-// optional string outname = 5;
+// optional bytes outname = 5;
 inline bool MetaData::has_outname() const {
   return _has_bit(4);
 }
@@ -1867,6 +1995,13 @@ inline void MetaData::set_outname(const char* value) {
   }
   outname_->assign(value);
 }
+inline void MetaData::set_outname(const void* value, size_t size) {
+  _set_bit(4);
+  if (outname_ == &_default_outname_) {
+    outname_ = new ::std::string;
+  }
+  outname_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* MetaData::mutable_outname() {
   _set_bit(4);
   if (outname_ == &_default_outname_) {
@@ -1879,7 +2014,7 @@ inline ::std::string* MetaData::mutable_outname() {
 
 // Chunk
 
-// optional string compression_type = 1;
+// optional bytes compression_type = 1;
 inline bool Chunk::has_compression_type() const {
   return _has_bit(0);
 }
@@ -1906,6 +2041,13 @@ inline void Chunk::set_compression_type(const char* value) {
   }
   compression_type_->assign(value);
 }
+inline void Chunk::set_compression_type(const void* value, size_t size) {
+  _set_bit(0);
+  if (compression_type_ == &_default_compression_type_) {
+    compression_type_ = new ::std::string;
+  }
+  compression_type_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* Chunk::mutable_compression_type() {
   _set_bit(0);
   if (compression_type_ == &_default_compression_type_) {
@@ -1914,7 +2056,7 @@ inline ::std::string* Chunk::mutable_compression_type() {
   return compression_type_;
 }
 
-// repeated string chunklet = 2;
+// repeated bytes chunklet = 2;
 inline int Chunk::chunklet_size() const {
   return chunklet_.size();
 }
@@ -1949,6 +2091,13 @@ inline void Chunk::add_chunklet(const ::std::string& value) {
 }
 inline void Chunk::add_chunklet(const char* value) {
   chunklet_.Add()->assign(value);
+}
+inline void Chunk::set_chunklet(int index, const void* value, size_t size) {
+  chunklet_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline void Chunk::add_chunklet(const void* value, size_t size) {
+  chunklet_.Add()->assign(reinterpret_cast<const char*>(value), size);
 }
 
 // repeated int32 pre_compression_chunklet_size_ = 3;
@@ -1996,7 +2145,7 @@ inline void ShareFromMe::set_share_id(::google::protobuf::int32 value) {
   share_id_ = value;
 }
 
-// required string share_name = 2;
+// required bytes share_name = 2;
 inline bool ShareFromMe::has_share_name() const {
   return _has_bit(1);
 }
@@ -2023,6 +2172,13 @@ inline void ShareFromMe::set_share_name(const char* value) {
   }
   share_name_->assign(value);
 }
+inline void ShareFromMe::set_share_name(const void* value, size_t size) {
+  _set_bit(1);
+  if (share_name_ == &_default_share_name_) {
+    share_name_ = new ::std::string;
+  }
+  share_name_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ShareFromMe::mutable_share_name() {
   _set_bit(1);
   if (share_name_ == &_default_share_name_) {
@@ -2031,7 +2187,7 @@ inline ::std::string* ShareFromMe::mutable_share_name() {
   return share_name_;
 }
 
-// optional string owner = 3;
+// optional bytes owner = 3;
 inline bool ShareFromMe::has_owner() const {
   return _has_bit(2);
 }
@@ -2057,6 +2213,13 @@ inline void ShareFromMe::set_owner(const char* value) {
     owner_ = new ::std::string;
   }
   owner_->assign(value);
+}
+inline void ShareFromMe::set_owner(const void* value, size_t size) {
+  _set_bit(2);
+  if (owner_ == &_default_owner_) {
+    owner_ = new ::std::string;
+  }
+  owner_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* ShareFromMe::mutable_owner() {
   _set_bit(2);
@@ -2091,7 +2254,7 @@ inline void ShareFromMe::add_meta_data_map_id(::google::protobuf::int32 value) {
   meta_data_map_id_.Add(value);
 }
 
-// repeated string users = 5;
+// repeated bytes users = 5;
 inline int ShareFromMe::users_size() const {
   return users_.size();
 }
@@ -2127,6 +2290,13 @@ inline void ShareFromMe::add_users(const ::std::string& value) {
 inline void ShareFromMe::add_users(const char* value) {
   users_.Add()->assign(value);
 }
+inline void ShareFromMe::set_users(int index, const void* value, size_t size) {
+  users_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline void ShareFromMe::add_users(const void* value, size_t size) {
+  users_.Add()->assign(reinterpret_cast<const char*>(value), size);
+}
 
 // -------------------------------------------------------------------
 
@@ -2148,7 +2318,7 @@ inline void ShareToMe::set_share_id(::google::protobuf::int32 value) {
   share_id_ = value;
 }
 
-// required string share_name = 2;
+// required bytes share_name = 2;
 inline bool ShareToMe::has_share_name() const {
   return _has_bit(1);
 }
@@ -2175,6 +2345,13 @@ inline void ShareToMe::set_share_name(const char* value) {
   }
   share_name_->assign(value);
 }
+inline void ShareToMe::set_share_name(const void* value, size_t size) {
+  _set_bit(1);
+  if (share_name_ == &_default_share_name_) {
+    share_name_ = new ::std::string;
+  }
+  share_name_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ShareToMe::mutable_share_name() {
   _set_bit(1);
   if (share_name_ == &_default_share_name_) {
@@ -2183,7 +2360,7 @@ inline ::std::string* ShareToMe::mutable_share_name() {
   return share_name_;
 }
 
-// required string owner = 3;
+// required bytes owner = 3;
 inline bool ShareToMe::has_owner() const {
   return _has_bit(2);
 }
@@ -2209,6 +2386,13 @@ inline void ShareToMe::set_owner(const char* value) {
     owner_ = new ::std::string;
   }
   owner_->assign(value);
+}
+inline void ShareToMe::set_owner(const void* value, size_t size) {
+  _set_bit(2);
+  if (owner_ == &_default_owner_) {
+    owner_ = new ::std::string;
+  }
+  owner_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* ShareToMe::mutable_owner() {
   _set_bit(2);
@@ -2288,7 +2472,7 @@ inline void ShareToMeBufferMessage::set_share_id(::google::protobuf::int32 value
   share_id_ = value;
 }
 
-// optional string share_name = 2;
+// optional bytes share_name = 2;
 inline bool ShareToMeBufferMessage::has_share_name() const {
   return _has_bit(1);
 }
@@ -2315,6 +2499,13 @@ inline void ShareToMeBufferMessage::set_share_name(const char* value) {
   }
   share_name_->assign(value);
 }
+inline void ShareToMeBufferMessage::set_share_name(const void* value, size_t size) {
+  _set_bit(1);
+  if (share_name_ == &_default_share_name_) {
+    share_name_ = new ::std::string;
+  }
+  share_name_->assign(reinterpret_cast<const char*>(value), size);
+}
 inline ::std::string* ShareToMeBufferMessage::mutable_share_name() {
   _set_bit(1);
   if (share_name_ == &_default_share_name_) {
@@ -2323,7 +2514,7 @@ inline ::std::string* ShareToMeBufferMessage::mutable_share_name() {
   return share_name_;
 }
 
-// required string owner = 3;
+// required bytes owner = 3;
 inline bool ShareToMeBufferMessage::has_owner() const {
   return _has_bit(2);
 }
@@ -2349,6 +2540,13 @@ inline void ShareToMeBufferMessage::set_owner(const char* value) {
     owner_ = new ::std::string;
   }
   owner_->assign(value);
+}
+inline void ShareToMeBufferMessage::set_owner(const void* value, size_t size) {
+  _set_bit(2);
+  if (owner_ == &_default_owner_) {
+    owner_ = new ::std::string;
+  }
+  owner_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* ShareToMeBufferMessage::mutable_owner() {
   _set_bit(2);
@@ -2429,7 +2627,7 @@ inline ::maidsafe::DataMap* ShareToMeBufferMessage::add_dms() {
 
 // DataAtlas
 
-// optional string root_db_key = 1;
+// optional bytes root_db_key = 1;
 inline bool DataAtlas::has_root_db_key() const {
   return _has_bit(0);
 }
@@ -2455,6 +2653,13 @@ inline void DataAtlas::set_root_db_key(const char* value) {
     root_db_key_ = new ::std::string;
   }
   root_db_key_->assign(value);
+}
+inline void DataAtlas::set_root_db_key(const void* value, size_t size) {
+  _set_bit(0);
+  if (root_db_key_ == &_default_root_db_key_) {
+    root_db_key_ = new ::std::string;
+  }
+  root_db_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* DataAtlas::mutable_root_db_key() {
   _set_bit(0);

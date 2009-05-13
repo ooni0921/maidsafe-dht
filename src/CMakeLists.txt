@@ -112,6 +112,7 @@ add_library(PDpbmsgslib STATIC  ${M_PROTOBUF_DIR})
 add_library(PDrpcprotocollib STATIC  ${M_RPCPROTO_DIR})
 add_library(PDTESTrpcprotocollib STATIC  ${M_RPCPROTO_DIR})
 add_library(PDupnplib STATIC ${M_UPNP_DIR})
+add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR}  )
 ##########################################################################################
 #Set up some extra compiler and linker flags for the tests mainly                        #
 ##########################################################################################
@@ -165,6 +166,7 @@ TARGET_LINK_LIBRARIES(TESTtransport PDtransportlib  PDbaselib PDpbmsgslib gtest 
 TARGET_LINK_LIBRARIES(TESTrpcprotocol PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib  ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTkademlia PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp ${SYS_LIB} gtest )
+TARGET_LINK_LIBRARIES(maidsafe-dht PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib PDupnplib ${SYS_LIB} )
 #TARGET_LINK_LIBRARIES(PDupnplib ${SYS_LIB})
 
 ##################################################################################
@@ -257,3 +259,98 @@ message ("#############################################")
 message("You can set the build type by: cmake ../../ -DCMAKE_BUILD_TYPE=")
 message("Release (default) Debug RelWithDebInfo MinSizeRel")
 message ("#############################################")
+
+IF(APPLE)
+install(TARGETS maidsafe-dht
+  RUNTIME
+  BUNDLE DESTINATION "Perpetual Data")
+ELSE(APPLE)
+install(TARGETS maidsafe-dht
+  ARCHIVE
+  DESTINATION lib)
+ENDIF(APPLE)
+
+set(CPACK_PACKAGE_NAME "maidsafe-dht")
+set(CPACK_PACKAGE_CONTACT "info@maidsafe.net")
+set(CPACK_PACKAGE_VENDOR "Maidsafe.net")
+ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Perpetual Data - Client and Vault applications")
+ set(CPACK_PACKAGE_INSTALL_DIRECTORY "Maidsafe")
+ set(CPACK_PACKAGE_DESCRIPTION_FILE "${maidsafe-dht_SOURCE_DIR}/../docs/description.txt")
+ set(CPACK_RESOURCE_FILE_LICENSE "${maidsafe-dht_SOURCE_DIR}/../docs/LICENSE.txt")
+ set(CPACK_RESOURCE_FILE_README "${maidsafe-dht_SOURCE_DIR}/../docs/readme.txt")
+ set(CPACK_RESOURCE_FILE_WELCOME "${maidsafe-dht_SOURCE_DIR}/../docs/welcome.txt")
+
+
+IF(APPLE)
+
+ option(CPACK_BINARY_PACKAGEMAKER "Enable to build PackageMaker packages" ON)
+ #option(CPACK_BINARY_OSXX11       "Enable to build OSX X11 packages"      OFF)
+ SET(CMAKE_OSX_ARCHITECTURES i386) #can add ppc;i386
+ SET(MACOSX_BUNDLE_ICON_FILE "${maidsafe-dht_SOURCE_DIR}/build/install_files/maidsafe_logo_tick_ok.icns")
+ SET(MACOSX_BUNDLE_GUI_IDENTIFIER "Maidsafe")
+ SET(MACOSX_BUNDLE_LONG_VERSION_STRING "0.1 ALPHA")
+ SET(MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1")
+ SET(MACOSX_BUNDLE_BUNDLE_NAME "maidsafe-dht")
+ SET(MACOSX_BUNDLE_BUNDLE_VERSION "0.1")
+ SET(MACOSX_BUNDLE_COPYRIGHT "Maidsafe.Net Ltd.")
+ SET(GUI_TYPE MACOSX_BUNDLE)
+
+ SET_SOURCE_FILES_PROPERTIES(
+   maidsafe-dht
+   PROPERTIES
+   MACOSX_PACKAGE_LOCATION MACOS)
+
+ #Copy all required icons to Resources folder
+ SET_SOURCE_FILES_PROPERTIES(
+   ${maidsafe-dht_SOURCE_DIR}../docs/maidsafe_logo_tick_ok.icns
+   ${maidsafe-dht_SOURCE_DIR}../docs/maidsafe_logo_cross_not_ok.icns
+PROPERTIES
+MACOSX_PACKAGE_LOCATION Resources)
+
+#message("-------MAC OSX Package Information------------")
+#message("MACOSX_BUNDLE_ICON_FILE (must be an .icns file) is: ${MACOSX_BUNDLE_ICON_FILE}")
+
+#message("----------------------------------------------")
+
+ELSEIF(WIN32)
+set(CPACK_GENERATOR NSIS)
+
+SET(CPACK_NSIS_MODIFY_PATH OFF)
+SET(CPACK_PACKAGE_RELOCATABLE "false")
+
+
+
+SET(CPACK_NSIS_MUI_ICON "${maidsafe-dht_SOURCE_DIR}\\\\..\\\\docs\\\\maidsafe_logo1.ico")
+
+#Location of the .ico icon file for the un installer in start menu
+SET(CPACK_NSIS_MUI_UNIICON "${maidsafe-dht_SOURCE_DIR}\\\\..\\\\docs\\\\maidsafe_logo_cross_not_ok.ico")
+
+#Branding image inside the installer
+SET(CPACK_PACKAGE_ICON "${maidsafe-dht_SOURCE_DIR}\\\\..\\\\docs\\\\pd.png")
+
+#setting the executable
+
+
+#Setting shortcuts to maidsafe website in Programs Menu
+#Can also be added links to documentation, etc
+set(CPACK_NSIS_MENU_LINKS
+    "http://www.maidsafe.net" "Maidsafe web site"
+    "http://bug.maidsafe.net" "Maidsafe support site"
+    )
+
+SET(CPACK_RESOURCE_FILE_LICENSE "${maidsafe-dht_SOURCE_DIR}\\\\..\\\\docs\\\\EULA_001.txt")
+SET(CPACK_CREATE_DESKTOP_LINKS "perpetualdata")
+#NSIS installer info
+SET(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.maidsafe.net")
+SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.maidsafe.net")
+SET(CPACK_NSIS_CONTACT "contact@maidsafe.net")
+
+ELSEIF(UNIX)
+	SET(CMAKE_INSTALL_PREFIX "/usr")
+  SET(CPACK_SET_DESTDIR on)
+
+  SET(CPACK_GENERATOR DEB;RPM;TGZ)
+ENDIF()
+   install(FILES ${PD_SOURCE_DIR}/build/install_files/maidsafe_logo.xpm
+   DESTINATION share/usr/pixmaps)
+INCLUDE(CPack)
