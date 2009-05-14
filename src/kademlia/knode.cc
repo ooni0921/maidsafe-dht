@@ -1,16 +1,12 @@
 /*
-Copyright (c) 2009 maidsafe.net limited
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-    * Neither the name of the maidsafe.net limited nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-/*ritten permission of the board of directors of maidsafe.net
+ * copyright maidsafe.net limited 2008
+ * The following source code is property of maidsafe.net limited and
+ * is not meant for external use. The use of this code is governed
+ * by the license file LICENSE.TXT found in teh root of this directory and also
+ * on www.maidsafe.net.
+ *
+ * You are not free to copy, amend or otherwise use this source code without
+ * explicit written permission of the board of directors of maidsafe.net
  *
  *  Created on: Sep 29, 2008
  *      Author: haiyang
@@ -88,11 +84,10 @@ void dummy_downlist_callback(DownlistResponse *response) {
 }
 
 KNode::KNode(const std::string &datastore_dir,
-             base::CallLaterTimer *timer,
-             boost::recursive_mutex *mutex,
+             boost::shared_ptr<base::CallLaterTimer> timer,
              boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
              node_type type)
-    : pmutex_(mutex),
+    : mutex_(),
       ptimer_(timer),
       pchannel_manager_(channel_manager),
       pservice_channel_(),
@@ -101,12 +96,12 @@ KNode::KNode(const std::string &datastore_dir,
       kadrpcs_(channel_manager),
       is_joined_(false),
       prouting_table_(),
-      node_id_(),
-      host_ip_(channel_manager->external_ip()),
-      fake_client_node_id_(),
+      node_id_(""),
+      host_ip_(""),
+      fake_client_node_id_(""),
       type_(type),
-      host_port_(channel_manager->external_port()),
-      rv_ip_(),
+      host_port_(0),
+      rv_ip_(""),
       rv_port_(0),
       bootstrapping_nodes_(),
       K_(K),
@@ -114,23 +109,29 @@ KNode::KNode(const std::string &datastore_dir,
       beta_(kBeta),
       dead_rendezvous_server_(),
       refresh_routine_started_(false),
-      kad_config_path_(),
+      kad_config_path_(""),
       routingtable_(),
-      local_host_ip_(),
+      local_host_ip_(""),
       local_host_port_(0),
       upnp_started_(false),
       upnp_ios_(),
       upnp_(),
-      upnp_half_open_(NULL),
+      upnp_half_open_(0),
       upnp_user_agent_("maidsafe"),
       upnp_mapped_port_(0),
       upnp_udp_map_(0) {
+  for (int i = 0; i < 14; ++i) {
+    boost::shared_ptr<boost::mutex> mutex(new boost::mutex);
+    mutex_.push_back(mutex);
+  }
   try {
     if (!fs::exists(datastore_dir))
       fs::create_directories(datastore_dir);
   }
   catch(const std::exception &ex_) {
+#ifdef DEBUG
     printf("%s\n", ex_.what());
+#endif
   }
   fs::path db_(datastore_dir, fs::native);
   db_ /= "datastore.db";
@@ -146,14 +147,13 @@ KNode::KNode(const std::string &datastore_dir,
 }
 
 KNode::KNode(const std::string &datastore_dir,
-             base::CallLaterTimer *timer,
-             boost::recursive_mutex *mutex,
+             boost::shared_ptr<base::CallLaterTimer> timer,
              boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
              node_type type,
              const boost::uint16_t k,
              const int &alpha,
              const int &beta)
-    : pmutex_(mutex),
+    : mutex_(),
       ptimer_(timer),
       pchannel_manager_(channel_manager),
       pservice_channel_(),
@@ -162,12 +162,12 @@ KNode::KNode(const std::string &datastore_dir,
       kadrpcs_(channel_manager),
       is_joined_(false),
       prouting_table_(),
-      node_id_(),
-      host_ip_(channel_manager->external_ip()),
-      fake_client_node_id_(),
+      node_id_(""),
+      host_ip_(""),
+      fake_client_node_id_(""),
       type_(type),
-      host_port_(channel_manager->external_port()),
-      rv_ip_(),
+      host_port_(0),
+      rv_ip_(""),
       rv_port_(0),
       bootstrapping_nodes_(),
       K_(k),
@@ -175,23 +175,29 @@ KNode::KNode(const std::string &datastore_dir,
       beta_(beta),
       dead_rendezvous_server_(),
       refresh_routine_started_(false),
-      kad_config_path_(),
+      kad_config_path_(""),
       routingtable_(),
-      local_host_ip_(),
+      local_host_ip_(""),
       local_host_port_(0),
       upnp_started_(false),
       upnp_ios_(),
       upnp_(),
-      upnp_half_open_(NULL),
+      upnp_half_open_(0),
       upnp_user_agent_("maidsafe"),
       upnp_mapped_port_(0),
       upnp_udp_map_(0) {
+  for (int i = 0; i < 14; ++i) {
+    boost::shared_ptr<boost::mutex> mutex(new boost::mutex);
+    mutex_.push_back(mutex);
+  }
   try {
     if (!fs::exists(datastore_dir))
       fs::create_directories(datastore_dir);
   }
   catch(const std::exception &ex_) {
+#ifdef DEBUG
     printf("%s\n", ex_.what());
+#endif
   }
   fs::path db_(datastore_dir, fs::native);
   db_ /= "datastore.db";
@@ -207,12 +213,23 @@ KNode::KNode(const std::string &datastore_dir,
 }
 
 KNode::~KNode() {
-//  printf("In KNode (on port %i) destructor.\n", host_port_);
+#ifdef VERBOSE_DEBUG
+  printf("\t\tIn KNode (on port %i) destructor.\n", host_port_);
+#endif
   if (is_joined_) {
-    base::pd_scoped_lock guard(*pmutex_);
+#ifdef VERBOSE_DEBUG
+    printf("\t\tIn KNode destructor(%i), outside mutex.\n", host_port_);
+#endif
+    boost::mutex::scoped_lock guard(*mutex_[0]);
+#ifdef VERBOSE_DEBUG
+    printf("\t\tIn KNode destructor(%i), inside mutex.\n", host_port_);
+#endif
     UnRegisterKadService();
     is_joined_ = false;
     pdata_store_->Close();
+#ifdef VERBOSE_DEBUG
+    printf("\t\tIn KNode destructor(%i), unlock.\n", host_port_);
+#endif
   }
   if (upnp_started_ && upnp_mapped_port_ > 0) {
     UnMapUPnP();
@@ -229,7 +246,8 @@ inline void KNode::CallbackWithFailure(base::callback_func_type cb) {
   cb(result);
 }
 
-void KNode::Bootstrap_Callback(const BootstrapResponse *response,
+void KNode::Bootstrap_Callback(
+    const boost::shared_ptr<BootstrapResponse> response,
     BootstrapData data) {
   std::string result_str;
   BootstrapResponse result_msg;
@@ -240,7 +258,6 @@ void KNode::Bootstrap_Callback(const BootstrapResponse *response,
   }
   result_msg.SerializeToString(&result_str);
   data.cb(result_str);
-  delete response;
 }
 
 void KNode::Bootstrap(const std::string &bootstrap_ip,
@@ -248,16 +265,16 @@ void KNode::Bootstrap(const std::string &bootstrap_ip,
   const bool &port_forwarded) {
   struct BootstrapData data = {cb, bootstrap_ip, bootstrap_port};
   // send RPC to a bootstrapping node candidate
-  BootstrapResponse *resp = new BootstrapResponse();
+  boost::shared_ptr<BootstrapResponse> resp(new BootstrapResponse());
   google::protobuf::Closure *done = google::protobuf::NewCallback<
-      KNode, const BootstrapResponse*, struct BootstrapData> (this,
+      KNode, boost::shared_ptr<BootstrapResponse>, struct BootstrapData> (this,
       &KNode::Bootstrap_Callback, resp, data);
   if (port_forwarded) {
     kadrpcs_.Bootstrap(client_node_id(), host_ip_, host_port_, bootstrap_ip,
-      bootstrap_port, resp, done);
+      bootstrap_port, resp.get(), done);
   } else {
     kadrpcs_.Bootstrap(node_id(), host_ip_, host_port_, bootstrap_ip,
-      bootstrap_port, resp, done);
+      bootstrap_port, resp.get(), done);
   }
 }
 
@@ -327,7 +344,9 @@ void KNode::Join_Bootstrapping_Iteration(const std::string& result,
     if (!result_msg.has_nat_type()) {
       // this is when bootstrapping to a node that has no contacts
       // assuming that the node is directly connected
-      printf("dir connected %s:%d\n", host_ip_.c_str(), host_port_);
+#ifdef DEBUG
+      printf("Directly connected %s:%d\n", host_ip_.c_str(), host_port_);
+#endif
       if (args->port_fw)
         host_port_ = local_host_port_;
       rv_ip_ = "";
@@ -335,27 +354,27 @@ void KNode::Join_Bootstrapping_Iteration(const std::string& result,
       pchannel_manager_->ptransport()->StartPingRendezvous(true, "", 0);
     } else if (result_msg.nat_type() == 1) {
       // Direct connection
-      #ifdef DEBUG
+#ifdef DEBUG
       printf("type of NAT = 1\n");
-      #endif
+#endif
       pchannel_manager_->ptransport()->StartPingRendezvous(directlyconnected,
         bootstrap_node.host_ip(), bootstrap_node.host_port());
       rv_ip_ = "";
       rv_port_ = 0;
     } else if (result_msg.nat_type() == 2) {
       // need rendezvous server
-      #ifdef DEBUG
+#ifdef DEBUG
       printf("type of NAT = 2\n");
-      #endif
+#endif
       rv_ip_ = bootstrap_node.host_ip();
       rv_port_ = bootstrap_node.host_port();
       pchannel_manager_->ptransport()->StartPingRendezvous(directlyconnected,
         rv_ip_, rv_port_);
     } else if (result_msg.nat_type() == 3) {
       // behind symmetric router or no connection
-      #ifdef DEBUG
+#ifdef DEBUG
       printf("type of NAT = 3\n");
-      #endif
+#endif
       UPnPMap(local_host_port_);
       if (upnp_mapped_port_ != 0) {
         host_port_ = upnp_mapped_port_;
@@ -408,7 +427,13 @@ void KNode::Join_Bootstrapping_Iteration(const std::string& result,
 void KNode::Join_Bootstrapping(base::callback_func_type cb,
                                std::vector<Contact> &cached_nodes,
                                const bool &port_forwarded) {
-  base::pd_scoped_lock guard(*pmutex_);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::Join_Bootstrapping(%i), outside mutex.\n", host_port_);
+#endif
+  boost::mutex::scoped_lock guard(*mutex_[1]);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::Join_Bootstrapping(%i), inside mutex.\n", host_port_);
+#endif
   if (cached_nodes.empty()) {
     base::GeneralResponse local_result;
     std::string local_result_str;
@@ -419,6 +444,11 @@ void KNode::Join_Bootstrapping(base::callback_func_type cb,
       // since it is a 1 network node, so it has no rendezvous server to ping
       pchannel_manager_->ptransport()->StartPingRendezvous(true,
         rv_ip_, rv_port_);
+      if (!refresh_routine_started_) {
+        ptimer_->AddCallLater(kRefreshTime*1000, boost::bind(
+          &KNode::RefreshRoutine, this));
+        refresh_routine_started_ = true;
+      }
     } else {
       // Client nodes can not start a network on their own
       local_result.set_result(kRpcResultFailure);
@@ -428,6 +458,9 @@ void KNode::Join_Bootstrapping(base::callback_func_type cb,
     printf("Bootstrap End no bs contacts\n");
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
+#ifdef SHOW_MUTEX
+    printf("\t\tIn KNode::Join_Bootstrapping(%i), unlock 1.\n", host_port_);
+#endif
     return;
   }
   // Clients don't need to do nat detection
@@ -473,12 +506,13 @@ void KNode::Join_Bootstrapping(base::callback_func_type cb,
     }
     ++args->active_process;
   }
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::Join_Bootstrapping(%i), unlock 2.\n", host_port_);
+#endif
 }
 
 void KNode::Join_RefreshNode(base::callback_func_type cb,
     const bool &port_forwarded) {
-//  printf("Node address: %s:%d\n", host_ip_.c_str(), host_port_);
-
   // build list of bootstrapping nodes
   LoadBootstrapContacts();
   // Initiate the Kademlia joining sequence - perform a search for this
@@ -522,7 +556,11 @@ void KNode::Join(const std::string &node_id,
     pdata_store_->StoreItem("node_id", node_id_, now, now);
 //    }
   } else {
-    node_id_ = node_id;
+    std::string dec_id;
+    if (!base::decode_from_hex(node_id, dec_id))
+      node_id_ = node_id;
+    else
+      node_id_ = dec_id;
   }
   if (type_ == CLIENT) {
     fake_client_node_id_ = client_node_id();
@@ -543,7 +581,13 @@ void KNode::Leave() {
       UnMapUPnP();
     }
     {
-      base::pd_scoped_lock guard(*pmutex_);
+#ifdef SHOW_MUTEX
+      printf("\t\tIn KNode::Leave(%i), outside mutex.\n", host_port_);
+#endif
+      boost::mutex::scoped_lock guard(*mutex_[2]);
+#ifdef SHOW_MUTEX
+      printf("\t\tIn KNode::Leave(%i), inside mutex.\n", host_port_);
+#endif
       UnRegisterKadService();
       is_joined_ = false;
       upnp_started_ = false;
@@ -551,6 +595,9 @@ void KNode::Leave() {
       SaveBootstrapContacts();
       prouting_table_->Clear();
       routingtable_->Clear();
+#ifdef SHOW_MUTEX
+      printf("\t\tIn KNode::Leave(%i), unlock.\n", host_port_);
+#endif
     }
   }
 }
@@ -558,64 +605,120 @@ void KNode::Leave() {
 void KNode::SaveBootstrapContacts() {
   try {
     // If .kadconfig is locked, wait for up to 5 seconds, then start updating it
-    fs::path lockfile(kad_config_path_.string() + ".lock", fs::native);
-    int count = 0;
-    while (fs::exists(lockfile) && count < 500) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-      ++count;
-    }
+//    fs::path lockfile(kad_config_path_.string() + ".lock", fs::native);
+//    int count = 0;
+//    while (fs::exists(lockfile) && count < 500) {
+//      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//      ++count;
+//    }
     // Create good copy of .kadconfig named lockfile.  If old lockfile still
     // exists, assume another thread failed to update .kadconfig, so overwrite
     // .kadconfig with lockfile.
-    if (fs::exists(lockfile)) {
-      fs::remove(kad_config_path_);
-      fs::copy_file(lockfile, kad_config_path_);
-    } else if (fs::exists(kad_config_path_)) {
-      fs::copy_file(kad_config_path_, lockfile);
-    }
+//    if (fs::exists(lockfile)) {
+//      fs::remove(kad_config_path_);
+//      fs::copy_file(lockfile, kad_config_path_);
+//    } else if (fs::exists(kad_config_path_)) {
+//      fs::copy_file(kad_config_path_, lockfile);
+//    }
 
     // Reload bootstrap vector from .kadconfig
-    LoadBootstrapContacts();
+//    LoadBootstrapContacts();
     std::vector<Contact> exclude_contacts;
-    int kbuckets = prouting_table_->KbucketSize();
-    for (int i = 0; i < kbuckets; ++i) {
-      std::vector<Contact> contacts_i;
-      prouting_table_->GetContacts(i, &contacts_i, exclude_contacts);
-      for (int j = 0; j < static_cast<int>(contacts_i.size()); ++j) {
+    std::vector<Contact> bs_contacts;
+    bool reached_max = false;
+    int added_nodes = 0;
+    {
+#ifdef SHOW_MUTEX
+      printf("\t\tIn KNode::SaveBootstrapContacts(%i), outside mutex1.\n",
+             host_port_);
+#endif
+      boost::mutex::scoped_lock guard(*mutex_[3]);
+#ifdef SHOW_MUTEX
+      printf("\t\tIn KNode::SaveBootstrapContacts(%i), inside mutex1.\n",
+             host_port_);
+#endif
+      int kbuckets = prouting_table_->KbucketSize();
+      for (int i = 0; i < kbuckets && !reached_max; ++i) {
+        std::vector<Contact> contacts_i;
+        prouting_table_->GetContacts(i, &contacts_i, exclude_contacts);
+        for (int j = 0; j < static_cast<int>(contacts_i.size()) &&
+             !reached_max; ++j) {
         // store only the nodes that are directly connected to bootstrap vector
-        if (contacts_i[j].rendezvous_ip() == "" &&
-            contacts_i[j].rendezvous_port() == 0)
-          bootstrapping_nodes_.push_back(contacts_i[j]);
+          if (contacts_i[j].rendezvous_ip() == "" &&
+              contacts_i[j].rendezvous_port() == 0) {
+            bs_contacts.push_back(contacts_i[j]);
+            added_nodes++;
+          }
+          if (added_nodes >= kMaxBootstrapContacts)
+            reached_max = true;
+        }
       }
     }
     // Ensure vector is no greater than max allowed size
-    int extra = bootstrapping_nodes_.size() - kMaxBootstrapContacts;
-    if (extra > 0)
-      bootstrapping_nodes_.erase(bootstrapping_nodes_.begin(),
-                                 bootstrapping_nodes_.begin()+extra);
+//    int extra = bootstrapping_nodes_.size() - kMaxBootstrapContacts;
+//    if (extra > 0)
+//      bootstrapping_nodes_.erase(bootstrapping_nodes_.begin(),
+//                                 bootstrapping_nodes_.begin()+extra);
     // Save contacts to .kadconfig
     base::KadConfig kad_config;
-    std::vector<Contact>::iterator it;
-    for (it = bootstrapping_nodes_.begin();
-         it < bootstrapping_nodes_.end();
-         ++it) {
+    std::string node0_id;
+    if (!bootstrapping_nodes_.empty()) {
+      node0_id = bootstrapping_nodes_[0].node_id();
+      std::string hex_id;
       base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-      kad_contact->set_node_id(it->node_id());
-      kad_contact->set_ip(it->host_ip());
-      kad_contact->set_port(it->host_port());
-      kad_contact->set_local_ip(it->local_ip());
-      kad_contact->set_local_port(it->local_port());
+      base::encode_to_hex(bootstrapping_nodes_[0].node_id(), hex_id);
+      kad_contact->set_node_id(hex_id);
+      std::string dec_ext_ip(base::inet_btoa(
+            bootstrapping_nodes_[0].host_ip()));
+      kad_contact->set_ip(dec_ext_ip);
+      kad_contact->set_port(bootstrapping_nodes_[0].host_port());
+      if (bootstrapping_nodes_[0].local_ip() != "") {
+        std::string dec_lip(base::inet_btoa(
+            bootstrapping_nodes_[0].local_ip()));
+        kad_contact->set_local_ip(dec_lip);
+        kad_contact->set_local_port(bootstrapping_nodes_[0].local_port());
+      }
     }
-    std::fstream output(kad_config_path_.string().c_str(),
-      std::ios::out | std::ios::trunc | std::ios::binary);
-    kad_config.SerializeToOstream(&output);
-    output.close();
+    std::vector<Contact>::iterator it;
+    for (it = bs_contacts.begin();
+         it < bs_contacts.end();
+         ++it) {
+      if (it->node_id() != node0_id) {
+        std::string hex_id;
+        base::encode_to_hex(it->node_id(), hex_id);
+        base::KadConfig::Contact *kad_contact = kad_config.add_contact();
+        kad_contact->set_node_id(hex_id);
+        std::string dec_ext_ip(base::inet_btoa(it->host_ip()));
+        kad_contact->set_ip(dec_ext_ip);
+        kad_contact->set_port(it->host_port());
+        if (it->local_ip() != "") {
+          std::string dec_lip(base::inet_btoa(it->local_ip()));
+          kad_contact->set_local_ip(dec_lip);
+          kad_contact->set_local_port(it->local_port());
+        }
+      }
+    }
+    {
+#ifdef SHOW_MUTEX
+      printf("\t\tIn KNode::SaveBootstrapContacts(%i), outside mutex2.\n",
+             host_port_);
+#endif
+      boost::mutex::scoped_lock guard(*mutex_[4]);
+#ifdef SHOW_MUTEX
+      printf("\t\tIn KNode::SaveBootstrapContacts(%i), inside mutex2.\n",
+             host_port_);
+#endif
+      std::fstream output(kad_config_path_.string().c_str(),
+        std::ios::out | std::ios::trunc | std::ios::binary);
+      kad_config.SerializeToOstream(&output);
+      output.close();
+    }
     // Delete lockfile
-    fs::remove(lockfile);
+//    fs::remove(lockfile);
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
-    printf("Failed to update kademlia configuration file at %s.\n%s\n",
+    printf("\t\tFailed to update kademlia configuration file at %s.\n%s\n",
            kad_config_path_.string().c_str(), ex.what());
 #endif
   }
@@ -630,13 +733,14 @@ int KNode::LoadBootstrapContacts() {
                            std::ios::in | std::ios::binary);
       if (!kad_config.ParseFromIstream(&input_)) {
 #ifdef DEBUG
-        printf("Failed to parse kademlia configuration file.\n");
+        printf("\t\tFailed to parse kademlia configuration file.\n");
 #endif
         return -1;
       }
+      input_.close();
       if (0 == kad_config.contact_size()) {
 #ifdef DEBUG
-        printf("Kademlia configuration file is empty.\n");
+        printf("\t\tKademlia configuration file is empty.\n");
 #endif
         return -1;
       }
@@ -644,7 +748,7 @@ int KNode::LoadBootstrapContacts() {
   }
   catch(const std::exception ex_) {
 #ifdef DEBUG
-    printf("Can't access kademlia configuration file at %s %s\n",
+    printf("\t\tCan't access kademlia configuration file at %s %s\n",
            kad_config_path_.string().c_str(),
            ex_.what());
 #endif
@@ -652,13 +756,15 @@ int KNode::LoadBootstrapContacts() {
   }
   bootstrapping_nodes_.clear();
   for (int i = 0; i < kad_config.contact_size(); ++i) {
+    std::string dec_id;
+    base::decode_from_hex(kad_config.contact(i).node_id(), dec_id);
     Contact bootstrap_contact(
-        kad_config.contact(i).node_id(),
+        dec_id,
         kad_config.contact(i).ip(),
         static_cast<uint16_t>(kad_config.contact(i).port()),
         kad_config.contact(i).local_ip(),
         kad_config.contact(i).local_port());
-//    printf("Added ip %s:%i to list\n", kad_config.contact(i).ip().c_str(),
+//    printf("\t\tAdded ip %s:%i to list\n", kad_config.contact(i).ip().c_str(),
 //    kad_config.contact(i).port());
     bootstrapping_nodes_.push_back(bootstrap_contact);
   }
@@ -683,6 +789,15 @@ void KNode::RefreshRoutine() {
 
 void KNode::IterativeLookUp_CancelActiveProbe(Contact sender,
     boost::shared_ptr<IterativeLookUpData> data) {
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::IterativeLookUp_CancelActiveProbe(%i), outside mutex\n",
+         host_port_);
+#endif
+  boost::mutex::scoped_lock guard(*mutex_[5]);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::IterativeLookUp_CancelActiveProbe(%i), inside mutex.\n",
+         host_port_);
+#endif
   if (!is_joined_ && data->method != BOOTSTRAP) return;
   std::list<Contact>::iterator it;
   for (it = data->active_probes.begin(); it != data->active_probes.end();
@@ -697,32 +812,56 @@ void KNode::IterativeLookUp_CancelActiveProbe(Contact sender,
   if (static_cast<int>(data->active_probes.size()) <= beta_ &&
       !data->wait_for_key) {
     // force iteration
+    guard.unlock();
     IterativeLookUp_SearchIteration(data);
   }
 }
 
 void KNode::IterativeLookUp_ExtendShortList(const FindResponse *response,
     FindCallbackArgs callback_data) {
-  base::pd_scoped_lock gaurd(*pmutex_);
+#ifdef VERBOSE_DEBUG
+  printf("\t\tIn callback to KNode::IterativeLookUp_ExtendShortList(%i).\n",
+         host_port_);
+  printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), outside mutex.\n",
+         host_port_);
+#endif
+  boost::mutex::scoped_lock guard(*mutex_[5]);
+#ifdef VERBOSE_DEBUG
+  printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), inside mutex.\n",
+         host_port_);
+#endif
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 1.\n", host_port_);
   if (!is_joined_ && callback_data.data->method != BOOTSTRAP) {
       delete response;
+#ifdef VERBOSE_DEBUG
+      printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 1.\n",
+             host_port_);
+#endif
       return;
   }
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 2.\n", host_port_);
   bool is_valid = true;
   if (!response->IsInitialized() && callback_data.data->method != BOOTSTRAP) {
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 3.\n", host_port_);
     RemoveContact(callback_data.sender.node_id());
     is_valid = false;
     callback_data.data->dead_ids.push_back(callback_data.sender.node_id());
   }
 
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 4.\n", host_port_);
   if (is_valid) {
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 5.\n", host_port_);
     // Check id and retry if it was sent
     if (response->has_node_id() &&
         response->node_id() != callback_data.sender.node_id()) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i),6.\n", host_port_);
       if (callback_data.retry) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 7.\n", host_port_);
         delete response;
         FindResponse *resp = new FindResponse();
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 8.\n", host_port_);
         UpdatePDRTContactToRemote(callback_data.sender.node_id());
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 9.\n", host_port_);
         callback_data.retry = false;
       // send RPC to this contact's remote address because local failed
         google::protobuf::Closure *done = google::protobuf::NewCallback<
@@ -730,58 +869,98 @@ void KNode::IterativeLookUp_ExtendShortList(const FindResponse *response,
             &KNode::IterativeLookUp_ExtendShortList, resp, callback_data);
         if (callback_data.data->method == FIND_NODE ||
             callback_data.data->method == BOOTSTRAP) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 10.\n", host_port_);
           if (callback_data.data->method == BOOTSTRAP) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 11.\n", host_port_);
             kad::Contact tmp_contact(node_id(), host_ip_, host_port_,
               local_host_ip_, local_host_port_, rv_ip_, rv_port_);
             std::string contact_str;
             tmp_contact.SerialiseToString(&contact_str);
             resp->set_requester_ext_addr(contact_str);
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 12.\n", host_port_);
           }
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 13.\n", host_port_);
           kadrpcs_.FindNode(callback_data.data->key,
               callback_data.sender.host_ip(), callback_data.sender.host_port(),
               resp, done, false);
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 14.\n", host_port_);
         } else if (callback_data.data->method == FIND_VALUE) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 15.\n", host_port_);
           kadrpcs_.FindValue(callback_data.data->key,
               callback_data.sender.host_ip(), callback_data.sender.host_port(),
               resp, done, false);
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 16.\n", host_port_);
         }
+#ifdef VERBOSE_DEBUG
+        printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 2.\n",
+               host_port_);
+#endif
         return;
       }
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 17.\n", host_port_);
     }
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 18.\n", host_port_);
   }
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 19.\n", host_port_);
 
   if ((!is_valid || response->result() == kRpcResultFailure) &&
       callback_data.data->method != BOOTSTRAP) {
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 20.\n", host_port_);
     // callback can only be called once
     if (callback_data.data->is_callbacked) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 21.\n", host_port_);
       if (callback_data.data->active_probes_after_callback > 0) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 22.\n", host_port_);
         --callback_data.data->active_probes_after_callback;
       } else {
         delete response;
+#ifdef VERBOSE_DEBUG
+        printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 3.\n",
+               host_port_);
+#endif
         return;
       }
       if (callback_data.data->active_probes_after_callback != 0) {
         delete response;
+#ifdef VERBOSE_DEBUG
+        printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 4.\n",
+               host_port_);
+#endif
         return;
       }
       if (callback_data.data->method != BOOTSTRAP) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 23.\n", host_port_);
         IterativeLookUp_SendDownlist(callback_data.data);
       }
       delete response;
+#ifdef VERBOSE_DEBUG
+      printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 5.\n",
+             host_port_);
+#endif
       return;
     }
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 24.\n", host_port_);
     std::list<Contact>::iterator it;
     for (it = callback_data.data->short_list.begin();
         it != callback_data.data->short_list.end(); ++it) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 25.\n", host_port_);
       if (callback_data.sender == *it) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 26.\n", host_port_);
         callback_data.data->short_list.erase(it);
         break;
       }
     }
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 27.\n", host_port_);
+    guard.unlock();
     IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
     delete response;
+#ifdef VERBOSE_DEBUG
+    printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 6.\n",
+           host_port_);
+#endif
     return;
   }
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 28.\n", host_port_);
   // add/update routing table
 
 //  std::string me, he;
@@ -792,6 +971,7 @@ void KNode::IterativeLookUp_ExtendShortList(const FindResponse *response,
 //  printf("\t\tHe returned %i contacts\n.", response->closest_nodes_size());
 
   AddContact(callback_data.sender);
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 29.\n", host_port_);
 //  // if this is a special lookup for boostrapping, save information returned
 //  if (callback_data.data->method == BOOTSTRAP) {
 //    kad::Contact tmp_contact;
@@ -805,86 +985,135 @@ void KNode::IterativeLookUp_ExtendShortList(const FindResponse *response,
   // if ((callback_data.data->is_callbacked)||
   if (!is_joined_ && callback_data.data->method != BOOTSTRAP) {
     delete response;
+#ifdef VERBOSE_DEBUG
+    printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 7.\n",
+           host_port_);
+#endif
     return;
   }
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 30.\n", host_port_);
 
   if (callback_data.data->is_callbacked) {
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 31.\n", host_port_);
     if (callback_data.data->active_probes_after_callback > 0) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 32.\n", host_port_);
       --callback_data.data->active_probes_after_callback;
     } else {
       delete response;
+#ifdef VERBOSE_DEBUG
+      printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 8.\n",
+             host_port_);
+#endif
       return;
     }
     if (callback_data.data->active_probes_after_callback != 0) {
       delete response;
+#ifdef VERBOSE_DEBUG
+      printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 9.\n",
+             host_port_);
+#endif
       return;
     }
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 33.\n", host_port_);
     if (callback_data.data->method != BOOTSTRAP) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 34.\n", host_port_);
       IterativeLookUp_SendDownlist(callback_data.data);
     }
     delete response;
+#ifdef VERBOSE_DEBUG
+    printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 10.\n",
+           host_port_);
+#endif
     return;
   }
-
-
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 35.\n", host_port_);
 
   // Make sure the responding node is valid, and abort the operation if it isn't
   if (callback_data.sender.node_id() == node_id_) {
-    IterativeLookUp_CancelActiveProbe(callback_data.sender,
-        callback_data.data);
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 36.\n", host_port_);
+    guard.unlock();
+    IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
     delete response;
+#ifdef VERBOSE_DEBUG
+    printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 11.\n",
+           host_port_);
+#endif
     return;
   }
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 37.\n", host_port_);
   std::list<Contact>::iterator it;
   for (it = callback_data.data->active_contacts.begin();
       it != callback_data.data->active_contacts.end(); ++it) {
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 38.\n", host_port_);
     if (*it == callback_data.sender) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 39.\n", host_port_);
+      guard.unlock();
       IterativeLookUp_CancelActiveProbe(callback_data.sender,
           callback_data.data);
       delete response;
+#ifdef VERBOSE_DEBUG
+      printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 12.\n",
+             host_port_);
+#endif
       return;
     }
   }
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 40.\n", host_port_);
   // Mark this node as active
   callback_data.data->active_contacts.push_back(callback_data.sender);
   // extend the value list if there are any new values found
   std::list<std::string>::iterator it1;
   bool is_new;
   for (int i = 0; i < response->values_size(); ++i) {
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 41.\n", host_port_);
     is_new = true;
     for (it1 = callback_data.data->find_value_result.begin();
       it1 != callback_data.data->find_value_result.end(); ++it1) {
       if (*it1 == response->values(i)) {
-        is_new = false;
-        break;
-      }
-    }
-    if (is_new)
-      callback_data.data->find_value_result.push_back(response->values(i));
-  }
-  // Now extend short list with the returned contacts
-  std::list<Contact>::iterator it2;
-  for (int i = 0; i < response->closest_nodes_size(); ++i) {
-    Contact test_contact;
-    if (!test_contact.ParseFromString(response->closest_nodes(i))) {
-      continue;
-    }
-    AddContact(test_contact);
-    is_new = true;
-    for (it2 = callback_data.data->short_list.begin();
-        it2 != callback_data.data->short_list.end(); ++it2) {
-      if (test_contact == *it2) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 42.\n", host_port_);
         is_new = false;
         break;
       }
     }
     if (is_new) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 43.\n", host_port_);
+      callback_data.data->find_value_result.push_back(response->values(i));
+    }
+  }
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 44.\n", host_port_);
+  // Now extend short list with the returned contacts
+  std::list<Contact>::iterator it2;
+  for (int i = 0; i < response->closest_nodes_size(); ++i) {
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 45.\n", host_port_);
+    Contact test_contact;
+    if (!test_contact.ParseFromString(response->closest_nodes(i))) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 46.\n", host_port_);
+      continue;
+    }
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 47.\n", host_port_);
+    AddContact(test_contact);
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 48.\n", host_port_);
+    is_new = true;
+    for (it2 = callback_data.data->short_list.begin();
+        it2 != callback_data.data->short_list.end(); ++it2) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 49.\n", host_port_);
+      if (test_contact == *it2) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 50.\n", host_port_);
+        is_new = false;
+        break;
+      }
+    }
+    if (is_new) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 51.\n", host_port_);
       // add to the front
       Contact self_node(node_id_, host_ip_, host_port_, local_host_ip_,
           local_host_port_);
-      if (test_contact != self_node)
+      if (test_contact != self_node) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 52.\n", host_port_);
         callback_data.data->short_list.push_front(test_contact);
+      }
     }
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 53.\n", host_port_);
     // Implementation of downlist algorithm
     // Add to the downlist as a candidate with the is_down flag set to false
     // by default
@@ -893,15 +1122,20 @@ void KNode::IterativeLookUp_ExtendShortList(const FindResponse *response,
     candidate.is_down = false;
     bool is_appended = false;
     std::list<struct DownListData>::iterator it5;
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 54.\n", host_port_);
     for (it5 = callback_data.data->downlist.begin();
          it5 != callback_data.data->downlist.end(); ++it5) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 55.\n", host_port_);
       if (it5->giver == callback_data.sender) {
+        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 56.\n", host_port_);
         it5->candidate_list.push_back(candidate);
         is_appended = true;
         break;
       }
     }
+    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 57.\n", host_port_);
     if (!is_appended) {
+      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 58.\n", host_port_);
       struct DownListData downlist_data;
       downlist_data.giver = callback_data.sender;
       downlist_data.candidate_list.push_back(candidate);
@@ -909,8 +1143,14 @@ void KNode::IterativeLookUp_ExtendShortList(const FindResponse *response,
     }
     // End of implementation downlist algorithm
   }
-  delete response;
+#ifdef VERBOSE_DEBUG
+  printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 13.\n",
+         host_port_);
+#endif
+  guard.unlock();
   IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
+  delete response;
+  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 59.\n", host_port_);
 }
 
 void KNode::IterativeLookUp_Callback(
@@ -1032,7 +1272,7 @@ void KNode::IterativeLookUp_SendDownlist(
 void KNode::IterativeLookUp_SearchIteration(
     boost::shared_ptr<IterativeLookUpData> data) {
   // callback can only be called once
-  if ((data->is_callbacked)||(!is_joined_ && data->method != BOOTSTRAP)) {;
+  if ((data->is_callbacked)||(!is_joined_ && data->method != BOOTSTRAP)) {
     return;
   }
   // sort the active contacts
@@ -1082,7 +1322,8 @@ void KNode::IterativeLookUp_SearchIteration(
     bool is_already_contacted = false;
     std::list<Contact>::iterator it1;
     for (it1 = data->already_contacted.begin();
-      it1 != data->already_contacted.end(); ++it1) {
+         it1 != data->already_contacted.end();
+         ++it1) {
       if (*it == *it1) {
         is_already_contacted = true;
         break;
@@ -1162,8 +1403,9 @@ void KNode::IterativeLookUp(const std::string &key,
     std::vector<Contact> exclude_contacts;
     prouting_table_->FindCloseNodes(key, alpha_, &close_nodes,
         exclude_contacts);
-    for (int i = 0; i < static_cast<int>(close_nodes.size()); ++i)
+    for (int i = 0; i < static_cast<int>(close_nodes.size()); ++i) {
       data->short_list.push_back(close_nodes[i]);
+    }
   } else {  // use the start_up_short_list
     for (int i = 0; i < static_cast<int>(start_up_short_list.size()); ++i)
       data->short_list.push_back(start_up_short_list[i]);
@@ -1178,6 +1420,9 @@ void KNode::IterativeLookUp(const std::string &key,
 
 void KNode::StoreValue_IterativeStoreValue(const StoreResponse *response,
     StoreCallbackArgs callback_data) {
+#ifdef VERBOSE_DEBUG
+  printf("\t\tIn KNode::StoreValue_IterativeStoreValue(%i).\n", host_port_);
+#endif
   if (!is_joined_) return;
   if (callback_data.data->is_callbacked) return;  // Only call back once
 
@@ -1316,7 +1561,7 @@ void KNode::StoreValue_ExecuteStoreRPCs(const std::string& result,
         parallel_size = data->closest_nodes.size();
       for (int i = 0; i< parallel_size; ++i) {
         StoreCallbackArgs callback_args(data);
-        StoreValue_IterativeStoreValue(NULL, callback_args);
+        StoreValue_IterativeStoreValue(0, callback_args);
       }
       return;
     }
@@ -1333,8 +1578,13 @@ void KNode::StoreValue_ExecuteStoreRPCs(const std::string& result,
 void KNode::StoreValue(const std::string &key, const std::string &value,
   const std::string &public_key, const std::string &signed_public_key,
   const std::string &signed_request, base::callback_func_type cb) {
-  base::pd_scoped_lock guard(*pmutex_);
-
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::StoreValue(%i), outside mutex.\n", host_port_);
+#endif
+  boost::mutex::scoped_lock guard(*mutex_[6]);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::StoreValue(%i), inside mutex.\n", host_port_);
+#endif
 //  if (static_cast<int>(value.size()) > (transport::k_message_max*0.8)) {
 //    TRI_LOG_STR("Value size is greater than what is supported.");
 //    StoreResponse result;
@@ -1346,12 +1596,24 @@ void KNode::StoreValue(const std::string &key, const std::string &value,
 //  }
   FindCloseNodes(key, boost::bind(&KNode::StoreValue_ExecuteStoreRPCs, this,
       _1, key, value, public_key, signed_public_key, signed_request, cb));
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::StoreValue(%i), unlock.\n", host_port_);
+#endif
 }
 
 void KNode::FindValue(const std::string &key, base::callback_func_type cb) {
-  base::pd_scoped_lock guard(*pmutex_);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::FindValue(%i), outside mutex.\n", host_port_);
+#endif
+  boost::mutex::scoped_lock guard(*mutex_[7]);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::FindValue(%i), inside mutex.\n", host_port_);
+#endif
   std::vector<Contact> start_up_short_list;
   IterativeLookUp(key, start_up_short_list, FIND_VALUE, cb);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::FindValue(%i), unlock.\n", host_port_);
+#endif
 }
 
 void KNode::FindNode_GetNode(const std::string& result,
@@ -1412,9 +1674,18 @@ void KNode::FindNode(const std::string &node_id, base::callback_func_type cb,
 
 void KNode::FindCloseNodes(const std::string &node_id,
       base::callback_func_type cb) {
-  base::pd_scoped_lock guard(*pmutex_);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::FindCloseNodes(%i), outside mutex.\n", host_port_);
+#endif
+  boost::mutex::scoped_lock guard(*mutex_[8]);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::FindCloseNodes(%i), inside mutex.\n", host_port_);
+#endif
   std::vector<Contact> start_up_short_list;
   IterativeLookUp(node_id, start_up_short_list, FIND_NODE, cb);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::FindCloseNodes(%i), unlock.\n", host_port_);
+#endif
 }
 
 void KNode::Ping_HandleResult(const PingResponse *response,
@@ -1480,8 +1751,17 @@ void KNode::Ping_SendPing(const std::string& result,
 }
 
 void KNode::Ping(const std::string &node_id, base::callback_func_type cb) {
-  base::pd_scoped_lock guard(*pmutex_);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::Ping(%i), outside mutex.\n", host_port_);
+#endif
+  boost::mutex::scoped_lock guard(*mutex_[9]);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::Ping(%i), inside mutex.\n", host_port_);
+#endif
   FindNode(node_id, boost::bind(&KNode::Ping_SendPing, this, _1, cb), false);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::Ping(%i), unlock.\n", host_port_);
+#endif
 }
 
 void KNode::Ping(const Contact &remote, base::callback_func_type cb) {
@@ -1493,7 +1773,13 @@ void KNode::Ping(const Contact &remote, base::callback_func_type cb) {
     cb(ser_resp);
     return;
   } else {
-    base::pd_scoped_lock guard(*pmutex_);
+#ifdef SHOW_MUTEX
+    printf("\t\tIn KNode::Ping2(%i), outside mutex.\n", host_port_);
+#endif
+    boost::mutex::scoped_lock guard(*mutex_[10]);
+#ifdef SHOW_MUTEX
+    printf("\t\tIn KNode::Ping2(%i), inside mutex.\n", host_port_);
+#endif
     PingResponse *resp = new PingResponse();
     PingCallbackArgs  callback_args(cb);
     callback_args.sender = remote;
@@ -1518,10 +1804,13 @@ void KNode::Ping(const Contact &remote, base::callback_func_type cb) {
         KNode, const PingResponse*, PingCallbackArgs > (this,
         &KNode::Ping_HandleResult, resp, callback_args);
     kadrpcs_.Ping(contact_ip, contact_port, resp, done, local);
+#ifdef SHOW_MUTEX
+    printf("\t\tIn KNode::Ping2(%i), unlock.\n", host_port_);
+#endif
   }
 }
 
-const std::string& KNode::node_id() const {
+const std::string KNode::node_id() const {
   if (type_ == CLIENT) {
     return fake_client_node_id_;
   } else {
@@ -1530,19 +1819,33 @@ const std::string& KNode::node_id() const {
 }
 
 void KNode::AddContact(Contact new_contact, bool only_db) {
+//  printf("\t\tIn KNode::AddContact(%i), 1.\n", host_port_);
+//  if (new_contact.node_id() == "")
+//    printf("new_contact.node_id() is empty string.\n");
+//  if (new_contact.node_id() == client_node_id())
+//    printf("new_contact.node_id() is client node.\n");
+//  if (new_contact.node_id() == node_id_)
+//    printf("new_contact.node_id() is this node's ID.\n");
+
   if (new_contact.node_id() != "" &&
       new_contact.node_id() != client_node_id() &&
       new_contact.node_id() != node_id_) {
+//    printf("\t\tIn KNode::AddContact(%i), 2.\n", host_port_);
     if (!only_db) {
+//      printf("\t\tIn KNode::AddContact(%i), 3.\n", host_port_);
       new_contact.set_last_seen(base::get_epoch_milliseconds());
       prouting_table_->AddContact(new_contact);
     }
+//    printf("\t\tIn KNode::AddContact(%i), 4.\n", host_port_);
 
     // Adding to routing table db
     std::string remote_ip, rv_ip;
     remote_ip = base::inet_btoa(new_contact.host_ip());
-    if (new_contact.rendezvous_ip() != "" )
+    if (new_contact.rendezvous_ip() != "") {
+//      printf("\t\tIn KNode::AddContact(%i), 5.\n", host_port_);
       rv_ip = base::inet_btoa(new_contact.rendezvous_ip());
+    }
+//    printf("\t\tIn KNode::AddContact(%i), 6.\n", host_port_);
     base::PDRoutingTableTuple tuple(new_contact.node_id(),
                                     remote_ip,
                                     new_contact.host_port(),
@@ -1553,7 +1856,9 @@ void KNode::AddContact(Contact new_contact, bool only_db) {
                                     0,
                                     0);
     routingtable_->AddTuple(tuple);
+//    printf("\t\tIn KNode::AddContact(%i), 7.\n", host_port_);
   }
+//  printf("\t\tIn KNode::AddContact(%i), 8.\n", host_port_);
 }
 
 void KNode::RemoveContact(const std::string &node_id) {
@@ -1647,7 +1952,15 @@ void KNode::GetRandomContacts(
 
 void KNode::HandleDeadRendezvousServer(const bool &dead_server,
     const std::string &ip, const uint16_t &port) {
-  base::pd_scoped_lock guard(*pmutex_);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::HandleDeadRendezvousServer(%i), outside mutex.\n",
+         host_port_);
+#endif
+  boost::mutex::scoped_lock guard(*mutex_[11]);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::HandleDeadRendezvousServer(%i), inside mutex.\n",
+         host_port_);
+#endif
   if (dead_server) {
     Contact dead_contact("", ip, port);
     dead_rendezvous_server_ = dead_contact;
@@ -1656,6 +1969,10 @@ void KNode::HandleDeadRendezvousServer(const bool &dead_server,
        kad_config_path_.string(),
        boost::bind(&KNode::ReBootstrapping_Callback, this, _1));
   }
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::HandleDeadRendezvousServer(%i), unlock.\n",
+         host_port_);
+#endif
 }
 
 void KNode::ReBootstrapping_Callback(const std::string &result) {
@@ -1691,6 +2008,8 @@ void KNode::UnRegisterKadService() {
 
 connect_to_node KNode::CheckContactLocalAddress(const std::string &id,
     const std::string &ip, const uint16_t &port, const std::string &ext_ip) {
+  if (ip == "" || port == 0)
+    return REMOTE;
   int result = routingtable_->ContactLocal(id);
   connect_to_node conn_type;
   std::string ext_ip_dec;
@@ -1716,7 +2035,13 @@ connect_to_node KNode::CheckContactLocalAddress(const std::string &id,
 
 void KNode::OnUPnPPortMapping(int, int port,
     std::string const& errmsg, int) {
-  base::pd_scoped_lock guard(*pmutex_);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::OnUPnPPortMapping(%i), outside mutex.\n", host_port_);
+#endif
+  boost::mutex::scoped_lock guard(*mutex_[12]);
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::OnUPnPPortMapping(%i), inside mutex.\n", host_port_);
+#endif
   if (errmsg == "") {
 #ifdef DEBUG
     printf("UPnP port mapped: %d\n", port);
@@ -1725,9 +2050,13 @@ void KNode::OnUPnPPortMapping(int, int port,
     upnp_started_ = true;
   } else {
 #ifdef DEBUG
-    printf("Error occurred when trying to map UPnP Port: %s\n", errmsg.c_str());
+    printf("\t\tError occurred when trying to map UPnP Port: %s\n",
+           errmsg.c_str());
 #endif
   }
+#ifdef SHOW_MUTEX
+  printf("\t\tIn KNode::OnUPnPPortMapping(%i), unlock.\n", host_port_);
+#endif
 }
 
 void KNode::UPnPMap(boost::uint16_t host_port) {
@@ -1759,14 +2088,18 @@ void KNode::UPnPMap(boost::uint16_t host_port) {
                                            _3,
                                            1),
                                false);
-  printf("Discovering the UPnP device...\n");
+#ifdef DEBUG
+  printf("\t\tDiscovering the UPnP device...\n");
+#endif
   upnp_->discover_device();
   timer.expires_from_now(boost::posix_time::seconds(3));
   timer.async_wait(boost::bind(&libtorrent::io_service::stop,
                                boost::ref(upnp_ios_)));
   upnp_ios_.reset();
   upnp_ios_.run();
-  printf("Mapping UPnP port...\n");
+#ifdef DEBUG
+  printf("\t\tMapping UPnP port...\n");
+#endif
   upnp_udp_map_ = upnp_->add_mapping(libtorrent::upnp::udp,
                                      host_port,
                                      host_port);
@@ -1775,17 +2108,29 @@ void KNode::UPnPMap(boost::uint16_t host_port) {
                                boost::ref(upnp_ios_)));
   upnp_ios_.reset();
   upnp_ios_.run();
+#ifdef VERBOSE_DEBUG
+  printf("\t\tIn KNode::UPnPThread(%i), about to finish thread.\n", host_port);
+#endif
 }
 
 void KNode::UnMapUPnP() {
   {
-    base::pd_scoped_lock guard(*pmutex_);
+#ifdef SHOW_MUTEX
+    printf("\t\tIn KNode::UnMapUPnP(%i), outside mutex.\n", host_port_);
+#endif
+    boost::mutex::scoped_lock guard(*mutex_[13]);
+#ifdef SHOW_MUTEX
+    printf("\t\tIn KNode::UnMapUPnP(%i), inside mutex.\n", host_port_);
+#endif
     upnp_started_ = false;
     upnp_mapped_port_ = 0;
+#ifdef SHOW_MUTEX
+    printf("\t\tIn KNode::UnMapUPnP(%i), unlock.\n", host_port_);
+#endif
   }
   boost::asio::deadline_timer timer(upnp_ios_);
 #ifdef DEBUG
-  printf("Deleting the UPnP mapped port...\n");
+  printf("\t\tDeleting the UPnP mapped port...\n");
 #endif
   upnp_->delete_mapping(upnp_udp_map_);
   timer.expires_from_now(boost::posix_time::seconds(2));
@@ -1794,7 +2139,7 @@ void KNode::UnMapUPnP() {
   upnp_ios_.reset();
   upnp_ios_.run();
 #ifdef DEBUG
-  printf("Closing UPnP...\n");
+  printf("\t\tClosing UPnP...\n");
 #endif
   upnp_->close();
   timer.expires_from_now(boost::posix_time::seconds(2));
@@ -1803,6 +2148,9 @@ void KNode::UnMapUPnP() {
   upnp_ios_.reset();
   upnp_ios_.run();
   delete upnp_half_open_;
+#ifdef VERBOSE_DEBUG
+  printf("\t\tIn KNode::UnMapUPnP(%i), about to finish thread.\n", host_port_);
+#endif
 }
 
 void KNode::UpdatePDRTContactToRemote(const std::string &node_id) {

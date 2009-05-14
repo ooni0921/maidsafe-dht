@@ -74,6 +74,7 @@ class KNodeTest: public testing::Test {
   }
 
   virtual void SetUp() {
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
     try {
       if (fs::exists("KnodeTest"))
         fs::remove_all("KnodeTest");
@@ -89,12 +90,11 @@ class KNodeTest: public testing::Test {
       recursive_mutices_.push_back(recursive_mutex_local_);
 
       boost::shared_ptr<base::CallLaterTimer>
-          timer_local_(new base::CallLaterTimer(recursive_mutices_[i].get()));
+          timer_local_(new base::CallLaterTimer);
       timers_.push_back(timer_local_);
 
-      boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_local_(
-          new rpcprotocol::ChannelManager(timers_[i].get(),
-                                          recursive_mutices_[i].get()));
+      boost::shared_ptr<rpcprotocol::ChannelManager>
+          channel_manager_local_(new rpcprotocol::ChannelManager(timers_[i]));
       channel_managers_.push_back(channel_manager_local_);
 
       std::string db_local_ = "KnodeTest/datastore"+base::itos(62001+i);
@@ -103,8 +103,7 @@ class KNodeTest: public testing::Test {
 
       boost::shared_ptr<kad::KNode>
           knode_local_(new kad::KNode(dbs_[i],
-                                      timers_[i].get(),
-                                      recursive_mutices_[i].get(),
+                                      timers_[i],
                                       channel_managers_[i],
                                       kad::VAULT,
                                       kTestK,
@@ -128,7 +127,9 @@ class KNodeTest: public testing::Test {
     printf("Node 1 joined.\n");
     base::KadConfig kad_config;
     base::KadConfig::Contact *kad_contact_ = kad_config.add_contact();
-    kad_contact_->set_node_id(knodes_[1]->node_id());
+    std::string hex_id;
+    base::encode_to_hex(knodes_[1]->node_id(), hex_id);
+    kad_contact_->set_node_id(hex_id);
     kad_contact_->set_ip(knodes_[1]->host_ip());
     kad_contact_->set_port(knodes_[1]->host_port());
     kad_contact_->set_local_ip(knodes_[1]->local_host_ip());
@@ -151,7 +152,9 @@ class KNodeTest: public testing::Test {
     printf("Node 0 joined.\n");
     kad_config.Clear();
     kad_contact_ = kad_config.add_contact();
-    kad_contact_->set_node_id(knodes_[0]->node_id());
+    std::string hex_id1;
+    base::encode_to_hex(knodes_[0]->node_id(), hex_id1);
+    kad_contact_->set_node_id(hex_id1);
     kad_contact_->set_ip(knodes_[0]->host_ip());
     kad_contact_->set_port(knodes_[0]->host_port());
     kad_contact_->set_local_ip(knodes_[0]->local_host_ip());
@@ -161,7 +164,7 @@ class KNodeTest: public testing::Test {
       kad_config_file = dbs_[i] + "/.kadconfig";
       std::fstream output2(kad_config_file.c_str(),
         std::ios::out | std::ios::trunc | std::ios::binary);
-      EXPECT_TRUE(kad_config.SerializeToOstream(&output2));
+      ASSERT_TRUE(kad_config.SerializeToOstream(&output2));
       output2.close();
     }
 
@@ -188,13 +191,25 @@ class KNodeTest: public testing::Test {
       printf("Node %i joined.\n", i);
     }
     cb.Reset();
+#ifdef WIN32
+    HANDLE hconsole = GetStdHandle (STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute (hconsole, 10 | 0 << 4);
+#endif
     printf("*-----------------------------------*\n");
     printf("*  %i local Kademlia nodes running  *\n", kNetworkSize);
     printf("*-----------------------------------*\n\n");
+#ifdef WIN32
+    SetConsoleTextAttribute (hconsole, 11 | 0 << 4);
+#endif
   }
 
   virtual void TearDown() {
-    std::cout << "In tear down"<<std::endl;
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
+#ifdef WIN32
+    HANDLE hconsole = GetStdHandle (STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute (hconsole, 7 | 0 << 4);
+#endif
+    printf("In tear down.\n");
     for (int i = 0; i < kNetworkSize; i++) {
       timers_[i]->CancelAll();
       cb.Reset();
@@ -210,7 +225,7 @@ class KNodeTest: public testing::Test {
     catch(const std::exception &e_) {
       printf("%s\n", e_.what());
     }
-    printf("finished teardown\n");
+    printf("Finished tear down.\n");
   }
 
   std::string kad_config_file;
@@ -606,17 +621,15 @@ TEST_F(KNodeTest, BEH_KAD_PingIncorrectNodeLocalAddr) {
 }
 
 TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
-  boost::scoped_ptr<boost::recursive_mutex>
+  boost::shared_ptr<boost::recursive_mutex>
       recursive_mutex_local_(new boost::recursive_mutex);
-  boost::scoped_ptr<base::CallLaterTimer>
-      timer_local_(new base::CallLaterTimer(recursive_mutex_local_.get()));
-  boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_local_(
-      new rpcprotocol::ChannelManager(timer_local_.get(),
-                                      recursive_mutex_local_.get()));
+  boost::shared_ptr<base::CallLaterTimer>
+      timer_local_(new base::CallLaterTimer);
+  boost::shared_ptr<rpcprotocol::ChannelManager>
+      channel_manager_local_(new rpcprotocol::ChannelManager(timer_local_));
   std::string db_local_ = "KnodeTest/datastore"+base::itos(63001);
   boost::scoped_ptr<kad::KNode> knode_local_(new kad::KNode(db_local_,
-                                             timer_local_.get(),
-                                             recursive_mutex_local_.get(),
+                                             timer_local_,
                                              channel_manager_local_,
                                              kad::CLIENT,
                                              kTestK,
@@ -717,12 +730,14 @@ TEST_F(KNodeTest, BEH_KAD_FindDeadNode) {
   knodes_[r_node]->Leave();
   ASSERT_FALSE(knodes_[r_node]->is_joined());
   channel_managers_[r_node]->StopTransport();
+//  boost::this_thread::sleep(boost::posix_time::seconds(10));
   // Do a find node
   FindNodeCallback cb1;
   knodes_[19]->FindNode(r_node_id,
       boost::bind(&FindNodeCallback::CallbackFunc, &cb1, _1), false);
   wait_result(&cb1, recursive_mutices_[19].get());
   ASSERT_EQ(kad::kRpcResultFailure, cb1.result());
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
 }
 
 TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
@@ -737,10 +752,34 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
   bool finished_bootstrap = false;
   while (!finished_bootstrap) {
     {
-      base::pd_scoped_lock gaurd(*recursive_mutices_[2].get());
+      base::pd_scoped_lock guard(*recursive_mutices_[2].get());
       if (knodes_[2]->is_joined())
         finished_bootstrap = true;
     }
   }
   ASSERT_TRUE(knodes_[2]->is_joined());
+}
+
+TEST_F(KNodeTest, BEH_KAD_StartStopNode) {
+  int r_node = 1 + rand() % 19;
+  std::string kadconfig_path(dbs_[r_node] + "/.kadconfig");
+  knodes_[r_node]->Leave();
+  EXPECT_FALSE(knodes_[r_node]->is_joined());
+  // Checking kadconfig file
+  base::KadConfig kconf;
+  ASSERT_TRUE(boost::filesystem::exists(
+      boost::filesystem::path(kadconfig_path)));
+  std::ifstream kadconf_file(kadconfig_path.c_str(),
+      std::ios::in | std::ios::binary);
+  ASSERT_TRUE(kconf.ParseFromIstream(&kadconf_file));
+  kadconf_file.close();
+  ASSERT_LT(0, kconf.contact_size());
+  cb.Reset();
+  knodes_[r_node]->Join(knodes_[r_node]->node_id(),
+                   kadconfig_path,
+                   boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
+  wait_result(&cb, recursive_mutices_[r_node].get());
+  ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+  ASSERT_TRUE(knodes_[r_node]->is_joined());
+  cb.Reset();
 }

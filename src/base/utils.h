@@ -45,8 +45,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <vector>
 #include <list>
 
-#include "base/config.h"
-
 namespace base {
 
 //  remove leading and trailing slashes from path unless path is "/"

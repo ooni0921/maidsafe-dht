@@ -32,26 +32,32 @@ struct CallLaterMap {
 };
 
 class CallLaterTimer {
-  public:
-    explicit CallLaterTimer(boost::recursive_mutex *mutex);
-    explicit CallLaterTimer(const CallLaterTimer&);
-    CallLaterTimer& operator=(const CallLaterTimer&);
-    ~CallLaterTimer();
-    // execute the expired calls
-    void TryExecute();
-    bool IsStarted();
-    void CancelAll();
-    bool CancelOne(int calllater_id);
-    // Delay msecs milliseconds to call the function specified by cb
-    int AddCallLater(boost::uint64_t msecs, calllater_func cb);
+ public:
+  CallLaterTimer();
+  ~CallLaterTimer();
+  // execute the expired calls
+  void TryExecute();
+  inline bool IsStarted() { return is_started_; }
+  inline void CancelAll() {
+    boost::mutex::scoped_lock guard(mutex1_);
+    calllaters_.clear();
+  }
+  bool CancelOne(int calllater_id);
+  // Delay msecs milliseconds to call the function specified by cb
+  int AddCallLater(boost::uint64_t msecs, calllater_func cb);
 
-  private:
-    boost::recursive_mutex *mutex_;
-    int calllater_id_;
-    bool is_started_;
-    boost::thread *blocking_routine;
-    std::list<CallLaterMap> calllaters_;
+ private:
+  CallLaterTimer(const CallLaterTimer&);
+  CallLaterTimer& operator=(const CallLaterTimer&);
+  boost::mutex mutex_;
+  boost::mutex mutex1_;
+  boost::mutex mutex2_;
+  boost::mutex mutex3_;
+  int calllater_id_;
+  bool is_started_;
+  boost::shared_ptr<boost::thread> blocking_routine;
+  std::list<CallLaterMap> calllaters_;
 };
 
-}  // namespace
+}  // namespace base
 #endif  // BASE_CALLLATERTIMER_H_

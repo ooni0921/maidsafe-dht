@@ -1,16 +1,12 @@
 /*
-Copyright (c) 2009 maidsafe.net limited
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-    * Neither the name of the maidsafe.net limited nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-/*
+ * copyright maidsafe.net limited 2008
+ * The following source code is property of maidsafe.net limited and
+ * is not meant for external use. The use of this code is governed
+ * by the license file LICENSE.TXT found in teh root of this directory and also
+ * on www.maidsafe.net.
+ *
+ * You are not free to copy, amend or otherwise use this source code without
+ * explicit written permission of the board of directors of maidsafe.net
  *
  *  Created on: Sep 29, 2008
  *      Author: haiyang
@@ -22,21 +18,21 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 namespace kad {
 
 Contact::Contact(const std::string &node_id,
-          const std::string &host_ip,
-          const boost::uint16_t &host_port,
-          const std::string &local_ip,
-          const boost::uint16_t &local_port,
-          const std::string &rendezvous_ip,
-          const boost::uint16_t &rendezvous_port)
-:node_id_(node_id),
-  host_ip_(host_ip),
-  host_port_(host_port),
-  failed_rpc_(0),
-  rendezvous_ip_(rendezvous_ip),
-  rendezvous_port_(rendezvous_port),
-  last_seen_(base::get_epoch_milliseconds()),
-  local_ip_(local_ip),
-  local_port_(local_port) {
+                 const std::string &host_ip,
+                 const boost::uint16_t &host_port,
+                 const std::string &local_ip,
+                 const boost::uint16_t &local_port,
+                 const std::string &rendezvous_ip,
+                 const boost::uint16_t &rendezvous_port)
+    : node_id_(node_id),
+      host_ip_(host_ip),
+      host_port_(host_port),
+      failed_rpc_(0),
+      rendezvous_ip_(rendezvous_ip),
+      rendezvous_port_(rendezvous_port),
+      last_seen_(base::get_epoch_milliseconds()),
+      local_ip_(local_ip),
+      local_port_(local_port) {
   if (host_ip.size() > 4)
       host_ip_ = base::inet_atob(host_ip);
   else
@@ -52,17 +48,17 @@ Contact::Contact(const std::string &node_id,
 }
 
 Contact::Contact(const std::string &node_id,
-          const std::string &host_ip,
-          const boost::uint16_t &host_port)
-:node_id_(node_id),
-  host_ip_(host_ip),
-  host_port_(host_port),
-  failed_rpc_(0),
-  rendezvous_ip_(),
-  rendezvous_port_(0),
-  last_seen_(base::get_epoch_milliseconds()),
-  local_ip_(),
-  local_port_(0) {
+                 const std::string &host_ip,
+                 const boost::uint16_t &host_port)
+    : node_id_(node_id),
+      host_ip_(host_ip),
+      host_port_(host_port),
+      failed_rpc_(0),
+      rendezvous_ip_(""),
+      rendezvous_port_(0),
+      last_seen_(base::get_epoch_milliseconds()),
+      local_ip_(""),
+      local_port_(0) {
   if (host_ip.size() > 4)
       host_ip_ = base::inet_atob(host_ip);
   else
@@ -70,19 +66,19 @@ Contact::Contact(const std::string &node_id,
 }
 
 Contact::Contact(const std::string &node_id,
-          const std::string &host_ip,
-          const boost::uint16_t &host_port,
-          const std::string &local_ip,
-          const boost::uint16_t &local_port)
-:node_id_(node_id),
-  host_ip_(host_ip),
-  host_port_(host_port),
-  failed_rpc_(0),
-  rendezvous_ip_(),
-  rendezvous_port_(0),
-  last_seen_(base::get_epoch_milliseconds()),
-  local_ip_(local_ip),
-  local_port_(local_port) {
+                 const std::string &host_ip,
+                 const boost::uint16_t &host_port,
+                 const std::string &local_ip,
+                 const boost::uint16_t &local_port)
+    : node_id_(node_id),
+      host_ip_(host_ip),
+      host_port_(host_port),
+      failed_rpc_(0),
+      rendezvous_ip_(""),
+      rendezvous_port_(0),
+      last_seen_(base::get_epoch_milliseconds()),
+      local_ip_(local_ip),
+      local_port_(local_port) {
   if (host_ip.size() > 4)
       host_ip_ = base::inet_atob(host_ip);
   else
@@ -94,27 +90,26 @@ Contact::Contact(const std::string &node_id,
 }
 
 Contact::Contact()
-    : node_id_(),
-      host_ip_(),
+    : node_id_(""),
+      host_ip_(""),
       host_port_(0),
       failed_rpc_(0),
-      rendezvous_ip_(),
+      rendezvous_ip_(""),
       rendezvous_port_(0),
       last_seen_(base::get_epoch_milliseconds()),
-      local_ip_(),
+      local_ip_(""),
       local_port_(0) {}
 
 Contact::Contact(const Contact&rhs)
-    : node_id_(rhs.node_id()),
-      host_ip_(rhs.host_ip()),
-      host_port_(rhs.host_port()) ,
-      failed_rpc_(rhs.failed_rpc()),
-      rendezvous_ip_(rhs.rendezvous_ip()),
-      rendezvous_port_(rhs.rendezvous_port()),
-      last_seen_(rhs.last_seen()),
-      local_ip_(rhs.local_ip()),
-      local_port_(rhs.local_port()) {
-}
+    : node_id_(rhs.node_id_),
+      host_ip_(rhs.host_ip_),
+      host_port_(rhs.host_port_) ,
+      failed_rpc_(rhs.failed_rpc_),
+      rendezvous_ip_(rhs.rendezvous_ip_),
+      rendezvous_port_(rhs.rendezvous_port_),
+      last_seen_(rhs.last_seen_),
+      local_ip_(rhs.local_ip_),
+      local_port_(rhs.local_port_) {}
 
 bool Contact::operator == (const Contact &other) {
   return static_cast<bool>((this->node_id() == other.node_id()) ||
@@ -130,7 +125,7 @@ bool Contact::operator != (const Contact &other) {
 
 std::string Contact::ToString() {
   if (node_id_ == "" && host_port_ == 0 && host_ip_ == "") {
-    return "Empty contact \n";
+    return "Empty contact.\n";
   }
   std::string ser_contact("");
   std::string enc_id("");

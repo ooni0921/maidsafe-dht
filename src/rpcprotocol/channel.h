@@ -1,22 +1,22 @@
 /*
-Copyright (c) 2009 maidsafe.net lmited
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-    * Neither the name of the maidsafe.net limited nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-/*
+ * copyright maidsafe.net limited 2008
+ * The following source code is property of maidsafe.net limited and
+ * is not meant for external use. The use of this code is governed
+ * by the license file LICENSE.TXT found in teh root of this directory and also
+ * on www.maidsafe.net.
+ *
+ * You are not free to copy, amend or otherwise use this source code without
+ * explicit written permission of the board of directors of maidsafe.net
+ *
  *  Created on: Feb 12, 2009
  *      Author: Jose
  */
 
 #ifndef RPCPROTOCOL_CHANNEL_H_
 #define RPCPROTOCOL_CHANNEL_H_
+
+//  #define VERBOSE_DEBUG
+//  #define SHOW_MUTEX
 
 #include <boost/asio.hpp>
 #include <google/protobuf/service.h>
@@ -28,16 +28,16 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "base/utils.h"
 #include "base/routingtable.h"
 
-using boost::asio::ip::udp;
+
 namespace rpcprotocol {
 
 // RPC timeout
-const int kRpcTimeout = 7000;  // 5 seconds
+const int kRpcTimeout = 7000;  // 7 seconds
 class ChannelManager;
 
 class Controller : public google::protobuf::RpcController {
  public:
-  Controller() : remote_ip_(""), remote_port_(), timeout_(kRpcTimeout) {}
+  Controller() : remote_ip_(""), remote_port_(0), timeout_(kRpcTimeout) {}
   ~Controller() {}
   virtual void SetFailed(const std::string&) {}
   virtual void Reset() {}
@@ -66,7 +66,7 @@ class Controller : public google::protobuf::RpcController {
 };
 
 struct RpcInfo {
-  RpcInfo() : ctrl(NULL), rpc_id(), connection_id() {}
+  RpcInfo() : ctrl(0), rpc_id(0), connection_id(0) {}
   Controller *ctrl;
   boost::uint32_t rpc_id;
   boost::uint32_t connection_id;
@@ -74,9 +74,9 @@ struct RpcInfo {
 
 class Channel : public google::protobuf::RpcChannel {
  public:
-  Channel(transport::Transport *transport,
+  Channel(boost::shared_ptr<transport::Transport> transport,
         ChannelManager *channelmanager);
-  Channel(transport::Transport *transport,
+  Channel(boost::shared_ptr<transport::Transport> transport,
         ChannelManager *channelmanager, const std::string &ip,
         const boost::uint16_t &port, const bool &local);
   ~Channel();
@@ -85,13 +85,16 @@ class Channel : public google::protobuf::RpcChannel {
                           const google::protobuf::Message *request,
                           google::protobuf::Message *response,
                           google::protobuf::Closure *done);
-  void SetService(google::protobuf::Service *service);
+  inline void SetService(google::protobuf::Service* service) {
+    pservice_ = service;
+  }
+
   void HandleRequest(const RpcMessage &request,
       const boost::uint32_t &connection_id);
  private:
   void SendResponse(const google::protobuf::Message *response, RpcInfo info);
   std::string GetServiceName(const std::string &full_name);
-  transport::Transport *ptransport_;
+  boost::shared_ptr<transport::Transport> ptransport_;
   ChannelManager *pmanager_;
   google::protobuf::Service *pservice_;
   std::string ip_;
@@ -100,6 +103,7 @@ class Channel : public google::protobuf::RpcChannel {
   Channel(const Channel&);
   Channel& operator=(const Channel&);
   bool local_;
+  boost::mutex mutex;
 };
-}  // namespace
+}  // namespace rpcprotocol
 #endif  // RPCPROTOCOL_CHANNEL_H_

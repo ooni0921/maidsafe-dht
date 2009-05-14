@@ -276,7 +276,7 @@ namespace libtorrent
 	{
 		inline boost::int64_t performance_counter_to_microseconds(boost::int64_t pc)
 		{
-			static LARGE_INTEGER performace_counter_frequency ={ {0,0} };
+			static LARGE_INTEGER performace_counter_frequency = { {0,0} };
 			if (performace_counter_frequency.QuadPart == 0)
 				QueryPerformanceFrequency(&performace_counter_frequency);
 
@@ -290,7 +290,7 @@ namespace libtorrent
 
 		inline boost::int64_t microseconds_to_performance_counter(boost::int64_t ms)
 		{
-			static LARGE_INTEGER performace_counter_frequency ={ {0,0} };
+			static LARGE_INTEGER performace_counter_frequency = { {0,0} };
 			if (performace_counter_frequency.QuadPart == 0)
 				QueryPerformanceFrequency(&performace_counter_frequency);
 #ifndef NDEBUG

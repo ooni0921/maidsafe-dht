@@ -1,16 +1,13 @@
 /*
-Copyright (c) 2009 maidsafe.net limited
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-    * Neither the name of the maidsafe.net limited nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-/*
+ * copyright maidsafe.net limited 2008
+ * The following source code is property of maidsafe.net limited and
+ * is not meant for external use. The use of this code is governed
+ * by the license file LICENSE.TXT found in teh root of this directory and also
+ * on www.maidsafe.net.
+ *
+ * You are not free to copy, amend or otherwise use this source code without
+ * explicit written permission of the board of directors of maidsafe.net
+ *
  *  Created on: Sep 29, 2008
  *      Author: Team
  */
@@ -18,10 +15,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #ifndef KADEMLIA_KNODE_H_
 #define KADEMLIA_KNODE_H_
 
+//  #define VERBOSE_DEBUG
+//  #define SHOW_MUTEX
+
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/recursive_mutex.hpp>
 #include <boost/cstdint.hpp>
 
 #include <string>
@@ -218,7 +217,7 @@ class KademliaInterface {
   virtual void Ping(const std::string &node_id,
                     base::callback_func_type cb)=0;
   virtual void Ping(const Contact &remote, base::callback_func_type cb) = 0;
-  virtual const std::string& node_id()const = 0;
+  virtual const std::string node_id()const = 0;
   virtual ContactInfo contact_info()const = 0;
   virtual void AddContact(Contact new_contact, bool only_db = false) = 0;
   virtual bool GetContact(const std::string &id, Contact *contact) = 0;
@@ -230,11 +229,11 @@ class KademliaInterface {
                               std::vector<std::string> &values)=0;
   virtual void StoreValueLocal(const std::string &key,
                                const std::string &value)=0;
-  virtual const std::string& host_ip()const = 0;
+  virtual const std::string host_ip()const = 0;
   virtual boost::uint16_t host_port()const = 0;
-  virtual const std::string& local_host_ip()const = 0;
+  virtual const std::string local_host_ip()const = 0;
   virtual boost::uint16_t local_host_port()const = 0;
-  virtual const std::string& rv_ip()const = 0;
+  virtual const std::string rv_ip()const = 0;
   virtual boost::uint16_t rv_port()const = 0;
   virtual KadRpcs *kadrpcs()=0;
   virtual void GetRandomContacts(const int &count,
@@ -245,21 +244,17 @@ class KademliaInterface {
 class KNode: public KademliaInterface {
  public:
   KNode(const std::string &datastore_dir,
-        base::CallLaterTimer *timer,
-        boost::recursive_mutex *mutex,
+        boost::shared_ptr<base::CallLaterTimer> timer,
         boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
         node_type type);
   // constructor used to set up parameters K, alpha, and beta for kademlia
   KNode(const std::string &datastore_dir,
-        base::CallLaterTimer *timer,
-        boost::recursive_mutex *mutex,
+        boost::shared_ptr<base::CallLaterTimer> timer,
         boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
         node_type type,
         const boost::uint16_t k,
         const int &alpha,
         const int &beta);
-  KNode &operator=(const KNode &) { return *this; }
-  KNode(const KNode &);
   ~KNode();
   // if node_id is equal to "", node_id will be generated
   void Join(const std::string &node_id,
@@ -281,7 +276,7 @@ class KNode: public KademliaInterface {
                       base::callback_func_type cb);
   void Ping(const std::string &node_id, base::callback_func_type cb);
   void Ping(const Contact &remote, base::callback_func_type cb);
-  const std::string& node_id() const;
+  const std::string node_id() const;
   void AddContact(Contact new_contact, bool only_db = false);
   bool GetContact(const std::string &id, Contact *contact);
   void RemoveContact(const std::string &node_id);
@@ -292,11 +287,11 @@ class KNode: public KademliaInterface {
                       std::vector<std::string> &values);
   void StoreValueLocal(const std::string &key,
                        const std::string &value);
-  inline const std::string& host_ip() const {return host_ip_; }
+  inline const std::string host_ip() const {return host_ip_; }
   inline boost::uint16_t host_port() const {return host_port_; }
-  inline const std::string& local_host_ip() const {return local_host_ip_; }
+  inline const std::string local_host_ip() const {return local_host_ip_; }
   inline boost::uint16_t local_host_port() const {return local_host_port_; }
-  inline const std::string& rv_ip() const {return rv_ip_; }
+  inline const std::string rv_ip() const {return rv_ip_; }
   inline boost::uint16_t rv_port() const {return rv_port_; }
   inline bool is_joined() const {return is_joined_; }
   ContactInfo contact_info()const;
@@ -313,6 +308,8 @@ class KNode: public KademliaInterface {
                                            const std::string &ext_ip);
   void UpdatePDRTContactToRemote(const std::string &node_id);
  private:
+  KNode &operator=(const KNode&);
+  KNode(const KNode &);
   void RefreshRoutine();
   void RepublishRoutine();
   void SaveBootstrapContacts();  // save the routing table into .kadconfig file
@@ -334,7 +331,7 @@ class KNode: public KademliaInterface {
   void Bootstrap(const std::string &bootstrap_ip,
       const boost::uint16_t &bootstrap_port, base::callback_func_type cb,
       const bool &port_forwarded);
-  void Bootstrap_Callback(const BootstrapResponse *response,
+  void Bootstrap_Callback(const boost::shared_ptr<BootstrapResponse> response,
       BootstrapData data);
   void IterativeLookUp_Callback(boost::shared_ptr<IterativeLookUpData> data);
   void IterativeLookUp_SearchIteration(
@@ -372,14 +369,14 @@ class KNode: public KademliaInterface {
       int map_transport);
   void UPnPMap(boost::uint16_t host_port);
   void UnMapUPnP();
-  boost::recursive_mutex *pmutex_;
-  base::CallLaterTimer *ptimer_;
+  std::vector< boost::shared_ptr<boost::mutex> > mutex_;
+  boost::shared_ptr<base::CallLaterTimer> ptimer_;
   boost::shared_ptr<rpcprotocol::ChannelManager> pchannel_manager_;
   boost::shared_ptr<rpcprotocol::Channel> pservice_channel_;
   boost::shared_ptr<DataStore> pdata_store_;
   boost::shared_ptr<KadService> premote_service_;
   KadRpcs kadrpcs_;
-  bool is_joined_;
+  volatile bool is_joined_;
   boost::shared_ptr<RoutingTable> prouting_table_;
   std::string node_id_;
   std::string host_ip_;

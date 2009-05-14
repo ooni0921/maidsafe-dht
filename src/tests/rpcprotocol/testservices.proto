@@ -1,20 +1,20 @@
 package tests;
 
 message PingRequest{
-  required bytes ping = 1;
-  required bytes ip = 2;
+  required string ping = 1;
+  required string ip = 2;
   required int32 port = 3;
 }
 
 message PingResponse{
-  required bytes result = 1;
-  required bytes pong = 2;
+  required string result = 1;
+  required string pong = 2;
 }
 
 message BinaryOpRequest {
   required int32 first = 1;
   required int32 second = 2;
-  required bytes ip = 3;
+  required string ip = 3;
   required int32 port = 4;
 }
 
@@ -23,13 +23,13 @@ message BinaryOpResponse {
 }
 
 message StringMirrorRequest {
-  required bytes message = 1;
-  required bytes ip = 2;
+  required string message = 1;
+  required string ip = 2;
   required int32 port = 3;
 }
 
 message StringMirrorResponse {
-  required bytes mirrored_string = 1;
+  required string mirrored_string = 1;
 }
 
 service PingTest {

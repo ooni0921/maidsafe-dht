@@ -1,19 +1,30 @@
-/*
-Copyright (c) 2009 maidsafe.net limited
+/* Copyright (c) 2009 maidsafe.net limited
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
 
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-    * Neither the name of the maidsafe.net limited nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+    * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+    * Neither the name of the maidsafe.net limited nor the names of its
+    contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
 */
-/*
- *  Created on: Mar 16, 2009
- *      Author: Team
- */
 
 #ifndef TRANSPORT_TRANSPORTAPI_H_
 #define TRANSPORT_TRANSPORTAPI_H_
@@ -53,7 +64,7 @@ struct IncomingData {
   UDTSOCKET u;
   int64_t expect_size;
   int64_t received_size;
-  char *data;
+  boost::shared_array<char> data;
 };
 
 struct OutgoingData {
@@ -70,17 +81,7 @@ typedef boost::function<void(bool)> op_callback_func;  //NOLINT
 
 class Transport {
  public:
-  explicit Transport(boost::recursive_mutex *mutex)
-//  explicit Transport(boost::mutex *mutex)
-    : stop_(true), message_notifier_(NULL), rendezvous_notifier_(NULL),
-    listening_loop_(), recv_routine_(), send_routine_(),
-    ping_rendezvous_loop_(), listening_socket_(), peer_address_(),
-    listening_port_(0), my_rendezvous_port_(0), my_rendezvous_ip_(""),
-    incoming_sockets_(), outgoing_queue_(), pmutex_(mutex), out_mutex_(),
-    ping_rendez_mutex_(), addrinfo_hints_(), addrinfo_res_(NULL),
-    current_id_(0), cond_(), ping_rendezvous_(false),
-    directly_connected_(false) {
-      UDT::startup();}
+  Transport();
   ~Transport() {}
 //  Transport& operator=(const Transport&) { return *this; }
 //  Transport(const Transport&)
@@ -119,7 +120,7 @@ class Transport {
   bool ConnectionExists(boost::uint32_t connection_id);
   void AddIncomingConnection(UDTSOCKET u);
   void AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id);
-  inline boost::recursive_mutex *pmutex() { return pmutex_; }
+  inline boost::shared_ptr<boost::mutex> mutex0() { return mutex_[0]; }
   inline boost::uint16_t listening_port() { return listening_port_; }
   void StartPingRendezvous(const bool &directly_connected,
                            std::string my_rendezvous_ip,
@@ -130,9 +131,9 @@ class Transport {
   Transport(const Transport&);
   void SendHandle();
   bool Connect(UDTSOCKET *skt, const std::string &peer_address,
-      const uint16_t &peer_port);
+      const uint16_t &peer_port, bool short_timeout);
   void PingHandle();
-  bool stop_;
+  volatile bool stop_;
   // bool on_line_;
   boost::function<void(const std::string&,
                   const boost::uint32_t&)> message_notifier_;
@@ -146,8 +147,7 @@ class Transport {
   std::string my_rendezvous_ip_;
   std::map<boost::uint32_t, IncomingData> incoming_sockets_;
   std::list<OutgoingData> outgoing_queue_;
-  boost::recursive_mutex *pmutex_;
-  boost::mutex out_mutex_, ping_rendez_mutex_;
+  std::vector< boost::shared_ptr<boost::mutex> > mutex_;
   struct addrinfo addrinfo_hints_;
   struct addrinfo* addrinfo_res_;
   boost::uint32_t current_id_;

@@ -1,16 +1,12 @@
 /*
-Copyright (c) 2009 maidsafe.net lmited
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-    * Neither the name of the maidsafe.net limited nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-/*
+ * copyright maidsafe.net limited 2008
+ * The following source code is property of maidsafe.net limited and
+ * is not meant for external use. The use of this code is governed
+ * by the license file LICENSE.TXT found in teh root of this directory and also
+ * on www.maidsafe.net.
+ *
+ * You are not free to copy, amend or otherwise use this source code without
+ * explicit written permission of the board of directors of maidsafe.net
  *
  *  Created on: Feb 12, 2009
  *      Author: Jose
@@ -18,6 +14,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #ifndef RPCPROTOCOL_CHANNELMANAGER_H_
 #define RPCPROTOCOL_CHANNELMANAGER_H_
+
+//  #define VERBOSE_DEBUG
+//  #define SHOW_MUTEX
 
 #include <map>
 #include <string>
@@ -42,7 +41,7 @@ const std::string kStartTransportFailure("F");
 
 
 struct PendingReq {
-  PendingReq() : args(NULL), callback(NULL), connection_id(0) {}
+  PendingReq() : args(0), callback(0), connection_id(0) {}
   google::protobuf::Message* args;
   google::protobuf::Closure* callback;
   boost::uint32_t connection_id;
@@ -62,7 +61,7 @@ class ProtocolInterface {
 
 class ChannelManager : public rpcprotocol::ProtocolInterface {
  public:
-  ChannelManager(base::CallLaterTimer *timer, boost::recursive_mutex *mutex);
+  explicit ChannelManager(boost::shared_ptr<base::CallLaterTimer> timer);
   ~ChannelManager();
   void RegisterChannel(const std::string &service_name, Channel* channel);
   void UnRegisterChannel(const std::string &service_name);
@@ -81,7 +80,9 @@ class ChannelManager : public rpcprotocol::ProtocolInterface {
   void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
   void AddConnectionToReq(const boost::uint32_t &req_id,
       const boost::uint32_t &conn_id);
-  transport::Transport *ptransport();
+  inline boost::shared_ptr<transport::Transport> ptransport() {
+    return ptransport_;
+  }
   boost::uint16_t external_port() const {return external_port_;}
   std::string external_ip() const {return external_ip_;}
   bool CheckConnection(const std::string &ip, const uint16_t &port);
@@ -89,10 +90,10 @@ class ChannelManager : public rpcprotocol::ProtocolInterface {
   void HandleResponse(const RpcMessage &response, const std::string &ip,
       const boost::uint16_t &port);
   void TimerHandler(const boost::uint32_t &req_id);
-  transport::Transport *ptransport_;
+  boost::shared_ptr<transport::Transport> ptransport_;
   bool is_started;
-  base::CallLaterTimer *ptimer_;
-  boost::recursive_mutex *pmutex_;
+  boost::shared_ptr<base::CallLaterTimer> ptimer_;
+  std::vector< boost::shared_ptr<boost::mutex> > mutex_;
   boost::uint32_t current_request_id_;
   std::map<std::string, Channel*> channels_;
   std::map<boost::uint32_t, PendingReq> pending_req_;

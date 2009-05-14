@@ -155,20 +155,23 @@ inline void HandleDeadServer(const bool &, const std::string &,
 class RpcProtocolTest : public testing::Test {
  protected:
   RpcProtocolTest() {}
+  ~RpcProtocolTest() {
+    boost::this_thread::sleep(boost::posix_time::seconds(15));
+  }
   static void SetUpTestCase() {
     smutex = new boost::recursive_mutex;
-    stimer = new base::CallLaterTimer(smutex);
+    boost::shared_ptr<base::CallLaterTimer> ti1(new base::CallLaterTimer());
+    stimer = ti1;
     cmutex = new boost::recursive_mutex;
-    ctimer = new base::CallLaterTimer(cmutex);
-    server_chann_manager = new rpcprotocol::ChannelManager(stimer, smutex);
-    client_chann_manager = new rpcprotocol::ChannelManager(ctimer, cmutex);
+    boost::shared_ptr<base::CallLaterTimer> ti2(new base::CallLaterTimer());
+    ctimer = ti2;
+    server_chann_manager = new rpcprotocol::ChannelManager(stimer);
+    client_chann_manager = new rpcprotocol::ChannelManager(ctimer);
   }
   static void TearDownTestCase() {
 //    delete server_chann_manager;
     delete client_chann_manager;
     delete server_chann_manager;
-    delete stimer;
-    delete ctimer;
     delete smutex;
     delete cmutex;
     UDT::cleanup();
@@ -188,7 +191,8 @@ class RpcProtocolTest : public testing::Test {
     server_chann_manager->StopTransport();
   }
   static boost::recursive_mutex *smutex, *cmutex;
-  static base::CallLaterTimer *stimer, *ctimer;
+  static boost::shared_ptr<base::CallLaterTimer> stimer;
+  static boost::shared_ptr<base::CallLaterTimer> ctimer;
   static rpcprotocol::ChannelManager *server_chann_manager,
                                      *client_chann_manager;
  private:
@@ -198,8 +202,8 @@ class RpcProtocolTest : public testing::Test {
 
 boost::recursive_mutex* RpcProtocolTest::smutex = NULL;
 boost::recursive_mutex* RpcProtocolTest::cmutex = NULL;
-base::CallLaterTimer* RpcProtocolTest::stimer = NULL;
-base::CallLaterTimer* RpcProtocolTest::ctimer = NULL;
+boost::shared_ptr<base::CallLaterTimer> RpcProtocolTest::stimer;
+boost::shared_ptr<base::CallLaterTimer> RpcProtocolTest::ctimer;
 rpcprotocol::ChannelManager* RpcProtocolTest::server_chann_manager = NULL;
 rpcprotocol::ChannelManager* RpcProtocolTest::client_chann_manager = NULL;
 

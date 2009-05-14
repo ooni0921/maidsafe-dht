@@ -324,9 +324,9 @@ TEST_F(DataStoreTest, FUNC_KAD_StoreMultipleValues) {
   ASSERT_TRUE(test_ds->StoreItem(key1, value2, now, now));
   std::vector<std::string> values;
   ASSERT_TRUE(test_ds->LoadItem(key1, values));
-  ASSERT_EQ(2, values.size());
+  ASSERT_EQ(static_cast<unsigned int>(2), values.size());
   int i = 0;
-  for (int j = 0; j < values.size(); j++) {
+  for (unsigned int j = 0; j < values.size(); j++) {
     if (values[j] == value1 || values[j] == value2)
       i++;
   }
