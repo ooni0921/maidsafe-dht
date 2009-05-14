@@ -30,18 +30,35 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 /*
 * This is the API for maidsafe-dht and is the only program access
 * for developers. The config.h file included is where configuration
-* may be saved. Yo MUST link the maidsafe-dht library !
+* may be saved. You MUST link the maidsafe-dht library !
 */
 #include "config.h"
-
-
-// Forward declarationsfor library
+// Forward declarations for library
 int StartListening(port);
+trans::localport()
+//internal declerations
+bool message_rec(std::string msg, int ip);
+
+
+//actual API 
+//Transport
+int LocalPort() {return trans::localport(); } // XXXX is declared above
+LocalIP()
+  ExternalPort()
+  External_IP()
 
 
 
-int LocalPort() {return XXXX; } // XXXX is declared above
+//RPC
 
+
+//Kademlia
+
+
+//callbacks section 
+// link our callback funtions to lower level 
+bool LostNet();
+bool ChangedIP();
 
 
 
