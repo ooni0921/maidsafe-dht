@@ -221,21 +221,21 @@ std::string inet_btoa(const std::string &ipv4) {
 boost::uint32_t get_epoch_time() {
   boost::posix_time::ptime \
     t(boost::posix_time::microsec_clock::universal_time());
-  boost::posix_time::ptime start(boost::gregorian::date(2000, 1, 1));
+  boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
   return static_cast<boost::uint32_t>((t-start).total_seconds());
 }
 
 boost::uint64_t get_epoch_milliseconds() {
   boost::posix_time::ptime \
     t(boost::posix_time::microsec_clock::universal_time());
-  boost::posix_time::ptime start(boost::gregorian::date(2000, 1, 1));
+  boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
   return static_cast<boost::uint64_t>((t-start).total_milliseconds());
 }
 
 boost::uint64_t get_epoch_nanoseconds() {
   boost::posix_time::ptime \
     t(boost::posix_time::microsec_clock::universal_time());
-  boost::posix_time::ptime start(boost::gregorian::date(2000, 1, 1));
+  boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
   return static_cast<boost::uint64_t>((t-start).total_nanoseconds());
 }
 
