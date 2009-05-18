@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef BASE_CALLLATERTIMER_H_
 #define BASE_CALLLATERTIMER_H_
-#include <boost/thread/thread.hpp>
+#include <boost/thread.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
