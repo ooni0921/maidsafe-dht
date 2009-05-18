@@ -1,20 +1,33 @@
-/*
- * copyright maidsafe.net limited 2008
- * The following source code is property of maidsafe.net limited and
- * is not meant for external use. The use of this code is governed
- * by the license file LICENSE.TXT found in teh root of this directory and also
- * on www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * explicit written permission of the board of directors of maidsafe.net
- *
- *  Created on: Feb 12, 2009
- *      Author: Jose
- */
+/* Copyright (c) 2009 maidsafe.net limited
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+    * Neither the name of the maidsafe.net limited nor the names of its
+    contributors may be used to endorse or promote products derived from this
+    software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 #include "kademlia/kadrpc.h"
-#include "rpcprotocol/channelmanager.h"
-#include "rpcprotocol/channel.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "rpcprotocol/channelimpl.h"
 
 namespace kad {
 
@@ -29,7 +42,7 @@ void KadRpcs::set_info(const ContactInfo &info) {
 void KadRpcs::FindNode(const std::string &key, const std::string &ip,
       const boost::uint16_t &port, FindResponse *resp,
       google::protobuf::Closure *cb, const bool &local) {
-  rpcprotocol::Controller controller;
+  rpcprotocol::ControllerImpl controller;
   FindRequest args;
   if (resp->has_requester_ext_addr()) {
     // This is a special find node RPC for bootstrapping process
@@ -40,8 +53,7 @@ void KadRpcs::FindNode(const std::string &key, const std::string &ip,
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_->ptransport(), pchannel_manager_.get(), ip,
-      port, local));
+      pchannel_manager_, ip, port, local));
   KademliaService::Stub service(channel.get());
   service.FindNode(&controller, &args, resp, cb);
 }
@@ -50,13 +62,12 @@ void KadRpcs::FindValue(const std::string &key, const std::string &ip,
       const boost::uint16_t &port, FindResponse *resp,
       google::protobuf::Closure *cb, const bool &local) {
   FindRequest args;
-  rpcprotocol::Controller controller;
+  rpcprotocol::ControllerImpl controller;
   args.set_key(key);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_->ptransport(), pchannel_manager_.get(), ip,
-      port, local));
+      pchannel_manager_, ip, port, local));
   KademliaService::Stub service(channel.get());
   service.FindValue(&controller, &args, resp, cb);
 }
@@ -68,11 +79,10 @@ void KadRpcs::Ping(const std::string &ip,
   args.set_ping("ping");
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Controller controller;
+  rpcprotocol::ControllerImpl controller;
   controller.set_timeout(kRpcPingTimeout);
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_->ptransport(), pchannel_manager_.get(), ip,
-      port, local));
+      pchannel_manager_, ip, port, local));
   KademliaService::Stub service(channel.get());
   service.Ping(&controller, &args, resp, cb);
 }
@@ -90,10 +100,9 @@ void KadRpcs::Store(const std::string &key, const std::string &value,
   args.set_signed_request(signed_request);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Controller controller;
+  rpcprotocol::ControllerImpl controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_->ptransport(), pchannel_manager_.get(), ip,
-      port, local));
+      pchannel_manager_, ip, port, local));
   KademliaService::Stub service(channel.get());
     service.Store(&controller, &args, resp, cb);
 }
@@ -105,12 +114,11 @@ void KadRpcs::Downlist(const std::vector<std::string> downlist,
   DownlistRequest args;
   for (unsigned int i = 0; i < downlist.size(); i++)
     args.add_downlist(downlist[i]);
-  rpcprotocol::Controller controller;
+  rpcprotocol::ControllerImpl controller;
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_->ptransport(), pchannel_manager_.get(), ip,
-      port, local));
+      pchannel_manager_, ip, port, local));
   KademliaService::Stub service(channel.get());
   service.Downlist(&controller, &args, resp, cb);
 }
@@ -128,10 +136,9 @@ void KadRpcs::NatDetection(const std::string &newcomer,
   args.set_bootstrap_node(bootstrap_node);
   args.set_type(type);
   args.set_sender_id(sender_id);
-  rpcprotocol::Controller controller;
+  rpcprotocol::ControllerImpl controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_->ptransport(), pchannel_manager_.get(), remote_ip,
-      remote_port, false));
+      pchannel_manager_, remote_ip, remote_port, false));
   if (type == 2)
     controller.set_timeout(18);
   KademliaService::Stub service(channel.get());
@@ -145,11 +152,10 @@ void KadRpcs::NatDetectionPing(const std::string &remote_ip,
   args.set_ping("nat_detection_ping");
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Controller controller;
+  rpcprotocol::ControllerImpl controller;
   controller.set_timeout(kRpcPingTimeout);
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_->ptransport(), pchannel_manager_.get(), remote_ip,
-      remote_port, false));
+      pchannel_manager_, remote_ip, remote_port, false));
   KademliaService::Stub service(channel.get());
   service.NatDetectionPing(&controller, &args, resp, cb);
 }
@@ -165,11 +171,10 @@ void KadRpcs::Bootstrap(const std::string &local_id,
   args.set_newcomer_id(local_id);
   args.set_newcomer_local_ip(local_ip);
   args.set_newcomer_local_port(local_port);
-  rpcprotocol::Controller controller;
+  rpcprotocol::ControllerImpl controller;
   controller.set_timeout(20);
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_->ptransport(), pchannel_manager_.get(), remote_ip,
-      remote_port, false));
+      pchannel_manager_, remote_ip, remote_port, false));
   KademliaService::Stub service(channel.get());
   service.Bootstrap(&controller, &args, resp, cb);
 }

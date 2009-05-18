@@ -1,19 +1,32 @@
-/*
- * copyright maidsafe.net limited 2008
- * The following source code is property of maidsafe.net limited and
- * is not meant for external use. The use of this code is governed
- * by the license file LICENSE.TXT found in teh root of this directory and also
- * on www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * explicit written permission of the board of directors of maidsafe.net
- *
- *  Created on: Sep 29, 2008
- *      Author: Team
- */
+/* Copyright (c) 2009 maidsafe.net limited
+All rights reserved.
 
-#ifndef KADEMLIA_KNODE_H_
-#define KADEMLIA_KNODE_H_
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+    * Neither the name of the maidsafe.net limited nor the names of its
+    contributors may be used to endorse or promote products derived from this
+    software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+#ifndef KADEMLIA_KNODEIMPL_H_
+#define KADEMLIA_KNODEIMPL_H_
 
 //  #define VERBOSE_DEBUG
 //  #define SHOW_MUTEX
@@ -32,52 +45,43 @@
 #include "base/calllatertimer.h"
 #include "base/config.h"
 #include "base/singleton.h"
-#include "base/utils.h"
 #include "base/routingtable.h"
 #include "kademlia/contact.h"
 #include "kademlia/datastore.h"
-#include "kademlia/kademlia.h"
 #include "kademlia/kadrpc.h"
 #include "kademlia/routingtable.h"
+#include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service.pb.h"
 #include "upnp/upnp.hpp"
 
-namespace rpcprotocol {
-class ChannelManager;
-class Channel;
-}
-namespace transport {
-class Transport;
-}
-
 namespace kad {
-enum connect_to_node {
-  LOCAL,
-  REMOTE,
-  UNKNOWN
-};
-enum remote_find_method {
-  FIND_NODE,
-  FIND_VALUE,
-  BOOTSTRAP
-};
 class KadService;
+
 class ContactInfo;
+
 void SortContactList(std::list<Contact> *contact_list,
                      const std::string &target_key);
-// for downlist:
+
+inline void dummy_callback(const std::string& result) {}
+
+inline void dummy_downlist_callback(DownlistResponse *response) {
+  delete response;
+}
+
 struct DownListCandidate {
   DownListCandidate() : node(), is_down(false) {}
   Contact node;
   bool is_down;  // flag to mark whether this node is down
 };
+
 // mapping of giver and suggested list of entires
 struct DownListData {
   DownListData() : giver(), candidate_list() {}
   Contact giver;
   std::list<struct DownListCandidate> candidate_list;
 };
+
 // define data structures for callbacks
 struct IterativeLookUpData {
   IterativeLookUpData(const remote_find_method &method,
@@ -166,8 +170,8 @@ struct StoreCallbackArgs {
 };
 
 struct PingCallbackArgs {
-  explicit PingCallbackArgs(base::callback_func_type cb) : sender(), cb(cb),
-    retry(false) {}
+  explicit PingCallbackArgs(base::callback_func_type cb)
+      : sender(), cb(cb), retry(false) {}
   Contact sender;
   base::callback_func_type cb;
   bool retry;
@@ -190,77 +194,25 @@ struct BootstrapArgs {
   int active_process;
   bool is_callbacked, port_fw;
 };
-// a dummy callback function
-void dummy_callback(const std::string& result);
-void dummy_downlist_callback(DownlistResponse *response);
 
-class KademliaInterface {
+class KNodeImpl {
  public:
-  virtual ~KademliaInterface() {}
-  virtual void Join(const std::string &node_id,
-                    const std::string &kad_config_file,
-                    base::callback_func_type cb,
-                    const bool &port_forwarded = false)=0;
-  virtual void Leave()=0;
-  virtual void StoreValue(const std::string &key,
-                          const std::string &value,
-                          const std::string &public_key,
-                          const std::string &signed_public_key,
-                          const std::string &signed_request,
-                          base::callback_func_type cb)=0;
-  virtual void FindValue(const std::string &key, base::callback_func_type cb)=0;
-  virtual void FindNode(const std::string &node_id,
-                        base::callback_func_type cb,
-                        const bool &local)=0;
-  virtual void FindCloseNodes(const std::string &node_id,
-                              base::callback_func_type cb)=0;
-  virtual void Ping(const std::string &node_id,
-                    base::callback_func_type cb)=0;
-  virtual void Ping(const Contact &remote, base::callback_func_type cb) = 0;
-  virtual const std::string node_id()const = 0;
-  virtual ContactInfo contact_info()const = 0;
-  virtual void AddContact(Contact new_contact, bool only_db = false) = 0;
-  virtual bool GetContact(const std::string &id, Contact *contact) = 0;
-  virtual void RemoveContact(const std::string &node_id)=0;
-  virtual void FindKClosetNodes(const std::string &key,
-                                std::vector<Contact> *close_nodes,
-                                const std::vector<Contact> &exclude_contacts)=0;
-  virtual void FindValueLocal(const std::string &key,
-                              std::vector<std::string> &values)=0;
-  virtual void StoreValueLocal(const std::string &key,
-                               const std::string &value)=0;
-  virtual const std::string host_ip()const = 0;
-  virtual boost::uint16_t host_port()const = 0;
-  virtual const std::string local_host_ip()const = 0;
-  virtual boost::uint16_t local_host_port()const = 0;
-  virtual const std::string rv_ip()const = 0;
-  virtual boost::uint16_t rv_port()const = 0;
-  virtual KadRpcs *kadrpcs()=0;
-  virtual void GetRandomContacts(const int &count,
-      const std::vector<Contact> &exclude_contacts,
-      std::vector<Contact> *contacts)=0;
-};
-
-class KNode: public KademliaInterface {
- public:
-  KNode(const std::string &datastore_dir,
-        boost::shared_ptr<base::CallLaterTimer> timer,
-        boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-        node_type type);
-  // constructor used to set up parameters K, alpha, and beta for kademlia
-  KNode(const std::string &datastore_dir,
-        boost::shared_ptr<base::CallLaterTimer> timer,
-        boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-        node_type type,
-        const boost::uint16_t k,
-        const int &alpha,
-        const int &beta);
-  ~KNode();
-  // if node_id is equal to "", node_id will be generated
+  KNodeImpl(const std::string &datastore_dir,
+            boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+            node_type type);
+  // constructor used to set up parameters k, alpha, and beta for kademlia
+  KNodeImpl(const std::string &datastore_dir,
+            boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+            node_type type,
+            const boost::uint16_t k,
+            const int &alpha,
+            const int &beta);
+  ~KNodeImpl();
+  // if node_id is "", it will be randomly generated
   void Join(const std::string &node_id,
             const std::string &kad_config_file,
             base::callback_func_type cb,
-            const bool &port_forwarded = false);
+            const bool &port_forwarded);
   void Leave();
   void StoreValue(const std::string &key,
                   const std::string &value,
@@ -274,31 +226,21 @@ class KNode: public KademliaInterface {
                 const bool &local);
   void FindCloseNodes(const std::string &node_id,
                       base::callback_func_type cb);
+  void FindKClosestNodes(const std::string &key,
+                         std::vector<Contact> *close_nodes,
+                         const std::vector<Contact> &exclude_contacts);
   void Ping(const std::string &node_id, base::callback_func_type cb);
   void Ping(const Contact &remote, base::callback_func_type cb);
-  const std::string node_id() const;
-  void AddContact(Contact new_contact, bool only_db = false);
-  bool GetContact(const std::string &id, Contact *contact);
+  void AddContact(Contact new_contact, bool only_db);
   void RemoveContact(const std::string &node_id);
-  void FindKClosetNodes(const std::string &key,
-                        std::vector<Contact> *close_nodes,
-                        const std::vector<Contact> &exclude_contacts);
+  bool GetContact(const std::string &id, Contact *contact);
   void FindValueLocal(const std::string &key,
                       std::vector<std::string> &values);
   void StoreValueLocal(const std::string &key,
                        const std::string &value);
-  inline const std::string host_ip() const {return host_ip_; }
-  inline boost::uint16_t host_port() const {return host_port_; }
-  inline const std::string local_host_ip() const {return local_host_ip_; }
-  inline boost::uint16_t local_host_port() const {return local_host_port_; }
-  inline const std::string rv_ip() const {return rv_ip_; }
-  inline boost::uint16_t rv_port() const {return rv_port_; }
-  inline bool is_joined() const {return is_joined_; }
-  ContactInfo contact_info()const;
   void GetRandomContacts(const int &count,
                          const std::vector<Contact> &exclude_contacts,
                          std::vector<Contact> *contacts);
-  KadRpcs *kadrpcs() { return &kadrpcs_;}
   void HandleDeadRendezvousServer(const bool &dead_server,
                                   const std::string &ip,
                                   const uint16_t &port);
@@ -307,66 +249,86 @@ class KNode: public KademliaInterface {
                                            const uint16_t &port,
                                            const std::string &ext_ip);
   void UpdatePDRTContactToRemote(const std::string &node_id);
+  ContactInfo contact_info() const;
+  inline std::string node_id() const {
+    return (type_ == CLIENT) ? fake_client_node_id_ : node_id_;
+  }
+  inline std::string host_ip() const { return host_ip_; }
+  inline boost::uint16_t host_port() const { return host_port_; }
+  inline std::string local_host_ip() const { return local_host_ip_; }
+  inline boost::uint16_t local_host_port() const { return local_host_port_; }
+  inline std::string rv_ip() const { return rv_ip_; }
+  inline boost::uint16_t rv_port() const { return rv_port_; }
+  inline bool is_joined() const { return is_joined_; }
+  inline KadRpcs* kadrpcs() { return &kadrpcs_; }
  private:
-  KNode &operator=(const KNode&);
-  KNode(const KNode &);
-  void RefreshRoutine();
-  void RepublishRoutine();
-  void SaveBootstrapContacts();  // save the routing table into .kadconfig file
-  int LoadBootstrapContacts();
+  KNodeImpl &operator=(const KNodeImpl&);
+  KNodeImpl(const KNodeImpl&);
   inline void CallbackWithFailure(base::callback_func_type cb);
-  void Join_RefreshNode(base::callback_func_type cb,
-      const bool &port_forwarded);
+  void Bootstrap_Callback(const boost::shared_ptr<BootstrapResponse> response,
+                          BootstrapData data);
+  void Bootstrap(const std::string &bootstrap_ip,
+                 const boost::uint16_t &bootstrap_port,
+                 base::callback_func_type cb,
+                 const bool &port_forwarded);
+  void Join_Bootstrapping_Iteration_Client(
+      const std::string& result,
+      boost::shared_ptr<struct BootstrapArgs> args,
+      const std::string bootstrap_ip,
+      const boost::uint16_t bootstrap_port,
+      const std::string local_bs_ip,
+      const boost::uint16_t local_bs_port);
+  void Join_Bootstrapping_Iteration(
+      const std::string& result,
+      boost::shared_ptr<struct BootstrapArgs> args,
+      const std::string bootstrap_ip,
+      const boost::uint16_t bootstrap_port,
+      const std::string local_bs_ip,
+      const boost::uint16_t local_bs_port);
   void Join_Bootstrapping(base::callback_func_type cb,
                           std::vector<Contact> &cached_nodes,
                           const bool &port_forwarded);
-  void Join_Bootstrapping_Iteration(const std::string& result,
-      boost::shared_ptr<struct BootstrapArgs> args,
-      const std::string bootstrap_ip, const boost::uint16_t bootstrap_port,
-      const std::string local_bs_ip, const boost::uint16_t local_bs_port);
-  void Join_Bootstrapping_Iteration_Client(const std::string& result,
-      boost::shared_ptr<struct BootstrapArgs> args,
-      const std::string bootstrap_ip, const boost::uint16_t bootstrap_port,
-      const std::string local_bs_ip, const boost::uint16_t local_bs_port);
-  void Bootstrap(const std::string &bootstrap_ip,
-      const boost::uint16_t &bootstrap_port, base::callback_func_type cb,
-      const bool &port_forwarded);
-  void Bootstrap_Callback(const boost::shared_ptr<BootstrapResponse> response,
-      BootstrapData data);
-  void IterativeLookUp_Callback(boost::shared_ptr<IterativeLookUpData> data);
-  void IterativeLookUp_SearchIteration(
+  void Join_RefreshNode(base::callback_func_type cb,
+                        const bool &port_forwarded);
+  void SaveBootstrapContacts();  // save the routing table into .kadconfig file
+  int LoadBootstrapContacts();
+  void RefreshRoutine();
+  void IterativeLookUp_CancelActiveProbe(
+      Contact sender,
       boost::shared_ptr<IterativeLookUpData> data);
-  // callback function for IterativeLookUp
   void IterativeLookUp_ExtendShortList(const FindResponse *response,
                                        FindCallbackArgs callback_data);
-  void IterativeLookUp_CancelActiveProbe(Contact sender,
-      boost::shared_ptr<IterativeLookUpData> data);
+  void IterativeLookUp_Callback(boost::shared_ptr<IterativeLookUpData> data);
   void IterativeLookUp_SendDownlist(
       boost::shared_ptr<IterativeLookUpData> data);
-  void FindNode_GetNode(const std::string& result,
-                        const std::string node_id,
-                        base::callback_func_type cb);
-  void StoreValue_ExecuteStoreRPCs(const std::string& result,
-                                   const std::string key,
-                                   const std::string value,
-                                   const std::string public_key,
-                                   const std::string signed_public_key,
-                                   const std::string signed_request,
-                                   base::callback_func_type cb);
-  void StoreValue_IterativeStoreValue(const StoreResponse *response,
-                                      StoreCallbackArgs callback_args);
-  void Ping_SendPing(const std::string& result, base::callback_func_type cb);
-  void Ping_HandleResult(const PingResponse *response,
-                         PingCallbackArgs callback_data);
+  void IterativeLookUp_SearchIteration(
+      boost::shared_ptr<IterativeLookUpData> data);
   void IterativeLookUp(const std::string &key,
                        const std::vector<Contact> &start_up_short_list,
                        const remote_find_method &method,
                        base::callback_func_type cb);
+  void StoreValue_IterativeStoreValue(const StoreResponse *response,
+                                      StoreCallbackArgs callback_args);
+  void StoreValue_ExecuteStoreRPCs(const std::string &result,
+                                   const std::string &key,
+                                   const std::string &value,
+                                   const std::string &public_key,
+                                   const std::string &signed_public_key,
+                                   const std::string &signed_request,
+                                   base::callback_func_type cb);
+  void FindNode_GetNode(const std::string &result,
+                        const std::string &node_id,
+                        base::callback_func_type cb);
+  void Ping_HandleResult(const PingResponse *response,
+                         PingCallbackArgs callback_data);
+  void Ping_SendPing(const std::string& result, base::callback_func_type cb);
   void ReBootstrapping_Callback(const std::string &result);
   void RegisterKadService();
   void UnRegisterKadService();
-  void OnUPnPPortMapping(int mapping, int port, std::string const& errmsg,
-      int map_transport);
+  void OnUPnPPortMapping(int mapping,
+                         int port,
+                         std::string const& errmsg,
+                         int map_transport);
   void UPnPMap(boost::uint16_t host_port);
   void UnMapUPnP();
   std::vector< boost::shared_ptr<boost::mutex> > mutex_;
@@ -403,5 +365,5 @@ class KNode: public KademliaInterface {
   int upnp_mapped_port_;
   int upnp_udp_map_;
 };
-}
-#endif  // KADEMLIA_KNODE_H_
+}  // namespace kad
+#endif  // KADEMLIA_KNODEIMPL_H_

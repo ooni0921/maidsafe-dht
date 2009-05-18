@@ -1,36 +1,48 @@
-/*
- * copyright maidsafe.net limited 2008
- * The following source code is property of maidsafe.net limited and
- * is not meant for external use. The use of this code is governed
- * by the license file LICENSE.TXT found in teh root of this directory and also
- * on www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * explicit written permission of the board of directors of maidsafe.net
- *
- *  Created on: Feb 16, 2009
- *      Author: Jose
- */
+/* Copyright (c) 2009 maidsafe.net limited
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+    * Neither the name of the maidsafe.net limited nor the names of its
+    contributors may be used to endorse or promote products derived from this
+    software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include "kademlia/kadservice.h"
-#include "base/utils.h"
 #include "base/crypto.h"
-#include "kademlia/kademlia.h"
-#include "kademlia/knode.h"
-#include "kademlia/kadutils.h"
 #include "base/routingtable.h"
-#include "rpcprotocol/channel.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "kademlia/kadrpc.h"
+#include "kademlia/kadutils.h"
+#include "kademlia/knodeimpl.h"
+#include "rpcprotocol/channelimpl.h"
 
 namespace kad {
-KadService::KadService(KademliaInterface *knode)
-  : knode_(knode)
-  {}
+KadService::KadService(KNodeImpl *knode) : knode_(knode) {}
 
 void KadService::GetSenderAddress(const std::string &res) {
   kad::FindNodeResult result_msg;
   kad::Contact sender_contact;
   if (result_msg.ParseFromString(res) && result_msg.has_contact() &&
       sender_contact.ParseFromString(result_msg.contact())) {
-    knode_->AddContact(sender_contact);
+    knode_->AddContact(sender_contact, false);
   }
 }
 
@@ -43,7 +55,7 @@ void KadService::Bootstrap_NatDetectionRv(
     // can only be contacted via rendezvous - END
     data.response->set_nat_type(2);
     if (sender.node_id() != client_node_id()) {
-      knode_->AddContact(sender);
+      knode_->AddContact(sender, false);
     }
   } else {
     // Node B replies to node A with a flag stating no communication} - END
@@ -51,9 +63,9 @@ void KadService::Bootstrap_NatDetectionRv(
     data.response->set_nat_type(3);
     // data.response->set_result(kad::kRpcResultFailure);
   }
-  if (typeid(*data.controller) == typeid(rpcprotocol::Controller)) {
-    rpcprotocol::Controller* rpc_controller =
-      static_cast<rpcprotocol::Controller*>(data.controller);
+  if (typeid(*data.controller) == typeid(rpcprotocol::ControllerImpl)) {
+    rpcprotocol::ControllerImpl* rpc_controller =
+      static_cast<rpcprotocol::ControllerImpl*>(data.controller);
     rpc_controller->set_remote_ip(sender.host_ip());
     rpc_controller->set_remote_port(sender.host_port());
   }
@@ -72,10 +84,10 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
       data.newcomer.host_port(), data.newcomer.local_ip(),
       data.newcomer.local_port());  // No rendezvous info
     if (sender.node_id() != client_node_id()) {
-      knode_->AddContact(sender);
-      if (typeid(*data.controller) == typeid(rpcprotocol::Controller)) {
-        rpcprotocol::Controller* rpc_controller =
-          static_cast<rpcprotocol::Controller*>(data.controller);
+      knode_->AddContact(sender, false);
+      if (typeid(*data.controller) == typeid(rpcprotocol::ControllerImpl)) {
+        rpcprotocol::ControllerImpl* rpc_controller =
+          static_cast<rpcprotocol::ControllerImpl*>(data.controller);
         rpc_controller->set_remote_ip(data.newcomer.host_ip());
         rpc_controller->set_remote_port(data.newcomer.host_port());
       }
@@ -93,13 +105,13 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
     std::string newcomer_str;
     data.newcomer.SerialiseToString(&newcomer_str);
     knode_->kadrpcs()->NatDetection(newcomer_str,
-      data.bootstrap_node,
-      2,
-      knode_->node_id(),
-      data.node_c.host_ip(),
-      data.node_c.host_port(),
-      resp,
-      done);
+                                    data.bootstrap_node,
+                                    2,
+                                    knode_->node_id(),
+                                    data.node_c.host_ip(),
+                                    data.node_c.host_port(),
+                                    resp,
+                                    done);
   }
 }
 
@@ -121,15 +133,15 @@ void KadService::Ping(google::protobuf::RpcController *controller,
   }
   // void adding clients to our routing table
   if (add_contact)
-    knode_->AddContact(sender);
+    knode_->AddContact(sender, false);
   // Try to get the sender's address from the local routingtable
   // if find no result in the local routingtable, do a find node
   if (sender.node_id() != client_node_id()) {
     kad::Contact sender_contact;
     if (knode_->GetContact(sender.node_id(), &sender_contact)) {
-      if (typeid(*controller) == typeid(rpcprotocol::Controller)) {
-        rpcprotocol::Controller* rpc_controller =
-          dynamic_cast<rpcprotocol::Controller*>(controller);  // NOLINT
+      if (typeid(*controller) == typeid(rpcprotocol::ControllerImpl)) {
+        rpcprotocol::ControllerImpl* rpc_controller =
+          dynamic_cast<rpcprotocol::ControllerImpl*>(controller);  // NOLINT
         rpc_controller->set_remote_ip(sender_contact.host_ip());
         rpc_controller->set_remote_port(sender_contact.host_port());
       }
@@ -156,7 +168,7 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
     std::vector<Contact> closest_contacts, exclude_contacts;
     std::string key = request->key();
     exclude_contacts.push_back(sender);
-    knode_->FindKClosetNodes(key, &closest_contacts, exclude_contacts);
+    knode_->FindKClosestNodes(key, &closest_contacts, exclude_contacts);
     bool found_node = false;
     for (int i = 0; i < static_cast<int>(closest_contacts.size()); i++) {
       std::string contact_str;
@@ -179,7 +191,7 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
   }
   // void adding clients to our routing table
   if (add_contact) {
-    knode_->AddContact(sender);
+    knode_->AddContact(sender, false);
     // Save rendezvous info
 //    if (sender.node_id() != client_node_id()) {
 //      base::PDRoutingTableTuple tuple(sender.node_id(),
@@ -200,9 +212,9 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
   if (sender.node_id() != client_node_id()) {
     kad::Contact sender_contact;
     if (knode_->GetContact(sender.node_id(), &sender_contact)) {
-      if (typeid(*controller) == typeid(rpcprotocol::Controller)) {
-        rpcprotocol::Controller* rpc_controller =
-          dynamic_cast<rpcprotocol::Controller*>(controller);  // NOLINT
+      if (typeid(*controller) == typeid(rpcprotocol::ControllerImpl)) {
+        rpcprotocol::ControllerImpl* rpc_controller =
+          dynamic_cast<rpcprotocol::ControllerImpl*>(controller);  // NOLINT
         rpc_controller->set_remote_ip(sender_contact.host_ip());
         rpc_controller->set_remote_port(sender_contact.host_port());
       }
@@ -253,15 +265,15 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
   }
   // void adding clients to our routing table
   if (add_contact)
-    knode_->AddContact(sender);
+    knode_->AddContact(sender, false);
   // Try to get the sender's address from the local routingtable
   // if find no result in the local routingtable, do a find node
   if (sender.node_id() != client_node_id()) {
     kad::Contact sender_contact;
     if (knode_->GetContact(sender.node_id(), &sender_contact)) {
-      if (typeid(*controller) == typeid(rpcprotocol::Controller)) {
-        rpcprotocol::Controller* rpc_controller =
-          dynamic_cast<rpcprotocol::Controller*>(controller);  // NOLINT
+      if (typeid(*controller) == typeid(rpcprotocol::ControllerImpl)) {
+        rpcprotocol::ControllerImpl* rpc_controller =
+          dynamic_cast<rpcprotocol::ControllerImpl*>(controller);  // NOLINT
         rpc_controller->set_remote_ip(sender_contact.host_ip());
         rpc_controller->set_remote_port(sender_contact.host_port());
       }
@@ -300,15 +312,15 @@ void KadService::Store(google::protobuf::RpcController *controller,
   }
   // void adding clients to our routing table
   if (add_contact)
-    knode_->AddContact(sender);
+    knode_->AddContact(sender, false);
   // Try to get the sender's address from the local routingtable
   // if find no result in the local routingtable, do a find node
   if (sender.node_id() != client_node_id()) {
     kad::Contact sender_contact;
     if (knode_->GetContact(sender.node_id(), &sender_contact)) {
-      if (typeid(*controller) == typeid(rpcprotocol::Controller)) {
-        rpcprotocol::Controller* rpc_controller =
-          dynamic_cast<rpcprotocol::Controller*>(controller);  // NOLINT
+      if (typeid(*controller) == typeid(rpcprotocol::ControllerImpl)) {
+        rpcprotocol::ControllerImpl* rpc_controller =
+          dynamic_cast<rpcprotocol::ControllerImpl*>(controller);  // NOLINT
         rpc_controller->set_remote_ip(sender_contact.host_ip());
         rpc_controller->set_remote_port(sender_contact.host_port());
       }
@@ -351,14 +363,14 @@ void KadService::Downlist(google::protobuf::RpcController *controller,
   }
   // void adding clients to our routing table
   if (add_contact && sender.node_id() != client_node_id())
-    knode_->AddContact(sender);
+    knode_->AddContact(sender, false);
   // Try to get the sender's address from the local routingtable
   // if find no result in the local routingtable, do a find node
   kad::Contact sender_contact;
   if (knode_->GetContact(sender.node_id(), &sender_contact)) {
-    if (typeid(*controller) == typeid(rpcprotocol::Controller)) {
-      rpcprotocol::Controller* rpc_controller =
-        dynamic_cast<rpcprotocol::Controller*>(controller);  // NOLINT
+    if (typeid(*controller) == typeid(rpcprotocol::ControllerImpl)) {
+      rpcprotocol::ControllerImpl* rpc_controller =
+        dynamic_cast<rpcprotocol::ControllerImpl*>(controller);  // NOLINT
       rpc_controller->set_remote_ip(sender_contact.host_ip());
       rpc_controller->set_remote_port(sender_contact.host_port());
     }
@@ -425,9 +437,9 @@ void KadService::Bootstrap_NatDetectionPing(
   kad::Contact sender_contact;
   if (data.sender_id != client_node_id()) {
     if (knode_->GetContact(data.sender_id, &sender_contact)) {
-      if (typeid(*data.controller) == typeid(rpcprotocol::Controller)) {
-        rpcprotocol::Controller* rpc_controller =
-          dynamic_cast<rpcprotocol::Controller*>(data.controller);  // NOLINT
+      if (typeid(*data.controller) == typeid(rpcprotocol::ControllerImpl)) {
+        rpcprotocol::ControllerImpl* rpc_controller =
+          dynamic_cast<rpcprotocol::ControllerImpl*>(data.controller);  // NOLINT
         rpc_controller->set_remote_ip(sender_contact.host_ip());
         rpc_controller->set_remote_port(sender_contact.host_port());
       }
@@ -455,9 +467,9 @@ void KadService::Bootstrap_NatDetectionRzPing(
   kad::Contact sender_contact;
   if (data.sender_id != client_node_id()) {
     if (knode_->GetContact(data.sender_id, &sender_contact)) {
-      if (typeid(*data.controller) == typeid(rpcprotocol::Controller)) {
-        rpcprotocol::Controller* rpc_controller =
-          dynamic_cast<rpcprotocol::Controller*>(data.controller);  // NOLINT
+      if (typeid(*data.controller) == typeid(rpcprotocol::ControllerImpl)) {
+        rpcprotocol::ControllerImpl* rpc_controller =
+          dynamic_cast<rpcprotocol::ControllerImpl*>(data.controller);  // NOLINT
         rpc_controller->set_remote_ip(sender_contact.host_ip());
         rpc_controller->set_remote_port(sender_contact.host_port());
       }
@@ -534,9 +546,9 @@ void KadService::NatDetection(google::protobuf::RpcController *controller,
   if (request->sender_id() != client_node_id()) {
     kad::Contact sender_contact;
     if (knode_->GetContact(request->sender_id(), &sender_contact)) {
-      if (typeid(*controller) == typeid(rpcprotocol::Controller)) {
-        rpcprotocol::Controller* rpc_controller =
-          dynamic_cast<rpcprotocol::Controller*>(controller);  // NOLINT
+      if (typeid(*controller) == typeid(rpcprotocol::ControllerImpl)) {
+        rpcprotocol::ControllerImpl* rpc_controller =
+          dynamic_cast<rpcprotocol::ControllerImpl*>(controller);  // NOLINT
         rpc_controller->set_remote_ip(sender_contact.host_ip());
         rpc_controller->set_remote_port(sender_contact.host_port());
       }
@@ -578,9 +590,9 @@ void KadService::NatDetectionPing(google::protobuf::RpcController *controller,
 //                                    0,
 //                                    0);
 //    routingtable_->AddTuple(tuple);
-    if (typeid(*controller) == typeid(rpcprotocol::Controller)) {
-        rpcprotocol::Controller* rpc_controller =
-          static_cast<rpcprotocol::Controller*>(controller);
+    if (typeid(*controller) == typeid(rpcprotocol::ControllerImpl)) {
+        rpcprotocol::ControllerImpl* rpc_controller =
+          static_cast<rpcprotocol::ControllerImpl*>(controller);
         rpc_controller->set_remote_ip(sender.host_ip());
         rpc_controller->set_remote_port(sender.host_port());
     }
@@ -661,9 +673,9 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
                                     resp,
                                     done1);
   } else {
-    if (typeid(*controller) == typeid(rpcprotocol::Controller)) {
-      rpcprotocol::Controller* rpc_controller =
-        dynamic_cast<rpcprotocol::Controller*>(controller);  // NOLINT
+    if (typeid(*controller) == typeid(rpcprotocol::ControllerImpl)) {
+      rpcprotocol::ControllerImpl* rpc_controller =
+        dynamic_cast<rpcprotocol::ControllerImpl*>(controller);  // NOLINT
       rpc_controller->set_remote_ip(newcomer.host_ip());
       rpc_controller->set_remote_port(newcomer.host_port());
     }

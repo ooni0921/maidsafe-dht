@@ -1,23 +1,35 @@
-/*
- * copyright maidsafe.net limited 2008
- * The following source code is property of maidsafe.net limited and
- * is not meant for external use. The use of this code is governed
- * by the license file LICENSE.TXT found in teh root of this directory and also
- * on www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * explicit written permission of the board of directors of maidsafe.net
- *
- *  Created on: Jul 29, 2008
- *      Author: haiyang
- */
-#include "base/utils.h"
-#include "kademlia/kademlia.h"
+/* Copyright (c) 2009 maidsafe.net limited
+All rights reserved.
 
-#include "base/config.h"
-#include "exception"
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+    * Neither the name of the maidsafe.net limited nor the names of its
+    contributors may be used to endorse or promote products derived from this
+    software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include "kademlia/datastore.h"
-#include "base/tri_logger.h"
+
+#include <exception>
+#include "base/config.h"
+#include "maidsafe/maidsafe-dht.h"
 
 namespace kad {
 
@@ -64,7 +76,7 @@ bool DataStore::Init(const std::string &file_name,
           stmt.execDML();
           stmt.reset();
           db_.execDML("commit transaction;");
-        } catch(CppSQLite3Exception& e) {  //NOLINT
+        } catch(CppSQLite3Exception& e) {  // NOLINT
       #ifdef DEBUG
           printf("%d : %s",  e.errorCode(), e.errorMessage());
       #endif
@@ -72,7 +84,7 @@ bool DataStore::Init(const std::string &file_name,
         }  // try statement
       }  // reuse database
     }
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -86,7 +98,7 @@ bool DataStore::Close() {
   bool result = true;
   try {
     db_.close();
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -95,9 +107,8 @@ bool DataStore::Close() {
   is_open_ = false;
   return result;
 }
-// TODO(Haiyang): change reference to pointer
-bool DataStore::Keys(std::vector<std::string> &keys) {  //NOLINT
-  keys.clear();
+bool DataStore::Keys(std::vector<std::string> *keys) {
+  keys->clear();
   try {
     std::string s = "select distinct key from data;";
     CppSQLite3Query qcpp = db_.execQuery(s.c_str());
@@ -106,7 +117,7 @@ bool DataStore::Keys(std::vector<std::string> &keys) {  //NOLINT
       try {
         blob_key.setEncoded((unsigned char*)
           qcpp.fieldValue(static_cast<unsigned int>(0)));
-        keys.push_back(std::string((const char*)blob_key.getBinary(),
+        keys->push_back(std::string((const char*)blob_key.getBinary(),
             blob_key.getBinaryLength()));
       } catch(const std::exception& e) {
 #ifdef DEBUG
@@ -117,7 +128,7 @@ bool DataStore::Keys(std::vector<std::string> &keys) {  //NOLINT
       }
       qcpp.nextRow();
     }
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -143,7 +154,7 @@ inline bool DataStore::KeyValueExists(const std::string &key,
     CppSQLite3Query qcpp = stmt.execQuery();
     if (1 <= qcpp.getIntField(0))
       result = true;
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
       printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -195,7 +206,7 @@ bool DataStore::StoreItem(const std::string &key,
     stmt.execDML();
     stmt.reset();
     db_.execDML("commit transaction;");
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
       printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -231,7 +242,7 @@ bool DataStore::LoadItem(const std::string &key,
       }
       qcpp.nextRow();
     }
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
       printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -256,7 +267,7 @@ bool DataStore::DeleteKey(const std::string &key) {
     stmt.reset();
     if (db_.execDML("commit transaction;") == 0)
       return false;
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -287,7 +298,7 @@ bool DataStore::DeleteItem(const std::string &key,
     stmt.reset();
     if (db_.execDML("commit transaction;") == 0)
       return false;
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -313,7 +324,7 @@ bool DataStore::DeleteValue(const std::string &value) {
     stmt.reset();
     if (db_.execDML("commit transaction;") == 0)
       return false;
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -337,7 +348,7 @@ boost::uint32_t DataStore::DeleteExpiredValues() {
     stmt.reset();
     if (db_.execDML("commit transaction;") == 0)
       return false;
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -367,7 +378,7 @@ boost::uint32_t DataStore::LastPublishedTime(const std::string &key,
       return -1;
     else
       return static_cast<boost::uint32_t>(qcpp.getIntField(0));
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -395,7 +406,7 @@ boost::uint32_t DataStore::OriginalPublishedTime(const std::string &key,
       return -1;
     else
       return static_cast<boost::uint32_t>(qcpp.getIntField(0));
-  } catch(CppSQLite3Exception& e) {  //NOLINT
+  } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
