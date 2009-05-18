@@ -56,37 +56,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  #include <netinet/in.h>
 //  #include <errno.h>
 #endif
-//
-//  #include <boost/cstdint.hpp>
-//  #include <boost/thread/xtime.hpp>
-//
-//  #include <algorithm>
-//  #include <sstream>
-//  #include <string>
-//  #include <list>
-
-
-
 
 #include <boost/asio.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/function.hpp>
+#include <boost/mp_math/mp_int.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/shared_ptr.hpp>
 #include <cryptopp/hex.h>
 #include <stdint.h>
-
 #include <google/protobuf/service.h>
 #include <google/protobuf/message.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
-
-#include "kademlia/kadutils.h"
-#include "protobuf/datamaps.pb.h"
-#include "protobuf/packet.pb.h"
-#include "protobuf/rpcmessage.pb.h"
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *
@@ -336,6 +321,7 @@ const std::string kStartTransportFailure("F");
 // RPC ENUMERATIONS, DATA TYPE DEFINITIONS, AND FORWARD DECLARATIONS
 struct RpcInfo;
 struct PendingReq;
+class RpcMessage;
 class ChannelManagerImpl;
 class ControllerImpl;
 class ChannelImpl;

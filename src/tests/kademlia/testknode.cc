@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/crypto.h"
 #include "base/rsakeypair.h"
 #include "kademlia/contact.h"
+#include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"

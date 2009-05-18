@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "rpcprotocol/channelmanagerimpl.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
+#include "protobuf/rpcmessage.pb.h"
 
 namespace rpcprotocol {
 

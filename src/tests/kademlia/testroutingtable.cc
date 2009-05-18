@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/crypto.h"
 #include "kademlia/kbucket.h"
 #include "kademlia/contact.h"
+#include "kademlia/kadutils.h"
 #include "kademlia/routingtable.h"
 #include "maidsafe/maidsafe-dht.h"
 

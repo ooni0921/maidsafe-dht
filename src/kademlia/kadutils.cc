@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/random.hpp>
 #include <ctime>
+#include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe-dht.h"
 
 namespace kad {
