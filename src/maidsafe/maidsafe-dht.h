@@ -152,8 +152,6 @@ class ChannelManager {
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
   void DeleteRequest(const boost::uint32_t &req_id);
   void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
-  void AddConnectionToReq(const boost::uint32_t &req_id,
-                          const boost::uint32_t &conn_id);
   boost::shared_ptr<transport::Transport> ptransport();
   boost::uint16_t external_port() const;
   std::string external_ip() const;
@@ -185,9 +183,8 @@ class Controller : public google::protobuf::RpcController {
 
 class Channel : public google::protobuf::RpcChannel {
  public:
-  explicit Channel(
-      boost::shared_ptr<rpcprotocol::ChannelManager> channelmanager);
-  Channel(boost::shared_ptr<rpcprotocol::ChannelManager> channelmanager,
+  explicit Channel(rpcprotocol::ChannelManager *channelmanager);
+  Channel(rpcprotocol::ChannelManager *channelmanager,
           const std::string &ip,
           const boost::uint16_t &port,
           const bool &local);

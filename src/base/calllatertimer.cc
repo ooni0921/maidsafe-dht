@@ -36,46 +36,46 @@ inline bool CompareCallLaterData(const struct CallLaterMap &first,
   return (first.time_to_execute < second.time_to_execute);
 }
 
-void BlockingRoutine(CallLaterTimer *timer) {
-  boost::mutex::scoped_lock guard(boost::mutex mutex);
-  while (timer->IsStarted()) {
-    timer->TryExecute();
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+CallLaterTimer::CallLaterTimer()
+    : mutex_(),
+      calllater_id_(0),
+      is_started_(true),
+      blocking_routine(),
+      calllaters_(),
+      cond_() {
+  try {
+    blocking_routine.reset(new boost::thread(&CallLaterTimer::TryExecute,
+                                             this));
+  } catch (std::exception &) {
   }
 }
 
-CallLaterTimer::CallLaterTimer()
-    : mutex_(),
-      mutex1_(),
-      calllater_id_(0),
-      is_started_(true),
-      blocking_routine(new boost::thread(&BlockingRoutine, this)),
-      calllaters_() {}
-
 CallLaterTimer::~CallLaterTimer() {
-#ifdef VERBOSE_DEBUG
-  printf("In CallLaterTimer dtor, waiting for blocking_routine to join.\n");
-#endif
   is_started_ = false;
+  {
+    boost::mutex::scoped_lock guard(mutex_);
+    calllaters_.clear();
+  }
+  cond_.notify_one();
   blocking_routine->join();
-#ifdef VERBOSE_DEBUG
-  printf("In CallLaterTimer dtor, blocking_routine has joined.\n");
-#endif
-  calllaters_.clear();
+  // calllaters_.clear();
 }
 
 void CallLaterTimer::TryExecute() {
-    boost::mutex::scoped_lock guard(mutex_);
-  if ((is_started_)&&(!calllaters_.empty())) {
-
-    // don't combine the following 2 if statements into 1 (to avoid segfaults)
-    if (!is_started_)
-      return;
-    if (calllaters_.empty())
-      return;
+  while (true) {
+    {
+      boost::mutex::scoped_lock guard(mutex_);
+      while (calllaters_.empty() && is_started_)
+        cond_.wait(guard);
+    }
+    if (!is_started_) return;
+    mutex_.lock();
     if (calllaters_.front().time_to_execute <= get_epoch_milliseconds()) {
+      calllater_func cb = calllaters_.front().cb;
+      calllaters_.pop_front();
+      mutex_.unlock();
       try {
-        calllaters_.front().cb();
+        cb();
       }
       catch(const std::exception &e) {
         // TODO(dan): Logging this.
@@ -83,28 +83,33 @@ void CallLaterTimer::TryExecute() {
         printf("Exception in TryExecute: %s\n", e.what());
 #endif
       }
-      calllaters_.pop_front();
+    } else {
+      mutex_.unlock();
     }
+  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
 }
 
 int CallLaterTimer::AddCallLater(boost::uint64_t msecs, calllater_func cb) {
-//  boost::mutex::scoped_lock guard(mutex3_);
   if ((msecs <=0)||(!is_started_))
     return -1;
-  calllater_id_ = (++calllater_id_)%32768;
-  struct CallLaterMap clm;
-  clm.time_to_execute = get_epoch_milliseconds()+msecs;
-  clm.cb = cb;
-  clm.calllater_id = calllater_id_;
-  calllaters_.push_back(clm);
-  calllaters_.sort(CompareCallLaterData);
+  {
+    boost::mutex::scoped_lock guard(mutex_);
+    calllater_id_ = (calllater_id_+1)%32768;
+    struct CallLaterMap clm;
+    clm.time_to_execute = get_epoch_milliseconds()+msecs;
+    clm.cb = cb;
+    clm.calllater_id = calllater_id_;
+    calllaters_.push_back(clm);
+    calllaters_.sort(CompareCallLaterData);
+  }
+  cond_.notify_one();
   return calllater_id_;
 }
 
 bool CallLaterTimer::CancelOne(int calllater_id) {
-//  boost::mutex::scoped_lock guard(mutex2_);
   std::list<CallLaterMap>::iterator it;
+  boost::mutex::scoped_lock guard(mutex_);
   for (it = calllaters_.begin(); it != calllaters_.end(); it++) {
     if (it->calllater_id == calllater_id) {
       calllaters_.erase(it);
@@ -114,4 +119,8 @@ bool CallLaterTimer::CancelOne(int calllater_id) {
   return false;
 }
 
+void CallLaterTimer::CancelAll() {
+  boost::mutex::scoped_lock guard(mutex_);
+  calllaters_.clear();
+}
 }  // namespace base

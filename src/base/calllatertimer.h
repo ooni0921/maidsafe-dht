@@ -52,10 +52,7 @@ class CallLaterTimer {
   // execute the expired calls
   void TryExecute();
   inline bool IsStarted() { return is_started_; }
-  inline void CancelAll() {
-    boost::mutex::scoped_lock guard(mutex1_);
-    calllaters_.clear();
-  }
+  void CancelAll();
   bool CancelOne(int calllater_id);
   // Delay msecs milliseconds to call the function specified by cb
   int AddCallLater(boost::uint64_t msecs, calllater_func cb);
@@ -64,13 +61,11 @@ class CallLaterTimer {
   CallLaterTimer(const CallLaterTimer&);
   CallLaterTimer& operator=(const CallLaterTimer&);
   boost::mutex mutex_;
-  boost::mutex mutex1_;
-  boost::mutex mutex2_;
-  boost::mutex mutex3_;
   int calllater_id_;
   bool is_started_;
   boost::shared_ptr<boost::thread> blocking_routine;
   std::list<CallLaterMap> calllaters_;
+  boost::condition_variable cond_;
 };
 
 }  // namespace base

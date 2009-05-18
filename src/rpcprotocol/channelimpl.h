@@ -35,11 +35,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht_config.h"
 #include "transport/transportapi.h"
 
-//using boost::asio::ip::udp;
 namespace rpcprotocol {
 class ControllerImpl : public google::protobuf::RpcController {
  public:
-  ControllerImpl() : remote_ip_(""), remote_port_(), timeout_(kRpcTimeout) {}
+  ControllerImpl() : remote_ip_(), remote_port_(0), timeout_(kRpcTimeout) {}
   ~ControllerImpl() {}
   virtual void SetFailed(const std::string&) {}
   virtual void Reset() {}
@@ -69,9 +68,8 @@ class ControllerImpl : public google::protobuf::RpcController {
 
 class ChannelImpl : public google::protobuf::RpcChannel {
  public:
-  explicit ChannelImpl(
-      boost::shared_ptr<rpcprotocol::ChannelManager> channelmanager);
-  ChannelImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channelmanager,
+  explicit ChannelImpl(rpcprotocol::ChannelManager *channelmanager);
+  ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
               const std::string &ip,
               const boost::uint16_t &port,
               const bool &local);
@@ -87,8 +85,8 @@ class ChannelImpl : public google::protobuf::RpcChannel {
  private:
   void SendResponse(const google::protobuf::Message *response, RpcInfo info);
   std::string GetServiceName(const std::string &full_name);
-  boost::shared_ptr<rpcprotocol::ChannelManager> pmanager_;
   boost::shared_ptr<transport::Transport> ptransport_;
+  rpcprotocol::ChannelManager *pmanager_;
   google::protobuf::Service *pservice_;
   std::string ip_;
   boost::uint16_t port_;
@@ -96,7 +94,6 @@ class ChannelImpl : public google::protobuf::RpcChannel {
   ChannelImpl(const ChannelImpl&);
   ChannelImpl& operator=(const ChannelImpl&);
   bool local_;
-  boost::mutex mutex;
 };
 }  // namespace
 #endif  // RPCPROTOCOL_CHANNELIMPL_H_

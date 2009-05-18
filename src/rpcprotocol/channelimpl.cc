@@ -37,38 +37,33 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rpcprotocol {
 
 struct RpcInfo {
-  RpcInfo() : ctrl(0), rpc_id(0), connection_id(0) {}
+  RpcInfo() : ctrl(NULL), rpc_id(0), connection_id(0) {}
   ControllerImpl *ctrl;
-  boost::uint32_t rpc_id;
-  boost::uint32_t connection_id;
+  boost::uint32_t rpc_id, connection_id;
 };
 
-ChannelImpl::ChannelImpl(
-    boost::shared_ptr<rpcprotocol::ChannelManager> channelmanager)
-        : pmanager_(channelmanager),
-          ptransport_(pmanager_->ptransport()),
+ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager)
+        : ptransport_(channelmanager->ptransport()),
+          pmanager_(channelmanager),
           pservice_(0),
           ip_(""),
           port_(0),
           routingtable_(new base::PDRoutingTableHandler(base::itos(
               pmanager_->external_port()))),
-          local_(false),
-          mutex() {}
+          local_(false) {}
 
-ChannelImpl::ChannelImpl(
-    boost::shared_ptr<rpcprotocol::ChannelManager> channelmanager,
+ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
     const std::string &ip,
     const boost::uint16_t &port,
     const bool &local)
-        : pmanager_(channelmanager),
-          ptransport_(pmanager_->ptransport()),
+        : ptransport_(channelmanager->ptransport()),
+          pmanager_(channelmanager),
           pservice_(0),
           ip_(""),
           port_(port),
           routingtable_(new base::PDRoutingTableHandler(base::itos(
               pmanager_->external_port()))),
-          local_(local),
-          mutex() {
+          local_(local) {
   // To send we need ip in decimal dotted format
   if (ip.size() == 4)
     ip_ = base::inet_btoa(ip);
@@ -102,18 +97,9 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
   PendingReq req;
   req.args = response;
   req.callback = done;
-  boost::uint32_t conn_id;
-  boost::uint32_t req_id = msg.message_id();
-#ifdef VERBOSE_DEBUG
-  printf("In Channel::CallMethod, adding pending request %i.\n", req_id);
-#endif
-  pmanager_->AddPendingRequest(msg.message_id(), req);
+  boost::uint32_t conn_id = 0;
   std::string ser_msg;
   msg.SerializeToString(&ser_msg);
-#ifdef VERBOSE_DEBUG
-    printf("Sending %s request %d to %s:%d\n", msg.method().c_str(),
-      msg.message_id(), ip_.c_str(), port_);
-#endif
   std::string rendezvous_ip("");
   uint16_t rendezvous_port = 0;
   base::PDRoutingTableTuple tuple;
@@ -125,7 +111,7 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
 //        printf("node has rendezvous information\n");
     }
   // Set the RPC request timeout
-  ControllerImpl *ctrl = static_cast<ControllerImpl*>(controller);
+  Controller *ctrl = static_cast<Controller*>(controller);
   if (0 != ptransport_->Send(ip_,
                         port_,
                         rendezvous_ip,
@@ -134,13 +120,15 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
                         transport::Transport::STRING,
                         &conn_id,
                         true)) {
-#ifdef VERBOSE_DEBUG
-    printf("Failed to send request %i.\n", req_id);
+#ifdef DEBUG
+    printf("Failed to send request %i.\n", msg.message_id());
 #endif
     // Set short timeout as request has already failed.
     ctrl->set_timeout(1);
   }
-  pmanager_->AddConnectionToReq(req_id, conn_id);
+  req.connection_id = conn_id;
+  pmanager_->AddPendingRequest(msg.message_id(), req);
+  // pmanager_->AddConnectionToReq(req_id, conn_id);
   // in case no timeout was set in the controller use the default one
   if (ctrl->timeout() != 0) {
     pmanager_->AddReqToTimer(msg.message_id(), ctrl->timeout());
@@ -177,20 +165,7 @@ void ChannelImpl::SetService(google::protobuf::Service* service) {
 
 void ChannelImpl::HandleRequest(const RpcMessage &request,
                                 const boost::uint32_t &connection_id) {
-#ifdef SHOW_MUTEX
-  printf("In Channel::HandleRequest (connection %i), outside mutex.\n",
-         connection_id);
-#endif
-  boost::mutex::scoped_lock guard(mutex);
-#ifdef SHOW_MUTEX
-  printf("In Channel::HandleRequest (connection %i), inside mutex.\n",
-         connection_id);
-#endif
   if (pservice_) {
-#ifdef VERBOSE_DEBUG
-    printf("In Channel::HandleRequest (connection %i), method", connection_id);
-    printf(" = %s.\n", request.method().c_str());
-#endif
     const google::protobuf::MethodDescriptor* method =
         pservice_->GetDescriptor()->FindMethodByName(request.method());
     google::protobuf::Message* args  =
@@ -198,16 +173,8 @@ void ChannelImpl::HandleRequest(const RpcMessage &request,
     google::protobuf::Message* response  =
         pservice_->GetResponsePrototype(method).New();
     if (!args->ParseFromString(request.args())) {
-#ifdef VERBOSE_DEBUG
-      printf("In Channel::HandleRequest, failed to parse request - closing");
-      printf(" connection %i.\n", connection_id);
-#endif
       ptransport_->CloseConnection(connection_id);
       delete args;
-#ifdef SHOW_MUTEX
-      printf("In Channel::HandleRequest (connection %i), unlock 1.\n",
-             connection_id);
-#endif
       return;
     }
     ControllerImpl *controller = new ControllerImpl;
@@ -220,17 +187,9 @@ void ChannelImpl::HandleRequest(const RpcMessage &request,
         &ChannelImpl::SendResponse, response, info);
     pservice_->CallMethod(method, controller, args, response, done);
     delete args;
-#ifdef SHOW_MUTEX
-    printf("In Channel::HandleRequest (connection %i), unlock 2.\n",
-           connection_id);
-#endif
     return;
   }
   ptransport_->CloseConnection(connection_id);
-#ifdef SHOW_MUTEX
-  printf("In Channel::HandleRequest (connection %i), unlock 3.\n",
-         connection_id);
-#endif
 }
 
 void ChannelImpl::SendResponse(const google::protobuf::Message *response,
@@ -240,29 +199,14 @@ void ChannelImpl::SendResponse(const google::protobuf::Message *response,
   response_msg.set_rpc_type(RESPONSE);
   std::string ser_response;
   response->SerializeToString(&ser_response);
-  // TODO(dirvine): Confirm we need to serialise to string I think we dont
-  // and it would be more efficient not to !
   response_msg.set_args(ser_response);
   std::string ser_msg;
   response_msg.SerializeToString(&ser_msg);
-// #ifdef DEBUG
-//  printf("sending response to %s:%d\n", info.ctrl->remote_ip().c_str(),
-//      info.ctrl->remote_port());
-// #endif
-//  if (0 != ptransport_->Send(info.ctrl->remote_ip(), info.ctrl->remote_port(),
-//      ser_msg, transport::Transport::STRING)) {
-//  printf("transport: %d - sending the response to req %d\n",
-//    ptransport_->listening_port(), info.connection_id);
   if (0 != ptransport_->Send(info.connection_id, ser_msg,
                              transport::Transport::STRING)) {
 #ifdef DEBUG
     printf("Failed to send response to connection %d.\n", info.connection_id);
 #endif
-
-// #ifdef DEBUG
-//  printf("failed to send response to %s:%d\n", info.ctrl->remote_ip().c_str(),
-//        info.ctrl->remote_port());
-// #endif
   }
   // printf("response to req %d sent\n", info.rpc_id);
   delete response;

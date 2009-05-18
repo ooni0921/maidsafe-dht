@@ -1,16 +1,30 @@
-/*
- * copyright maidsafe.net limited 2008
- * The following source code is property of maidsafe.net limited and
- * is not meant for external use. The use of this code is governed
- * by the license file LICENSE.TXT found in teh root of this directory and also
- * on www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * explicit written permission of the board of directors of maidsafe.net
- *
- *  Created on: Jul 29, 2008
- *      Author: Team
- */
+/* Copyright (c) 2009 maidsafe.net limited
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+    * Neither the name of the maidsafe.net limited nor the names of its
+    contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+*/
 
 #include <gtest/gtest.h>
 #include <google/protobuf/descriptor.h>
@@ -33,6 +47,7 @@ class PingTestService : public tests::PingTest {
       if (request->ping() == "ping") {
         response->set_result("S");
         response->set_pong("pong");
+        printf("got ping request, returning response\n");
       } else {
         response->set_result("F");
         response->set_pong("");
@@ -94,6 +109,7 @@ class MirrorTestService : public tests::MirrorTest {
         static_cast<rpcprotocol::ControllerImpl*>(controller);
     ctrler->set_remote_ip(request->ip());
     ctrler->set_remote_port(request->port());
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
     done->Run();
   }
 };
@@ -147,16 +163,14 @@ inline void HandleDeadServer(const bool &, const std::string &,
 class RpcProtocolTest : public testing::Test {
  protected:
   RpcProtocolTest() {}
-  ~RpcProtocolTest() {
-    boost::this_thread::sleep(boost::posix_time::seconds(15));
-  }
+  ~RpcProtocolTest() {}
   static void SetUpTestCase() {
-    server_chann_manager = boost::shared_ptr<rpcprotocol::ChannelManager>
-        (new rpcprotocol::ChannelManager());
-    client_chann_manager = boost::shared_ptr<rpcprotocol::ChannelManager>
-        (new rpcprotocol::ChannelManager());
+    server_chann_manager = new rpcprotocol::ChannelManager();
+    client_chann_manager = new rpcprotocol::ChannelManager();
   }
   static void TearDownTestCase() {
+    delete client_chann_manager;
+    delete server_chann_manager;
     UDT::cleanup();
   }
   virtual void SetUp() {
@@ -173,17 +187,16 @@ class RpcProtocolTest : public testing::Test {
     client_chann_manager->StopTransport();
     server_chann_manager->StopTransport();
   }
-  static boost::shared_ptr<rpcprotocol::ChannelManager> server_chann_manager;
-  static boost::shared_ptr<rpcprotocol::ChannelManager> client_chann_manager;
+  static boost::shared_ptr<base::CallLaterTimer> stimer, ctimer;
+  static rpcprotocol::ChannelManager *server_chann_manager,
+                                     *client_chann_manager;
  private:
   RpcProtocolTest(const RpcProtocolTest&);
   RpcProtocolTest& operator=(const RpcProtocolTest&);
 };
 
-boost::shared_ptr<rpcprotocol::ChannelManager>
-    RpcProtocolTest::server_chann_manager;
-boost::shared_ptr<rpcprotocol::ChannelManager>
-    RpcProtocolTest::client_chann_manager;
+rpcprotocol::ChannelManager* RpcProtocolTest::server_chann_manager = NULL;
+rpcprotocol::ChannelManager* RpcProtocolTest::client_chann_manager = NULL;
 
 TEST_F(RpcProtocolTest, BEH_RPC_RegisterAChannel) {
   PingTestService *service = new PingTestService();
@@ -210,7 +223,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_RegisterAChannel) {
       &resp);
   stubservice->Ping(&controller, &req, &resp, done);
   while (resultholder.ping_res.result() == "")
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
   ASSERT_EQ("S", resultholder.ping_res.result());
   ASSERT_TRUE(resultholder.ping_res.has_pong());
@@ -263,11 +276,8 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
       const tests::PingResponse*>(&resultholder, &ResultHolder::GetPingRes,
       &resp1);
   stubservice1->Ping(&controller, &req1, &resp1, done1);
-  bool result_arrived = false;
-  while (!result_arrived) {
-    if (resultholder.ping_res.result() != "")
-      result_arrived = true;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  while (resultholder.ping_res.result() == "") {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   }
   ASSERT_EQ("S", resultholder.ping_res.result());
   ASSERT_TRUE(resultholder.ping_res.has_pong());
@@ -287,11 +297,8 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
   rpcprotocol::Controller controller2;
   controller2.set_timeout(6);
   stubservice2->Add(&controller2, &req2, &resp2, done2);
-  result_arrived = false;
-  while (!result_arrived) {
-    if (resultholder.op_res.result() != -1)
-      result_arrived = true;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  while (resultholder.op_res.result() == -1) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   }
   ASSERT_EQ(5, resultholder.op_res.result());
 
@@ -304,17 +311,18 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<ResultHolder,
       const tests::StringMirrorResponse*>(&resultholder,
       &ResultHolder::GetMirrorResult, &resp3);
-  rpcprotocol::ControllerImpl controller3;
+  rpcprotocol::Controller controller3;
   controller3.set_timeout(1);
   stubservice3->Mirror(&controller3, &req3, &resp3, done3);
-  result_arrived = false;
-  while (!result_arrived) {
-    if (resultholder.mirror_res.mirrored_string() != "-")
-      result_arrived = true;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  while (resultholder.mirror_res.mirrored_string() == "-") {
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
-  ASSERT_EQ("+", resultholder.mirror_res.mirrored_string()) <<
-    "Result of mirror wrong.";
+  if ("+" != resultholder.mirror_res.mirrored_string()) {
+    printf("did not timed out\n");
+    FAIL();
+  }
+//  ASSERT_EQ("+", resultholder.mirror_res.mirrored_string()) <<
+//    "Result of mirror wrong.";
 
   resultholder.Reset();
   tests::MirrorTest* stubservice4 = new tests::MirrorTest::Stub(out_channel);
@@ -329,11 +337,8 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
   rpcprotocol::Controller controller4;
   controller4.set_timeout(20);
   stubservice4->Mirror(&controller4, &req4, &resp4, done4);
-  result_arrived = false;
-  while (!result_arrived) {
-    if (resultholder.mirror_res.mirrored_string() != "-")
-      result_arrived = true;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  while (resultholder.mirror_res.mirrored_string() == "-") {
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
   ASSERT_NE("+", resultholder.mirror_res.mirrored_string()) <<
     "Result of mirror wrong.";
@@ -387,7 +392,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ServerAndClientAtSameTime) {
       &resp1);
   stubservice1->Add(&controller1, &req1, &resp1, done1);
   while (resultholder.op_res.result() == -1)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(5, resultholder.op_res.result());
   resultholder.Reset();
   tests::TestOp* stubservice2 = new tests::TestOp::Stub(out_channel2);
@@ -402,7 +407,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ServerAndClientAtSameTime) {
       &resp2);
   stubservice2->Multiplyl(&controller2, &req2, &resp2, done2);
   while (resultholder.op_res.result() == -1)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(16, resultholder.op_res.result());
   delete service_channel1;
   delete service_channel2;
@@ -438,44 +443,3 @@ TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
   delete out_channel;
   delete stubservice;
 }
-
-//TEST_F(RpcProtocolTest, FUNC_Start_TRANSPORT_WITH_UPNP) {
-//  client_chann_manager->StopTransport();
-//  client_chann_manager->StartTransport(35002,
-//    boost::bind(&HandleDeadServer, _1, _2, _3),
-//    true);
-//    client_chann_manager->ptransport()->StartPingRendezvous(true, "", 0);
-//  PingTestService *service = new PingTestService();
-//  // creating a channel for the service
-//  rpcprotocol::Channel *service_channel = new rpcprotocol::Channel(
-//      server_chann_manager->ptransport(), server_chann_manager);
-//  service_channel->SetService(service);
-//  server_chann_manager->RegisterChannel(service->GetDescriptor()->name(),
-//      service_channel);
-//  // creating a channel for the client to send a request to the service
-//  rpcprotocol::Controller controller;
-//  controller.set_timeout(5);
-//  rpcprotocol::Channel *out_channel =
-//      new rpcprotocol::Channel(client_chann_manager, "127.0.0.1", 35001);
-//  tests::PingTest* stubservice = new tests::PingTest::Stub(out_channel);
-//  tests::PingRequest req;
-//  tests::PingResponse resp;
-//  req.set_ping("ping");
-//  req.set_ip("127.0.0.1");
-//  req.set_port(35002);
-//  ResultHolder resultholder;
-//  google::protobuf::Closure *done = google::protobuf::NewCallback<ResultHolder,
-//      const tests::PingResponse*>(&resultholder, &ResultHolder::GetPingRes,
-//      &resp);
-//  stubservice->Ping(&controller, &req, &resp, done);
-//  while (resultholder.ping_res.result() == "")
-//    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-//
-//  ASSERT_EQ("S", resultholder.ping_res.result());
-//  ASSERT_TRUE(resultholder.ping_res.has_pong());
-//  ASSERT_EQ("pong", resultholder.ping_res.pong());
-//  delete service_channel;
-//  delete stubservice;
-//  delete out_channel;
-//  delete service;
-//}

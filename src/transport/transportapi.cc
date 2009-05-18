@@ -25,95 +25,22 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// #define SHOW_MUTEX
-
 #include "transport/transportapi.h"
-
 #include <boost/scoped_array.hpp>
-
 #include <exception>
-
 #include "base/routingtable.h"
 #include "maidsafe/maidsafe-dht.h"
 
 
 namespace transport {
-void RecvData(Transport *tsport) {
-  tsport->ReceiveMessage();
-#ifdef VERBOSE_DEBUG
-  printf("In receive_routine(%i) - thread stopping\n",
-         tsport->listening_port());
-#endif
-  return;
-}
-
-void ListeningLoop(UDTSOCKET listening_socket, Transport *tsport) {
-#ifdef VERBOSE_DEBUG
-  printf("Entered ListeningLoop(%i) socket %i\n",
-         tsport->listening_port(),
-         listening_socket);
-#endif
-  sockaddr_storage clientaddr;
-  int addrlen = sizeof(clientaddr);
-  UDTSOCKET recver;
-  while (true) {
-    {
-      boost::mutex::scoped_lock guard(*tsport->mutex0());
-      if (tsport->is_stopped()) {
-#ifdef VERBOSE_DEBUG
-        printf("In ListeningLoop(%i), transport has stopped.\n",
-               tsport->listening_port());
-        printf("ListeningLoop(%i) stopping.\n", tsport->listening_port());
-#endif
-        return;
-      }
-    }
-    if (UDT::INVALID_SOCK == (recver = UDT::accept(listening_socket,
-        reinterpret_cast<sockaddr*>(&clientaddr), &addrlen))) {
-      if (UDT::getlasterror().getErrorCode() == CUDTException::EASYNCRCV) {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-        continue;
-      } else {
-#ifdef VERBOSE_DEBUG
-        printf("ListeningLoop(%i) stopping.\n", tsport->listening_port());
-#endif
-        return;
-      }
-    }
-    // UDT Options
-    bool blocking = false;
-    UDT::setsockopt(recver, 0, UDT_RCVSYN, &blocking, sizeof(blocking));
-    char clienthost[NI_MAXHOST];
-    char clientservice[NI_MAXSERV];
-    getnameinfo(reinterpret_cast<sockaddr *>(&clientaddr),
-                addrlen,
-                clienthost,
-                sizeof(clienthost),
-                clientservice,
-                sizeof(clientservice),
-                NI_NUMERICHOST|NI_NUMERICSERV);
-    sockaddr peer_addr;
-    int peer_addr_size = sizeof(struct sockaddr);
-    if (UDT::ERROR != UDT::getpeername(recver, &peer_addr, &peer_addr_size)) {
-      std::string peer_ip(inet_ntoa(((
-          struct sockaddr_in *)&peer_addr)->sin_addr));
-//      boost::uint16_t peer_port =
-//          ntohs(((struct sockaddr_in *)&peer_addr)->sin_port);
-      tsport->AddIncomingConnection(recver);
-    }
-  }
-#ifdef VERBOSE_DEBUG
-  printf("ListeningLoop(%i) stopping.\n", tsport->listening_port());
-#endif
-}
-
 Transport::Transport() : stop_(true),
-                         message_notifier_(0),
-                         rendezvous_notifier_(0),
-                         listening_loop_(),
+                         message_notifier_(),
+                         rendezvous_notifier_(),
+                         accept_routine_(),
                          recv_routine_(),
                          send_routine_(),
-                         ping_rendezvous_loop_(),
+                         ping_rendz_routine_(),
+                         handle_msgs_routine_(),
                          listening_socket_(),
                          peer_address_(),
                          listening_port_(0),
@@ -121,17 +48,23 @@ Transport::Transport() : stop_(true),
                          my_rendezvous_ip_(""),
                          incoming_sockets_(),
                          outgoing_queue_(),
-                         mutex_(),
+                         incoming_msgs_queue_(),
+                         send_mutex_(),
+                         ping_rendez_mutex_(),
+                         recv_mutex_(),
+                         msg_hdl_mutex_(),
                          addrinfo_hints_(),
-                         addrinfo_res_(0),
+                         addrinfo_res_(NULL),
                          current_id_(0),
-                         cond_(),
+                         send_cond_(),
+                         ping_rend_cond_(),
+                         recv_cond_(),
+                         msg_hdl_cond_(),
                          ping_rendezvous_(false),
-                         directly_connected_(false) {
-  for (int i = 0; i < 20; ++i) {
-    boost::shared_ptr<boost::mutex> mutex(new boost::mutex);
-    mutex_.push_back(mutex);
-  }
+                         directly_connected_(false),
+                         accepted_connections_(0),
+                         msgs_sent_(0),
+                         last_id_(0) {
   UDT::startup();
 }
 
@@ -146,18 +79,14 @@ int Transport::Start(uint16_t port,
   if (!stop_)
     return 1;
   listening_port_ = port;
-  UDT::startup();
-  // addrinfo hints;
-  // addrinfo* res;
   memset(&addrinfo_hints_, 0, sizeof(struct addrinfo));
   addrinfo_hints_.ai_flags = AI_PASSIVE;
   addrinfo_hints_.ai_family = AF_INET;
   addrinfo_hints_.ai_socktype = SOCK_STREAM;
-  // hints.ai_socktype = SOCK_DGRAM;
   std::string service = boost::lexical_cast<std::string>(port);
   if (0 != getaddrinfo(NULL, service.c_str(), &addrinfo_hints_,
       &addrinfo_res_)) {
-    return 1;  // try and start with another port then !!
+    return 1;
   }
   listening_socket_ = UDT::socket(addrinfo_res_->ai_family,
                                   addrinfo_res_->ai_socktype,
@@ -167,11 +96,15 @@ int Transport::Start(uint16_t port,
   UDT::setsockopt(listening_socket_, 0, UDT_RCVSYN, &blockng, sizeof(blockng));
   if (UDT::ERROR == UDT::bind(listening_socket_, addrinfo_res_->ai_addr,
       addrinfo_res_->ai_addrlen)) {
+#ifdef DEBUG
+    printf("Error binding listening socket: %s \n",
+      UDT::getlasterror().getErrorMessage());
+#endif
     return 1;
   }
   // freeaddrinfo(res);
-  if (UDT::ERROR == UDT::listen(listening_socket_, 10)) {
-#ifdef VERBOSE_DEBUG
+  if (UDT::ERROR == UDT::listen(listening_socket_, 20)) {
+#ifdef DEBUG
     printf("In Transport::Start(%i), ", listening_port_);
     printf("failed to start listening socket %i.\n",
            listening_socket_);
@@ -181,25 +114,25 @@ int Transport::Start(uint16_t port,
   stop_ = false;
   // start the listening loop
   try {
-    listening_loop_ = boost::shared_ptr<boost::thread>
-        (new boost::thread(&ListeningLoop, listening_socket_, this));
-    recv_routine_ =  boost::shared_ptr<boost::thread>
-        (new boost::thread(&RecvData, this));
-    send_routine_ = boost::shared_ptr<boost::thread>
-        (new boost::thread(&Transport::SendHandle, this));
-    ping_rendezvous_loop_ = boost::shared_ptr<boost::thread>
-        (new boost::thread(&Transport::PingHandle, this));
+    accept_routine_.reset(new boost::thread(&Transport::AcceptConnHandler,
+        this));
+    recv_routine_.reset(new boost::thread(&Transport::ReceiveHandler, this));
+    send_routine_.reset(new boost::thread(&Transport::SendHandle, this));
+    ping_rendz_routine_.reset(new boost::thread(&Transport::PingHandle, this));
+    handle_msgs_routine_.reset(new boost::thread(&Transport::MessageHandler,
+        this));
   } catch(const boost::thread_resource_error& ) {
     stop_ = true;
-    int result = UDT::close(listening_socket_);
-    if (result != 0) {
-#ifdef VERBOSE_DEBUG
+    int result;
+    result = UDT::close(listening_socket_);
+#ifdef DEBUG
+    if (result == UDT::ERROR) {
       printf("In Transport::Start(%i), ", listening_port_);
-      printf("failed to close listening socket %i - UDT error %i.\n",
+      printf("failed to close listening socket %i - error: %s.\n",
              listening_socket_,
-             result);
-#endif
+             UDT::getlasterror().getErrorMessage());
     }
+#endif
     return 1;
   }
   message_notifier_ = on_message;
@@ -212,17 +145,11 @@ int Transport::Send(boost::uint32_t connection_id,
            const std::string &data, DataType type) {
   std::map<boost::uint32_t, IncomingData>::iterator it;
   {
-#ifdef SHOW_MUTEX
-  printf("In Transport::Send(%i), outside first lock.\n", listening_port_);
-#endif
-  boost::mutex::scoped_lock guard(*mutex_[1]);
-#ifdef SHOW_MUTEX
-  printf("In Transport::Send(%i), inside first lock.\n", listening_port_);
-#endif
-  it = incoming_sockets_.find(connection_id);
-  if (it == incoming_sockets_.end()) {
-    return 1;
-  }
+    boost::mutex::scoped_lock guard(recv_mutex_);
+    it = incoming_sockets_.find(connection_id);
+    if (it == incoming_sockets_.end()) {
+      return 1;
+    }
   }
   UDTSOCKET skt = (*it).second.u;
   if (type == STRING) {
@@ -232,15 +159,10 @@ int Transport::Send(boost::uint32_t connection_id,
     memcpy(out_data.data.get(),
       const_cast<char*>(static_cast<const char*>(data.c_str())), data_size);
     {
-#ifdef SHOW_MUTEX
-      printf("In Transport::Send(%i), outside second lock.\n", listening_port_);
-#endif
-      boost::mutex::scoped_lock(*mutex_[2]);
-#ifdef SHOW_MUTEX
-      printf("In Transport::Send(%i), inside second lock.\n", listening_port_);
-#endif
+      boost::mutex::scoped_lock(send_mutex_);
       outgoing_queue_.push_back(out_data);
     }
+    send_cond_.notify_one();
   } else if (type == FILE) {
     char *file_name = const_cast<char*>(static_cast<const char*>(data.c_str()));
     std::fstream ifs(file_name, std::ios::in | std::ios::binary);
@@ -273,22 +195,12 @@ int Transport::Send(const std::string &remote_ip,
   // the node receiver is directly connected, no rendezvous information
   if (rendezvous_ip == "" && rendezvous_port == 0) {
     if (!Connect(&skt, remote_ip, remote_port, false)) {
-#ifdef VERBOSE_DEBUG
+#ifdef DEBUG
       printf("In Transport::Send(%i), ", listening_port_);
-      printf("failed to connect to remote port %i socket %i.\n",
-             remote_port,
-             skt);
+      printf("failed to connect to remote port %i socket.\n",
+             remote_port);
 #endif
-      result = UDT::close(skt);
-#ifdef VERBOSE_DEBUG
-      if (result != 0) {
-        printf("In Transport::Send(%i), ", listening_port_);
-        printf("failed to close remote port %i socket %i - UDT error %i.\n",
-               remote_port,
-               skt,
-               result);
-      }
-#endif
+      UDT::close(skt);
       return 1;
     }
     if (type == STRING) {
@@ -298,9 +210,10 @@ int Transport::Send(const std::string &remote_ip,
       memcpy(out_data.data.get(),
         const_cast<char*>(static_cast<const char*>(data.c_str())), data_size);
       {
-        boost::mutex::scoped_lock guard(*mutex_[3]);
+        boost::mutex::scoped_lock guard(send_mutex_);
         outgoing_queue_.push_back(out_data);
       }
+      send_cond_.notify_one();
     } else if (type == FILE) {
       // open the file
       char *file_name =
@@ -324,14 +237,14 @@ int Transport::Send(const std::string &remote_ip,
   } else {
     UDTSOCKET rend_skt;
     if (!Connect(&rend_skt, rendezvous_ip, rendezvous_port, false)) {
-#ifdef VERBOSE_DEBUG
+#ifdef DEBUG
       printf("In Transport::Send(%i), ", listening_port_);
       printf("failed to connect to rendezvouz port %i socket %i.\n",
              rendezvous_port,
              rend_skt);
 #endif
       result = UDT::close(rend_skt);
-#ifdef VERBOSE_DEBUG
+#ifdef DEBUG
       if (result != 0) {
         printf("In Transport::Send(%i), ", listening_port_);
         printf("failed to close rendezvouz port %i socket %i - UDT error %i.\n",
@@ -346,7 +259,7 @@ int Transport::Send(const std::string &remote_ip,
     msg.set_ip(remote_ip);
     msg.set_port(remote_port);
     msg.set_type(FORWARD_REQ);
-#ifdef VERBOSE_DEBUG
+#ifdef DEBUG
     printf("In Transport::Send(%i), HolePunchingMsg is: %s\n",
            listening_port_,
            msg.DebugString().c_str());
@@ -388,14 +301,14 @@ int Transport::Send(const std::string &remote_ip,
         connected = true;
     }
     if (!connected) {
-#ifdef VERBOSE_DEBUG
+#ifdef DEBUG
       printf("In Transport::Send(%i), ", listening_port_);
       printf("failed to connect to remote port %i socket %i.\n",
              remote_port,
              skt);
 #endif
       result = UDT::close(skt);
-#ifdef VERBOSE_DEBUG
+#ifdef DEBUG
       if (result != 0) {
         printf("In Transport::Send(%i), ", listening_port_);
         printf("failed to close remote socket %i - UDT error %i.\n",
@@ -412,9 +325,10 @@ int Transport::Send(const std::string &remote_ip,
     memcpy(out_data.data.get(),
         const_cast<char*>(static_cast<const char*>(data.c_str())), data_size);
     {
-      boost::mutex::scoped_lock guard(*mutex_[4]);
+      boost::mutex::scoped_lock guard(send_mutex_);
       outgoing_queue_.push_back(out_data);
     }
+    send_cond_.notify_one();
     if (keep_connection)
       AddIncomingConnection(skt, conn_id);
   }
@@ -422,153 +336,75 @@ int Transport::Send(const std::string &remote_ip,
 }
 
 void Transport::Stop() {
-  {
-#ifdef SHOW_MUTEX
-    printf("In Transport::Stop(%i), outside lock.\n", listening_port_);
-#endif
-    boost::mutex::scoped_lock guard(*mutex_[5]);
-#ifdef SHOW_MUTEX
-    printf("In Transport::Stop(%i), inside lock.\n", listening_port_);
-#endif
-    if (stop_) {
-#ifdef VERBOSE_DEBUG
-      printf("In Transport::Stop(), stop_ is already true.\n");
-#endif
-      return;
-    }
-    stop_ = true;
-  }
+  stop_ = true;
   if (send_routine_.get()) {
-#ifdef VERBOSE_DEBUG
-    printf("In Transport::Stop(%i), waiting for send_routine_ to join.\n",
-           listening_port_);
-#endif
+    send_cond_.notify_one();
     send_routine_->join();
-#ifdef VERBOSE_DEBUG
-    printf("In Transport::Stop(%i), send_routine_ joined.\n", listening_port_);
-  } else {
-    printf("In Transport::Stop(), can't get pointer to send_routine_.\n");
-#endif
   }
-  if (listening_loop_.get()) {
-#ifdef VERBOSE_DEBUG
-    printf("In Transport::Stop(%i), waiting for listening_loop_ %i to join.\n",
-           listening_port_,
-           listening_loop_.get());
-#endif
-    listening_loop_->join();
-#ifdef VERBOSE_DEBUG
-    printf("In Transport::Stop(%i), listning_loop_ joined.\n", listening_port_);
-  } else {
-    printf("In Transport::Stop(), can't get pointer to listening_loop_.\n");
-#endif
+  if (accept_routine_.get()) {
+    accept_routine_->join();
   }
   if (recv_routine_.get()) {
-#ifdef VERBOSE_DEBUG
-    printf("In Transport::Stop(%i), waiting for recv_routine_ %i to join.\n",
-           listening_port_,
-           recv_routine_.get());
-#endif
+    recv_cond_.notify_one();
     recv_routine_->join();
-#ifdef VERBOSE_DEBUG
-    printf("In Transport::Stop(%i), recv_routine_ joined.\n", listening_port_);
-  } else {
-    printf("In Transport::Stop(), can't get pointer to recv_routine_.\n");
-#endif
   }
-  if (ping_rendezvous_loop_.get()) {
+  if (ping_rendz_routine_.get()) {
     {
-#ifdef SHOW_MUTEX
-      printf("In Transport::Stop(%i), outside second lock.\n", listening_port_);
-#endif
-      boost::mutex::scoped_lock lock(*mutex_[6]);
-#ifdef SHOW_MUTEX
-      printf("In Transport::Stop(%i), inside second lock.\n", listening_port_);
-#endif
+      boost::mutex::scoped_lock lock(ping_rendez_mutex_);
       if (!ping_rendezvous_) {
         ping_rendezvous_ = true;
       }
-      cond_.notify_one();
+      ping_rend_cond_.notify_one();
     }
-#ifdef VERBOSE_DEBUG
-    printf("In Transport::Stop(%i), waiting for ping_rendezvs_loop_ to join.\n",
-           listening_port_);
-#endif
-    ping_rendezvous_loop_->join();
-#ifdef VERBOSE_DEBUG
-    printf("In Transport::Stop(%i), png_rndzvs_lp_ joined.\n", listening_port_);
-  } else {
-    printf("In Transport::Stop(), can't get ptr to ping_rendezvouz_loop_.\n");
-#endif
+    ping_rendz_routine_->join();
   }
-  int result = UDT::close(listening_socket_);
-#ifdef VERBOSE_DEBUG
-  printf("In Transport::Stop(), result of close(listening_socket_) is %i.\n",
-         result);
-#endif
+  if (handle_msgs_routine_.get()) {
+    msg_hdl_cond_.notify_one();
+    handle_msgs_routine_->join();
+  }
+  UDT::close(listening_socket_);
   std::map<boost::uint32_t, IncomingData>::iterator it;
   for (it = incoming_sockets_.begin(); it != incoming_sockets_.end(); it++) {
-#ifdef VERBOSE_DEBUG
-    printf("In Transport::Stop(), resetting.\n");
-#endif
-//    delete [] (*it).second.data;
     (*it).second.data.reset();
-    result = UDT::close((*it).second.u);
-#ifdef VERBOSE_DEBUG
-    printf("In Transport::Stop(), result of close(%i) is %i.\n",
-           (*it).second.u,
-           result);
-#endif
+    UDT::close((*it).second.u);
   }
   incoming_sockets_.clear();
   outgoing_queue_.clear();
   message_notifier_ = 0;
   freeaddrinfo(addrinfo_res_);
+  printf("Accepted connections %i\n", accepted_connections_);
+  printf("Msgs Sent %i \n", msgs_sent_);
+  printf("Msgs Recv %i \n", last_id_);
 }
 
-void Transport::ReceiveMessage() {
+void Transport::ReceiveHandler() {
   timeval tv;
   tv.tv_sec = 0;
   tv.tv_usec = 1000;
   UDT::UDSET readfds;
   while (true) {
-#ifdef VERBOSE_DEBUG
-    if (stop_)
-      printf("In Transport::ReceiveMessage(%i), transport has stopped.\n",
-             listening_port());
-#endif
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     {
-      boost::mutex::scoped_lock guard(*mutex_[7]);
-      if (stop_) {
-        printf("In Transport::ReceiveMessage(%i), transport has stopped.\n",
-               listening_port());
-        printf("recieve_routine_(%i) stopping.\n", listening_port());
-        return;
+      boost::mutex::scoped_lock guard(recv_mutex_);
+      while (incoming_sockets_.empty() && !stop_) {
+        recv_cond_.wait(guard);
       }
     }
+    if (stop_) return;
     // read data.
     std::list<boost::uint32_t> dead_connections_ids;
     std::map<boost::uint32_t, IncomingData>::iterator it;
     {
-//    printf("In Transport::ReceiveMessage(%i), outside second lock.\n",
-//           listening_port_);
-    boost::mutex::scoped_lock guard(*mutex_[7]);
-//    printf("In Transport::ReceiveMessage(%i), inside second lock.\n",
-//           listening_port_);
+    boost::mutex::scoped_lock guard(recv_mutex_);
     UD_ZERO(&readfds);
     for (it = incoming_sockets_.begin(); it != incoming_sockets_.end();
         it++) {
-      // UD_ZERO(&readfds);
-      // Checking if socket is connected
       if (UDT::send((*it).second.u, NULL, 0, 0) == 0) {
         UD_SET((*it).second.u, &readfds);
       } else {
-#ifdef VERBOSE_DEBUG
-        printf("In Transport::ReceiveMessage(%i)", listening_port_);
-        printf(" - tried to kill connection %i == socket %i.\n",
-               (*it).first,
-               (*it).second.u);
+#ifdef DEBUG
+        printf("found dead connection: %s\n",
+            UDT::getlasterror().getErrorMessage());
 #endif
         dead_connections_ids.push_back((*it).first);
       }
@@ -576,11 +412,7 @@ void Transport::ReceiveMessage() {
     }
     int res = UDT::select(0, &readfds, NULL, NULL, &tv);
     {
-//    printf("In Transport::ReceiveMessage(%i), outside third lock.\n",
-//           listening_port_);
-    boost::mutex::scoped_lock guard(*mutex_[7]);
-//    printf("In Transport::ReceiveMessage(%i), inside third lock.\n",
-//           listening_port_);
+    boost::mutex::scoped_lock guard(recv_mutex_);
     if (res != UDT::ERROR) {
       for (it = incoming_sockets_.begin(); it != incoming_sockets_.end();
            ++it) {
@@ -589,8 +421,10 @@ void Transport::ReceiveMessage() {
           // save the remote peer address
           int peer_addr_size = sizeof(struct sockaddr);
           if (UDT::ERROR == UDT::getpeername((*it).second.u, &peer_address_,
-              &peer_addr_size))
+              &peer_addr_size)) {
+            printf("invalid peer address\n");
             continue;
+          }
           if ((*it).second.expect_size == 0) {
             // get size information
             int64_t size;
@@ -603,39 +437,26 @@ void Transport::ReceiveMessage() {
                        UDT::getlasterror().getErrorMessage());
 #endif
                 result = UDT::close((*it).second.u);
-#ifdef VERBOSE_DEBUG
-                printf("In Transport::ReceiveMessage(%i), ", listening_port_);
-                printf("closed socket %i with UDT result %i.\n",
-                       (*it).second.u,
-                       result);
-#endif
-//                delete [] (*it).second.data;
                 (*it).second.data.reset();
                 incoming_sockets_.erase(it);
                 break;
               }
+              printf("CUDTException::EASYNCRCV recv size\n");
               continue;
             }
             if (size > 0) {
               (*it).second.expect_size = size;
             } else {
               result = UDT::close((*it).second.u);
-#ifdef VERBOSE_DEBUG
-              printf("In Transport::ReceiveMessage(%i), ", listening_port_);
-              printf("closed socket %i with UDT result %i.\n",
-                     (*it).second.u,
-                     result);
-#endif
-//              delete [] (*it).second.data;
               (*it).second.data.reset();
               incoming_sockets_.erase(it);
+              printf("-------------------size == 0\n");
               break;
             }
           } else {
             if ((*it).second.data == NULL)
               (*it).second.data = boost::shared_array<char>
                   (new char[(*it).second.expect_size]);
-//              (*it).second.data = new char[(*it).second.expect_size];
             int rsize = 0;
             if (UDT::ERROR == (rsize = UDT::recv((*it).second.u,
                 (*it).second.data.get() + (*it).second.received_size,
@@ -648,158 +469,96 @@ void Transport::ReceiveMessage() {
                        UDT::getlasterror().getErrorMessage());
 #endif
                 result = UDT::close((*it).second.u);
-#ifdef VERBOSE_DEBUG
-                printf("In Transport::ReceiveMessage(%i), ", listening_port_);
-                printf("closed socket %i with UDT result %i.\n",
-                       (*it).second.u,
-                       result);
-#endif
-//                delete [] (*it).second.data;
                 (*it).second.data.reset();
                 incoming_sockets_.erase(it);
                 break;
               }
+              printf("CUDTException::EASYNCRCV recv data\n");
               continue;
             }
             (*it).second.received_size += rsize;
             if ((*it).second.expect_size <= (*it).second.received_size) {
-              std::string message((*it).second.data.get(),
-                                  (*it).second.expect_size);
+              last_id_ ++;
+              std::string message = std::string((*it).second.data.get(),
+                                    (*it).second.expect_size);
               boost::uint32_t connection_id = (*it).first;
-//              delete [] (*it).second.data;
               (*it).second.data.reset();
               (*it).second.expect_size = 0;
               (*it).second.received_size = 0;
               if (HandleRendezvousMsgs(message)) {
                 result = UDT::close((*it).second.u);
-#ifdef VERBOSE_DEBUG
-                printf("In Transport::ReceiveMessage(%i), ", listening_port_);
-                printf("closed socket %i with UDT result %i.\n",
-                       (*it).second.u,
-                       result);
-#endif
                 incoming_sockets_.erase(it);
               } else {
-#ifdef VERBOSE_DEBUG
-                printf("In Transport::ReceiveMessage(%i), ", listening_port_);
-                printf("connection_id = %i.\n",
-                       connection_id);
-#endif
-                message_notifier_(message, connection_id);
+                IncomingMessages msg(message, connection_id);
+                {
+                  boost::mutex::scoped_lock guard1(msg_hdl_mutex_);
+                  incoming_msgs_queue_.push_back(msg);
+                }
+                msg_hdl_cond_.notify_one();
               }
-              break;
+              //break;
             }
           }
         }
       }
-#ifdef VERBOSE_DEBUG
+#ifdef DEBUG
     } else {
-      printf("In Transport::ReceiveMessage(%i), error - ", listening_port_);
-      printf("Can't get receive socket.\n");
+      printf("select error %s\n", UDT::getlasterror().getErrorMessage());
 #endif
     }
     // Deleting dead connections
     std::list<boost::uint32_t>::iterator it1;
     for (it1 = dead_connections_ids.begin(); it1 != dead_connections_ids.end();
          ++it1) {
-#ifdef VERBOSE_DEBUG
-      printf("In Transport::ReceiveMessage(%i)", listening_port_);
-      printf(" - closing dead connection %i == socket %i.\n",
-             *it1,
-             incoming_sockets_[*it1].u);
-#endif
-      int result = UDT::close(incoming_sockets_[*it1].u);
-#ifdef VERBOSE_DEBUG
-      printf("In Transport::ReceiveMessage(%i), ", listening_port_);
-      printf("closed socket %i with UDT result %i.\n",
-             incoming_sockets_[*it1].u,
-             result);
-#endif
-      result = incoming_sockets_.erase(*it1);
-#ifdef VERBOSE_DEBUG
-      if (result != 1)
-        printf("Didn't remove dead connection (%i) from incoming_sockets_.\n",
-               *it1);
-#endif
+      UDT::close(incoming_sockets_[*it1].u);
+      incoming_sockets_.erase(*it1);
     }
     }
   }
 }
 
 void Transport::AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id) {
-#ifdef SHOW_MUTEX
-  printf("In Transport::AddIncomingConnection(%i) first, outside lock.\n",
-         listening_port_);
-#endif
-  boost::mutex::scoped_lock guard(*mutex_[8]);
-#ifdef SHOW_MUTEX
-  printf("In Transport::AddIncomingConnection(%i) first, inside lock.\n",
-         listening_port_);
-#endif
-  current_id_ = base::generate_next_transaction_id(current_id_);
-  struct IncomingData data = {u, 0, 0, boost::shared_array<char>(NULL)};
-  // printf("id for connection = %d\n", current_id_);
-  incoming_sockets_[current_id_] = data;
-  *conn_id = current_id_;
+  {
+    boost::mutex::scoped_lock guard(recv_mutex_);
+    current_id_ = base::generate_next_transaction_id(current_id_);
+    struct IncomingData data = {u, 0, 0, boost::shared_array<char>(NULL)};
+    incoming_sockets_[current_id_] = data;
+    *conn_id = current_id_;
+  }
+  recv_cond_.notify_one();
 }
 
 void Transport::AddIncomingConnection(UDTSOCKET u) {
-#ifdef SHOW_MUTEX
-  printf("In Transport::AddIncomingConnection(%i) second, outside lock.\n",
-         listening_port_);
-#endif
-  boost::mutex::scoped_lock guard(*mutex_[9]);
-#ifdef SHOW_MUTEX
-  printf("In Transport::AddIncomingConnection(%i) second, inside lock.\n",
-         listening_port_);
-#endif
-  current_id_ = base::generate_next_transaction_id(current_id_);
-  struct IncomingData data = {u, 0, 0, boost::shared_array<char>(NULL)};
-  // printf("id for connection = %d\n", current_id_);
-  incoming_sockets_[current_id_] = data;
+  {
+    boost::mutex::scoped_lock guard(recv_mutex_);
+    current_id_ = base::generate_next_transaction_id(current_id_);
+    struct IncomingData data = {u, 0, 0, boost::shared_array<char>(NULL)};
+    incoming_sockets_[current_id_] = data;
+  }
+  recv_cond_.notify_one();
 }
 
 void Transport::CloseConnection(boost::uint32_t connection_id) {
-#ifdef SHOW_MUTEX
-  printf("In Transport::CloseConnection(%i), outside lock.\n", listening_port_);
-#endif
-  boost::mutex::scoped_lock guard(*mutex_[10]);
-#ifdef SHOW_MUTEX
-  printf("In Transport::CloseConnection(%i), inside lock.\n", listening_port_);
-#endif
   std::map<boost::uint32_t, IncomingData>::iterator it;
+  boost::mutex::scoped_lock guard(recv_mutex_);
   it = incoming_sockets_.find(connection_id);
   if (it != incoming_sockets_.end()) {
     if (incoming_sockets_[connection_id].data != NULL)
-//      delete [] incoming_sockets_[connection_id].data;
       incoming_sockets_[connection_id].data.reset();
-    int result = UDT::close(incoming_sockets_[connection_id].u);
-#ifdef VERBOSE_DEBUG
+    UDT::close(incoming_sockets_[connection_id].u);
+#ifdef DEBUG
     printf("In Transport::CloseConnection(%i), ", listening_port_);
-    printf("close connection %i with UDT result %i.\n",
+    printf("error close connection %i: %s.\n",
            connection_id,
-           result);
+           UDT::getlasterror().getErrorMessage());
 #endif
     incoming_sockets_.erase(connection_id);
-#ifdef VERBOSE_DEBUG
-  } else {
-    printf("In Transport::CloseConnection(%i), ", listening_port_);
-    printf("connection %i is not in incoming sockets map.\n", connection_id);
-#endif
   }
 }
 
 bool Transport::ConnectionExists(boost::uint32_t connection_id) {
   std::map<boost::uint32_t, IncomingData>::iterator it;
-#ifdef SHOW_MUTEX
-  printf("In Transport::ConnectionExists(%i), outside lock.\n",
-         listening_port_);
-#endif
-  boost::mutex::scoped_lock guard(*mutex_[11]);
-#ifdef SHOW_MUTEX
-  printf("In Transport::ConnectionExists(%i), inside lock.\n",
-         listening_port_);
-#endif
+  boost::mutex::scoped_lock guard(recv_mutex_);
   it = incoming_sockets_.find(connection_id);
   if (it != incoming_sockets_.end()) {
     return true;
@@ -810,26 +569,25 @@ bool Transport::ConnectionExists(boost::uint32_t connection_id) {
 
 void Transport::SendHandle() {
   while (true) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     {
-//      printf("In Transport::SendHandle(%i), outside first lock.\n",
-//             listening_port_);
-      boost::mutex::scoped_lock guard(*mutex_[12]);
-//      printf("In Transport::SendHandle(%i), inside first lock.\n",
-//             listening_port_);
-      if (stop_) return;
+      boost::mutex::scoped_lock guard(send_mutex_);
+      while (outgoing_queue_.empty() && !stop_) {
+        send_cond_.wait(guard);
+      }
     }
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    if (stop_) return;
     std::list<OutgoingData>::iterator it;
     {
-//      printf("In Transport::SendHandle(%i), outside second lock.\n",
-//             listening_port_);
-      boost::mutex::scoped_lock guard(*mutex_[13]);
-//      printf("In Transport::SendHandle(%i), inside second lock.\n",
-//             listening_port_);
+      boost::mutex::scoped_lock guard(send_mutex_);
       for (it = outgoing_queue_.begin(); it != outgoing_queue_.end(); it++) {
         if (!it->sent_size) {
           if (UDT::ERROR == UDT::send(it->u,
               reinterpret_cast<char*>(&it->data_size), sizeof(int64_t), 0)) {
+#ifdef DEBUG
+            printf("error sending size: %s\n",
+              UDT::getlasterror().getErrorMessage());
+#endif
             outgoing_queue_.erase(it);
             break;
           } else {
@@ -842,6 +600,10 @@ void Transport::SendHandle() {
               it->data.get() + it->data_sent,
               it->data_size - it->data_sent,
               0))) {
+#ifdef DEBUG
+            printf("error sending data: %s\n",
+                UDT::getlasterror().getErrorMessage());
+#endif
             outgoing_queue_.erase(it);
             break;
           }
@@ -849,6 +611,7 @@ void Transport::SendHandle() {
         } else {
           // Finished sending data
           outgoing_queue_.erase(it);
+          msgs_sent_++;
           break;
         }
       }
@@ -857,7 +620,7 @@ void Transport::SendHandle() {
 }
 
 bool Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
-      const uint16_t &peer_port, bool short_timeout) {
+      const uint16_t &peer_port, bool) {
   bool blocking = false;
   bool reuse_addr = true;
   UDT::setsockopt(*skt, 0, UDT_RCVSYN, &blocking, sizeof(blocking));
@@ -923,12 +686,12 @@ bool Transport::HandleRendezvousMsgs(const std::string &message) {
 #endif
     Send(msg.ip(), msg.port(), "", 0, ser_msg, STRING, &conn_id, false);
   } else if (msg.type() == FORWARD_MSG) {
+#ifdef DEBUG
     printf("received HP_FORW_MSG\n");
     printf("trying to connect to %s:%d\n", msg.ip().c_str(), msg.port());
+#endif
     UDTSOCKET skt;
     if (Connect(&skt, msg.ip(), msg.port(), true)) {
-      printf("connection OK\n");
-      // AddIncomingConnection(skt);
       UDT::close(skt);
     }
   } else {
@@ -943,57 +706,24 @@ void Transport::StartPingRendezvous(const bool &directly_connected,
   my_rendezvous_port_ = my_rendezvous_port;
   my_rendezvous_ip_ = my_rendezvous_ip;
   {
-    boost::mutex::scoped_lock lock(*mutex_[14]);
+    boost::mutex::scoped_lock lock(ping_rendez_mutex_);
     directly_connected_ = directly_connected;
     ping_rendezvous_ = true;
-    cond_.notify_one();
   }
+  ping_rend_cond_.notify_one();
 }
 
 void Transport::PingHandle() {
   while (true) {
     {
-#ifdef SHOW_MUTEX
-      printf("In Transport::PingHandle(%i), outside first lock.\n",
-             listening_port_);
-#endif
-      boost::mutex::scoped_lock lock(*mutex_[15]);
-#ifdef SHOW_MUTEX
-      printf("In Transport::PingHandle(%i), inside first lock.\n",
-             listening_port_);
-#endif
+      boost::mutex::scoped_lock lock(ping_rendez_mutex_);
       while (!ping_rendezvous_) {
-#ifdef SHOW_MUTEX
-        printf("In Transport::PingHandle, before wait.\n");
-#endif
-        cond_.wait(lock);
-#ifdef SHOW_MUTEX
-        printf("In Transport::PingHandle, after wait.\n");
-#endif
+        ping_rend_cond_.wait(lock);
       }
     }
+    if (stop_) return;
     {
-#ifdef SHOW_MUTEX
-      printf("In Transport::PingHandle(%i), outside second lock.\n",
-             listening_port_);
-#endif
-      boost::mutex::scoped_lock guard(*mutex_[16]);
-#ifdef SHOW_MUTEX
-      printf("In Transport::PingHandle(%i), inside second lock.\n",
-             listening_port_);
-#endif
-      if (stop_) return;
-    }
-    {
-#ifdef SHOW_MUTEX
-      printf("In Transport::PingHandle(%i), outside third lock.\n",
-             listening_port_);
-#endif
-      boost::mutex::scoped_lock lock(*mutex_[17]);
-#ifdef SHOW_MUTEX
-      printf("In Transport::PingHandle(%i), inside third lock.\n",
-             listening_port_);
-#endif
+      boost::mutex::scoped_lock lock(ping_rendez_mutex_);
       if (directly_connected_) return;
     }
     UDTSOCKET skt;
@@ -1005,23 +735,12 @@ void Transport::PingHandle() {
       boost::this_thread::sleep(boost::posix_time::seconds(8));
     } else {
       {
-        boost::mutex::scoped_lock lock(*mutex_[18]);
+        boost::mutex::scoped_lock lock(ping_rendez_mutex_);
         ping_rendezvous_ = false;
       }
       // check in case Stop was called before timeout of connection, then
       // there is no need to call rendezvous_notifier_
-      {
-#ifdef SHOW_MUTEX
-      printf("In Transport::PingHandle(%i), outside fourth lock.\n",
-             listening_port_);
-#endif
-      boost::mutex::scoped_lock guard(*mutex_[19]);
-#ifdef SHOW_MUTEX
-      printf("In Transport::PingHandle(%i), inside fourth lock.\n",
-             listening_port_);
-#endif
       if (stop_) return;
-      }
       bool dead_rendezvous_server = true;
       rendezvous_notifier_(dead_rendezvous_server, my_rendezvous_ip_,
         my_rendezvous_port_);
@@ -1035,5 +754,60 @@ bool Transport::CanConnect(const std::string &ip, const uint16_t &port) {
     result = true;
   UDT::close(skt);
   return result;
+}
+
+void Transport::AcceptConnHandler() {
+  sockaddr_storage clientaddr;
+  int addrlen = sizeof(clientaddr);
+  UDTSOCKET recver;
+  while (true) {
+    if (stop_) return;
+    if (UDT::INVALID_SOCK == (recver = UDT::accept(listening_socket_,
+        reinterpret_cast<sockaddr*>(&clientaddr), &addrlen))) {
+      if (UDT::getlasterror().getErrorCode() == CUDTException::EASYNCRCV) {
+        boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+        continue;
+      } else {
+#ifdef DEBUG
+        printf("Error accepting: %s.\n", UDT::getlasterror().getErrorMessage());
+#endif
+        return;
+      }
+    }
+    sockaddr peer_addr;
+    int peer_addr_size = sizeof(struct sockaddr);
+    if (UDT::ERROR != UDT::getpeername(recver, &peer_addr, &peer_addr_size)) {
+      std::string peer_ip(inet_ntoa(((
+          struct sockaddr_in *)&peer_addr)->sin_addr));
+//      boost::uint16_t peer_port =
+//          ntohs(((struct sockaddr_in *)&peer_addr)->sin_port);
+      accepted_connections_++;
+      AddIncomingConnection(recver);
+    }
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+}
+
+void Transport::MessageHandler() {
+  while (true){
+    {
+      {
+        boost::mutex::scoped_lock guard(msg_hdl_mutex_);
+        while(incoming_msgs_queue_.empty() && !stop_) {
+          msg_hdl_cond_.wait(guard);
+        }
+      }
+      if (stop_) return;
+      IncomingMessages msg;
+      {
+        boost::mutex::scoped_lock guard(msg_hdl_mutex_);
+        msg.msg = incoming_msgs_queue_.front().msg;
+        msg.conn_id = incoming_msgs_queue_.front().conn_id;
+        incoming_msgs_queue_.pop_front();
+      }
+      message_notifier_(msg.msg, msg.conn_id);
+      boost::this_thread::sleep(boost::posix_time::milliseconds(20));
+    }
+  }
 }
 };  // namespace transport

@@ -48,39 +48,27 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rpcprotocol {
 
 struct PendingReq {
-  PendingReq() : args(0), callback(0), connection_id(0) {}
+  PendingReq() : args(NULL), callback(NULL), connection_id(0) {}
   google::protobuf::Message* args;
   google::protobuf::Closure* callback;
   boost::uint32_t connection_id;
 };
 
-class ProtocolInterface {
- public:
-  virtual ~ProtocolInterface() {}
-  virtual void MessageArrive(const std::string &message,
-                             const boost::uint32_t &connection_id) = 0;
-  virtual void MessageSentResult(boost::uint32_t rpc_id, bool result) = 0;
-  virtual int StartTransport(boost::uint16_t port,
-      boost::function<void(const bool&, const std::string&,
-                           const boost::uint16_t&)> notify_dead_server) = 0;
-  virtual int StopTransport() = 0;
-};
-
-class ChannelManagerImpl : public rpcprotocol::ProtocolInterface {
+class ChannelManagerImpl {
  public:
   ChannelManagerImpl();
   ~ChannelManagerImpl();
   void RegisterChannel(const std::string &service_name, Channel* channel);
   void UnRegisterChannel(const std::string &service_name);
   void ClearChannels();
-  virtual int StartTransport(boost::uint16_t port,
+  int StartTransport(boost::uint16_t port,
       boost::function<void(const bool&, const std::string&,
                            const boost::uint16_t&)> notify_dead_server);
-  virtual int StopTransport();
+  int StopTransport();
 
-  virtual void MessageArrive(const std::string &message,
+  void MessageArrive(const std::string &message,
       const boost::uint32_t &connection_id);
-  virtual void MessageSentResult(boost::uint32_t , bool ) {}
+  void MessageSentResult(boost::uint32_t , bool ) {}
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
   void DeleteRequest(const boost::uint32_t &req_id);
@@ -100,7 +88,7 @@ class ChannelManagerImpl : public rpcprotocol::ProtocolInterface {
   boost::shared_ptr<transport::Transport> ptransport_;
   bool is_started;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
-  std::vector< boost::shared_ptr<boost::mutex> > mutex_;
+  boost::mutex req_mutex_, channels_mutex_, id_mutex_;
   boost::uint32_t current_request_id_;
   std::map<std::string, Channel*> channels_;
   std::map<boost::uint32_t, PendingReq> pending_req_;

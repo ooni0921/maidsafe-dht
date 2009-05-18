@@ -86,10 +86,10 @@ int Controller::timeout() const {
   return controller_pimpl_->timeout();
 }
 
-Channel::Channel(boost::shared_ptr<rpcprotocol::ChannelManager> channelmanager)
+Channel::Channel(rpcprotocol::ChannelManager *channelmanager)
     : pimpl_(new ChannelImpl(channelmanager)) {}
 
-Channel::Channel(boost::shared_ptr<rpcprotocol::ChannelManager> channelmanager,
+Channel::Channel(rpcprotocol::ChannelManager *channelmanager,
                  const std::string &ip,
                  const boost::uint16_t &port,
                  const bool &local)

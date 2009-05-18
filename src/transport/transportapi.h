@@ -60,6 +60,14 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 
 namespace transport {
 
+struct IncomingMessages {
+  IncomingMessages(const std::string &message, const boost::uint32_t &id)
+    : msg(message), conn_id(id) {}
+  IncomingMessages() : msg(), conn_id() {}
+  std::string msg;
+  boost::uint32_t conn_id;
+};
+
 struct IncomingData {
   UDTSOCKET u;
   int64_t expect_size;
@@ -75,19 +83,10 @@ struct OutgoingData {
   bool sent_size;
 };
 
-// a callback function notify the result of the operations
-typedef boost::function<void(bool)> op_callback_func;  // NOLINT
 class Transport {
  public:
   Transport();
   ~Transport() {}
-//  Transport& operator=(const Transport&) { return *this; }
-//  Transport(const Transport&)
-//    :stop_(false),
-//     on_line_(false),
-//     message_notifier_(NULL),
-//     listening_loop_(NULL),
-//     listening_socket_() { UDT::startup(); }
 
   enum DataType { STRING, FILE };
   int Send(const std::string &remote_ip,
@@ -108,17 +107,13 @@ class Transport {
                                  const std::string&,
                                  const boost::uint16_t&)> notify_dead_server);
   void CloseConnection(boost::uint32_t connection_id);
-  void Stop();  // stops the recieving loop
-  // inline void set_on_line(bool on_line) { on_line_ = on_line; }
-  // inline bool on_line() { return on_line_; }
+  void Stop();
   inline bool is_stopped() { return stop_; }
   struct sockaddr& peer_address() { return peer_address_; }
-  void ReceiveMessage();
   bool HandleRendezvousMsgs(const std::string &message);
   bool ConnectionExists(boost::uint32_t connection_id);
   void AddIncomingConnection(UDTSOCKET u);
   void AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id);
-  inline boost::shared_ptr<boost::mutex> mutex0() { return mutex_[0]; }
   inline boost::uint16_t listening_port() { return listening_port_; }
   void StartPingRendezvous(const bool &directly_connected,
                            std::string my_rendezvous_ip,
@@ -131,27 +126,33 @@ class Transport {
   bool Connect(UDTSOCKET *skt, const std::string &peer_address,
       const uint16_t &peer_port, bool short_timeout);
   void PingHandle();
+  void AcceptConnHandler();
+  void ReceiveHandler();
+  void MessageHandler();
   volatile bool stop_;
-  // bool on_line_;
   boost::function<void(const std::string&,
                   const boost::uint32_t&)> message_notifier_;
   boost::function<void(const bool&, const std::string&,
       const boost::uint16_t&)> rendezvous_notifier_;
-  boost::shared_ptr<boost::thread> listening_loop_, recv_routine_,
-      send_routine_, ping_rendezvous_loop_;
+  boost::shared_ptr<boost::thread> accept_routine_, recv_routine_,
+      send_routine_, ping_rendz_routine_, handle_msgs_routine_;
   UDTSOCKET listening_socket_;
   struct sockaddr peer_address_;
   boost::uint16_t listening_port_, my_rendezvous_port_;
   std::string my_rendezvous_ip_;
   std::map<boost::uint32_t, IncomingData> incoming_sockets_;
   std::list<OutgoingData> outgoing_queue_;
-  std::vector< boost::shared_ptr<boost::mutex> > mutex_;
+  std::list<IncomingMessages> incoming_msgs_queue_;
+  boost::mutex send_mutex_, ping_rendez_mutex_, recv_mutex_, msg_hdl_mutex_;
   struct addrinfo addrinfo_hints_;
   struct addrinfo* addrinfo_res_;
   boost::uint32_t current_id_;
-  boost::condition_variable cond_;
+  boost::condition_variable send_cond_, ping_rend_cond_, recv_cond_,
+      msg_hdl_cond_;
   bool ping_rendezvous_;
   bool directly_connected_;
+  int accepted_connections_, msgs_sent_;
+  boost::uint32_t last_id_;
 };
 
 };  // namespace transport

@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/progress.hpp>
 #include <boost/cstdint.hpp>
 #include <gtest/gtest.h>
 #include <list>
@@ -34,21 +35,28 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht_config.h"
 #include "transport/transportapi.h"
 
-void send_string(boost::shared_ptr<transport::Transport> node,
+void send_string(transport::Transport* node,
                  int port,
-                 int repeat) {
+                 int repeat,
+                 std::string msg,
+                 bool keep_conn) {
   boost::uint32_t id;
-  for (int i = 0; i < repeat; ++i) {
-    node->Send("127.0.0.1", port, "", 0, "test_file",
-      transport::Transport::FILE, &id, false);
+  boost::asio::ip::address local_address;
+  std::string ip;
+  if (base::get_local_address(&local_address)) {
+    ip = local_address.to_string();
+  } else {
+    ip = std::string("127.0.0.1");
   }
-}
-
-boost::thread create_thread(boost::shared_ptr<transport::Transport> node,
-                            int port,
-                            int repeat) {
-  boost::thread t(send_string, node, port, repeat);
-  return boost::move(t);
+  int sent = 0;
+  for (int i = 0; i < repeat; ++i) {
+    if (node->Send(ip, port, "", 0, msg,
+        transport::Transport::STRING, &id, keep_conn) != 0)
+      printf("fail to send\n");
+    else sent++;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  printf("thread finished sending %i messages\n", sent);
 }
 
 class MessageHandler {
@@ -58,8 +66,7 @@ class MessageHandler {
   void OnMessage(const std::string &message, const boost::uint32_t conn_id) {
     msgs.push_back(message);
     ids.push_back(conn_id);
-//    printf("got msg\n");
-//    printf("conn_id %d\n", conn_id);
+    printf("message %i arrived\n", msgs.size());
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
     const boost::uint16_t &port) {
@@ -67,6 +74,57 @@ class MessageHandler {
     server_ip_ = ip;
     server_port_ = port;
   }
+  std::list<std::string> msgs;
+  std::list<boost::uint32_t> ids;
+  bool dead_server_;
+  std::string server_ip_;
+  boost::uint16_t server_port_;
+};
+
+class MessageHandlerEchoReq {
+ public:
+  MessageHandlerEchoReq(transport::Transport *node) : node_(node), msgs(), ids(),
+    dead_server_(true), server_ip_(), server_port_(0) {}
+   void OnMessage(const std::string &message, const boost::uint32_t conn_id) {
+    msgs.push_back(message);
+    ids.push_back(conn_id);
+    printf("message %i arrived\n", msgs.size());
+    // replying same msg
+    if (msgs.size() < 10)
+      node_->Send(conn_id, message, transport::Transport::STRING);
+  }
+  void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
+    const boost::uint16_t &port) {
+    dead_server_ = dead_server;
+    server_ip_ = ip;
+    server_port_ = port;
+  }
+  transport::Transport *node_;
+  std::list<std::string> msgs;
+  std::list<boost::uint32_t> ids;
+  bool dead_server_;
+  std::string server_ip_;
+  boost::uint16_t server_port_;
+};
+
+class MessageHandlerEchoResp {
+ public:
+  MessageHandlerEchoResp(transport::Transport *node) : node_(node), msgs(), ids(),
+    dead_server_(true), server_ip_(), server_port_(0) {}
+   void OnMessage(const std::string &message, const boost::uint32_t conn_id) {
+    msgs.push_back(message);
+    ids.push_back(conn_id);
+    printf("message %i arrived\n", msgs.size());
+    // replying same msg
+    node_->CloseConnection(conn_id);
+  }
+  void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
+    const boost::uint16_t &port) {
+    dead_server_ = dead_server;
+    server_ip_ = ip;
+    server_port_ = port;
+  }
+  transport::Transport *node_;
   std::list<std::string> msgs;
   std::list<boost::uint32_t> ids;
   bool dead_server_;
@@ -106,6 +164,7 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnother) {
     transport::Transport::STRING, &id, false));
   while (msg_handler[1].msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  printf("stopping nodes\n");
   node1.Stop();
   node2.Stop();
   ASSERT_TRUE(msg_handler[0].msgs.empty());
@@ -343,79 +402,56 @@ TEST_F(TransportTest, BEH_TRANS_TimeoutForSendingToAWrongPeer) {
 }
 
 TEST_F(TransportTest, BEH_TRANS_Send100Files) {
-  boost::uint32_t id;
-  const int kNumNodes = 5;
+  const int kNumNodes = 11;
   const int kRepeatSend = 10;  // No. of times to repeat the send message.
   ASSERT_LT(2, kNumNodes);  // ensure enough nodes for test
   EXPECT_LT(1, kRepeatSend);  // ensure enough repeats to make test worthwhile
   const int kFirstPort = 52000;
-  std::vector< boost::shared_ptr <transport::Transport> > node;
   MessageHandler msg_handler[kNumNodes];
+  transport::Transport* nodes[kNumNodes];
+  boost::thread_group thr_grp;
+  boost::thread *thrd;
+  std::string sent_msg = base::RandomString(256*1024);
   for (int i = 0; i < kNumNodes; ++i) {
-    boost::shared_ptr<transport::Transport>
-        temp(new transport::Transport());
-    node.push_back(temp);
-    ASSERT_EQ(0, node[i]->Start(kFirstPort+i,
+    transport::Transport *trans = new transport::Transport;
+    ASSERT_EQ(0, trans->Start(kFirstPort+i,
       boost::bind(&MessageHandler::OnMessage, &msg_handler[i], _1, _2),
       boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[i],
                   _1, _2, _3)));
-  }
-  // Create a file
-  std::string file_content = base::RandomString(256*1024);
-  boost::filesystem::ofstream ofs;
-  ofs.open(boost::filesystem::path("test_file"));
-  ofs << file_content;
-  ofs.close();
-  int result = node[0]->Send("127.0.0.1",
-                             kFirstPort+1,
-                             "",
-                             0,
-                             "test_file",
-                             transport::Transport::FILE,
-                             &id,
-                             false);
-  ASSERT_EQ(0, result);
-  result = node[0]->Send("127.0.0.1",
-                         kFirstPort+1,
-                         "",
-                         0,
-                         file_content,
-                         transport::Transport::STRING,
-                         &id,
-                         false);
-  ASSERT_EQ(0, result);
-
-  boost::thread threads[kNumNodes-1];
-  for (int i = 0; i < kNumNodes - 1; ++i) {
-    threads[i] = boost::move(create_thread(node[i], kFirstPort, kRepeatSend));
-  }
-
-  for (int j = 0; j < kNumNodes - 1; ++j) {
-    threads[j].join();
-  }
-
-  const int kTimeout = 60;  // timeout in seconds
-  int count = 0;
-  unsigned int messages_size = (kNumNodes - 1) * kRepeatSend;
-  boost::mutex mutex;
-  while (count < kTimeout * 10) {
-    {
-      boost::mutex::scoped_lock guard(mutex);
-      // check we have received all the messages sent
-      if (msg_handler[0].msgs.size() >= messages_size)
-        break;
-      ++count;
+    if (i != 0) {
+      thrd = new boost::thread(boost::bind(&send_string, trans,
+                                           kFirstPort, kRepeatSend, sent_msg,
+                                           false));
+      thr_grp.add_thread(thrd);
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+    nodes[i] = trans;
+  }
+
+  thr_grp.join_all();
+  unsigned int messages_size = (kNumNodes - 1) * kRepeatSend;
+  printf("messages_size = %i\n", messages_size);
+
+  bool finished = false;
+  boost::progress_timer t;
+  while (!finished && t.elapsed() < 3) {
+      if (msg_handler[0].msgs.size() >= messages_size) {
+        finished = true;
+        continue;
+      }
+    boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
 
   for (int k = 0; k < kNumNodes; ++k)
-    node[k]->Stop();
-  boost::filesystem::remove("test_file");
-  ASSERT_TRUE(msg_handler[2].msgs.empty());
-  ASSERT_EQ(static_cast<unsigned int>(2), msg_handler[1].msgs.size());
+    nodes[k]->Stop();
   ASSERT_EQ(messages_size, msg_handler[0].msgs.size());
-  ASSERT_EQ(file_content, msg_handler[0].msgs.front());
+  while (!msg_handler[0].msgs.empty()) {
+    std::string msg = msg_handler[0].msgs.back();
+    EXPECT_EQ(sent_msg, msg);
+    msg_handler[0].msgs.pop_back();
+  }
+  for (int k = 0; k < kNumNodes; ++k)
+    delete nodes[k];
 }
 
 TEST_F(TransportTest, BEH_TRANS_GetRemotePeerAddress) {
@@ -730,6 +766,140 @@ TEST_F(TransportTest, BEH_TRANS_StartStopTransport) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_FALSE(msg_handler[1].msgs.empty());
   ASSERT_EQ(sent_msg, msg_handler[1].msgs.front());
+
+  node1.Stop();
+  node2.Stop();
+}
+
+TEST_F(TransportTest, BEH_TRANS_SendRespond) {
+  transport::Transport node1;
+  transport::Transport node2;
+  MessageHandlerEchoReq msg_handler1(&node1);
+  MessageHandlerEchoResp msg_handler2(&node2);
+  ASSERT_EQ(0, node1.Start(52001,
+    boost::bind(&MessageHandlerEchoReq::OnMessage, &msg_handler1, _1, _2),
+    boost::bind(&MessageHandlerEchoReq::OnDeadRendezvousServer, &msg_handler1,
+                _1, _2, _3)));
+  ASSERT_EQ(0, node2.Start(52002,
+    boost::bind(&MessageHandlerEchoResp::OnMessage, &msg_handler2, _1, _2),
+    boost::bind(&MessageHandlerEchoResp::OnDeadRendezvousServer, &msg_handler2,
+                _1, _2, _3)));
+  std::vector<std::string> msgs;
+  unsigned int msgs_sent = 12;
+  boost::uint32_t id;
+  boost::asio::ip::address local_address;
+  std::string ip;
+  if (base::get_local_address(&local_address)) {
+    ip = local_address.to_string();
+  } else {
+    ip = std::string("127.0.0.1");
+  }
+  for (unsigned int i = 0; i < msgs_sent; i++) {
+    msgs.push_back(base::RandomString(256*1024));
+    ASSERT_EQ(0, node2.Send(ip, 52001, "", 0, msgs[i],
+      transport::Transport::STRING, &id, true));
+  }
+  bool finished = false;
+  boost::progress_timer t;
+  while (!finished && t.elapsed() < 5) {
+      if (msg_handler1.msgs.size() == msgs_sent &&
+          msg_handler2.msgs.size() == 9) {
+        finished = true;
+        continue;
+      }
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+  node1.Stop();
+  node2.Stop();
+  ASSERT_EQ(msgs_sent, msg_handler1.msgs.size());
+  for (unsigned int i = 0; i < msgs_sent; i++) {
+    for (unsigned int j = 0; j < msgs_sent; j++) {
+      if (msgs[j] == msg_handler1.msgs.front()) {
+        msg_handler1.msgs.pop_front();
+        break;
+      }
+    }
+  }
+  ASSERT_TRUE(msg_handler1.msgs.empty());
+  ASSERT_EQ(9, msg_handler2.msgs.size());
+  for (int i = 0; i < 9; i++) {
+    for (unsigned int j = 0; j < msgs_sent; j++) {
+      if(msgs[j] == msg_handler2.msgs.front()) {
+        msg_handler2.msgs.pop_front();
+        break;
+      }
+    }
+  }
+  ASSERT_TRUE(msg_handler2.msgs.empty());
+}
+
+TEST_F(TransportTest, BEH_TRANS_FailStartUsedport) {
+  transport::Transport node1;
+  transport::Transport node2;
+  MessageHandler msg_handler1, msg_handler2;
+  ASSERT_EQ(0, node1.Start(52001,
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2),
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
+                _1, _2, _3)));
+  ASSERT_EQ(1, node2.Start(52001,
+    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2),
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler2,
+                _1, _2, _3)));
+  node1.Stop();
+}
+
+TEST_F(TransportTest, BEH_TRANS_SendMultipleMsgsSameConnection) {
+  transport::Transport node1;
+  transport::Transport node2;
+  MessageHandler msg_handler1, msg_handler2;
+  ASSERT_EQ(0, node1.Start(52001,
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2),
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
+                _1, _2, _3)));
+  ASSERT_EQ(0, node2.Start(52002,
+    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2),
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler2,
+                _1, _2, _3)));
+  boost::uint32_t id;
+  boost::asio::ip::address local_address;
+  std::string ip;
+  if (base::get_local_address(&local_address)) {
+    ip = local_address.to_string();
+  } else {
+    ip = std::string("127.0.0.1");
+  }
+  std::string msg = base::RandomString(256*1024);
+  ASSERT_EQ(0, node1.Send(ip, 52002, "", 0, msg,
+      transport::Transport::STRING, &id, true));
+  while (msg_handler2.msgs.empty())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_FALSE(msg_handler2.msgs.empty());
+  ASSERT_EQ(msg, msg_handler2.msgs.front());
+  msg_handler2.msgs.clear();
+
+  msg = base::RandomString(256*1024);
+  ASSERT_EQ(0, node1.Send(id, msg, transport::Transport::STRING));
+  while (msg_handler2.msgs.empty())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_FALSE(msg_handler2.msgs.empty());
+  ASSERT_EQ(msg, msg_handler2.msgs.front());
+  msg_handler2.msgs.clear();
+
+  msg = base::RandomString(256*1024);
+  ASSERT_EQ(0, node1.Send(id, msg, transport::Transport::STRING));
+  while (msg_handler2.msgs.empty())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_FALSE(msg_handler2.msgs.empty());
+  ASSERT_EQ(msg, msg_handler2.msgs.front());
+  msg_handler2.msgs.clear();
+
+  msg = base::RandomString(256*1024);
+  ASSERT_EQ(0, node1.Send(id, msg, transport::Transport::STRING));
+  while (msg_handler2.msgs.empty())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_FALSE(msg_handler2.msgs.empty());
+  ASSERT_EQ(msg, msg_handler2.msgs.front());
+  msg_handler2.msgs.clear();
 
   node1.Stop();
   node2.Stop();

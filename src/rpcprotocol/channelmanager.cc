@@ -83,11 +83,6 @@ void ChannelManager::ClearChannels() {
   pimpl_->ClearChannels();
 }
 
-void ChannelManager::AddConnectionToReq(const boost::uint32_t &req_id,
-                                        const boost::uint32_t &conn_id) {
-  pimpl_->AddConnectionToReq(req_id, conn_id);
-}
-
 boost::shared_ptr<transport::Transport> ChannelManager::ptransport() {
   return pimpl_->ptransport();
 }
