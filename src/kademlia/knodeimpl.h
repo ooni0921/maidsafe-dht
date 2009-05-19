@@ -331,7 +331,11 @@ class KNodeImpl {
                          int map_transport);
   void UPnPMap(boost::uint16_t host_port);
   void UnMapUPnP();
-  std::vector< boost::shared_ptr<boost::mutex> > mutex_;
+  boost::mutex routingtable_mutex_;
+  boost::mutex kadconfig_mutex_;
+  boost::mutex extendshortlist_mutex_;
+  boost::mutex joinbootstrapping_mutex_;
+  boost::mutex leave_mutex_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
   boost::shared_ptr<rpcprotocol::ChannelManager> pchannel_manager_;
   boost::shared_ptr<rpcprotocol::Channel> pservice_channel_;

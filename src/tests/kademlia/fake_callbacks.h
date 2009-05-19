@@ -256,14 +256,14 @@ class DeleteChunkCallback : public FakeCallback {
 };
 
 
-inline void wait_result(FakeCallback *cb, boost::mutex* mutex) {
+inline void wait_result(FakeCallback *cb) {
   while (1) {
     {
-      boost::mutex::scoped_lock guard(*mutex);
+//      boost::mutex::scoped_lock guard(*mutex);
       if (cb->result() != "")
         return;
     }
-    base::sleep(0.005);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   }
 }
 

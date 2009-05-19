@@ -153,7 +153,7 @@ class PDRoutingTableHandler {
       // Close();
   }
   void Clear() {
-    scoped_lock guard(mutex_);
+    boost::mutex::scoped_lock guard(mutex_);
     try {
       if (boost::filesystem::exists(boost::filesystem::path(db_name_))) {
         boost::filesystem::remove(db_name_);

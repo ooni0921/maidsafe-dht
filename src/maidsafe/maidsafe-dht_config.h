@@ -116,7 +116,7 @@ const std::string kRpcResultFailure("F");
 const bool kReuseDatabase = false;
 
 // The ratio of k successful individual kad store RPCs to yield overall success.
-const float kMinSuccessfulPecentageStore = 0.75;
+const double kMinSuccessfulPecentageStore = 0.75;
 
 // The number of failed RPCs tolerated before a contact is removed from the
 // k-bucket.

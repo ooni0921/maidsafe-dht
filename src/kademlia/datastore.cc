@@ -61,7 +61,7 @@ bool DataStore::Init(const std::string &file_name,
       if (!reuse_database) {
         // remove all data but status
         try {
-          db_.execDML("begin transaction;");
+//          db_.execDML("begin transaction;");
           std::string key1("status");
           std::string key2("node_id");
           CppSQLite3Binary blob_key1;
@@ -75,12 +75,13 @@ bool DataStore::Init(const std::string &file_name,
           stmt.bind(2, (const char*)blob_key2.getEncoded());
           stmt.execDML();
           stmt.reset();
-          db_.execDML("commit transaction;");
+          stmt.finalize();
+//          db_.execDML("commit transaction;");
         } catch(CppSQLite3Exception& e) {  // NOLINT
       #ifdef DEBUG
           printf("%d : %s",  e.errorCode(), e.errorMessage());
       #endif
-          db_.execDML("rollback transaction;");
+//          db_.execDML("rollback transaction;");
         }  // try statement
       }  // reuse database
     }
@@ -187,7 +188,7 @@ bool DataStore::StoreItem(const std::string &key,
     CppSQLite3Binary blob_value;
     blob_value.setBinary((const unsigned char*)value.c_str(),
         value.size());
-    db_.execDML("begin transaction;");
+//    db_.execDML("begin transaction;");
     CppSQLite3Statement stmt;
     if (KeyValueExists(key, value)) {  // update last published time
       stmt = db_.compileStatement(
@@ -205,14 +206,15 @@ bool DataStore::StoreItem(const std::string &key,
     }
     stmt.execDML();
     stmt.reset();
-    db_.execDML("commit transaction;");
+    stmt.finalize();
+//    db_.execDML("commit transaction;");
   } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
       printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
 //      TRI_LOG_STR("DataStore.StoreItem: " << e.errorCode() << ", "
 //          << e.errorMessage());
-      db_.execDML("rollback transaction;");
+//      db_.execDML("rollback transaction;");
       return false;
   }
   return true;
@@ -258,22 +260,23 @@ bool DataStore::DeleteKey(const std::string &key) {
     CppSQLite3Binary blob_key;
     blob_key.setBinary((const unsigned char*)key.c_str(),
         key.size());
-    db_.execDML("begin transaction;");
+//    db_.execDML("begin transaction;");
     CppSQLite3Statement stmt;
     stmt = db_.compileStatement(
         "delete from data where key=?;");
     stmt.bind(1, (const char*)blob_key.getEncoded());
     stmt.execDML();
     stmt.reset();
-    if (db_.execDML("commit transaction;") == 0)
-      return false;
+    stmt.finalize();
+//    if (db_.execDML("commit transaction;") == 0)
+//      return false;
   } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
 //    TRI_LOG_STR("DataStore.DeleteKey: " << e.errorCode() << ", "
 //        << e.errorMessage());
-    db_.execDML("rollback transaction;");
+//    db_.execDML("rollback transaction;");
     return false;
   }
   return true;
@@ -288,7 +291,7 @@ bool DataStore::DeleteItem(const std::string &key,
     CppSQLite3Binary blob_value;
     blob_value.setBinary((const unsigned char*)value.c_str(),
         value.size());
-    db_.execDML("begin transaction;");
+//    db_.execDML("begin transaction;");
     CppSQLite3Statement stmt;
     stmt = db_.compileStatement(
         "delete from data where key=? and value=?;");
@@ -296,15 +299,16 @@ bool DataStore::DeleteItem(const std::string &key,
     stmt.bind(2, (const char*)blob_value.getEncoded());
     stmt.execDML();
     stmt.reset();
-    if (db_.execDML("commit transaction;") == 0)
-      return false;
+    stmt.finalize();
+//    if (db_.execDML("commit transaction;") == 0)
+//      return false;
   } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
 //    TRI_LOG_STR("DataStore.DeleteItem: " << e.errorCode() << ", "
 //        << e.errorMessage());
-    db_.execDML("rollback transaction;");
+//    db_.execDML("rollback transaction;");
     return false;
   }
   return true;
@@ -315,22 +319,23 @@ bool DataStore::DeleteValue(const std::string &value) {
     CppSQLite3Binary blob_value;
     blob_value.setBinary((const unsigned char*)value.c_str(),
         value.size());
-    db_.execDML("begin transaction;");
+//    db_.execDML("begin transaction;");
     CppSQLite3Statement stmt;
     stmt = db_.compileStatement(\
         "delete from data where value=?;");
     stmt.bind(1, (const char*)blob_value.getEncoded());
     stmt.execDML();
     stmt.reset();
-    if (db_.execDML("commit transaction;") == 0)
-      return false;
+    stmt.finalize();
+//    if (db_.execDML("commit transaction;") == 0)
+//      return false;
   } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
 //    TRI_LOG_STR("DataStore.DeleteValue: " << e.errorCode() << ", "
 //        << e.errorMessage());
-    db_.execDML("rollback transaction;");
+//    db_.execDML("rollback transaction;");
     return false;
   }
   return true;
@@ -338,7 +343,7 @@ bool DataStore::DeleteValue(const std::string &value) {
 
 boost::uint32_t DataStore::DeleteExpiredValues() {
   try {
-    db_.execDML("begin transaction;");
+//    db_.execDML("begin transaction;");
     boost::uint32_t now = base::get_epoch_time();
     CppSQLite3Statement stmt;
     stmt = db_.compileStatement(\
@@ -346,15 +351,16 @@ boost::uint32_t DataStore::DeleteExpiredValues() {
     stmt.bind(1, static_cast<boost::int32_t>(now -kExpireTime));
     stmt.execDML();
     stmt.reset();
-    if (db_.execDML("commit transaction;") == 0)
-      return false;
+    stmt.finalize();
+//    if (db_.execDML("commit transaction;") == 0)
+//      return false;
   } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
 //    TRI_LOG_STR("DataStore.DeleteExpiredValues: " << e.errorCode() << ", "
 //        << e.errorMessage());
-    db_.execDML("rollback transaction;");
+//    db_.execDML("rollback transaction;");
     return false;
   }
   return true;

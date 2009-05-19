@@ -402,10 +402,6 @@ void Transport::ReceiveHandler() {
       if (UDT::send((*it).second.u, NULL, 0, 0) == 0) {
         UD_SET((*it).second.u, &readfds);
       } else {
-#ifdef DEBUG
-        printf("found dead connection: %s\n",
-            UDT::getlasterror().getErrorMessage());
-#endif
         dead_connections_ids.push_back((*it).first);
       }
     }
@@ -422,7 +418,7 @@ void Transport::ReceiveHandler() {
           int peer_addr_size = sizeof(struct sockaddr);
           if (UDT::ERROR == UDT::getpeername((*it).second.u, &peer_address_,
               &peer_addr_size)) {
-            printf("invalid peer address\n");
+            // printf("invalid peer address\n");
             continue;
           }
           if ((*it).second.expect_size == 0) {
@@ -546,12 +542,12 @@ void Transport::CloseConnection(boost::uint32_t connection_id) {
     if (incoming_sockets_[connection_id].data != NULL)
       incoming_sockets_[connection_id].data.reset();
     UDT::close(incoming_sockets_[connection_id].u);
-#ifdef DEBUG
-    printf("In Transport::CloseConnection(%i), ", listening_port_);
-    printf("error close connection %i: %s.\n",
-           connection_id,
-           UDT::getlasterror().getErrorMessage());
-#endif
+//  #ifdef DEBUG
+//      printf("In Transport::CloseConnection(%i), ", listening_port_);
+//      printf("error close connection %i: %s.\n",
+//             connection_id,
+//             UDT::getlasterror().getErrorMessage());
+//  #endif
     incoming_sockets_.erase(connection_id);
   }
 }
@@ -647,7 +643,7 @@ bool Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
 #endif
 #ifdef DEBUG
     printf("remote ip %s", peer_address.c_str());
-    printf("bad address\n");
+    printf(" bad address\n");
 #endif
     return false;
   }
@@ -704,7 +700,10 @@ void Transport::StartPingRendezvous(const bool &directly_connected,
                            std::string my_rendezvous_ip,
                            boost::uint16_t my_rendezvous_port) {
   my_rendezvous_port_ = my_rendezvous_port;
-  my_rendezvous_ip_ = my_rendezvous_ip;
+  if (my_rendezvous_ip.length() == 4)
+    my_rendezvous_ip_ = base::inet_btoa(my_rendezvous_ip);
+  else
+    my_rendezvous_ip_ = my_rendezvous_ip;
   {
     boost::mutex::scoped_lock lock(ping_rendez_mutex_);
     directly_connected_ = directly_connected;

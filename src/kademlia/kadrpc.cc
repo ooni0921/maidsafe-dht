@@ -53,7 +53,7 @@ void KadRpcs::FindNode(const std::string &key, const std::string &ip,
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_, ip, port, local));
+      pchannel_manager_.get(), ip, port, local));
   KademliaService::Stub service(channel.get());
   service.FindNode(&controller, &args, resp, cb);
 }
@@ -67,7 +67,7 @@ void KadRpcs::FindValue(const std::string &key, const std::string &ip,
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_, ip, port, local));
+      pchannel_manager_.get(), ip, port, local));
   KademliaService::Stub service(channel.get());
   service.FindValue(&controller, &args, resp, cb);
 }
@@ -82,7 +82,7 @@ void KadRpcs::Ping(const std::string &ip,
   rpcprotocol::ControllerImpl controller;
   controller.set_timeout(kRpcPingTimeout);
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_, ip, port, local));
+      pchannel_manager_.get(), ip, port, local));
   KademliaService::Stub service(channel.get());
   service.Ping(&controller, &args, resp, cb);
 }
@@ -102,7 +102,7 @@ void KadRpcs::Store(const std::string &key, const std::string &value,
   *sender_info = info_;
   rpcprotocol::ControllerImpl controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_, ip, port, local));
+      pchannel_manager_.get(), ip, port, local));
   KademliaService::Stub service(channel.get());
     service.Store(&controller, &args, resp, cb);
 }
@@ -118,7 +118,7 @@ void KadRpcs::Downlist(const std::vector<std::string> downlist,
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_, ip, port, local));
+      pchannel_manager_.get(), ip, port, local));
   KademliaService::Stub service(channel.get());
   service.Downlist(&controller, &args, resp, cb);
 }
@@ -138,7 +138,7 @@ void KadRpcs::NatDetection(const std::string &newcomer,
   args.set_sender_id(sender_id);
   rpcprotocol::ControllerImpl controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_, remote_ip, remote_port, false));
+      pchannel_manager_.get(), remote_ip, remote_port, false));
   if (type == 2)
     controller.set_timeout(18);
   KademliaService::Stub service(channel.get());
@@ -155,7 +155,7 @@ void KadRpcs::NatDetectionPing(const std::string &remote_ip,
   rpcprotocol::ControllerImpl controller;
   controller.set_timeout(kRpcPingTimeout);
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_, remote_ip, remote_port, false));
+      pchannel_manager_.get(), remote_ip, remote_port, false));
   KademliaService::Stub service(channel.get());
   service.NatDetectionPing(&controller, &args, resp, cb);
 }
@@ -174,7 +174,7 @@ void KadRpcs::Bootstrap(const std::string &local_id,
   rpcprotocol::ControllerImpl controller;
   controller.set_timeout(20);
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
-      pchannel_manager_, remote_ip, remote_port, false));
+      pchannel_manager_.get(), remote_ip, remote_port, false));
   KademliaService::Stub service(channel.get());
   service.Bootstrap(&controller, &args, resp, cb);
 }

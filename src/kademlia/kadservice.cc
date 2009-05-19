@@ -291,6 +291,7 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
 void KadService::Store(google::protobuf::RpcController *controller,
       const StoreRequest *request, StoreResponse *response,
       google::protobuf::Closure *done) {
+  printf("KadService::Store:\n");
   kad::Contact sender;
   bool add_contact =  false;
   response->set_node_id(knode_->node_id());
@@ -306,6 +307,7 @@ void KadService::Store(google::protobuf::RpcController *controller,
         add_contact = true;
         knode_->StoreValueLocal(request->key(), request->value());
         response->set_result(kRpcResultSuccess);
+        printf("KadService::Store: StoreValueLocal\n");
       }
   } else {
     response->set_result(kad::kRpcResultFailure);
