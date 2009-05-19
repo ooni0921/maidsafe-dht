@@ -314,7 +314,7 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
       (result_msg.result() == kRpcResultSuccess)) {
     kad::Contact bootstrap_node(result_msg.bootstrap_id(), bootstrap_ip,
                                 bootstrap_port, local_bs_ip, local_bs_port);
-    printf("adding contact\n");
+//    printf("adding contact\n");
     AddContact(bootstrap_node, false);
     bool directlyconnected = false;
     if (host_ip_ == result_msg.newcomer_ext_ip() &&
@@ -403,12 +403,13 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
     ++args->active_process;
   } else if (args->active_process == 0) {
     base::GeneralResponse local_result;
-    local_result.set_result(kRpcResultSuccess);
+    local_result.set_result(kRpcResultFailure);
     std::string local_result_str;
     local_result.SerializeToString(&local_result_str);
     args->is_callbacked = true;
     rv_ip_ = "";
     rv_port_ = 0;
+//    is_joined_ = true;
     args->cb(local_result_str);
   }
 }

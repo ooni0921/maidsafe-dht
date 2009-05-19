@@ -42,7 +42,7 @@ void KadRpcs::set_info(const ContactInfo &info) {
 void KadRpcs::FindNode(const std::string &key, const std::string &ip,
       const boost::uint16_t &port, FindResponse *resp,
       google::protobuf::Closure *cb, const bool &local) {
-  rpcprotocol::ControllerImpl controller;
+  rpcprotocol::Controller controller;
   FindRequest args;
   if (resp->has_requester_ext_addr()) {
     // This is a special find node RPC for bootstrapping process
@@ -62,7 +62,7 @@ void KadRpcs::FindValue(const std::string &key, const std::string &ip,
       const boost::uint16_t &port, FindResponse *resp,
       google::protobuf::Closure *cb, const bool &local) {
   FindRequest args;
-  rpcprotocol::ControllerImpl controller;
+  rpcprotocol::Controller controller;
   args.set_key(key);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
@@ -79,7 +79,7 @@ void KadRpcs::Ping(const std::string &ip,
   args.set_ping("ping");
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::ControllerImpl controller;
+  rpcprotocol::Controller controller;
   controller.set_timeout(kRpcPingTimeout);
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
       pchannel_manager_.get(), ip, port, local));
@@ -100,7 +100,7 @@ void KadRpcs::Store(const std::string &key, const std::string &value,
   args.set_signed_request(signed_request);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::ControllerImpl controller;
+  rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
       pchannel_manager_.get(), ip, port, local));
   KademliaService::Stub service(channel.get());
@@ -114,7 +114,7 @@ void KadRpcs::Downlist(const std::vector<std::string> downlist,
   DownlistRequest args;
   for (unsigned int i = 0; i < downlist.size(); i++)
     args.add_downlist(downlist[i]);
-  rpcprotocol::ControllerImpl controller;
+  rpcprotocol::Controller controller;
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
@@ -136,7 +136,7 @@ void KadRpcs::NatDetection(const std::string &newcomer,
   args.set_bootstrap_node(bootstrap_node);
   args.set_type(type);
   args.set_sender_id(sender_id);
-  rpcprotocol::ControllerImpl controller;
+  rpcprotocol::Controller controller;
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
       pchannel_manager_.get(), remote_ip, remote_port, false));
   if (type == 2)
@@ -152,7 +152,7 @@ void KadRpcs::NatDetectionPing(const std::string &remote_ip,
   args.set_ping("nat_detection_ping");
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::ControllerImpl controller;
+  rpcprotocol::Controller controller;
   controller.set_timeout(kRpcPingTimeout);
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
       pchannel_manager_.get(), remote_ip, remote_port, false));
@@ -171,7 +171,7 @@ void KadRpcs::Bootstrap(const std::string &local_id,
   args.set_newcomer_id(local_id);
   args.set_newcomer_local_ip(local_ip);
   args.set_newcomer_local_port(local_port);
-  rpcprotocol::ControllerImpl controller;
+  rpcprotocol::Controller controller;
   controller.set_timeout(20);
   boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
       pchannel_manager_.get(), remote_ip, remote_port, false));

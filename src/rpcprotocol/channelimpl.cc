@@ -38,7 +38,7 @@ namespace rpcprotocol {
 
 struct RpcInfo {
   RpcInfo() : ctrl(NULL), rpc_id(0), connection_id(0) {}
-  ControllerImpl *ctrl;
+  Controller *ctrl;
   boost::uint32_t rpc_id, connection_id;
 };
 
@@ -179,7 +179,7 @@ void ChannelImpl::HandleRequest(const RpcMessage &request,
       delete args;
       return;
     }
-    ControllerImpl *controller = new ControllerImpl;
+    Controller *controller = new Controller;
     RpcInfo info;
     info.ctrl = controller;
     info.rpc_id = request.message_id();

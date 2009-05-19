@@ -41,8 +41,8 @@ class PingTestService : public tests::PingTest {
             const tests::PingRequest *request,
             tests::PingResponse *response,
             google::protobuf::Closure *done) {
-    rpcprotocol::ControllerImpl *ctrler =
-        static_cast<rpcprotocol::ControllerImpl*>(controller);
+    rpcprotocol::Controller *ctrler =
+        static_cast<rpcprotocol::Controller*>(controller);
     if (request->IsInitialized()) {
       if (request->ping() == "ping") {
         response->set_result("S");
@@ -67,8 +67,8 @@ class TestOpService : public tests::TestOp {
            google::protobuf::Closure *done) {
     if (request->IsInitialized())
       response->set_result(request->first() + request->second());
-    rpcprotocol::ControllerImpl *ctrler =
-        static_cast<rpcprotocol::ControllerImpl*>(controller);
+    rpcprotocol::Controller *ctrler =
+        static_cast<rpcprotocol::Controller*>(controller);
     ctrler->set_remote_ip(request->ip());
     ctrler->set_remote_port(request->port());
     done->Run();
@@ -79,8 +79,8 @@ class TestOpService : public tests::TestOp {
            google::protobuf::Closure *done) {
     if (request->IsInitialized())
       response->set_result(request->first() * request->second());
-    rpcprotocol::ControllerImpl *ctrler =
-        static_cast<rpcprotocol::ControllerImpl*>(controller);
+    rpcprotocol::Controller *ctrler =
+        static_cast<rpcprotocol::Controller*>(controller);
     ctrler->set_remote_ip(request->ip());
     ctrler->set_remote_port(request->port());
     done->Run();
@@ -105,8 +105,8 @@ class MirrorTestService : public tests::MirrorTest {
       printf("Done reversing the string.\n");
       response->set_mirrored_string(inverted);
     }
-    rpcprotocol::ControllerImpl *ctrler =
-        static_cast<rpcprotocol::ControllerImpl*>(controller);
+    rpcprotocol::Controller *ctrler =
+        static_cast<rpcprotocol::Controller*>(controller);
     ctrler->set_remote_ip(request->ip());
     ctrler->set_remote_port(request->port());
     boost::this_thread::sleep(boost::posix_time::seconds(1));
