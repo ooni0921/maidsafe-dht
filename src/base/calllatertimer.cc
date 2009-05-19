@@ -46,7 +46,7 @@ CallLaterTimer::CallLaterTimer()
   try {
     blocking_routine.reset(new boost::thread(&CallLaterTimer::TryExecute,
                                              this));
-  } catch (std::exception &) {
+  } catch(std::exception &) {
   }
 }
 

@@ -1487,7 +1487,8 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
     if (response->IsInitialized()) {
       if (response->result() == kRpcResultSuccess) {
         ++callback_data.data->save_nodes;
-        printf("KNodeImpl::StoreValue_IterativeStoreValue: response->result() == kRpcResultSuccess\n");
+        printf("KNodeImpl::StoreValue_IterativeStoreValue:");
+        printf("response->result()== kRpcResultSuccess\n");
       }
       AddContact(callback_data.sender, false);
       printf("KNodeImpl::StoreValue_IterativeStoreValue: AddContact\n");
@@ -1506,10 +1507,10 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
     StoreResponse store_value_result;
     std::string store_value_result_str;
     double d = K_ * kMinSuccessfulPecentageStore;
-    if (callback_data.data->save_nodes > static_cast<int>(d))
+    if (callback_data.data->save_nodes > static_cast<int>(d)) {
       // Succeeded - min. number of copies were stored
       store_value_result.set_result(kRpcResultSuccess);
-    else {
+  }  else {
       // Failed
       // TODO(Fraser#5#): 2009-05-15 - Need to handle failure properly, i.e.
       //                  delete those that did get stored, or try another full
@@ -1611,7 +1612,7 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(
           pdata_store_->StoreItem(key, value, now, now);
           closest_nodes.pop_back();
           stored_local = true;
-          printf("KNodeImpl::StoreValue_ExecuteStoreRPCs storing locally de mieeeeerda\n");
+          printf("KNodeImpl::StoreValue_ExecuteStoreRPCs storing locally \n");
         }
       } else if (type_ != CLIENT) {
         boost::uint32_t now = base::get_epoch_time();
