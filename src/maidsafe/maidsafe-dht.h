@@ -34,8 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * notice is removed.                                                          *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_DHT_H_
-#define MAIDSAFE_DHT_H_
+#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
+#define MAIDSAFE_MAIDSAFE_DHT_H_
 
 #include "maidsafe/maidsafe-dht_config.h"
 
@@ -210,4 +210,4 @@ bool ChangedIP();
 
 
 
-#endif  // MAIDSAFE_DHT_H_
+#endif  // MAIDSAFE_MAIDSAFE_DHT_H_

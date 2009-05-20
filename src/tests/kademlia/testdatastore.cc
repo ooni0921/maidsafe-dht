@@ -166,7 +166,7 @@ TEST_F(DataStoreTest, BEH_KAD_UpdateData) {
   ASSERT_TRUE(test_ds->LoadItem(key1, values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
-  base::sleep(1);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   boost::int32_t now2 = base::get_epoch_time();
   ASSERT_TRUE(test_ds->StoreItem(key1, value1, now2, now2));
   ASSERT_EQ(static_cast<boost::uint32_t>(now2),

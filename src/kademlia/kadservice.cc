@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/crypto.h"
 #include "base/routingtable.h"
 #include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 #include "kademlia/kadrpc.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"

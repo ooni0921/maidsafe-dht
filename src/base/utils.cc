@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <limits>
 #include "base/config.h"
 #include "maidsafe/maidsafe-dht_config.h"
+#include "maidsafe/utils.h"
 
 namespace base {
 

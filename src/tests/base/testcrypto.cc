@@ -31,6 +31,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <gtest/gtest.h>
 #include "base/crypto.h"
+#include "base/rsakeypair.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/maidsafe-dht.h"
 
 using namespace crypto;
 

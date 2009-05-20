@@ -41,7 +41,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/calllatertimer.h"
 #include "base/routingtable.h"
 #include "maidsafe/maidsafe-dht.h"
-#include "protobuf/callback_messages.pb.h"
 #include "rpcprotocol/channelimpl.h"
 #include "transport/transportapi.h"
 

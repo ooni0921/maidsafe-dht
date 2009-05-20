@@ -28,12 +28,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef BASE_RSAKEYPAIR_H_
 #define BASE_RSAKEYPAIR_H_
 #include <string>
+#include "base/crypto.h"
 
 namespace crypto {
 
   class RsaKeyPair {
     public:
-      RsaKeyPair();
+      RsaKeyPair() : public_key_(""), private_key_("") {}
       std::string public_key() { return public_key_; }
       std::string private_key() { return private_key_; }
       void set_public_key(std::string publickey);

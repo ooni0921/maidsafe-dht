@@ -26,9 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "protobuf/general_messages.pb.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
-#include "protobuf/callback_messages.pb.h"
 
 class FakeCallback {
  public:
@@ -39,23 +37,6 @@ class FakeCallback {
   std::string result() const {return result_;};
  protected:
   std::string result_;
-};
-
-class StartNetCallback : public FakeCallback {
-  public:
-  StartNetCallback():FakeCallback(), result_msg() {}
-  virtual ~StartNetCallback() {}
-  void CallbackFunc(const std::string &res) {
-    if (!result_msg.ParseFromString(res))
-      result_msg.set_result("F");
-    result_ = result_msg.result();
-  }
-  void Reset() {
-    result_msg.Clear();
-    result_ = "";
-  }
- private:
-  net::NetStartResult result_msg;
 };
 
 class PingCallback : public FakeCallback {
@@ -158,103 +139,103 @@ class GeneralKadCallback : public FakeCallback {
   base::GeneralResponse result_msg;
 };
 
-class StoreChunkCallback : public FakeCallback {
- public:
-  StoreChunkCallback():FakeCallback(), result_msg() {}
-  void CallbackFunc(const std::string &res) {
-    if (!result_msg.ParseFromString(res)) {
-      result_msg.set_result(kad::kRpcResultFailure);
-    }
-    result_ = result_msg.result();
-  };
-  void Reset() {
-    result_msg.Clear();
-    result_ = "";
-  };
- private:
-  kad::StoreResponse result_msg;
-};
-
-class LoadChunkCallback : public FakeCallback {
- public:
-  LoadChunkCallback():FakeCallback(), result_msg(), content_("") {}
-  void CallbackFunc(const std::string &res) {
-    if (!result_msg.ParseFromString(res)) {
-      result_msg.set_result(kad::kRpcResultFailure);
-    } else {
-      if (result_msg.has_content())
-        content_ = result_msg.content();
-    }
-    result_ = result_msg.result();
-  };
-  void Reset() {
-    result_msg.Clear();
-    result_ = "";
-    content_ = "";
-  };
-  std::string content() const {return content_;}
- private:
-  maidsafe::GetResponse result_msg;
-  std::string content_;
-};
-
-class UpdateChunkCallback : public FakeCallback {
- public:
-  UpdateChunkCallback() : FakeCallback(), result_msg() {}
-  void CallbackFunc(const std::string &res) {
-    if (!result_msg.ParseFromString(res)) {
-      result_msg.set_result(kad::kRpcResultFailure);
-    }
-    result_ = result_msg.result();
-  };
-  void Reset() {
-    result_msg.Clear();
-    result_ = "";
-  };
- private:
-  maidsafe::UpdateResponse result_msg;
-};
-
-class GetMsgsCallback : public FakeCallback {
- public:
-  GetMsgsCallback() : FakeCallback(), messages_(), result_msg() {}
-  void CallbackFunc(const std::string &res) {
-    if (!result_msg.ParseFromString(res)) {
-      result_msg.set_result(kad::kRpcResultFailure);
-    } else {
-      for (int i = 0; i < result_msg.messages_size(); i++)
-        messages_.push_back(result_msg.messages(i));
-    }
-    result_ = result_msg.result();
-  }
-  void Reset() {
-    result_ = "";
-    messages_.clear();
-    result_msg.Clear();
-  }
-  std::list<std::string> messages() const {return messages_;}
- private:
-  std::list<std::string> messages_;
-  maidsafe::GetMessagesResponse result_msg;
-};
-
-class DeleteChunkCallback : public FakeCallback {
- public:
-  DeleteChunkCallback() : FakeCallback(), result_msg() {}
-  void CallbackFunc(const std::string &res) {
-    if (!result_msg.ParseFromString(res)) {
-      result_msg.set_result(kad::kRpcResultFailure);
-    }
-    result_ = result_msg.result();
-  };
-  void Reset() {
-    result_msg.Clear();
-    result_ = "";
-  };
- private:
-  maidsafe::DeleteResponse result_msg;
-};
-
+//  class StoreChunkCallback : public FakeCallback {
+//   public:
+//    StoreChunkCallback():FakeCallback(), result_msg() {}
+//    void CallbackFunc(const std::string &res) {
+//      if (!result_msg.ParseFromString(res)) {
+//        result_msg.set_result(kad::kRpcResultFailure);
+//      }
+//      result_ = result_msg.result();
+//    };
+//    void Reset() {
+//      result_msg.Clear();
+//      result_ = "";
+//    };
+//   private:
+//    kad::StoreResponse result_msg;
+//  };
+//
+//  class LoadChunkCallback : public FakeCallback {
+//   public:
+//    LoadChunkCallback():FakeCallback(), result_msg(), content_("") {}
+//    void CallbackFunc(const std::string &res) {
+//      if (!result_msg.ParseFromString(res)) {
+//        result_msg.set_result(kad::kRpcResultFailure);
+//      } else {
+//        if (result_msg.has_content())
+//          content_ = result_msg.content();
+//      }
+//      result_ = result_msg.result();
+//    };
+//    void Reset() {
+//      result_msg.Clear();
+//      result_ = "";
+//      content_ = "";
+//    };
+//    std::string content() const {return content_;}
+//   private:
+//    maidsafe::GetResponse result_msg;
+//    std::string content_;
+//  };
+//
+//  class UpdateChunkCallback : public FakeCallback {
+//   public:
+//    UpdateChunkCallback() : FakeCallback(), result_msg() {}
+//    void CallbackFunc(const std::string &res) {
+//      if (!result_msg.ParseFromString(res)) {
+//        result_msg.set_result(kad::kRpcResultFailure);
+//      }
+//      result_ = result_msg.result();
+//    };
+//    void Reset() {
+//      result_msg.Clear();
+//      result_ = "";
+//    };
+//   private:
+//    maidsafe::UpdateResponse result_msg;
+//  };
+//
+//  class GetMsgsCallback : public FakeCallback {
+//   public:
+//    GetMsgsCallback() : FakeCallback(), messages_(), result_msg() {}
+//    void CallbackFunc(const std::string &res) {
+//      if (!result_msg.ParseFromString(res)) {
+//        result_msg.set_result(kad::kRpcResultFailure);
+//      } else {
+//        for (int i = 0; i < result_msg.messages_size(); i++)
+//          messages_.push_back(result_msg.messages(i));
+//      }
+//      result_ = result_msg.result();
+//    }
+//    void Reset() {
+//      result_ = "";
+//      messages_.clear();
+//      result_msg.Clear();
+//    }
+//    std::list<std::string> messages() const {return messages_;}
+//   private:
+//    std::list<std::string> messages_;
+//    maidsafe::GetMessagesResponse result_msg;
+//  };
+//
+//  class DeleteChunkCallback : public FakeCallback {
+//   public:
+//    DeleteChunkCallback() : FakeCallback(), result_msg() {}
+//    void CallbackFunc(const std::string &res) {
+//      if (!result_msg.ParseFromString(res)) {
+//        result_msg.set_result(kad::kRpcResultFailure);
+//      }
+//      result_ = result_msg.result();
+//    };
+//    void Reset() {
+//      result_msg.Clear();
+//      result_ = "";
+//    };
+//   private:
+//    maidsafe::DeleteResponse result_msg;
+//  };
+//
 
 inline void wait_result(FakeCallback *cb) {
   while (1) {

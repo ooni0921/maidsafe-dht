@@ -46,7 +46,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/config.h"
 #include "base/singleton.h"
 #include "base/routingtable.h"
-#include "kademlia/contact.h"
 #include "kademlia/datastore.h"
 #include "kademlia/kadrpc.h"
 #include "kademlia/routingtable.h"

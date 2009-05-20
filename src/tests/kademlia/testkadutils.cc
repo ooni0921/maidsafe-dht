@@ -139,6 +139,6 @@ TEST(VaultNodeId, FUNC_KAD_VaultCreateId) {
   for (int i = 0; i < 50; i++) {
     id = kad::vault_random_id();
     ASSERT_TRUE(InRange(id, min_range, max_range));
-    base::sleep(1);
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
 }

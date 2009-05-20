@@ -26,18 +26,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "base/rsakeypair.h"
-
 #include <cryptopp/hex.h>
 #include <cryptopp/integer.h>
 #include <cryptopp/rsa.h>
 #include <cryptopp/osrng.h>
-
-#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/maidsafe-dht_config.h"
 
 namespace crypto {
-
-RsaKeyPair::RsaKeyPair() : public_key_(""), private_key_("") {
-}
 
 void RsaKeyPair::GenerateKeys(unsigned int keySize) {
   // CryptoPP::AutoSeededRandomPool rand_pool;

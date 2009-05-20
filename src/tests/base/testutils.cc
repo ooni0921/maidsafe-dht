@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <boost/timer.hpp>
 #include "maidsafe/maidsafe-dht_config.h"
+#include "maidsafe/utils.h"
 
 
 namespace {

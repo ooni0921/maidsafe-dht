@@ -28,7 +28,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include "base/crypto.h"
 #include "kademlia/kbucket.h"
-#include "kademlia/contact.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/routingtable.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -405,7 +404,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
   ids.clear();
 
   std::vector<kad::Contact> close_nodes, ex_contacts;
-  base::sleep(0);
+//  boost::this_thread::sleep(boost::posix_time::seconds(0));
   std::string search_id = kad::random_kademlia_id(max_range1, max_range);
   routingtable.FindCloseNodes(search_id, kad::K-1, &close_nodes, ex_contacts);
   ASSERT_EQ(kad::K-1, static_cast<int>(close_nodes.size()));

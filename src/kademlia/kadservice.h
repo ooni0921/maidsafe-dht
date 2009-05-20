@@ -29,7 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define KADEMLIA_KADSERVICE_H_
 #include <string>
 #include <memory>
-#include "kademlia/contact.h"
+#include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/kademlia_service.pb.h"
 #include "base/routingtable.h"
 

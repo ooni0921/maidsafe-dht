@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cryptopp/osrng.h>
 
 #include "base/crypto.h"
+#include "maidsafe/utils.h"
 
 namespace crypto {
 

@@ -33,12 +33,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>  // NOLINT Fraser - required for handling .kadconfig file
 #include <vector>
 #include "base/config.h"
-#include "base/crypto.h"
-#include "kademlia/contact.h"
 #include "kademlia/datastore.h"
 #include "kademlia/kadservice.h"
 #include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 #include "protobuf/contact_info.pb.h"
 #include "transport/transportapi.h"
 

@@ -26,7 +26,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "kademlia/kbucket.h"
-#include "kademlia/contact.h"
 #include "base/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 

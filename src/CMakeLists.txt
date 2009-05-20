@@ -173,7 +173,7 @@ TARGET_LINK_LIBRARIES(maidsafe-dht PDkademlialib PDrpcprotocollib PDtransportlib
 IF (APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10  -D_FILE_OFFSET_BITS=64" )
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 " )
-  SET(TARGET_PROPERTIES_DEBUG TESTmaidsafe TESTbase TESTkademlia TESTtransport TESTrealmaidsafe TESTrealkademlia  LINK_FLAGS -fprofile-arcs -ftest-coverage)
+  SET(TARGET_PROPERTIES_DEBUG TESTbase TESTkademlia TESTtransport TESTrealmaidsafe TESTrealkademlia  LINK_FLAGS -fprofile-arcs -ftest-coverage)
 ELSEIF (UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized ")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 ")
@@ -211,9 +211,9 @@ ADD_TEST(CHK_BASE_ ${maidsafe-dht_SOURCE_DIR}/cpplint.py ${M_BASE_DIR})
 ADD_TEST(CHK_RPC_COMPONENT ${maidsafe-dht_SOURCE_DIR}/cpplint.py ${M_RPCPROTO_DIR})
 ENDIF(UNIX)
 IF(UNIX)
-	FOREACH(TESTTYPE TESTmaidsafe TESTfs TESTbase TESTkademlia TESTtransport TESTrpcprotocol)
+	FOREACH(TESTTYPE TESTfs TESTbase TESTkademlia TESTtransport TESTrpcprotocol)
 ELSE(UNIX)
-	FOREACH(TESTTYPE TESTmaidsafe.exe TESTbase.exe TESTkademlia.exe TESTtransport.exe  TESTrpcprotocol.exe)
+	FOREACH(TESTTYPE TESTbase.exe TESTkademlia.exe TESTtransport.exe  TESTrpcprotocol.exe)
 ENDIF(UNIX)
 	EXEC_PROGRAM(${EXECUTABLE_OUTPUT_PATH}/${TESTTYPE} ARGS --gtest_list_tests OUTPUT_VARIABLE maid_tests)
 	if(WIN32)
@@ -258,7 +258,7 @@ message("You can set the build type by: cmake ../../ -DCMAKE_BUILD_TYPE=")
 message("Release (default) Debug RelWithDebInfo MinSizeRel")
 message ("#############################################")
 
-install(FILES maidsafe-dht.h
+install(FILES maidsafe/maidsafe-dht.h maidsafe/maidsafe-dht_config.h maidsafe/utils.h
         DESTINATION /usr/include/maidsafe)
 install(TARGETS maidsafe-dht
        ARCHIVE

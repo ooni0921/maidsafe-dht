@@ -38,7 +38,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <list>
 #include "base/crypto.h"
 #include "base/rsakeypair.h"
-#include "kademlia/contact.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -486,7 +485,7 @@ TEST_F(KNodeTest, BEH_KAD_FindValueWithDeadNodes) {
   for (int i = 0; i < kTestK - 1; ++i) {
     knodes_[2 + i]->Leave();
   }
-  base::sleep(2);
+  boost::this_thread::sleep(boost::posix_time::seconds(2));
   // try to find value
   // load the value from no.20 node
   FindCallback cb2;
@@ -548,7 +547,8 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb1.result());
   // Wait for a RPC timeout interval until the downlist are handled in the
   // network
-  base::sleep(4*(kad::kRpcTimeout/1000+1));
+  boost::this_thread::sleep(boost::posix_time::seconds(
+      4*(kad::kRpcTimeout/1000+1)));
   // Compute the sum of the nodes whose routing table contain r_node again
   int sum_1 = 0;
   for (int i = 1; i < kNetworkSize; i++) {

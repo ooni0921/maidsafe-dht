@@ -86,7 +86,7 @@ struct OutgoingData {
 class Transport {
  public:
   Transport();
-  ~Transport() {}
+  ~Transport() {UDT::cleanup();}
 
   enum DataType { STRING, FILE };
   int Send(const std::string &remote_ip,
