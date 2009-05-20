@@ -126,8 +126,11 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     // Set short timeout as request has already failed.
     ctrl->set_timeout(1);
   }
-  printf("%i --- Sending rpc %s\n", pmanager_->external_port(),
-    msg.method().c_str());
+#ifdef DEBUG
+  printf("%i --- Sending rpc %s to %s:%d conn_id= %d\n",
+    pmanager_->external_port(), msg.method().c_str(), ip_.c_str(), port_,
+    conn_id);
+#endif
   req.connection_id = conn_id;
   pmanager_->AddPendingRequest(msg.message_id(), req);
   // pmanager_->AddConnectionToReq(req_id, conn_id);

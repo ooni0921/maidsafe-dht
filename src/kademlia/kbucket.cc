@@ -80,7 +80,7 @@ KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
     // std::cout << "erasing contact" << std::endl;
   }
 
-  if (static_cast<boost::uint16_t>(Size()) == K)
+  if (static_cast<boost::uint16_t>(contacts_.size()) == K)
     return FULL;
 
   contacts_.push_front(new_contact_local);

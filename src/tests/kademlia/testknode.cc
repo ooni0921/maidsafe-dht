@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/function.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/progress.hpp>
 #include <exception>
 #include <vector>
 #include <list>
@@ -751,10 +752,12 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
   knodes_[2]->HandleDeadRendezvousServer(true, ip, port);
   boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   bool finished_bootstrap = false;
+  boost::progress_timer t;
   while (!finished_bootstrap) {
-    if (knodes_[2]->is_joined())
+    if (knodes_[2]->is_joined() || t.elapsed() > 4)
       finished_bootstrap = true;
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+    else
+      boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
   ASSERT_TRUE(knodes_[2]->is_joined());
 }

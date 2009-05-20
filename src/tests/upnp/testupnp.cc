@@ -19,7 +19,7 @@
 #include <boost/ref.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include "base/config.h"
-#include "base/utils.h"
+#include "maidsafe/maidsafe-dht.h"
 
 using boost::asio::ip::udp;
 

@@ -37,13 +37,14 @@ namespace kad {
 class KNodeImpl;
 
 struct NatDetectionData {
-  std::string sender_id;
+  // std::string sender_id;
   Contact newcomer;
   std::string bootstrap_node;
   Contact node_c;
   BootstrapResponse *response;
   google::protobuf::Closure *done;
   google::protobuf::RpcController *controller;
+  std::vector<Contact> ex_contacts;
 };
 
 struct NatDetectionPingData {
@@ -97,6 +98,7 @@ class KadService : public KademliaService {
   void Bootstrap_NatDetectionRzPing(
       const NatDetectionPingResponse *response,
       struct NatDetectionPingData data);
+  void SendNatDetection(struct NatDetectionData data);
   KNodeImpl *knode_;
   // boost::shared_ptr<base::PDRoutingTableHandler> routingtable_;
   KadService(const KadService&);

@@ -68,6 +68,9 @@ void ChannelManagerImpl::AddReqToTimer(const boost::uint32_t &req_id,
   if (!is_started) {
     return;
   }
+#ifdef DEBUG
+  printf("timeout added %d\n", timeout);
+#endif
   ptimer_->AddCallLater(timeout,
       boost::bind(&ChannelManagerImpl::TimerHandler, this, req_id));
 }
@@ -156,8 +159,15 @@ void ChannelManagerImpl::MessageArrive(const std::string &message,
   // handle the message
   if (decoded_msg.rpc_type() == REQUEST) {
     if (!decoded_msg.has_service() || !decoded_msg.has_method()) {
+#ifdef DEBUG
+    printf("%d --- request arrived cannot parse message\n", external_port_);
+#endif
       return;
     }
+#ifdef DEBUG
+    printf("%d --- request arrived for %s\n", external_port_,
+      decoded_msg.method().c_str());
+#endif
     // If this is a special find node for boostrapping,
     // inject incoming address
     if (decoded_msg.method() == "Bootstrap") {

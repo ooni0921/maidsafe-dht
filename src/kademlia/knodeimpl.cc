@@ -570,9 +570,7 @@ void KNodeImpl::Join(const std::string &node_id,
 
   // Set kad_config_path_
   kad_config_path_ = fs::path(kad_config_file, fs::native);
-  std::string hex_node_id_("");
-  base::encode_to_hex(node_id_, hex_node_id_);
-  boost::shared_ptr<RoutingTable> rtng_table_(new RoutingTable(hex_node_id_));
+  boost::shared_ptr<RoutingTable> rtng_table_(new RoutingTable(node_id_));
   prouting_table_ = rtng_table_;
   Join_RefreshNode(cb, port_forwarded);
 }
@@ -847,7 +845,7 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
   // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 2.\n", host_port_);
   bool is_valid = true;
   if (!response->IsInitialized() && callback_data.data->method != BOOTSTRAP) {
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 3.\n", host_port_);
+//    printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 3.\n", host_port_);
     RemoveContact(callback_data.sender.node_id());
     is_valid = false;
     callback_data.data->dead_ids.push_back(callback_data.sender.node_id());
@@ -877,9 +875,9 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
                 callback_data);
         if (callback_data.data->method == FIND_NODE ||
             callback_data.data->method == BOOTSTRAP) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 10.\n", host_port_);
+//          printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 10.\n", host_port_);
           if (callback_data.data->method == BOOTSTRAP) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 11.\n", host_port_);
+//            printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 11.\n", host_port_);
             kad::Contact tmp_contact(node_id(), host_ip_, host_port_,
                                      local_host_ip_, local_host_port_,
                                      rv_ip_, rv_port_);
@@ -888,7 +886,7 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
             resp->set_requester_ext_addr(contact_str);
         // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 12.\n", host_port_);
           }
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 13.\n", host_port_);
+//          printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 13.\n", host_port_);
           kadrpcs_.FindNode(callback_data.data->key,
                             callback_data.sender.host_ip(),
                             callback_data.sender.host_port(),
@@ -920,10 +918,10 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
 
   if ((!is_valid || response->result() == kRpcResultFailure) &&
       callback_data.data->method != BOOTSTRAP) {
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 20.\n", host_port_);
+//    printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 20.\n", host_port_);
     // callback can only be called once
     if (callback_data.data->is_callbacked) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 21.\n", host_port_);
+//      printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 21.\n", host_port_);
       if (callback_data.data->active_probes_after_callback > 0) {
         // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 22.\n", host_port_);
         --callback_data.data->active_probes_after_callback;
@@ -1177,7 +1175,6 @@ void KNodeImpl::IterativeLookUp_Callback(
     base::GeneralResponse result;
     if (data->active_contacts.begin() == data->active_contacts.end()) {
       result.set_result(kRpcResultFailure);
-      printf("dddddddddddddddddddd\n");
       is_joined_ = false;
     } else {
       result.set_result(kRpcResultSuccess);
@@ -1437,7 +1434,6 @@ void KNodeImpl::IterativeLookUp(
   }
   // check whether the short_list is empty
   if (data->short_list.size() == 0) {
-    printf("nnnnnnnnnnnnnnnnnnnnnnnnn\n");
     CallbackWithFailure(cb);
     return;
   }

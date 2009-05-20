@@ -148,6 +148,9 @@ int Transport::Send(boost::uint32_t connection_id,
     boost::mutex::scoped_lock guard(recv_mutex_);
     it = incoming_sockets_.find(connection_id);
     if (it == incoming_sockets_.end()) {
+#ifdef DEBUG
+      printf("connection with id %d not found\n", connection_id);
+#endif
       return 1;
     }
   }
@@ -402,6 +405,8 @@ void Transport::ReceiveHandler() {
       if (UDT::send((*it).second.u, NULL, 0, 0) == 0) {
         UD_SET((*it).second.u, &readfds);
       } else {
+//        printf("%d -- dead connection found %d , removing it\n",
+//            listening_port_, (*it).first);
         dead_connections_ids.push_back((*it).first);
       }
     }
@@ -486,6 +491,7 @@ void Transport::ReceiveHandler() {
                 incoming_sockets_.erase(it);
               } else {
                 IncomingMessages msg(message, connection_id);
+//                printf("message for id %d arrived\n", connection_id);
                 {
                   boost::mutex::scoped_lock guard1(msg_hdl_mutex_);
                   incoming_msgs_queue_.push_back(msg);
@@ -606,6 +612,7 @@ void Transport::SendHandle() {
           it->data_sent += ssize;
         } else {
           // Finished sending data
+//          printf("%d -- message correctly sent\n", listening_port_);
           outgoing_queue_.erase(it);
           msgs_sent_++;
           break;
