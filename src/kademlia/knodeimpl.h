@@ -62,7 +62,7 @@ class ContactInfo;
 void SortContactList(std::list<Contact> *contact_list,
                      const std::string &target_key);
 
-inline void dummy_callback(const std::string& result) {}
+inline void dummy_callback(const std::string&) {}
 
 inline void dummy_downlist_callback(DownlistResponse *response) {
   delete response;

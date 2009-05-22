@@ -136,6 +136,7 @@ int ChannelManagerImpl::StopTransport() {
     return 0;
   }
   is_started = false;
+  ptimer_->CancelAll();
 #ifdef VERBOSE_DEBUG
   printf("\tIn ChannelManager::StopTransport() on port ");
   printf("%i, before ptransport_->Stop().\n", external_port_);
@@ -165,8 +166,8 @@ void ChannelManagerImpl::MessageArrive(const std::string &message,
       return;
     }
 #ifdef DEBUG
-    printf("%d --- request arrived for %s\n", external_port_,
-      decoded_msg.method().c_str());
+    printf("%d --- request arrived for %s -- %d\n", external_port_,
+      decoded_msg.method().c_str(), decoded_msg.message_id());
 #endif
     // If this is a special find node for boostrapping,
     // inject incoming address
@@ -193,9 +194,18 @@ void ChannelManagerImpl::MessageArrive(const std::string &message,
     channels_mutex_.lock();
     it = channels_.find(decoded_msg.service());
     if (it != channels_.end()) {
-      channels_mutex_.unlock();
+//      channels_mutex_.unlock();
+#ifdef DEBUG
+      printf("%i -- Calling HandleRequest for req -- %i\n",
+          external_port_, decoded_msg.message_id());
+#endif
       channels_[decoded_msg.service()]->HandleRequest(decoded_msg,
                                                       connection_id);
+      channels_mutex_.unlock();
+#ifdef DEBUG
+      printf("%i -- After Handling Request -- %i\n",
+          external_port_, decoded_msg.message_id());
+#endif
     } else {
 #ifdef VERBOSE_DEBUG
       printf("\tIn ChannelManager::MessageArrive(%i - %i), ",
@@ -205,6 +215,10 @@ void ChannelManagerImpl::MessageArrive(const std::string &message,
 #endif
     }
   } else if (decoded_msg.rpc_type() == RESPONSE) {
+#ifdef DEBUG
+    printf("%d --- response arrived for %s  -- %d\n", external_port_,
+      decoded_msg.method().c_str(), decoded_msg.message_id());
+#endif
     std::map<boost::uint32_t, PendingReq>::iterator it;
     req_mutex_.lock();
     it = pending_req_.find(decoded_msg.message_id());
@@ -216,7 +230,13 @@ void ChannelManagerImpl::MessageArrive(const std::string &message,
             pending_req_[decoded_msg.message_id()].callback;
         req_mutex_.unlock();
         DeleteRequest(decoded_msg.message_id());
+#ifdef DEBUG
+        printf("ChannelManager --- Executing Callback (done->Run ())\n");
+#endif
         done->Run();
+#ifdef DEBUG
+        printf("ChannelManager --- After executing Callback (done->Run ())\n");
+#endif
         ptransport_->CloseConnection(connection_id);
       } else {
         req_mutex_.unlock();

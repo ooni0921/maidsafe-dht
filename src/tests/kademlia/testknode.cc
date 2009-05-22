@@ -69,7 +69,6 @@ inline void create_req(const std::string &pub_key, const std::string &priv_key,
 class KNodeTest: public testing::Test {
  protected:
   KNodeTest() : kad_config_file("KnodeTest/.kadconfig"),
-                bootstrapping_nodes(),
 //                mutices_(),
                 channel_managers_(),
                 knodes_(),
@@ -81,7 +80,6 @@ class KNodeTest: public testing::Test {
   }
 
   virtual ~KNodeTest() {
-    bootstrapping_nodes.clear();
     UDT::cleanup();
   }
 
@@ -97,9 +95,6 @@ class KNodeTest: public testing::Test {
     fs::create_directories("KnodeTest");
     // setup the nodes without starting them
     for (int  i = 0; i < kNetworkSize; ++i) {
-//      boost::shared_ptr<boost::mutex> mutex_local_(new boost::mutex);
-//      mutices_.push_back(mutex_local_);
-
       boost::shared_ptr<rpcprotocol::ChannelManager>
           channel_manager_local_(new rpcprotocol::ChannelManager());
       channel_managers_.push_back(channel_manager_local_);
@@ -220,11 +215,13 @@ class KNodeTest: public testing::Test {
 #endif
     printf("In tear down.\n");
     for (int i = 0; i < kNetworkSize; i++) {
+      printf("stopping node %i\n", i);
       cb.Reset();
       knodes_[i]->Leave();
       EXPECT_FALSE(knodes_[i]->is_joined());
       channel_managers_[i]->StopTransport();
       knodes_[i].reset();
+      channel_managers_[i].reset();
     }
     try {
       if (fs::exists("KnodeTest"))
@@ -237,7 +234,6 @@ class KNodeTest: public testing::Test {
   }
 
   std::string kad_config_file;
-  std::vector<kad::Contact> bootstrapping_nodes;
 //  std::vector< boost::shared_ptr<boost::mutex> > mutices_;
   std::vector< boost::shared_ptr<rpcprotocol::ChannelManager> >
       channel_managers_;
@@ -727,7 +723,7 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
 TEST_F(KNodeTest, BEH_KAD_FindDeadNode) {
   // find an existing node that has gone down
   // select a random node from node 1 to node 19
-  int r_node = 1 + rand() % 19;
+  int r_node = rand() % 19;
   std::string r_node_id = knodes_[r_node]->node_id();
   knodes_[r_node]->Leave();
   ASSERT_FALSE(knodes_[r_node]->is_joined());

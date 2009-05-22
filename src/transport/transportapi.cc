@@ -339,17 +339,34 @@ int Transport::Send(const std::string &remote_ip,
 }
 
 void Transport::Stop() {
+  if (stop_)
+    return;
   stop_ = true;
   if (send_routine_.get()) {
     send_cond_.notify_one();
-    send_routine_->join();
+    if (!send_routine_->timed_join(boost::posix_time::seconds(5))) {
+      // forcing to interrupt the thread
+      send_routine_->interrupt();
+      send_routine_->join();
+    }
+    send_routine_.reset();
   }
   if (accept_routine_.get()) {
-    accept_routine_->join();
+    if (!accept_routine_->timed_join(boost::posix_time::seconds(5))) {
+      // forcing to interrupt the thread
+      accept_routine_->interrupt();
+      accept_routine_->join();
+    }
+    accept_routine_.reset();
   }
   if (recv_routine_.get()) {
     recv_cond_.notify_one();
-    recv_routine_->join();
+    if (!recv_routine_->timed_join(boost::posix_time::seconds(5))) {
+      // forcing to interrupt the thread
+      recv_routine_->interrupt();
+      recv_routine_->join();
+    }
+    recv_routine_.reset();
   }
   if (ping_rendz_routine_.get()) {
     {
@@ -359,11 +376,21 @@ void Transport::Stop() {
       }
       ping_rend_cond_.notify_one();
     }
-    ping_rendz_routine_->join();
+    if (!ping_rendz_routine_->timed_join(boost::posix_time::seconds(5))) {
+      // forcing to interrupt the thread
+      ping_rendz_routine_->interrupt();
+      ping_rendz_routine_->join();
+    }
+    ping_rendz_routine_.reset();
   }
   if (handle_msgs_routine_.get()) {
     msg_hdl_cond_.notify_one();
-    handle_msgs_routine_->join();
+    if (!handle_msgs_routine_->timed_join(boost::posix_time::seconds(5))) {
+      // forcing to interrupt the thread
+      handle_msgs_routine_->interrupt();
+      handle_msgs_routine_->join();
+    }
+    handle_msgs_routine_.reset();
   }
   UDT::close(listening_socket_);
   std::map<boost::uint32_t, IncomingData>::iterator it;
@@ -375,9 +402,11 @@ void Transport::Stop() {
   outgoing_queue_.clear();
   message_notifier_ = 0;
   freeaddrinfo(addrinfo_res_);
+#ifdef DEBUG
   printf("Accepted connections %i\n", accepted_connections_);
   printf("Msgs Sent %i \n", msgs_sent_);
   printf("Msgs Recv %i \n", last_id_);
+#endif
 }
 
 void Transport::ReceiveHandler() {
@@ -402,11 +431,14 @@ void Transport::ReceiveHandler() {
     UD_ZERO(&readfds);
     for (it = incoming_sockets_.begin(); it != incoming_sockets_.end();
         it++) {
-      if (UDT::send((*it).second.u, NULL, 0, 0) == 0) {
+      int res = UDT::send((*it).second.u, NULL, 0, 0);
+      //if (UDT::send((*it).second.u, NULL, 0, 0) == 0) {
+      if (res == 0) {
         UD_SET((*it).second.u, &readfds);
       } else {
-//        printf("%d -- dead connection found %d , removing it\n",
-//            listening_port_, (*it).first);
+//        printf("%d -- dead connection found %d --- %s \n res=%i, removing it\n",
+//            listening_port_, (*it).first,
+//            UDT::getlasterror().getErrorMessage(), res);
         dead_connections_ids.push_back((*it).first);
       }
     }
@@ -442,7 +474,6 @@ void Transport::ReceiveHandler() {
                 incoming_sockets_.erase(it);
                 break;
               }
-              printf("CUDTException::EASYNCRCV recv size\n");
               continue;
             }
             if (size > 0) {
@@ -451,7 +482,6 @@ void Transport::ReceiveHandler() {
               result = UDT::close((*it).second.u);
               (*it).second.data.reset();
               incoming_sockets_.erase(it);
-              printf("-------------------size == 0\n");
               break;
             }
           } else {
@@ -474,7 +504,6 @@ void Transport::ReceiveHandler() {
                 incoming_sockets_.erase(it);
                 break;
               }
-              printf("CUDTException::EASYNCRCV recv data\n");
               continue;
             }
             (*it).second.received_size += rsize;
@@ -491,7 +520,9 @@ void Transport::ReceiveHandler() {
                 incoming_sockets_.erase(it);
               } else {
                 IncomingMessages msg(message, connection_id);
-//                printf("message for id %d arrived\n", connection_id);
+#ifdef DEBUG
+                printf("message for id %d arrived\n", connection_id);
+#endif
                 {
                   boost::mutex::scoped_lock guard1(msg_hdl_mutex_);
                   incoming_msgs_queue_.push_back(msg);

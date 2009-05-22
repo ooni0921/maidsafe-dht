@@ -187,15 +187,9 @@ KNodeImpl::~KNodeImpl() {
     printf("\t\tIn KNode destructor(%i), outside mutex.\n", host_port_);
 #endif
 //    boost::mutex::scoped_lock guard(*mutex_[0]);
-#ifdef VERBOSE_DEBUG
-    printf("\t\tIn KNode destructor(%i), inside mutex.\n", host_port_);
-#endif
     UnRegisterKadService();
     is_joined_ = false;
     pdata_store_->Close();
-#ifdef VERBOSE_DEBUG
-    printf("\t\tIn KNode destructor(%i), unlock.\n", host_port_);
-#endif
   }
   if (upnp_started_ && upnp_mapped_port_ > 0) {
     UnMapUPnP();
@@ -444,7 +438,9 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
       UnRegisterKadService();
     }
     kadrpcs_.set_info(contact_info());
+#ifdef DEBUG
     printf("Bootstrap End no bs contacts\n");
+#endif
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
 #ifdef SHOW_MUTEX
@@ -821,49 +817,32 @@ void KNodeImpl::IterativeLookUp_CancelActiveProbe(
 void KNodeImpl::IterativeLookUp_ExtendShortList(
     const FindResponse *response,
     FindCallbackArgs callback_data) {
-#ifdef VERBOSE_DEBUG
-  printf("\t\tIn callback to KNode::IterativeLookUp_ExtendShortList(%i).\n",
-         host_port_);
-  printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), outside mutex.\n",
-         host_port_);
+#ifdef DEBUG
+  printf("Start -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
-  boost::mutex::scoped_lock guard(extendshortlist_mutex_);
-#ifdef VERBOSE_DEBUG
-  printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), inside mutex.\n",
-         host_port_);
-#endif
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 1.\n", host_port_);
+//  boost::mutex::scoped_lock guard(extendshortlist_mutex_);
   if (!is_joined_ && callback_data.data->method != BOOTSTRAP) {
       delete response;
-#ifdef VERBOSE_DEBUG
-      printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 1.\n",
-             host_port_);
+#ifdef DEBUG
+      printf("End 1 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
       return;
   }
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 2.\n", host_port_);
   bool is_valid = true;
   if (!response->IsInitialized() && callback_data.data->method != BOOTSTRAP) {
-//    printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 3.\n", host_port_);
     RemoveContact(callback_data.sender.node_id());
     is_valid = false;
     callback_data.data->dead_ids.push_back(callback_data.sender.node_id());
   }
 
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 4.\n", host_port_);
   if (is_valid) {
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 5.\n", host_port_);
     // Check id and retry if it was sent
     if (response->has_node_id() &&
         response->node_id() != callback_data.sender.node_id()) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i),6.\n", host_port_);
       if (callback_data.retry) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 7.\n", host_port_);
         delete response;
         FindResponse *resp = new FindResponse();
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 8.\n", host_port_);
         UpdatePDRTContactToRemote(callback_data.sender.node_id());
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 9.\n", host_port_);
         callback_data.retry = false;
       // send RPC to this contact's remote address because local failed
         google::protobuf::Closure *done = google::protobuf::NewCallback<
@@ -874,258 +853,184 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
                 callback_data);
         if (callback_data.data->method == FIND_NODE ||
             callback_data.data->method == BOOTSTRAP) {
-//          printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 10.\n", host_port_);
           if (callback_data.data->method == BOOTSTRAP) {
-//            printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 11.\n", host_port_);
             kad::Contact tmp_contact(node_id(), host_ip_, host_port_,
                                      local_host_ip_, local_host_port_,
                                      rv_ip_, rv_port_);
             std::string contact_str;
             tmp_contact.SerialiseToString(&contact_str);
             resp->set_requester_ext_addr(contact_str);
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 12.\n", host_port_);
           }
-//          printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 13.\n", host_port_);
           kadrpcs_.FindNode(callback_data.data->key,
                             callback_data.sender.host_ip(),
                             callback_data.sender.host_port(),
                             resp,
                             done,
                             false);
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 14.\n", host_port_);
         } else if (callback_data.data->method == FIND_VALUE) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 15.\n", host_port_);
           kadrpcs_.FindValue(callback_data.data->key,
                              callback_data.sender.host_ip(),
                              callback_data.sender.host_port(),
                              resp,
                              done,
                              false);
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 16.\n", host_port_);
         }
-#ifdef VERBOSE_DEBUG
-        printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 2.\n",
-               host_port_);
+#ifdef DEBUG
+        printf("End 2 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
         return;
       }
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 17.\n", host_port_);
     }
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 18.\n", host_port_);
   }
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 19.\n", host_port_);
 
   if ((!is_valid || response->result() == kRpcResultFailure) &&
       callback_data.data->method != BOOTSTRAP) {
-//    printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 20.\n", host_port_);
     // callback can only be called once
     if (callback_data.data->is_callbacked) {
-//      printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 21.\n", host_port_);
       if (callback_data.data->active_probes_after_callback > 0) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 22.\n", host_port_);
         --callback_data.data->active_probes_after_callback;
       } else {
         delete response;
-#ifdef VERBOSE_DEBUG
-        printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 3.\n",
-               host_port_);
+#ifdef DEBUG
+        printf("End 3 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
         return;
       }
       if (callback_data.data->active_probes_after_callback != 0) {
         delete response;
-#ifdef VERBOSE_DEBUG
-        printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 4.\n",
-               host_port_);
+#ifdef DEBUG
+        printf("End 4 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
         return;
       }
       if (callback_data.data->method != BOOTSTRAP) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 23.\n", host_port_);
         IterativeLookUp_SendDownlist(callback_data.data);
       }
       delete response;
-#ifdef VERBOSE_DEBUG
-      printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 5.\n",
-             host_port_);
+#ifdef DEBUG
+      printf("End 5 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
       return;
     }
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 24.\n", host_port_);
     std::list<Contact>::iterator it;
     for (it = callback_data.data->short_list.begin();
         it != callback_data.data->short_list.end(); ++it) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 25.\n", host_port_);
       if (callback_data.sender == *it) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 26.\n", host_port_);
         callback_data.data->short_list.erase(it);
         break;
       }
     }
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 27.\n", host_port_);
-    guard.unlock();
+//    guard.unlock();
     IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
     delete response;
-#ifdef VERBOSE_DEBUG
-    printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 6.\n",
-           host_port_);
+#ifdef DEBUG
+    printf("End 6 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
     return;
   }
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 28.\n", host_port_);
-  // add/update routing table
-
-//  std::string me, he;
-//  base::encode_to_hex(node_id_, me);
-//  base::encode_to_hex(callback_data.sender.node_id(), he);
-//  printf("\t\tJust before AddContact (line 436) - my id  = %s\n", me.c_str());
-//  printf("\t\tJust before AddContact (line 436) - his id = %s\n", he.c_str());
-//  printf("\t\tHe returned %i contacts\n.", response->closest_nodes_size());
 
   AddContact(callback_data.sender, false);
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 29.\n", host_port_);
-//  // if this is a special lookup for boostrapping, save information returned
-//  if (callback_data.data->method == BOOTSTRAP) {
-//    kad::Contact tmp_contact;
-//    if (tmp_contact.ParseFromString(response->requester_ext_addr())) {
-//      this->host_ip_ = tmp_contact.host_ip();
-//      this->host_port_ = tmp_contact.host_port();
-//    }
-// //    callback_data.data->method = FIND_NODE;
-//  }
-  // callback can only be called once
-  // if ((callback_data.data->is_callbacked)||
   if (!is_joined_ && callback_data.data->method != BOOTSTRAP) {
     delete response;
-#ifdef VERBOSE_DEBUG
-    printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 7.\n",
-           host_port_);
+#ifdef DEBUG
+    printf("End 7 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
     return;
   }
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 30.\n", host_port_);
 
   if (callback_data.data->is_callbacked) {
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 31.\n", host_port_);
     if (callback_data.data->active_probes_after_callback > 0) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 32.\n", host_port_);
       --callback_data.data->active_probes_after_callback;
     } else {
       delete response;
-#ifdef VERBOSE_DEBUG
-      printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 8.\n",
-             host_port_);
+#ifdef DEBUG
+      printf("End 8 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
       return;
     }
     if (callback_data.data->active_probes_after_callback != 0) {
       delete response;
-#ifdef VERBOSE_DEBUG
-      printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 9.\n",
-             host_port_);
+#ifdef DEBUG
+      printf("End 9 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
       return;
     }
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 33.\n", host_port_);
     if (callback_data.data->method != BOOTSTRAP) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 34.\n", host_port_);
       IterativeLookUp_SendDownlist(callback_data.data);
     }
     delete response;
-#ifdef VERBOSE_DEBUG
-    printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 10.\n",
-           host_port_);
+#ifdef DEBUG
+    printf("End 10 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
     return;
   }
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 35.\n", host_port_);
 
   // Make sure the responding node is valid, and abort the operation if it isn't
   if (callback_data.sender.node_id() == node_id_) {
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 36.\n", host_port_);
-    guard.unlock();
+//    guard.unlock();
     IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
     delete response;
-#ifdef VERBOSE_DEBUG
-    printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 11.\n",
-           host_port_);
+#ifdef DEBUG
+    printf("End 11 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
     return;
   }
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 37.\n", host_port_);
   std::list<Contact>::iterator it;
   for (it = callback_data.data->active_contacts.begin();
        it != callback_data.data->active_contacts.end(); ++it) {
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 38.\n", host_port_);
     if (*it == callback_data.sender) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 39.\n", host_port_);
-      guard.unlock();
+//      guard.unlock();
       IterativeLookUp_CancelActiveProbe(callback_data.sender,
                                         callback_data.data);
       delete response;
-#ifdef VERBOSE_DEBUG
-      printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 12.\n",
-             host_port_);
+#ifdef DEBUG
+      printf("End 12 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
 #endif
       return;
     }
   }
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 40.\n", host_port_);
   // Mark this node as active
   callback_data.data->active_contacts.push_back(callback_data.sender);
   // extend the value list if there are any new values found
   std::list<std::string>::iterator it1;
   bool is_new;
   for (int i = 0; i < response->values_size(); ++i) {
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 41.\n", host_port_);
     is_new = true;
     for (it1 = callback_data.data->find_value_result.begin();
          it1 != callback_data.data->find_value_result.end(); ++it1) {
       if (*it1 == response->values(i)) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 42.\n", host_port_);
         is_new = false;
         break;
       }
     }
     if (is_new) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 43.\n", host_port_);
       callback_data.data->find_value_result.push_back(response->values(i));
     }
   }
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 44.\n", host_port_);
   // Now extend short list with the returned contacts
   std::list<Contact>::iterator it2;
   for (int i = 0; i < response->closest_nodes_size(); ++i) {
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 45.\n", host_port_);
     Contact test_contact;
     if (!test_contact.ParseFromString(response->closest_nodes(i))) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 46.\n", host_port_);
       continue;
     }
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 47.\n", host_port_);
     AddContact(test_contact, false);
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 48.\n", host_port_);
     is_new = true;
     for (it2 = callback_data.data->short_list.begin();
          it2 != callback_data.data->short_list.end(); ++it2) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 49.\n", host_port_);
       if (test_contact == *it2) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 50.\n", host_port_);
         is_new = false;
         break;
       }
     }
     if (is_new) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 51.\n", host_port_);
       // add to the front
       Contact self_node(node_id_, host_ip_, host_port_, local_host_ip_,
                         local_host_port_);
       if (test_contact != self_node) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 52.\n", host_port_);
         callback_data.data->short_list.push_front(test_contact);
       }
     }
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 53.\n", host_port_);
     // Implementation of downlist algorithm
     // Add to the downlist as a candidate with the is_down flag set to false
     // by default
@@ -1134,20 +1039,15 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
     candidate.is_down = false;
     bool is_appended = false;
     std::list<struct DownListData>::iterator it5;
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 54.\n", host_port_);
     for (it5 = callback_data.data->downlist.begin();
          it5 != callback_data.data->downlist.end(); ++it5) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 55.\n", host_port_);
       if (it5->giver == callback_data.sender) {
-        // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 56.\n", host_port_);
         it5->candidate_list.push_back(candidate);
         is_appended = true;
         break;
       }
     }
-    // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 57.\n", host_port_);
     if (!is_appended) {
-      // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 58.\n", host_port_);
       struct DownListData downlist_data;
       downlist_data.giver = callback_data.sender;
       downlist_data.candidate_list.push_back(candidate);
@@ -1155,14 +1055,12 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
     }
     // End of implementation downlist algorithm
   }
-#ifdef VERBOSE_DEBUG
-  printf("\t\tIn KNode::IterativeLookUp_ExtendShortList(%i), unlock 13.\n",
-         host_port_);
-#endif
-  guard.unlock();
+//  guard.unlock();
   IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
   delete response;
-  // printf("\t\tIn KNode::ItLookUp_ExtendSList(%i), 59.\n", host_port_);
+#ifdef DEBUG
+  printf("End 13 -- KNodeImpl::IterativeLookUp_ExtendShortList\n");
+#endif
 }
 
 void KNodeImpl::IterativeLookUp_Callback(
@@ -1284,7 +1182,13 @@ void KNodeImpl::IterativeLookUp_SendDownlist(
 void KNodeImpl::IterativeLookUp_SearchIteration(
     boost::shared_ptr<IterativeLookUpData> data) {
   // callback can only be called once
+#ifdef DEBUG
+  printf("Start -- KNodeImpl::IterativeLookUp_SearchIteration\n");
+#endif
   if ((data->is_callbacked)||(!is_joined_ && data->method != BOOTSTRAP)) {
+#ifdef DEBUG
+    printf("End 1 -- KNodeImpl::IterativeLookUp_SearchIteration\n");
+#endif
     return;
   }
   // sort the active contacts
@@ -1315,14 +1219,26 @@ void KNodeImpl::IterativeLookUp_SearchIteration(
         (data->pre_closest_node == data->active_contacts.front())) {
       // (static_cast<int>(data->active_probes.size()) == 0)
       // IterativeLookUp is done, prepare the result and call back
+#ifdef DEBUG
+      printf("End 2 -KNodeImpl::IterativeLookUp_SearchIteration CallingBack\n");
+#endif
       IterativeLookUp_Callback(data);
+#ifdef DEBUG
+      printf("End 2 -- KNodeImpl::IterativeLookUp_SearchIteration\n");
+#endif
       return;
     }
     data->pre_closest_node = data->active_contacts.front();
   }
   // already found a value, stop iteration
   if ((data->method == FIND_VALUE) && (data->find_value_result.size() > 0)) {
+#ifdef DEBUG
+    printf("End 3 -KNodeImpl::IterativeLookUp_SearchIteration CallingBack\n");
+#endif
     IterativeLookUp_Callback(data);
+#ifdef DEBUG
+    printf("End 3 -- KNodeImpl::IterativeLookUp_SearchIteration\n");
+#endif
     return;
   }
   // The search continues...
@@ -1397,6 +1313,9 @@ void KNodeImpl::IterativeLookUp_SearchIteration(
   if (data->active_probes.size() == 0) {
     // No active probes were sent, there will be no any improvement, so we're
     // done.
+#ifdef DEBUG
+    printf("KNodeImpl::IterativeLookUp_SearchIteration CallingBack\n");
+#endif
     IterativeLookUp_Callback(data);
   } else if ((static_cast<int>(data->short_list.size()) < K_)&&
       (data->active_contacts.size() < data->short_list.size())) {
@@ -1407,6 +1326,9 @@ void KNodeImpl::IterativeLookUp_SearchIteration(
     // ptimer_->AddCallLater(kIterativeLookupDelay,
     //    boost::bind(&KNodeImpl::IterativeLookUp_SearchIteration, this, data));
   }
+#ifdef DEBUG
+  printf("End 4 -KNodeImpl::IterativeLookUp_SearchIteration CallingBack\n");
+#endif
 }
 
 void KNodeImpl::IterativeLookUp(

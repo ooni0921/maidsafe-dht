@@ -127,9 +127,9 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     ctrl->set_timeout(1);
   }
 #ifdef DEBUG
-  printf("%i --- Sending rpc %s to %s:%d conn_id= %d\n",
+  printf("%i --- Sending rpc %s to %s:%d conn_id= %d -- rpc_id=%d\n",
     pmanager_->external_port(), msg.method().c_str(), ip_.c_str(), port_,
-    conn_id);
+    conn_id, msg.message_id());
 #endif
   req.connection_id = conn_id;
   pmanager_->AddPendingRequest(msg.message_id(), req);
@@ -213,7 +213,9 @@ void ChannelImpl::SendResponse(const google::protobuf::Message *response,
     printf("Failed to send response to connection %d.\n", info.connection_id);
 #endif
   }
-  // printf("response to req %d sent\n", info.rpc_id);
+#ifdef DEBUG
+  printf("response to req %d sent\n", info.rpc_id);
+#endif
   delete response;
   delete info.ctrl;
 }

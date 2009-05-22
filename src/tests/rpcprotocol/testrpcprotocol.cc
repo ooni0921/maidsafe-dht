@@ -122,12 +122,15 @@ class ResultHolder {
     mirror_res.set_mirrored_string("-");
   }
   void GetPingRes(const tests::PingResponse *response) {
+    printf("printf received result -- waiting for 1 second\n");
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
     if (response->IsInitialized()) {
       ping_res.set_result(response->result());
       ping_res.set_pong(response->pong());
     } else {
       ping_res.set_result("F");
     }
+    printf("finished callback func\n");
   }
   void GetOpResult(const tests::BinaryOpResponse *response) {
     if (response->IsInitialized()) {
