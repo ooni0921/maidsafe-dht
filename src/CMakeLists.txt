@@ -124,17 +124,19 @@ IF (APPLE)
 	SET(SYS_LIB protobuf cryptopp sqlite3 boost_system-xgcc40-mt-1_37 boost_filesystem-xgcc40-mt-1_37 boost_regex-xgcc40-mt-1_37 boost_thread-xgcc40-mt-1_37 boost_date_time-xgcc40-mt-1_37)
 ELSEIF (UNIX AND NOT APPLE)
 	SET(SYS_LIB
-		/usr/lib/libboost_thread-gcc43-mt.a
-		sqlite3
-		/usr/lib/libprotobuf.a
-		/usr/lib/libboost_system-gcc43-mt.a
-		/usr/lib/libboost_filesystem-gcc43-mt.a
-		/usr/lib/libcryptopp.a
-		/usr/lib/libboost_regex-gcc43-mt.a
-		/usr/lib/libboost_date_time-gcc43-mt.a
-		-lrt
-		-lc
-		-pthread -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lglib-2.0 -lSM  -ldl -lm
+        /usr/lib/libboost_thread-gcc43-mt.a
+        /usr/lib/libsqlite3.a
+        /usr/lib/libprotobuf.a
+        /usr/lib/libboost_system-gcc43-mt.a
+        /usr/lib/libboost_filesystem-gcc43-mt.a
+        /usr/lib/libcryptopp.a
+        /usr/lib/libboost_regex-gcc43-mt.a
+        /usr/lib/libboost_date_time-gcc43-mt.a
+        rt
+        /usr/lib/libc.a
+        /usr/lib/libm.a
+        dl
+        pthread
 		)
 ELSEIF (WIN32)
 	IF(MSVC)
