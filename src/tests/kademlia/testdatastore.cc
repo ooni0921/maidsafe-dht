@@ -57,6 +57,7 @@ class DataStoreTest: public testing::Test {
     try {
       boost::filesystem::remove(boost::filesystem::path("testdatastore.db"));
     } catch(std::exception &) {
+      printf("Couldn't remove database\n");
     }
   }
   kad::DataStore *test_ds;
@@ -345,10 +346,3 @@ TEST_F(DataStoreTest, FUNC_KAD_StoreMultipleValues) {
   }
   ASSERT_EQ(2, i);
 }
-/*
-int main(int argc, char **argv){
-  testing::InitGoogleTest(&argc, argv);
-  RUN_ALL_TESTS();
-  return 0;
-}
-*/

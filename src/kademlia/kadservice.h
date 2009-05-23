@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef KADEMLIA_KADSERVICE_H_
 #define KADEMLIA_KADSERVICE_H_
 #include <string>
+#include <vector>
 #include <memory>
 #include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/kademlia_service.pb.h"

@@ -37,7 +37,6 @@ DataStore::DataStore():db_(), is_open_(false) {
 }
 
 DataStore::~DataStore() {
-//  printf("In DataStore destructor.\n");
   if (is_open_)
     Close();
 }
@@ -60,15 +59,14 @@ bool DataStore::Init(const std::string &file_name,
       db_.open(file_name.c_str());
       if (!reuse_database) {
         // remove all data but status
+        CppSQLite3Statement stmt;
         try {
-//          db_.execDML("begin transaction;");
           std::string key1("status");
           std::string key2("node_id");
           CppSQLite3Binary blob_key1;
           blob_key1.setBinary((const unsigned char*)key1.c_str(), key1.size());
           CppSQLite3Binary blob_key2;
           blob_key2.setBinary((const unsigned char*)key2.c_str(), key2.size());
-          CppSQLite3Statement stmt;
           stmt = db_.compileStatement(
               "delete from data where key not in (?, ?);");
           stmt.bind(1, (const char*)blob_key1.getEncoded());
@@ -76,12 +74,12 @@ bool DataStore::Init(const std::string &file_name,
           stmt.execDML();
           stmt.reset();
           stmt.finalize();
-//          db_.execDML("commit transaction;");
         } catch(CppSQLite3Exception& e) {  // NOLINT
+          stmt.reset();
+          stmt.finalize();
       #ifdef DEBUG
           printf("%d : %s",  e.errorCode(), e.errorMessage());
       #endif
-//          db_.execDML("rollback transaction;");
         }  // try statement
       }  // reuse database
     }
@@ -108,11 +106,13 @@ bool DataStore::Close() {
   is_open_ = false;
   return result;
 }
+
 bool DataStore::Keys(std::vector<std::string> *keys) {
   keys->clear();
+  CppSQLite3Query qcpp;
   try {
     std::string s = "select distinct key from data;";
-    CppSQLite3Query qcpp = db_.execQuery(s.c_str());
+    qcpp = db_.execQuery(s.c_str());
     while (!qcpp.eof()) {
       CppSQLite3Binary blob_key;
       try {
@@ -129,7 +129,9 @@ bool DataStore::Keys(std::vector<std::string> *keys) {
       }
       qcpp.nextRow();
     }
+    qcpp.finalize();
   } catch(CppSQLite3Exception& e) {  // NOLINT
+    qcpp.finalize();
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
@@ -141,6 +143,8 @@ bool DataStore::Keys(std::vector<std::string> *keys) {
 inline bool DataStore::KeyValueExists(const std::string &key,
     const std::string &value) {
   bool result = false;
+  CppSQLite3Statement stmt;
+  CppSQLite3Query qcpp;
   try {
     CppSQLite3Binary blob_key;
     blob_key.setBinary((const unsigned char*)key.c_str(),
@@ -148,18 +152,49 @@ inline bool DataStore::KeyValueExists(const std::string &key,
     CppSQLite3Binary blob_value;
     blob_value.setBinary((const unsigned char*)value.c_str(),
         value.size());
-    CppSQLite3Statement stmt = db_.compileStatement(\
+    CppSQLite3Statement stmt = db_.compileStatement(
         "select count(*) from data where key=? and value=?;");
     stmt.bind(1, (const char*)blob_key.getEncoded());
     stmt.bind(2, (const char*)blob_value.getEncoded());
-    CppSQLite3Query qcpp = stmt.execQuery();
+    qcpp = stmt.execQuery();
     if (1 <= qcpp.getIntField(0))
+      result = true;
+    qcpp.finalize();
+    stmt.reset();
+    stmt.finalize();
+  } catch(CppSQLite3Exception& e) {  // NOLINT
+    qcpp.finalize();
+    stmt.reset();
+    stmt.finalize();
+#ifdef DEBUG
+      printf("%d : %s", e.errorCode(), e.errorMessage());
+#endif
+  }
+  return result;
+}
+
+inline bool DataStore::KeyExists(const std::string &key) {
+  bool result = false;
+  CppSQLite3Statement stmt;
+  CppSQLite3Query qcpp;
+  try {
+    CppSQLite3Binary blob_key;
+    blob_key.setBinary((const unsigned char*)key.c_str(),
+        key.size());
+    stmt = db_.compileStatement(
+        "select * from data where key=?;");
+    stmt.bind(1, (const char*)blob_key.getEncoded());
+    qcpp = stmt.execQuery();
+    if (!qcpp.eof())
       result = true;
   } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
       printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
   }
+  qcpp.finalize();
+  stmt.reset();
+  stmt.finalize();
   return result;
 }
 
@@ -177,10 +212,11 @@ bool DataStore::StoreItem(const std::string &key,
 //  std::cin >> s;
 #endif
   // verify key&value
-  if ((key.size() == 0)||(value.size() == 0)||(last_published_time <= 0)
-      ||(last_published_time <= 0)) {
+  if ((key.size() == 0) || (value.size() == 0) || (last_published_time <= 0)
+      || (last_published_time <= 0)) {
     return false;
   }
+  CppSQLite3Statement stmt;
   try {
     CppSQLite3Binary blob_key;
     blob_key.setBinary((const unsigned char*)key.c_str(),
@@ -188,8 +224,6 @@ bool DataStore::StoreItem(const std::string &key,
     CppSQLite3Binary blob_value;
     blob_value.setBinary((const unsigned char*)value.c_str(),
         value.size());
-//    db_.execDML("begin transaction;");
-    CppSQLite3Statement stmt;
     if (KeyValueExists(key, value)) {  // update last published time
       stmt = db_.compileStatement(
           "update data set last_published_time=? where key=? and value=?;");
@@ -207,14 +241,12 @@ bool DataStore::StoreItem(const std::string &key,
     stmt.execDML();
     stmt.reset();
     stmt.finalize();
-//    db_.execDML("commit transaction;");
   } catch(CppSQLite3Exception& e) {  // NOLINT
+    stmt.reset();
+    stmt.finalize();
 #ifdef DEBUG
-      printf("%d : %s", e.errorCode(), e.errorMessage());
+    printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
-//      TRI_LOG_STR("DataStore.StoreItem: " << e.errorCode() << ", "
-//          << e.errorMessage());
-//      db_.execDML("rollback transaction;");
       return false;
   }
   return true;
@@ -223,14 +255,14 @@ bool DataStore::StoreItem(const std::string &key,
 bool DataStore::LoadItem(const std::string &key,
     std::vector<std::string> &values) {
   values.clear();
+  CppSQLite3Statement stmt;
+  CppSQLite3Query qcpp;
   try {
     CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(),
-        key.size());
-    CppSQLite3Statement stmt;
+    blob_key.setBinary((const unsigned char*)key.c_str(), key.size());
     stmt = db_.compileStatement("select value from data where key=?;");
     stmt.bind(1, (const char*)blob_key.getEncoded());
-    CppSQLite3Query qcpp = stmt.execQuery();
+    qcpp = stmt.execQuery();
     while (!qcpp.eof()) {
       try {
         CppSQLite3Binary blob_value;
@@ -244,39 +276,39 @@ bool DataStore::LoadItem(const std::string &key,
       }
       qcpp.nextRow();
     }
+    qcpp.finalize();
+    stmt.reset();
+    stmt.finalize();
   } catch(CppSQLite3Exception& e) {  // NOLINT
+    qcpp.finalize();
+    stmt.reset();
+    stmt.finalize();
 #ifdef DEBUG
-      printf("%d : %s", e.errorCode(), e.errorMessage());
+    printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
-//      TRI_LOG_STR("DataStore.LoadItem: " << e.errorCode() << ", "
-//          << e.errorMessage());
       return false;
   }
   return true;
 }
 
 bool DataStore::DeleteKey(const std::string &key) {
+  if (!KeyExists(key))
+    return false;
+  CppSQLite3Statement stmt;
   try {
     CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(),
-        key.size());
-//    db_.execDML("begin transaction;");
-    CppSQLite3Statement stmt;
-    stmt = db_.compileStatement(
-        "delete from data where key=?;");
+    blob_key.setBinary((const unsigned char*)key.c_str(), key.size());
+    stmt = db_.compileStatement("delete from data where key=?;");
     stmt.bind(1, (const char*)blob_key.getEncoded());
     stmt.execDML();
     stmt.reset();
     stmt.finalize();
-//    if (db_.execDML("commit transaction;") == 0)
-//      return false;
   } catch(CppSQLite3Exception& e) {  // NOLINT
+    stmt.reset();
+    stmt.finalize();
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
-//    TRI_LOG_STR("DataStore.DeleteKey: " << e.errorCode() << ", "
-//        << e.errorMessage());
-//    db_.execDML("rollback transaction;");
     return false;
   }
   return true;
@@ -284,6 +316,7 @@ bool DataStore::DeleteKey(const std::string &key) {
 
 bool DataStore::DeleteItem(const std::string &key,
     const std::string &value) {
+  bool result = false;
   try {
     CppSQLite3Binary blob_key;
     blob_key.setBinary((const unsigned char*)key.c_str(),
@@ -291,76 +324,65 @@ bool DataStore::DeleteItem(const std::string &key,
     CppSQLite3Binary blob_value;
     blob_value.setBinary((const unsigned char*)value.c_str(),
         value.size());
-//    db_.execDML("begin transaction;");
     CppSQLite3Statement stmt;
     stmt = db_.compileStatement(
         "delete from data where key=? and value=?;");
     stmt.bind(1, (const char*)blob_key.getEncoded());
     stmt.bind(2, (const char*)blob_value.getEncoded());
-    stmt.execDML();
+    int n = stmt.execDML();
+    if (n > 0)
+      result = true;
     stmt.reset();
     stmt.finalize();
-//    if (db_.execDML("commit transaction;") == 0)
-//      return false;
   } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
-//    TRI_LOG_STR("DataStore.DeleteItem: " << e.errorCode() << ", "
-//        << e.errorMessage());
-//    db_.execDML("rollback transaction;");
-    return false;
+    return result;
   }
-  return true;
+  return result;
 }
 
 bool DataStore::DeleteValue(const std::string &value) {
+  bool result = false;
   try {
     CppSQLite3Binary blob_value;
     blob_value.setBinary((const unsigned char*)value.c_str(),
         value.size());
-//    db_.execDML("begin transaction;");
     CppSQLite3Statement stmt;
     stmt = db_.compileStatement(\
         "delete from data where value=?;");
     stmt.bind(1, (const char*)blob_value.getEncoded());
-    stmt.execDML();
+    int n = stmt.execDML();
+    if (n > 0)
+      result = true;
     stmt.reset();
     stmt.finalize();
-//    if (db_.execDML("commit transaction;") == 0)
-//      return false;
   } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
-//    TRI_LOG_STR("DataStore.DeleteValue: " << e.errorCode() << ", "
-//        << e.errorMessage());
-//    db_.execDML("rollback transaction;");
-    return false;
+    return result;
   }
-  return true;
+  return result;
 }
 
 boost::uint32_t DataStore::DeleteExpiredValues() {
+  CppSQLite3Statement stmt;
   try {
-//    db_.execDML("begin transaction;");
     boost::uint32_t now = base::get_epoch_time();
-    CppSQLite3Statement stmt;
-    stmt = db_.compileStatement(\
-        "delete from data where last_published_time < ?;");
+    stmt =
+      db_.compileStatement("delete from data where last_published_time < ?;");
     stmt.bind(1, static_cast<boost::int32_t>(now -kExpireTime));
     stmt.execDML();
     stmt.reset();
     stmt.finalize();
-//    if (db_.execDML("commit transaction;") == 0)
-//      return false;
   } catch(CppSQLite3Exception& e) {  // NOLINT
+    stmt.reset();
+    stmt.finalize();
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
-//    TRI_LOG_STR("DataStore.DeleteExpiredValues: " << e.errorCode() << ", "
-//        << e.errorMessage());
-//    db_.execDML("rollback transaction;");
     return false;
   }
   return true;
@@ -368,57 +390,58 @@ boost::uint32_t DataStore::DeleteExpiredValues() {
 
 boost::uint32_t DataStore::LastPublishedTime(const std::string &key,
     const std::string &value) {
+  boost::uint32_t result = -1;
+  CppSQLite3Statement stmt;
+  CppSQLite3Query qcpp;
   try {
     CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(),
-        key.size());
+    blob_key.setBinary((const unsigned char*)key.c_str(), key.size());
     CppSQLite3Binary blob_value;
-    blob_value.setBinary((const unsigned char*)value.c_str(),
-        value.size());
-    CppSQLite3Statement stmt = db_.compileStatement(
+    blob_value.setBinary((const unsigned char*)value.c_str(), value.size());
+    stmt = db_.compileStatement(
         "select last_published_time from data where key=? and value=?;");
     stmt.bind(1, (const char*)blob_key.getEncoded());
     stmt.bind(2, (const char*)blob_value.getEncoded());
-    CppSQLite3Query qcpp = stmt.execQuery();
-    if (qcpp.eof())
-      return -1;
-    else
-      return static_cast<boost::uint32_t>(qcpp.getIntField(0));
+    qcpp = stmt.execQuery();
+    if (!qcpp.eof())
+      result = static_cast<boost::uint32_t>(qcpp.getIntField(0));
   } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
-//    TRI_LOG_STR("DataStore.LastPublishedTime: " << e.errorCode() << ", "
-//        << e.errorMessage());
   }
-  return -1;
+  qcpp.finalize();
+  stmt.reset();
+  stmt.finalize();
+  return result;
 }
 
 boost::uint32_t DataStore::OriginalPublishedTime(const std::string &key,
     const std::string &value) {
+  boost::uint32_t result = -1;
+  CppSQLite3Statement stmt;
+  CppSQLite3Query qcpp;
   try {
     CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(),
-        key.size());
+    blob_key.setBinary((const unsigned char*)key.c_str(), key.size());
     CppSQLite3Binary blob_value;
-    blob_value.setBinary((const unsigned char*)value.c_str(),
-        value.size());
-    CppSQLite3Statement stmt = db_.compileStatement(\
+    blob_value.setBinary((const unsigned char*)value.c_str(), value.size());
+    stmt = db_.compileStatement(
         "select original_published_time from data where key=? and value=?;");
     stmt.bind(1, (const char*)blob_key.getEncoded());
     stmt.bind(2, (const char*)blob_value.getEncoded());
-    CppSQLite3Query qcpp = stmt.execQuery();
-    if (qcpp.eof())
-      return -1;
-    else
-      return static_cast<boost::uint32_t>(qcpp.getIntField(0));
+    qcpp = stmt.execQuery();
+    if (!qcpp.eof())
+      result = static_cast<boost::uint32_t>(qcpp.getIntField(0));
   } catch(CppSQLite3Exception& e) {  // NOLINT
 #ifdef DEBUG
     printf("%d : %s", e.errorCode(), e.errorMessage());
 #endif
-//    TRI_LOG_STR("DataStore.OriginalPublishedTime: " << e.errorCode() << ", "
-//        << e.errorMessage());
   }
-  return -1;
+  qcpp.finalize();
+  stmt.reset();
+  stmt.finalize();
+  return result;
 }
+
 }  // namespace kad

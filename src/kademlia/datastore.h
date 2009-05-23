@@ -76,6 +76,7 @@ class DataStore {
   CppSQLite3DB db_;
   bool is_open_;
   inline bool KeyValueExists(const std::string &key, const std::string &value);
+  inline bool KeyExists(const std::string &key);
 };
 }  // namespace kad
 #endif  // KADEMLIA_DATASTORE_H_

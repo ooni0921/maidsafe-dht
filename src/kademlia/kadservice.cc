@@ -59,7 +59,7 @@ void KadService::Bootstrap_NatDetectionRv(
       knode_->AddContact(sender, false);
     }
     data.done->Run();
-  } else if(response->IsInitialized()){
+  } else if (response->IsInitialized()) {
     // Node B replies to node A with a flag stating no communication} - END
     // (later we can do tunneling for clients if needed)
     data.response->set_nat_type(3);
@@ -101,7 +101,7 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
 //    printf("%d -- Bootstrap_NatDetection -- returning Bootstrap response\n",
 //      knode_->host_port());
     data.done->Run();
-  } else if (response->IsInitialized()){
+  } else if (response->IsInitialized()) {
     // Node B asks C to try a rendezvous to A with B as rendezvous
     // printf("node A is not directly connected, ");
     // printf("sending B request to ping via rend\n");
@@ -187,7 +187,10 @@ void KadService::FindNode(google::protobuf::RpcController *,
     knode_->AddContact(sender, false);
   }
   response->set_node_id(knode_->node_id());
-//  printf("%d --- KadService::FindNode Returning response\n", knode_->host_port());
+#ifdef DEBUG
+  printf("%d --- KadService::FindNode Returning response\n",
+    knode_->host_port());
+#endif
   done->Run();
 }
 
