@@ -402,7 +402,7 @@ TEST_F(TransportTest, BEH_TRANS_TimeoutForSendingToAWrongPeer) {
 }
 
 TEST_F(TransportTest, BEH_TRANS_Send100Files) {
-  const int kNumNodes = 11;
+  const int kNumNodes = 6;
   const int kRepeatSend = 10;  // No. of times to repeat the send message.
   ASSERT_LT(2, kNumNodes);  // ensure enough nodes for test
   EXPECT_LT(1, kRepeatSend);  // ensure enough repeats to make test worthwhile
