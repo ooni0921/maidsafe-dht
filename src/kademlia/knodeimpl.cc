@@ -325,16 +325,16 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
         host_port_ = local_host_port_;
       rv_ip_ = "";
       rv_port_ = 0;
-      pchannel_manager_->ptransport()->StartPingRendezvous(true, "", 0);
+//      pchannel_manager_->ptransport()->StartPingRendezvous(true, "", 0);
     } else if (result_msg.nat_type() == 1) {
       // Direct connection
 #ifdef DEBUG
       printf("type of NAT = 1\n");
 #endif
-      pchannel_manager_->ptransport()->StartPingRendezvous(
-                                           directlyconnected,
-                                           bootstrap_node.host_ip(),
-                                           bootstrap_node.host_port());
+//      pchannel_manager_->ptransport()->StartPingRendezvous(
+//                                           directlyconnected,
+//                                           bootstrap_node.host_ip(),
+//                                           bootstrap_node.host_port());
       rv_ip_ = "";
       rv_port_ = 0;
     } else if (result_msg.nat_type() == 2) {
@@ -344,8 +344,8 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
 #endif
       rv_ip_ = bootstrap_node.host_ip();
       rv_port_ = bootstrap_node.host_port();
-      pchannel_manager_->ptransport()->StartPingRendezvous(directlyconnected,
-                                                           rv_ip_, rv_port_);
+//      pchannel_manager_->ptransport()->StartPingRendezvous(directlyconnected,
+//                                                           rv_ip_, rv_port_);
     } else if (result_msg.nat_type() == 3) {
       // behind symmetric router or no connection
 #ifdef DEBUG
@@ -357,7 +357,7 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
         // It is now directly connected
         rv_ip_ = "";
         rv_port_ = 0;
-        pchannel_manager_->ptransport()->StartPingRendezvous(true, "", 0);
+//        pchannel_manager_->ptransport()->StartPingRendezvous(true, "", 0);
       } else {
         base::GeneralResponse local_result;
         local_result.set_result(kRpcResultFailure);
@@ -369,6 +369,15 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
         return;
       }
     }
+
+//    std::string hex_bs_ip;
+//    base::encode_to_hex(bootstrap_node.host_ip(), hex_bs_ip);
+    pchannel_manager_->ptransport()->StartPingRendezvous(
+                                         false,
+                                         bootstrap_node.host_ip(),
+//                                         hex_bs_ip,
+                                         bootstrap_node.host_port());
+
     kadrpcs_.set_info(contact_info());
     args->is_callbacked = true;
     std::vector<Contact> start_up_short_list;

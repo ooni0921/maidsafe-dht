@@ -149,6 +149,10 @@ int ChannelManagerImpl::StopTransport() {
   return 1;
 }
 
+void ChannelManagerImpl::CleanUpTransport() {
+  UDT::cleanup();
+}
+
 void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
     const boost::uint32_t &connection_id) {
   RpcMessage decoded_msg = msg;

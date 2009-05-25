@@ -214,7 +214,7 @@ class KNodeTest: public testing::Test {
     SetConsoleTextAttribute(hconsole, 7 | 0 << 4);
 #endif
     printf("In tear down.\n");
-    for (int i = 0; i < kNetworkSize; i++) {
+    for (int i = kNetworkSize-1; i >= 0; i--) {
       printf("stopping node %i\n", i);
       cb.Reset();
       knodes_[i]->Leave();

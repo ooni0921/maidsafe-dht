@@ -761,6 +761,11 @@ void Transport::PingHandle() {
       if (directly_connected_) return;
     }
     UDTSOCKET skt;
+#ifdef DEBUG
+    printf("Transport::PingHandle(): rv_ip(%s) -- rv_port(%i)\n",
+      my_rendezvous_ip_.c_str(), my_rendezvous_port_);
+#endif
+
     if (Connect(&skt, my_rendezvous_ip_, my_rendezvous_port_, false)) {
       UDT::close(skt);
       bool dead_rendezvous_server = false;
