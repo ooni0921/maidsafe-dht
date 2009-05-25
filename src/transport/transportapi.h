@@ -56,15 +56,15 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 #include <string>
 #include <vector>
 #include "udt/udt.h"
-#include "protobuf/hole_puching_messages.pb.h"
+#include "protobuf/transport_message.pb.h"
 
 namespace transport {
 
 struct IncomingMessages {
-  IncomingMessages(const std::string &message, const boost::uint32_t &id)
-    : msg(message), conn_id(id) {}
+  IncomingMessages(const boost::uint32_t &id)
+    : msg(), conn_id(id) {}
   IncomingMessages() : msg(), conn_id() {}
-  std::string msg;
+  rpcprotocol::RpcMessage msg;
   boost::uint32_t conn_id;
 };
 
@@ -93,6 +93,15 @@ class Transport {
            uint16_t remote_port,
            const std::string &rendezvous_ip,
            uint16_t rendezvous_port,
+           const rpcprotocol::RpcMessage &data,
+           boost::uint32_t *conn_id,
+           bool keep_connection);
+  int Send(boost::uint32_t connection_id,
+           const rpcprotocol::RpcMessage &data);
+  int Send(const std::string &remote_ip,
+           uint16_t remote_port,
+           const std::string &rendezvous_ip,
+           uint16_t rendezvous_port,
            const std::string &data,
            DataType type,
            boost::uint32_t *conn_id,
@@ -101,7 +110,7 @@ class Transport {
            const std::string &data,
            DataType type);
   int Start(uint16_t port,
-            boost::function<void(const std::string&,
+            boost::function<void(const rpcprotocol::RpcMessage&,
                                  const boost::uint32_t&)> on_message,
             boost::function<void(const bool&,
                                  const std::string&,
@@ -110,7 +119,7 @@ class Transport {
   void Stop();
   inline bool is_stopped() { return stop_; }
   struct sockaddr& peer_address() { return peer_address_; }
-  bool HandleRendezvousMsgs(const std::string &message);
+  void HandleRendezvousMsgs(const HolePunchingMsg &message);
   bool ConnectionExists(boost::uint32_t connection_id);
   void AddIncomingConnection(UDTSOCKET u);
   void AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id);
@@ -130,7 +139,7 @@ class Transport {
   void ReceiveHandler();
   void MessageHandler();
   volatile bool stop_;
-  boost::function<void(const std::string&,
+  boost::function<void(const rpcprotocol::RpcMessage&,
                   const boost::uint32_t&)> message_notifier_;
   boost::function<void(const bool&, const std::string&,
       const boost::uint16_t&)> rendezvous_notifier_;

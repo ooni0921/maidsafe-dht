@@ -70,7 +70,7 @@ Transport::Transport() : stop_(true),
 
 
 int Transport::Start(uint16_t port,
-                     boost::function<void(const std::string&,
+                     boost::function<void(const rpcprotocol::RpcMessage&,
                                           const boost::uint32_t&)> on_message,
                      boost::function<void(const bool&,
                                           const std::string&,
@@ -258,17 +258,13 @@ int Transport::Send(const std::string &remote_ip,
 #endif
       return 1;
     }
-    HolePunchingMsg msg;
-    msg.set_ip(remote_ip);
-    msg.set_port(remote_port);
-    msg.set_type(FORWARD_REQ);
-#ifdef DEBUG
-    printf("In Transport::Send(%i), HolePunchingMsg is: %s\n",
-           listening_port_,
-           msg.DebugString().c_str());
-#endif
+    TransportMessage t_msg;
+    HolePunchingMsg *msg = t_msg.mutable_hp_msg();
+    msg->set_ip(remote_ip);
+    msg->set_port(remote_port);
+    msg->set_type(FORWARD_REQ);
     std::string ser_msg;
-    msg.SerializeToString(&ser_msg);
+    t_msg.SerializeToString(&ser_msg);
     int64_t rend_data_size = ser_msg.size();
 
     // send file size information
@@ -508,28 +504,33 @@ void Transport::ReceiveHandler() {
             }
             (*it).second.received_size += rsize;
             if ((*it).second.expect_size <= (*it).second.received_size) {
-              last_id_ ++;
+              ++last_id_;
               std::string message = std::string((*it).second.data.get(),
                                     (*it).second.expect_size);
               boost::uint32_t connection_id = (*it).first;
               (*it).second.data.reset();
               (*it).second.expect_size = 0;
               (*it).second.received_size = 0;
-              if (HandleRendezvousMsgs(message)) {
-                result = UDT::close((*it).second.u);
-                incoming_sockets_.erase(it);
-              } else {
-                IncomingMessages msg(message, connection_id);
+              TransportMessage t_msg;
+              if (t_msg.ParseFromString(message)) {
+                if (t_msg.has_hp_msg()) {
+                  HandleRendezvousMsgs(t_msg.hp_msg());
+                  result = UDT::close((*it).second.u);
+                  incoming_sockets_.erase(it);
+                } else if (t_msg.has_rpc_msg()) {
+                  IncomingMessages msg(connection_id);
+                  msg.msg = t_msg.rpc_msg();
 #ifdef DEBUG
-                printf("message for id %d arrived\n", connection_id);
+                  printf("message for id %d arrived\n", connection_id);
 #endif
-                {
-                  boost::mutex::scoped_lock guard1(msg_hdl_mutex_);
-                  incoming_msgs_queue_.push_back(msg);
+                  {
+                    boost::mutex::scoped_lock guard1(msg_hdl_mutex_);
+                    incoming_msgs_queue_.push_back(msg);
+                  }
+                  msg_hdl_cond_.notify_one();
                 }
-                msg_hdl_cond_.notify_one();
-              }
               //break;
+              }
             }
           }
         }
@@ -699,39 +700,35 @@ bool Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
   return true;
 }
 
-bool Transport::HandleRendezvousMsgs(const std::string &message) {
-  HolePunchingMsg msg;
-  if (!msg.ParseFromString(message))
-    return false;
-  if (msg.type() == FORWARD_REQ) {
-    HolePunchingMsg forward_msg;
+void Transport::HandleRendezvousMsgs(const HolePunchingMsg &message) {
+  if (message.type() == FORWARD_REQ) {
+    TransportMessage t_msg;
+    HolePunchingMsg *forward_msg = t_msg.mutable_hp_msg();
     std::string peer_ip(inet_ntoa(((\
       struct sockaddr_in *)&peer_address_)->sin_addr));
     boost::uint16_t peer_port =
       ntohs(((struct sockaddr_in *)&peer_address_)->sin_port);
-    forward_msg.set_ip(peer_ip);
-    forward_msg.set_port(peer_port);
-    forward_msg.set_type(FORWARD_MSG);
+    forward_msg->set_ip(peer_ip);
+    forward_msg->set_port(peer_port);
+    forward_msg->set_type(FORWARD_MSG);
     std::string ser_msg;
-    forward_msg.SerializeToString(&ser_msg);
+    t_msg.SerializeToString(&ser_msg);
     boost::uint32_t conn_id;
 #ifdef DEBUG
     printf("Sending HP_FORW_REQ\n");
 #endif
-    Send(msg.ip(), msg.port(), "", 0, ser_msg, STRING, &conn_id, false);
-  } else if (msg.type() == FORWARD_MSG) {
+    Send(message.ip(), message.port(), "", 0, ser_msg, STRING, &conn_id, false);
+  } else if (message.type() == FORWARD_MSG) {
 #ifdef DEBUG
     printf("received HP_FORW_MSG\n");
-    printf("trying to connect to %s:%d\n", msg.ip().c_str(), msg.port());
+    printf("trying to connect to %s:%d\n", message.ip().c_str(),
+      message.port());
 #endif
     UDTSOCKET skt;
-    if (Connect(&skt, msg.ip(), msg.port(), true)) {
+    if (Connect(&skt, message.ip(), message.port(), true)) {
       UDT::close(skt);
     }
-  } else {
-    return false;
   }
-  return true;
 }
 
 void Transport::StartPingRendezvous(const bool &directly_connected,
@@ -846,5 +843,28 @@ void Transport::MessageHandler() {
       boost::this_thread::sleep(boost::posix_time::milliseconds(20));
     }
   }
+}
+
+int Transport::Send(const std::string &remote_ip,
+    uint16_t remote_port, const std::string &rendezvous_ip,
+    uint16_t rendezvous_port, const rpcprotocol::RpcMessage &data,
+    boost::uint32_t *conn_id, bool keep_connection) {
+  TransportMessage msg;
+  rpcprotocol::RpcMessage *rpc_msg = msg.mutable_rpc_msg();
+  *rpc_msg = data;
+  std::string ser_msg;
+  msg.SerializeToString(&ser_msg);
+  return Send(remote_ip, remote_port, rendezvous_ip, rendezvous_port, ser_msg,
+      STRING, conn_id, keep_connection);
+}
+
+int Transport::Send(boost::uint32_t connection_id,
+    const rpcprotocol::RpcMessage &data) {
+  TransportMessage msg;
+  rpcprotocol::RpcMessage *rpc_msg = msg.mutable_rpc_msg();
+  *rpc_msg = data;
+  std::string ser_msg;
+  msg.SerializeToString(&ser_msg);
+  return Send(connection_id, ser_msg, STRING);
 }
 };  // namespace transport

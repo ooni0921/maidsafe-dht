@@ -70,9 +70,9 @@ int ChannelManager::StopTransport() {
   return pimpl_->StopTransport();
 }
 
-void ChannelManager::MessageArrive(const std::string &message,
+void ChannelManager::MessageArrive(const RpcMessage &msg,
                                    const boost::uint32_t &connection_id) {
-  pimpl_->MessageArrive(message, connection_id);
+  pimpl_->MessageArrive(msg, connection_id);
 }
 
 void ChannelManager::UnRegisterChannel(const std::string &service_name) {

@@ -149,15 +149,9 @@ int ChannelManagerImpl::StopTransport() {
   return 1;
 }
 
-void ChannelManagerImpl::MessageArrive(const std::string &message,
+void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
     const boost::uint32_t &connection_id) {
-  // decode the message
-  RpcMessage decoded_msg;
-  if (!decoded_msg.ParseFromString(message)) {
-    // ignore invalid message
-    return;
-  }
-  // handle the message
+  RpcMessage decoded_msg = msg;
   if (decoded_msg.rpc_type() == REQUEST) {
     if (!decoded_msg.has_service() || !decoded_msg.has_method()) {
 #ifdef DEBUG

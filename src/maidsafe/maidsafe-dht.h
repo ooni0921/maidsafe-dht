@@ -133,6 +133,8 @@ class KNode {
 // RPC
 namespace rpcprotocol {
 
+class RpcMessage;
+
 class ChannelManager {
  public:
   ChannelManager();
@@ -145,7 +147,7 @@ class ChannelManager {
       boost::function<void(const bool&, const std::string&,
                            const boost::uint16_t&)> notify_dead_server);
   int StopTransport();
-  void MessageArrive(const std::string &message,
+  void MessageArrive(const RpcMessage &msg,
                      const boost::uint32_t &connection_id);
   void MessageSentResult(boost::uint32_t , bool );
   boost::uint32_t CreateNewId();

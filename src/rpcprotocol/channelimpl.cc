@@ -98,9 +98,7 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
   req.args = response;
   req.callback = done;
   boost::uint32_t conn_id = 0;
-  std::string ser_msg;
-  msg.SerializeToString(&ser_msg);
-  std::string rendezvous_ip("");
+  std::string rendezvous_ip;
   uint16_t rendezvous_port = 0;
   base::PDRoutingTableTuple tuple;
   if (!local_)
@@ -116,8 +114,7 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
                         port_,
                         rendezvous_ip,
                         rendezvous_port,
-                        ser_msg,
-                        transport::Transport::STRING,
+                        msg,
                         &conn_id,
                         true)) {
 #ifdef DEBUG
@@ -205,10 +202,7 @@ void ChannelImpl::SendResponse(const google::protobuf::Message *response,
   std::string ser_response;
   response->SerializeToString(&ser_response);
   response_msg.set_args(ser_response);
-  std::string ser_msg;
-  response_msg.SerializeToString(&ser_msg);
-  if (0 != ptransport_->Send(info.connection_id, ser_msg,
-                             transport::Transport::STRING)) {
+  if (0 != ptransport_->Send(info.connection_id, response_msg)) {
 #ifdef DEBUG
     printf("Failed to send response to connection %d.\n", info.connection_id);
 #endif
