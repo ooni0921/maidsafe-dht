@@ -246,6 +246,26 @@ class KNodeTest: public testing::Test {
   KNodeTest &operator=(const KNodeTest&);
 };
 
+// TODO (dirvine): have this work
+class Env: public testing::Environment {
+public:
+  virtual void SetUp() {
+    printf("%s", "Environment::SetUp() called.\n");
+  }
+
+  virtual void TearDown() {
+    printf("%s", "Environment::TearDown() called.\n");
+
+  }
+
+
+
+};
+
+
+
+
+
 TEST_F(KNodeTest, BEH_KAD_FindClosestNodes) {
   std::string key = cry_obj.Hash("2evvnf3xssas21", "", crypto::STRING_STRING,
       false);
@@ -781,4 +801,14 @@ TEST_F(KNodeTest, BEH_KAD_StartStopNode) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());
   cb.Reset();
+}
+
+
+
+
+
+int main(int argc, char **argv) {
+	testing::InitGoogleTest(&argc, argv);
+	testing::AddGlobalTestEnvironment(new Env);
+	return RUN_ALL_TESTS();
 }

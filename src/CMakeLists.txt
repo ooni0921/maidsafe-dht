@@ -65,6 +65,7 @@ FILE(GLOB M_KADEMLIA_H "kademlia/*.h*")                            #
 LIST(APPEND M_KADEMLIA_DIR ${M_KADEMLIA_C} ${M_KADEMLIA_H})                      #
 LIST(APPEND STYLE_KADEMLIA ${M_KADEMLIA_C} ${M_KADEMLIA_H})                      #
 FILE(GLOB PB_KADEMLIA "kademlia/*.pb.*")                           #
+
 FILE(GLOB M_TRANSPORT_C "transport/*.c*")                          #
 FILE(GLOB M_TRANSPORT_H "transport/*.h*")                          #
 FILE(GLOB M_UDT_C "udt/*.h*")                          #
@@ -76,6 +77,7 @@ LIST(APPEND T_BASE_DIR ${T_BASE_C} ${T_BASE_H})                                 
 FILE(GLOB T_KADEMLIA_C "tests/kademlia/*.c*")                      #
 FILE(GLOB T_KADEMLIA_H "tests/kademlia/*.h*")                      #
 LIST(APPEND T_KADEMLIA_DIR ${T_KADEMLIA_C} ${T_KADEMLIA_H})                      #
+LIST(REMOVE_ITEM T_KADEMLIA_DIR  "${maidsafe-dht_SOURCE_DIR}/tests/kademlia/testknode.cc")
 FILE(GLOB T_TRANSPORT_C "tests/transport/*.c*")                    #
 FILE(GLOB T_TRANSPORT_H "tests/transport/*.h*")                    #
 LIST(APPEND T_TRANSPORT_DIR ${T_TRANSPORT_C} ${T_TRANSPORT_H})                   #
@@ -99,6 +101,7 @@ LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})                                 
 #######################################################################################
 add_executable(TESTbase ${T_MAIN} ${T_BASE_DIR})
 add_executable(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR})
+add_executable(TESTknode "tests/kademlia/testknode.cc")
 add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR})
 add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR})
 add_executable(TESTupnp ${T_UPNP_DIR} "tests/upnp/testupnp.cc")
@@ -165,6 +168,7 @@ TARGET_LINK_LIBRARIES(TESTbase  PDbaselib sqlite3 protobuf  gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTtransport PDtransportlib  PDbaselib PDpbmsgslib gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTrpcprotocol PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib  ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTkademlia PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(TESTknode PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp ${SYS_LIB} gtest )
 TARGET_LINK_LIBRARIES(maidsafe-dht PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib PDupnplib ${SYS_LIB} )
 #TARGET_LINK_LIBRARIES(PDupnplib ${SYS_LIB})
@@ -175,11 +179,11 @@ TARGET_LINK_LIBRARIES(maidsafe-dht PDkademlialib PDrpcprotocollib PDtransportlib
 IF (APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10  -D_FILE_OFFSET_BITS=64" )
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 " )
-  SET(TARGET_PROPERTIES_DEBUG TESTbase TESTkademlia TESTtransport TESTrealmaidsafe TESTrealkademlia  LINK_FLAGS -fprofile-arcs -ftest-coverage)
+  SET(TARGET_PROPERTIES_DEBUG TESTbase TESTknode TESTkademlia TESTtransport TESTrealmaidsafe TESTrealkademlia  LINK_FLAGS -fprofile-arcs -ftest-coverage)
 ELSEIF (UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized ")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 ")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wall -Weffc++ -Wextra -Wfloat-equal -Wlong-long  -Wredundant-decls -Wstrict-overflow=5   -Wredundant-decls -Wunused-function  -Wunused-label  -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -Wall -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC  -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wall -Weffc++ -Wextra -Wfloat-equal -Wlong-long  -Wredundant-decls -Wstrict-overflow=5   -Wredundant-decls -Wunused-function  -Wunused-label  -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -Wall -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
   SET_TARGET_PROPERTIES(PDpbmsgslib PROPERTIES COMPILE_FLAGS -w )
 ELSEIF (WIN32)
@@ -216,9 +220,9 @@ ADD_TEST(CHK_BASE_ ${maidsafe-dht_SOURCE_DIR}/cpplint.py ${M_BASE_DIR})
 ADD_TEST(CHK_RPC_COMPONENT ${maidsafe-dht_SOURCE_DIR}/cpplint.py ${M_RPCPROTO_DIR})
 ENDIF(UNIX)
 IF(UNIX)
-	FOREACH(TESTTYPE TESTfs TESTbase TESTkademlia TESTtransport TESTrpcprotocol)
+	FOREACH(TESTTYPE TESTfs TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol)
 ELSE(UNIX)
-	FOREACH(TESTTYPE TESTbase.exe TESTkademlia.exe TESTtransport.exe  TESTrpcprotocol.exe)
+	FOREACH(TESTTYPE TESTbase.exe TESTknode.exe TESTkademlia.exe TESTtransport.exe  TESTrpcprotocol.exe)
 ENDIF(UNIX)
 	EXEC_PROGRAM(${EXECUTABLE_OUTPUT_PATH}/${TESTTYPE} ARGS --gtest_list_tests OUTPUT_VARIABLE maid_tests)
 	if(WIN32)
