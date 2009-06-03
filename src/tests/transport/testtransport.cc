@@ -39,7 +39,8 @@ void send_string(transport::Transport* node,
                  int port,
                  int repeat,
                  rpcprotocol::RpcMessage msg,
-                 bool keep_conn) {
+                 bool keep_conn,
+                 int our_port) {
   boost::uint32_t id;
   boost::asio::ip::address local_address;
   std::string ip;
@@ -51,11 +52,12 @@ void send_string(transport::Transport* node,
   int sent = 0;
   for (int i = 0; i < repeat; ++i) {
     if (node->Send(ip, port, "", 0, msg, &id, keep_conn) != 0)
-      printf("fail to send\n");
-    else sent++;
+      printf("fail to send (%i)\n", our_port);
+    else
+      ++sent;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  printf("thread finished sending %i messages\n", sent);
+  printf("thread %i finished sending %i messages\n", our_port, sent);
 }
 
 class MessageHandler {
@@ -85,10 +87,15 @@ class MessageHandler {
 
 class MessageHandlerEchoReq {
  public:
-  MessageHandlerEchoReq(transport::Transport *node) : node_(node), msgs(), ids(),
-    dead_server_(true), server_ip_(), server_port_(0) {}
-   void OnMessage(const rpcprotocol::RpcMessage &msg,
-       const boost::uint32_t conn_id) {
+  explicit MessageHandlerEchoReq(transport::Transport *node)
+      : node_(node),
+        msgs(),
+        ids(),
+        dead_server_(true),
+        server_ip_(),
+        server_port_(0) {}
+    void OnMessage(const rpcprotocol::RpcMessage &msg,
+        const boost::uint32_t conn_id) {
     std::string message;
     msg.SerializeToString(&message);
     msgs.push_back(message);
@@ -114,10 +121,15 @@ class MessageHandlerEchoReq {
 
 class MessageHandlerEchoResp {
  public:
-  MessageHandlerEchoResp(transport::Transport *node) : node_(node), msgs(), ids(),
-    dead_server_(true), server_ip_(), server_port_(0) {}
-   void OnMessage(const rpcprotocol::RpcMessage &msg,
-       const boost::uint32_t conn_id) {
+  explicit MessageHandlerEchoResp(transport::Transport *node)
+      : node_(node),
+        msgs(),
+        ids(),
+        dead_server_(true),
+        server_ip_(),
+        server_port_(0) {}
+    void OnMessage(const rpcprotocol::RpcMessage &msg,
+                   const boost::uint32_t conn_id) {
     std::string message;
     msg.SerializeToString(&message);
     msgs.push_back(message);
@@ -142,15 +154,8 @@ class MessageHandlerEchoResp {
 
 class TransportTest: public testing::Test {
  protected:
-  TransportTest() {
-  }
   virtual ~TransportTest() {
     UDT::cleanup();
-  }
-  virtual void SetUp() {
-  }
-
-  virtual void TearDown() {
   }
 };
 
@@ -443,7 +448,7 @@ TEST_F(TransportTest, BEH_TRANS_TimeoutForSendingToAWrongPeer) {
 }
 
 TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
-  const int kNumNodes = 6;
+  const int kNumNodes = 11;
   const int kRepeatSend = 10;  // No. of times to repeat the send message.
   ASSERT_LT(2, kNumNodes);  // ensure enough nodes for test
   EXPECT_LT(1, kRepeatSend);  // ensure enough repeats to make test worthwhile
@@ -465,9 +470,8 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
       boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[i],
                   _1, _2, _3)));
     if (i != 0) {
-      thrd = new boost::thread(boost::bind(&send_string, trans,
-                                           kFirstPort, kRepeatSend, rpc_msg,
-                                           false));
+      thrd = new boost::thread(&send_string, trans, kFirstPort, kRepeatSend,
+                               rpc_msg, false, kFirstPort+i);
       thr_grp.add_thread(thrd);
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     }
@@ -480,12 +484,12 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
 
   bool finished = false;
   boost::progress_timer t;
-  while (!finished && t.elapsed() < 3) {
+  while (!finished && t.elapsed() < 5) {
       if (msg_handler[0].msgs.size() >= messages_size) {
         finished = true;
         continue;
       }
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
 
   for (int k = 0; k < kNumNodes; ++k)
@@ -909,7 +913,7 @@ TEST_F(TransportTest, BEH_TRANS_SendRespond) {
   ASSERT_EQ(9, msg_handler2.msgs.size());
   for (int i = 0; i < 9; i++) {
     for (unsigned int j = 0; j < msgs_sent; j++) {
-      if(msgs[j] == msg_handler2.msgs.front()) {
+      if (msgs[j] == msg_handler2.msgs.front()) {
         msg_handler2.msgs.pop_front();
         break;
       }

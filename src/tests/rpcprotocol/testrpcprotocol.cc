@@ -141,8 +141,7 @@ class ResultHolder {
   }
   void GetMirrorResult(const tests::StringMirrorResponse *response) {
     if (response->IsInitialized()) {
-//      mirror_res.set_mirrored_string(response->mirrored_string());
-      mirror_res.set_mirrored_string("Fraser");
+      mirror_res.set_mirrored_string(response->mirrored_string());
     } else {
       mirror_res.set_mirrored_string("+");
     }

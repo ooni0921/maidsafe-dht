@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 #include <memory>
+#include "gtest/gtest_prod.h"
 #include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/kademlia_service.pb.h"
 #include "base/routingtable.h"
@@ -84,6 +85,7 @@ class KadService : public KademliaService {
       const BootstrapRequest *request, BootstrapResponse *response,
       google::protobuf::Closure *done);
  private:
+  FRIEND_TEST(KadServicesTest, BEH_KAD_ValidateSignedRequest);
   bool ValidateSignedRequest(const std::string &public_key, const std::string
       &signed_public_key, const std::string &signed_request, const std::string
       &key);

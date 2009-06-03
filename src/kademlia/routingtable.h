@@ -45,7 +45,7 @@ class RoutingTable {
   ~RoutingTable();
   // Add the given contact to the correct k-bucket; if it already
   // exists, its status will be updated
-  bool AddContact(const Contact &new_contact);
+  int AddContact(const Contact &new_contact);
   // Returns true and the contact if it is stored in one Kbucket
   // otherwise it returns false
   bool GetContact(const std::string &node_id, Contact *contact);
@@ -81,7 +81,7 @@ class RoutingTable {
   int KBucketIndex(const std::string &key);
   // Split the kbucket in the specified index into two new ones
   void SplitKbucket(const int &index);
-  bool ForceKAcceptNewPeer(const Contact &new_contact);
+  int ForceKAcceptNewPeer(const Contact &new_contact);
 };
 }  // namespace kad
 #endif  // KADEMLIA_ROUTINGTABLE_H_

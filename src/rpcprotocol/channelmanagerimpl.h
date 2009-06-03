@@ -71,7 +71,6 @@ class ChannelManagerImpl {
   void MessageSentResult(boost::uint32_t , bool ) {}
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
-  void DeleteRequest(const boost::uint32_t &req_id);
   void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
   void AddConnectionToReq(const boost::uint32_t &req_id,
       const boost::uint32_t &conn_id);
@@ -82,8 +81,7 @@ class ChannelManagerImpl {
   std::string external_ip() const {return external_ip_;}
   bool CheckConnection(const std::string &ip, const uint16_t &port);
  private:
-  void HandleResponse(const RpcMessage &response, const std::string &ip,
-      const boost::uint16_t &port);
+  void DeleteRequest(const boost::uint32_t &req_id);
   void TimerHandler(const boost::uint32_t &req_id);
   boost::shared_ptr<transport::Transport> ptransport_;
   bool is_started;

@@ -10,7 +10,7 @@ are permitted provided that the following conditions are met:
     this list of conditions and the following disclaimer in the documentation
     and/or other materials provided with the distribution.
     * Neither the name of the maidsafe.net limited nor the names of its
-    contributors may be used to endorse or promote products derived from this this
+    contributors may be used to endorse or promote products derived from this
     software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -778,7 +778,8 @@ int KNodeImpl::LoadBootstrapContacts() {
 void KNodeImpl::RefreshRoutine() {
   if (is_joined_) {
     SaveBootstrapContacts();
-    pdata_store_->DeleteExpiredValues();
+// TODO(Fraser#5#): 2009-06-03 - Add functionality to expire old kad key,values.
+//    pdata_store_->DeleteExpiredValues();
     // Refresh the k-buckets
     std::vector<Contact> start_up_short_list;
     IterativeLookUp(node_id_, start_up_short_list, FIND_NODE, &dummy_callback);
@@ -819,15 +820,15 @@ void KNodeImpl::IterativeLookUp_CancelActiveProbe(
       !data->wait_for_key && !data->is_callbacked) {
     // force iteration
 //    guard.unlock();
-      printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe calling search iter\n",
-         host_port_);
+      printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe calling ");
+      printf("search iter\n", host_port_);
     IterativeLookUp_SearchIteration(data);
   } else {
-    printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe -- active probes %i\n",
-      host_port_, data->active_probes.size());
+    printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe -- active ");
+    printf("probes %i\n", host_port_, data->active_probes.size());
   }
-  printf("%i -- End--In KNode::IterativeLookUp_CancelActiveProbe -- active probes %i\n",
-         host_port_, data->active_probes.size());
+  printf("%i -- End--In KNode::IterativeLookUp_CancelActiveProbe -- active ");
+  printf("probes %i\n", host_port_, data->active_probes.size());
 }
 
 void KNodeImpl::IterativeLookUp_ExtendShortList(
@@ -848,14 +849,14 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
   }
   bool is_valid = true;
   if (!response->IsInitialized())
-    printf("%i --- KNodeImpl::IterativeLookUp_ExtendShortList response not init\n",
+    printf("%i --- KNodeImpl::IterativeLookUp_ExtendShortList resp not init\n",
         host_port_);
   if (!response->IsInitialized() && callback_data.data->method != BOOTSTRAP) {
     RemoveContact(callback_data.sender.node_id());
     is_valid = false;
     callback_data.data->dead_ids.push_back(callback_data.sender.node_id());
     #ifdef DEBUG
-      printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList response not valid\n",
+      printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList resp invalid\n",
           host_port_);
     #endif
   }
@@ -951,8 +952,8 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
       }
     }
 //    guard.unlock();
-    printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList invalid response\
-      cancelling probe\n", host_port_);
+    printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList invalid response");
+    printf(" cancelling probe\n", host_port_);
     IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
     delete response;
 #ifdef DEBUG
@@ -1268,8 +1269,8 @@ void KNodeImpl::IterativeLookUp_SearchIteration(
       // (static_cast<int>(data->active_probes.size()) == 0)
       // IterativeLookUp is done, prepare the result and call back
 #ifdef DEBUG
-      printf("%i -- End 2 -KNodeImpl::IterativeLookUp_SearchIteration CallingBack\n",
-          host_port_);
+      printf("%i -- End 2 -KNodeImpl::IterativeLookUp_SearchIteration");
+      printf(" CallingBack\n", host_port_);
 #endif
       IterativeLookUp_Callback(data);
 #ifdef DEBUG
@@ -1283,8 +1284,8 @@ void KNodeImpl::IterativeLookUp_SearchIteration(
   // already found a value, stop iteration
   if ((data->method == FIND_VALUE) && (data->find_value_result.size() > 0)) {
 #ifdef DEBUG
-    printf("%i -- End 3 -KNodeImpl::IterativeLookUp_SearchIteration CallingBack\n",
-        host_port_);
+    printf("%i -- End 3 -KNodeImpl::IterativeLookUp_SearchIteration");
+    printf(" CallingBack\n", host_port_);
 #endif
     IterativeLookUp_Callback(data);
 #ifdef DEBUG

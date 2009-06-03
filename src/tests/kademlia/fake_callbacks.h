@@ -25,6 +25,12 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef TESTS_KADEMLIA_FAKE_CALLBACKS_H_
+#define TESTS_KADEMLIA_FAKE_CALLBACKS_H_
+
+#include <list>
+#include <string>
+#include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 
@@ -34,7 +40,7 @@ class FakeCallback {
   virtual ~FakeCallback() {}
   virtual void CallbackFunc(const std::string& res) = 0;
   virtual void Reset() = 0;
-  std::string result() const {return result_;};
+  std::string result() const {return result_;}
  protected:
   std::string result_;
 };
@@ -248,3 +254,4 @@ inline void wait_result(FakeCallback *cb) {
   }
 }
 
+#endif  // TESTS_KADEMLIA_FAKE_CALLBACKS_H_

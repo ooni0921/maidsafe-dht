@@ -130,7 +130,7 @@ void KadService::Ping(google::protobuf::RpcController *,
       const PingRequest *request, PingResponse *response,
       google::protobuf::Closure *done) {
   kad::Contact sender;
-  bool add_contact =  false;
+  bool add_contact = false;
   response->set_node_id(knode_->node_id());
   if (!request->IsInitialized()) {
     response->set_result(kad::kRpcResultFailure);
@@ -290,7 +290,7 @@ void KadService::Downlist(google::protobuf::RpcController *,
     response->set_result(kad::kRpcResultFailure);
   }
   // void adding clients to our routing table
-  if (add_contact && sender.node_id() != client_node_id())
+  if (add_contact && (sender.node_id() != client_node_id()))
     knode_->AddContact(sender, false);
   done->Run();
 }
@@ -328,7 +328,7 @@ bool KadService::GetSender(const ContactInfo &sender_info,
 }
 
 void KadService::RpcDownlist_Remove(const std::string &ser_response,
-      Contact dead_node) {;
+      Contact dead_node) {
   PingResponse result_msg;
   if (!result_msg.ParseFromString(ser_response)) {
     knode_->RemoveContact(dead_node.node_id());

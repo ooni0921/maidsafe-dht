@@ -100,7 +100,7 @@ TEST_F(UtilsTest, BEH_BASE_QuoteSanitisation) {
 }
 
 TEST_F(UtilsTest, BEH_BASE_RandomString) {
-  unsigned int length = 1024;
+  unsigned int length = 4096;
   std::string first = base::RandomString(length);
   std::string second = base::RandomString(length);
   ASSERT_EQ(length, first.length()) << "Size of first string is not the requested size: " << length;

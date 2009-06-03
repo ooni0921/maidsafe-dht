@@ -260,7 +260,8 @@ bool DataStore::LoadItem(const std::string &key,
   try {
     CppSQLite3Binary blob_key;
     blob_key.setBinary((const unsigned char*)key.c_str(), key.size());
-    stmt = db_.compileStatement("select value from data where key=?;");
+    stmt = db_.compileStatement("select value, last_published_time from data "
+      "where key=? order by last_published_time;");
     stmt.bind(1, (const char*)blob_key.getEncoded());
     qcpp = stmt.execQuery();
     while (!qcpp.eof()) {

@@ -68,9 +68,9 @@ void ChannelManagerImpl::AddReqToTimer(const boost::uint32_t &req_id,
   if (!is_started) {
     return;
   }
-//#ifdef DEBUG
-//  printf("timeout added %d\n", timeout);
-//#endif
+//  #ifdef DEBUG
+//    printf("timeout added %d\n", timeout);
+//  #endif
   ptimer_->AddCallLater(timeout,
       boost::bind(&ChannelManagerImpl::TimerHandler, this, req_id));
 }
@@ -206,6 +206,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
              connection_id);
       printf("service not registered.\n");
 #endif
+      channels_mutex_.unlock();
     }
   } else if (decoded_msg.rpc_type() == RESPONSE) {
     std::map<boost::uint32_t, PendingReq>::iterator it;

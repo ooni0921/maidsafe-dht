@@ -50,9 +50,9 @@ bool TestInRange(const std::string &key, const kad::BigInt &min_range,
 }
 
 class TestRoutingTable : public testing::Test {
-public:
-TestRoutingTable() : cry_obj() {}
-  protected:
+ public:
+  TestRoutingTable() : cry_obj() {}
+ protected:
     void SetUp() {
       cry_obj.set_symm_algorithm("AES_256");
       cry_obj.set_hash_algorithm("SHA512");
@@ -106,7 +106,7 @@ TEST_F(TestRoutingTable, BEH_KAD_AddContact) {
     std::string id;
     base::decode_from_hex(ids[i], id);
     kad::Contact contact(id, ip, port + i, ip, port + i);
-    ASSERT_TRUE(routingtable.AddContact(contact));
+    ASSERT_EQ(0, routingtable.AddContact(contact));
 }
 }
 
@@ -120,7 +120,7 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Get_Contact) {
   std::string ip = "127.0.0.1";
   unsigned short port = 8888;
   kad::Contact contact(contact_id, ip, port, ip, port);
-  ASSERT_TRUE(routingtable.AddContact(contact));
+  ASSERT_EQ(0, routingtable.AddContact(contact));
   kad::Contact rec_contact;
   ASSERT_TRUE(routingtable.GetContact(contact_id, &rec_contact));
   ASSERT_TRUE(contact == rec_contact);
@@ -136,7 +136,7 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Contact) {
   std::string ip = "127.0.0.1";
   unsigned short port = 8888;
   kad::Contact contact(contact_id, ip, port, ip, port);
-  ASSERT_TRUE(routingtable.AddContact(contact));
+  ASSERT_EQ(0, routingtable.AddContact(contact));
 
   for (int i = 0; i < kad::kFailedRpc; i++) {
     routingtable.RemoveContact(contact_id, false);
@@ -159,7 +159,7 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Add_Contact) {
   std::string ip = "127.0.0.1";
   unsigned short port = 8888;
   kad::Contact contact(contact_id, ip, port, ip, port);
-  ASSERT_TRUE(routingtable.AddContact(contact));
+  ASSERT_EQ(0, routingtable.AddContact(contact));
 
   routingtable.RemoveContact(contact_id, false);
   kad::Contact rec_contact;
@@ -183,7 +183,7 @@ TEST_F(TestRoutingTable, BEH_KAD_SplitKBucket) {
     port++;
     kad::Contact contact(contact_id, ip, port, ip, port);
     contacts[i] = contact;
-    ASSERT_TRUE(routingtable.AddContact(contact));
+    ASSERT_EQ(0, routingtable.AddContact(contact));
   }
   for (int i = 0; i < kad::K+1; i++) {
     contact_id = cry_obj.Hash(base::itos(id[i]), "", crypto::STRING_STRING,
@@ -221,13 +221,13 @@ TEST_F(TestRoutingTable, BEH_KAD_NoSplitKBucket) {
     port++;
     kad::Contact contact(contact_id, ip, port, ip, port);
     contacts[i] = contact;
-    ASSERT_TRUE(routingtable.AddContact(contact));
+    ASSERT_EQ(0, routingtable.AddContact(contact));
   }
 
   base::decode_from_hex(contacts_id[kad::K], contact_id);
   port++;
   kad::Contact contact1(contact_id, ip, port, ip, port);
-  ASSERT_FALSE(routingtable.AddContact(contact1));
+  ASSERT_LT(0, routingtable.AddContact(contact1));
   kad::Contact rec_contact;
   ASSERT_FALSE(routingtable.GetContact(contact_id, &rec_contact));
 }
@@ -267,7 +267,7 @@ TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
   std::string ip = "127.0.0.1";
   for (int i = 0; i < static_cast<int>(ids.size());i++) {
     kad::Contact contact(ids[i], ip, port, ip, port);
-    ASSERT_TRUE(routingtable.AddContact(contact));
+    ASSERT_EQ(0, routingtable.AddContact(contact));
     port++;
   }
   ids.clear();
@@ -285,7 +285,7 @@ TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
   }
   for (int i = 0; i < static_cast<int>(ids.size()); i++) {
     kad::Contact contact(ids[i], ip, port, ip, port);
-    ASSERT_TRUE(routingtable.AddContact(contact));
+    ASSERT_EQ(0, routingtable.AddContact(contact));
     port++;
   }
   ids.clear();
@@ -302,7 +302,7 @@ TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
   }
   for (int i = 0; i < static_cast<int>(ids.size());i++) {
     kad::Contact contact(ids[i], ip, port, ip, port);
-    ASSERT_TRUE(routingtable.AddContact(contact));
+    ASSERT_EQ(0, routingtable.AddContact(contact));
     port++;
   }
   ids.clear();
@@ -320,7 +320,7 @@ TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
   }
   for (int i = 0; i < static_cast<int>(ids.size()); i++) {
     kad::Contact contact(ids[i], ip, port, ip, port);
-    ASSERT_TRUE(routingtable.AddContact(contact));
+    ASSERT_EQ(0, routingtable.AddContact(contact));
     port++;
   }
 
@@ -380,7 +380,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
   std::string ip = "127.0.0.1";
   for (int i = 0; i < static_cast<int>(ids.size());i++) {
     kad::Contact contact(ids[i], ip, port, ip, port);
-    ASSERT_TRUE(routingtable.AddContact(contact));
+    ASSERT_EQ(0, routingtable.AddContact(contact));
     port++;
   }
   ids.clear();
@@ -398,7 +398,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
   }
   for (int i = 0; i < static_cast<int>(ids.size()); i++) {
     kad::Contact contact(ids[i], ip, port, ip, port);
-    ASSERT_TRUE(routingtable.AddContact(contact));
+    ASSERT_EQ(0, routingtable.AddContact(contact));
     port++;
   }
   ids.clear();
@@ -457,7 +457,7 @@ TEST_F(TestRoutingTable, BEH_KAD_ClearRoutingTable) {
     std::string id;
     base::decode_from_hex(ids[i], id);
     kad::Contact contact(id, ip, port + i, ip, port + i);
-    ASSERT_TRUE(routingtable.AddContact(contact));
+    ASSERT_EQ(0, routingtable.AddContact(contact));
   }
   if (kad::K > 16)
     ASSERT_EQ(16, routingtable.Size());
@@ -496,7 +496,7 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
     port++;
     std::string id = kad::random_kademlia_id(range1, range2);
     kad::Contact new_contact(id, ip, port, ip, port);
-    ASSERT_TRUE(routingtable.AddContact(new_contact));
+    ASSERT_EQ(0, routingtable.AddContact(new_contact));
   }
   ASSERT_EQ(kad::K - 1, routingtable.Size());
   // fill the second bucket
@@ -504,7 +504,7 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
     port++;
     std::string id = kad::random_kademlia_id(range4 + 2, range5 - 1);
     kad::Contact new_contact(id, ip, port, ip, port);
-    ASSERT_TRUE(routingtable.AddContact(new_contact));
+    ASSERT_EQ(0, routingtable.AddContact(new_contact));
   }
   ASSERT_EQ(2*kad::K-2, routingtable.Size());
   // make the second bucket full with a furthest peer
@@ -513,13 +513,13 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
   kad::Contact furthest_contact(id, ip, port, ip, port);
   furthest_contact.set_last_seen(now);  // make sure this peer has the highest
                                         // score
-  ASSERT_TRUE(routingtable.AddContact(furthest_contact));
+  ASSERT_EQ(0, routingtable.AddContact(furthest_contact));
   ASSERT_EQ(2*kad::K-1, routingtable.Size());
   // Force K will take effect when the new peer is among the K cloeset peers
   id = kad::random_kademlia_id(range4+1, range4+2);
   port++;
   kad::Contact new_contact(id, ip, port, ip, port);
-  ASSERT_TRUE(routingtable.AddContact(new_contact));
+  ASSERT_EQ(0, routingtable.AddContact(new_contact));
   ASSERT_EQ(2*kad::K-1, routingtable.Size());
   kad::Contact new_contact1;
   ASSERT_TRUE(routingtable.GetContact(new_contact.node_id(),
@@ -529,14 +529,14 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
   ASSERT_FALSE(routingtable.GetContact(furthest_contact.node_id(),
                                        &furthest_contact1));
   // new peer which is not among K closest peers won't be accepted
-  ASSERT_FALSE(routingtable.AddContact(furthest_contact));
+  ASSERT_EQ(1, routingtable.AddContact(furthest_contact));
   ASSERT_EQ(2*kad::K-1, routingtable.Size());
   // make the routingtable split further, there will be 4 buckets
   for (int i = 0; i < kad::K - 1; i++) {
     port++;
     std::string id = kad::random_kademlia_id(range3+2, range4-1);
     kad::Contact new_contact(id, ip, port, ip, port);
-    ASSERT_TRUE(routingtable.AddContact(new_contact));
+    ASSERT_EQ(0, routingtable.AddContact(new_contact));
   }
   ASSERT_EQ(3*kad::K - 2, routingtable.Size());
   // make the brother bucket of the peer full with a furthest peer
@@ -545,13 +545,13 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
   kad::Contact furthest_contact2(id, ip, port, ip, port);
   furthest_contact2.set_last_seen(now);  // make sure this peer has the highest
                                         // score
-  ASSERT_TRUE(routingtable.AddContact(furthest_contact2));
+  ASSERT_EQ(0, routingtable.AddContact(furthest_contact2));
   ASSERT_EQ(3*kad::K - 1, routingtable.Size());
   // Force K will take effect when the new peer is among the K cloeset peers
   id = kad::random_kademlia_id(range3 + 1, range3 + 2);
   port++;
   kad::Contact new_contact2(id, ip, port, ip, port);
-  ASSERT_TRUE(routingtable.AddContact(new_contact2));
+  ASSERT_EQ(0, routingtable.AddContact(new_contact2));
   ASSERT_EQ(3*kad::K-1, routingtable.Size());
   kad::Contact new_contact3;
   ASSERT_TRUE(routingtable.GetContact(new_contact2.node_id(),
@@ -561,6 +561,6 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
   ASSERT_FALSE(routingtable.GetContact(furthest_contact2.node_id(),
                                        &furthest_contact3));
   // new peer which is not among K closest peers won't be accepted
-  ASSERT_FALSE(routingtable.AddContact(furthest_contact2));
+  ASSERT_EQ(1, routingtable.AddContact(furthest_contact2));
   ASSERT_EQ(3*kad::K-1, routingtable.Size());
 }

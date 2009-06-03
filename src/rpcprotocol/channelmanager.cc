@@ -51,10 +51,6 @@ boost::uint32_t ChannelManager::CreateNewId() {
   return pimpl_->CreateNewId();
 }
 
-void ChannelManager::DeleteRequest(const boost::uint32_t &req_id) {
-  pimpl_->DeleteRequest(req_id);
-}
-
 void ChannelManager::RegisterChannel(const std::string &service_name,
                                      Channel* channel) {
   pimpl_->RegisterChannel(service_name, channel);

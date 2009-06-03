@@ -47,7 +47,6 @@ RoutingTable::RoutingTable(const std::string &holder_id)
 }
 
 RoutingTable::~RoutingTable() {
-//   printf("In RoutingTable destructor.\n");
   k_buckets_.clear();
 }
 
@@ -117,30 +116,30 @@ void RoutingTable::SplitKbucket(const int &index) {
   }
 }
 
-bool RoutingTable::AddContact(const Contact &new_contact) {
+int RoutingTable::AddContact(const Contact &new_contact) {
   int index = KBucketIndex(new_contact.node_id());
   KBucketExitCode exitcode = k_buckets_[index]->AddContact(new_contact);
   switch (exitcode) {
-    case SUCCEED: return true;
-    case FULL: if (!k_buckets_[index]->KeyInRange(holder_id_))  {
+    case SUCCEED: return 0;
+    case FULL: if (!k_buckets_[index]->KeyInRange(holder_id_)) {
                  if (index == brother_bucket_of_p_) {
                    // Force a peer always accept peers belonging to the brother
                    // bucket of the peer in case they are amongst k closet
                    // neighbours
                    return ForceKAcceptNewPeer(new_contact);
                  }
-                 return false;
+                 return 2;
                }
                SplitKbucket(index);
                return AddContact(new_contact);
-    case FAIL: return false;
-    default: return false;
+    case FAIL:
+    default: return -2;
   }
 }
 
 void RoutingTable::FindCloseNodes(const std::string &key, int count,
-  std::vector<Contact> *close_nodes, const std::vector<Contact>
-  &exclude_contacts) {
+    std::vector<Contact> *close_nodes, const std::vector<Contact>
+    &exclude_contacts) {
   int index = KBucketIndex(key);
   k_buckets_[index]->GetContacts(count, exclude_contacts, close_nodes);
   if (count == static_cast<int>(close_nodes->size()))
@@ -264,16 +263,17 @@ namespace detail {
   }
 }  // namespace detail
 
-bool RoutingTable::ForceKAcceptNewPeer(const Contact &new_contact) {
+int RoutingTable::ForceKAcceptNewPeer(const Contact &new_contact) {
   // Calculate how many k closest neighbours belong to the brother bucket of
   // the peer
   int v = K - k_buckets_[bucket_of_p_]->Size();
-  if (v == 0) return false;
+  if (v == 0)
+    return 1;
   // Getting all contacts of the brother kbucket of the peer
   std::vector<Contact> contacts, ex_contacts;
   k_buckets_[brother_bucket_of_p_]->GetContacts(K, ex_contacts, &contacts);
   std::list<detail::ContactWithTargetPeer> candidates_for_l;
-  for (int i = 0; i < static_cast<int>(contacts.size()); i++) {
+  for (boost::uint16_t i = 0; i < contacts.size(); ++i) {
     detail::ContactWithTargetPeer entry = {contacts[i], holder_id_};
     candidates_for_l.push_back(entry);
   }
@@ -282,25 +282,26 @@ bool RoutingTable::ForceKAcceptNewPeer(const Contact &new_contact) {
   std::list<detail::ContactWithTargetPeer>::iterator it =
     candidates_for_l.begin();
   advance(it, v-1);
-  if (it == candidates_for_l.end()) return false;
+  if (it == candidates_for_l.end())
+    return 1;
   if (kademlia_distance(new_contact.node_id(), holder_id_) >=
-      kademlia_distance(it->contact.node_id(), holder_id_))
+      kademlia_distance(it->contact.node_id(), holder_id_)) {
     // new peer isn't among the k closest neighbours
-    return false;
+    return 1;
+  }
   // new peer is among the k closest neighbours
   // put all entries of Bp , which are not among the k closest peers into a
   // list l and drop the peer which is the least useful
   std::list<detail::ContactWithTargetPeer> l;
-  for (; it != candidates_for_l.end(); it++) {
+  for (; it != candidates_for_l.end(); it++)
     l.push_back(*it);
-  }
   Contact least_useful_contact;
   if (detail::get_least_useful_contact(l, &least_useful_contact)) {
     k_buckets_[brother_bucket_of_p_]->RemoveContact(
       least_useful_contact.node_id(), true);
     k_buckets_[brother_bucket_of_p_]->AddContact(new_contact);
-    return true;
+    return 0;
   }
-  return false;
+  return -1;
 }
 }  // namespace kad
