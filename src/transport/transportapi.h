@@ -128,6 +128,7 @@ class Transport {
   void StartPingRendezvous(const bool &directly_connected,
                            std::string my_rendezvous_ip,
                            boost::uint16_t my_rendezvous_port);
+  void StopPingRendezvous();
   bool CanConnect(const std::string &ip, const uint16_t &port);
  private:
   Transport& operator=(const Transport&);

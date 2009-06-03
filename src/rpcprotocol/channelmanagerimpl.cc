@@ -68,9 +68,9 @@ void ChannelManagerImpl::AddReqToTimer(const boost::uint32_t &req_id,
   if (!is_started) {
     return;
   }
-#ifdef DEBUG
-  printf("timeout added %d\n", timeout);
-#endif
+//#ifdef DEBUG
+//  printf("timeout added %d\n", timeout);
+//#endif
   ptimer_->AddCallLater(timeout,
       boost::bind(&ChannelManagerImpl::TimerHandler, this, req_id));
 }
@@ -163,10 +163,6 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
 #endif
       return;
     }
-#ifdef DEBUG
-    printf("%d --- request arrived for %s -- %d\n", external_port_,
-      decoded_msg.method().c_str(), decoded_msg.message_id());
-#endif
     // If this is a special find node for boostrapping,
     // inject incoming address
     if (decoded_msg.method() == "Bootstrap") {
@@ -192,7 +188,6 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
     channels_mutex_.lock();
     it = channels_.find(decoded_msg.service());
     if (it != channels_.end()) {
-//      channels_mutex_.unlock();
 #ifdef DEBUG
       printf("%i -- Calling HandleRequest for req -- %i\n",
           external_port_, decoded_msg.message_id());
@@ -213,12 +208,12 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
 #endif
     }
   } else if (decoded_msg.rpc_type() == RESPONSE) {
+    std::map<boost::uint32_t, PendingReq>::iterator it;
+    req_mutex_.lock();
 #ifdef DEBUG
     printf("%d --- response arrived for %s  -- %d\n", external_port_,
       decoded_msg.method().c_str(), decoded_msg.message_id());
 #endif
-    std::map<boost::uint32_t, PendingReq>::iterator it;
-    req_mutex_.lock();
     it = pending_req_.find(decoded_msg.message_id());
     if (it != pending_req_.end()) {
       google::protobuf::Message* response =
@@ -226,10 +221,11 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
       if (response->ParseFromString(decoded_msg.args())) {
         google::protobuf::Closure* done =
             pending_req_[decoded_msg.message_id()].callback;
+        pending_req_.erase(decoded_msg.message_id());
         req_mutex_.unlock();
-        DeleteRequest(decoded_msg.message_id());
 #ifdef DEBUG
-        printf("ChannelManager --- Executing Callback (done->Run ())\n");
+        printf("%i -- ChannelManager --- Executing Callback msg arrived %i \n",
+           external_port_, decoded_msg.message_id());
 #endif
         done->Run();
 #ifdef DEBUG
@@ -238,7 +234,17 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
         ptransport_->CloseConnection(connection_id);
       } else {
         req_mutex_.unlock();
+#ifdef DEBUG
+        printf("%i -- ChannelManager no callback for id %i\n", external_port_,
+            decoded_msg.message_id());
+#endif
       }
+    } else {
+      req_mutex_.unlock();
+#ifdef DEBUG
+        printf("%i -- ChannelManager no request for id %i\n", external_port_,
+            decoded_msg.message_id());
+#endif
     }
   } else {
 #ifdef VERBOSE_DEBUG
@@ -267,9 +273,13 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
     // call back without modifying the response
     google::protobuf::Closure* done = pending_req_[req_id].callback;
     boost::uint32_t connection_id = pending_req_[req_id].connection_id;
+    pending_req_.erase(req_id);
     req_mutex_.unlock();
-    DeleteRequest(req_id);
+    printf("%i -- executing request after timeout. id = %i\n",
+      external_port_, req_id);
     done->Run();
+    printf("%i -- executed request after timeout. id = %i\n",
+      external_port_, req_id);
     if (connection_id != 0)
       ptransport_->CloseConnection(connection_id);
   } else {
@@ -297,7 +307,6 @@ bool ChannelManagerImpl::CheckConnection(const std::string &ip,
   } else {
     dec_lip = ip;
   }
-//  printf("checking connection to %s:%d\n", dec_lip.c_str(), port);
   return ptransport_->CanConnect(dec_lip, port);
 }
 }

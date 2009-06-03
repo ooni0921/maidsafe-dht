@@ -760,22 +760,51 @@ TEST_F(KNodeTest, BEH_KAD_FindDeadNode) {
 
 TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
   cb.Reset();
+  std::string db_local = "KnodeTest/datastore"+base::itos(65001);
+  std::string kconf_file = db_local + "/.kadconfig";
+  base::KadConfig kad_config;
+  base::KadConfig::Contact *kad_contact_ = kad_config.add_contact();
+  std::string hex_id;
+  base::encode_to_hex(knodes_[1]->node_id(), hex_id);
+  kad_contact_->set_node_id(hex_id);
+  kad_contact_->set_ip(knodes_[1]->host_ip());
+  kad_contact_->set_port(knodes_[1]->host_port());
+  kad_contact_->set_local_ip(knodes_[1]->local_host_ip());
+  kad_contact_->set_local_port(knodes_[1]->local_host_port());
+  boost::shared_ptr<rpcprotocol::ChannelManager> ch_man (
+      new rpcprotocol::ChannelManager());
+  boost::scoped_ptr<kad::KNode> node(new kad::KNode(db_local, ch_man,
+      kad::VAULT, kTestK, kad::kAlpha, kad::kBeta));
+  EXPECT_EQ(0, ch_man->StartTransport(65001,
+        boost::bind(&kad::KNode::HandleDeadRendezvousServer, node.get(),
+                    _1, _2, _3)));
+  cb.Reset();
+  node->Join("", kconf_file,
+      boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1), false);
+  wait_result(&cb);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
+  ASSERT_TRUE(node->is_joined());
+  cb.Reset();
+
   std::string ip = knodes_[1]->host_ip();
   boost::uint16_t port = knodes_[1]->host_port();
   knodes_[1]->Leave();
   ASSERT_FALSE(knodes_[1]->is_joined());
   channel_managers_[1]->StopTransport();
-  knodes_[2]->HandleDeadRendezvousServer(true, ip, port);
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  printf("Node 1 killed\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  printf("finished waiting to notice dead node\n");
   bool finished_bootstrap = false;
   boost::progress_timer t;
   while (!finished_bootstrap) {
-    if (knodes_[2]->is_joined() || t.elapsed() > 4)
+    if (node->is_joined() || t.elapsed() > 4)
       finished_bootstrap = true;
     else
       boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
-  ASSERT_TRUE(knodes_[2]->is_joined());
+  ASSERT_TRUE(node->is_joined());
+  node->Leave();
+  ch_man->StopTransport();
 }
 
 TEST_F(KNodeTest, BEH_KAD_StartStopNode) {

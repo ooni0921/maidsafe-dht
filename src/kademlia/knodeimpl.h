@@ -353,12 +353,12 @@ class KNodeImpl {
   std::vector<Contact> bootstrapping_nodes_;
   const boost::uint16_t K_;
   int alpha_, beta_;
-  Contact dead_rendezvous_server_;
   bool refresh_routine_started_;
   boost::filesystem::path kad_config_path_;
   boost::shared_ptr<base::PDRoutingTableHandler> routingtable_;
   std::string local_host_ip_;
   boost::uint16_t local_host_port_;
+  bool stopping_;
   // for UPnP
   bool upnp_started_;
   libtorrent::io_service upnp_ios_;

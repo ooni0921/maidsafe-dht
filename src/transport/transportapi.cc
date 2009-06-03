@@ -686,9 +686,9 @@ bool Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
 #endif
     return false;
   }
-#ifdef DEBUG
-  printf("remote address %s:%d\n", peer_address.c_str(), peer_port);
-#endif
+//#ifdef DEBUG
+//  printf("remote address %s:%d\n", peer_address.c_str(), peer_port);
+//#endif
   if (UDT::ERROR == UDT::connect(*skt, reinterpret_cast<sockaddr*>(&peer_addr),
       sizeof(peer_addr))) {
 #ifdef DEBUG
@@ -747,6 +747,11 @@ void Transport::StartPingRendezvous(const bool &directly_connected,
   ping_rend_cond_.notify_one();
 }
 
+void Transport::StopPingRendezvous() {
+  boost::mutex::scoped_lock guard(ping_rendez_mutex_);
+  ping_rendezvous_ = false;
+}
+
 void Transport::PingHandle() {
   while (true) {
     {
@@ -761,10 +766,10 @@ void Transport::PingHandle() {
       if (directly_connected_) return;
     }
     UDTSOCKET skt;
-#ifdef DEBUG
-    printf("Transport::PingHandle(): rv_ip(%s) -- rv_port(%i)\n",
-      my_rendezvous_ip_.c_str(), my_rendezvous_port_);
-#endif
+//#ifdef DEBUG
+//    printf("Transport::PingHandle(): rv_ip(%s) -- rv_port(%i)\n",
+//      my_rendezvous_ip_.c_str(), my_rendezvous_port_);
+//#endif
 
     if (Connect(&skt, my_rendezvous_ip_, my_rendezvous_port_, false)) {
       UDT::close(skt);
