@@ -890,7 +890,7 @@ TEST_F(TransportTest, BEH_TRANS_SendRespond) {
   }
   bool finished = false;
   boost::progress_timer t;
-  while (!finished && t.elapsed() < 5) {
+  while (!finished && t.elapsed() < 10) {
       if (msg_handler1.msgs.size() == msgs_sent &&
           msg_handler2.msgs.size() == 9) {
         finished = true;

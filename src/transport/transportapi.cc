@@ -378,6 +378,7 @@ void Transport::Stop() {
       ping_rendz_routine_->join();
     }
     ping_rendz_routine_.reset();
+    ping_rendezvous_ = false;
   }
   if (handle_msgs_routine_.get()) {
     msg_hdl_cond_.notify_one();
@@ -432,8 +433,8 @@ void Transport::ReceiveHandler() {
       if (res == 0) {
         UD_SET((*it).second.u, &readfds);
       } else {
-//        printf("%d -- dead connection found %d --- %s \n res=%i, removing it\n",
-//            listening_port_, (*it).first,
+        printf("%d -- dead connection found %d \n"/*--- %s \n res=%i, removing it\n"*/,
+            listening_port_, (*it).first);//,
 //            UDT::getlasterror().getErrorMessage(), res);
         dead_connections_ids.push_back((*it).first);
       }
@@ -462,7 +463,8 @@ void Transport::ReceiveHandler() {
               if (UDT::getlasterror().getErrorCode() !=
                   CUDTException::EASYNCRCV) {
 #ifdef DEBUG
-                printf("error recv msg size: %s\n",
+                printf("%d --  id %d --error recv msg size: %s\n",
+                       listening_port_, (*it).first,
                        UDT::getlasterror().getErrorMessage());
 #endif
                 result = UDT::close((*it).second.u);
@@ -492,7 +494,8 @@ void Transport::ReceiveHandler() {
               if (UDT::getlasterror().getErrorCode() !=
                   CUDTException::EASYNCRCV) {
 #ifdef DEBUG
-                printf("error recv msg: %s\n",
+                printf("%i -- id %d -- error recv msg: %s\n",
+                       listening_port_, (*it).first,
                        UDT::getlasterror().getErrorMessage());
 #endif
                 result = UDT::close((*it).second.u);
