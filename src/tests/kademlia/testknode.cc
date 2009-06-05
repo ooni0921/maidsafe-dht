@@ -692,8 +692,17 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
     &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_EQ(static_cast<unsigned int>(1), cb_2.values().size());
-  ASSERT_EQ(value, cb_2.values().front());
+  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  bool got_value = false;
+  for (std::list<std::string>::iterator it = cb_2.values().begin();
+       it != cb_2.values().end(); it++) {
+    if (value == *it) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value)
+    FAIL();
   cb_2.Reset();
 
   // loading the value with the client
@@ -701,8 +710,17 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
     &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_EQ(static_cast<unsigned int>(1), cb_2.values().size());
-  ASSERT_EQ(value, cb_2.values().front());
+  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  got_value = false;
+  for (std::list<std::string>::iterator it = cb_2.values().begin();
+       it != cb_2.values().end(); it++) {
+    if (value == *it) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value)
+    FAIL();
   cb_2.Reset();
 
   // Doing a find closest nodes with the client
