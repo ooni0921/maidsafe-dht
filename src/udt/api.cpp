@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 05/06/2009
+   Yunhong Gu, last updated 05/21/2009
 *****************************************************************************/
 
 #ifdef WIN32
@@ -391,6 +391,7 @@ int CUDTUnited::newConnection(const UDTSOCKET listen, const sockaddr* peer, CHan
 
    // copy address information of local node
    ns->m_pUDT->m_pSndQueue->m_pChannel->getSockAddr(ns->m_pSelfAddr);
+   CIPAddress::pton(ns->m_pSelfAddr, ns->m_pUDT->m_piSelfIP, ns->m_iIPversion);
 
    // protect the m_Sockets structure.
    CGuard::enterCS(m_ControlLock);
@@ -463,7 +464,7 @@ CUDTSocket::UDTSTATUS CUDTUnited::getStatus(const UDTSOCKET u)
    if (i->second->m_pUDT->m_bBroken)
       return CUDTSocket::BROKEN;
 
-   return i->second->m_Status;
+   return i->second->m_Status;   
 }
 
 int CUDTUnited::bind(const UDTSOCKET u, const sockaddr* name, const int& namelen)
@@ -665,22 +666,13 @@ UDTSOCKET CUDTUnited::accept(const UDTSOCKET listen, sockaddr* addr, int* addrle
       throw CUDTException(5, 6, 0);
    }
 
-   CUDTSocket* tmp_sock = locate(u);
-   if (tmp_sock == NULL)
-   {
-      if (!ls->m_pUDT->m_bSynRecving)
-         throw CUDTException(6, 2, 0);
-      throw CUDTException(5, 6, 0);
-   }
-//   if (AF_INET == locate(u)->m_iIPversion)
-   if (AF_INET == tmp_sock->m_iIPversion)
+   if (AF_INET == locate(u)->m_iIPversion)
       *addrlen = sizeof(sockaddr_in);
    else
       *addrlen = sizeof(sockaddr_in6);
 
    // copy address information of peer node
-//   memcpy(addr, locate(u)->m_pPeerAddr, *addrlen);
-   memcpy(addr, tmp_sock->m_pPeerAddr, *addrlen);
+   memcpy(addr, locate(u)->m_pPeerAddr, *addrlen);
 
    return u;
 }
@@ -724,6 +716,7 @@ int CUDTUnited::connect(const UDTSOCKET u, const sockaddr* name, const int& name
 
    // copy address information of local node
    s->m_pUDT->m_pSndQueue->m_pChannel->getSockAddr(s->m_pSelfAddr);
+   CIPAddress::pton(s->m_pSelfAddr, s->m_pUDT->m_piSelfIP, s->m_iIPversion);
 
    // record peer address
    if (AF_INET == s->m_iIPversion)
@@ -744,7 +737,7 @@ int CUDTUnited::close(const UDTSOCKET u)
 {
    CUDTSocket* s = locate(u);
 
-   // silently drop a request to close an invalid ID, rather than return error
+   // silently drop a request to close an invalid ID, rather than return error   
    if (NULL == s)
       return 0;
 
