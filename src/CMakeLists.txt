@@ -95,12 +95,16 @@ LIST(APPEND T_UPNP_DIR ${T_UPNP_C} ${T_UPNP_H})                                 
 FILE(GLOB M_UPNP_C "upnp/*.c*")                                    #
 FILE(GLOB M_UPNP_H "upnp/*.h*")                                    #
 LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})                                  #
+FILE(GLOB T_FUNC_KADEMLIA_C "tests/functionalkademlia/*.c*")                      #
+FILE(GLOB T_FUNC_KADEMLIA_H "tests/functionalkademlia/*.h*")                      #
+LIST(APPEND T_FUNC_KADEMLIA_DIR ${T_FUNC_KADEMLIA_C} ${T_FUNC_KADEMLIA_H})                      #
 
 ######################################################################################
 #All Platforms:  Add Test Exes and Create all maidsafe-dht libs                                 #
 #######################################################################################
 add_executable(TESTbase ${T_MAIN} ${T_BASE_DIR})
 add_executable(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR})
+add_executable(TESTfunctionalkademlia ${T_MAIN} ${T_FUNC_KADEMLIA_DIR})
 add_executable(TESTknode "tests/kademlia/testknode.cc")
 add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR})
 add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR})
@@ -168,6 +172,7 @@ TARGET_LINK_LIBRARIES(TESTbase  PDbaselib sqlite3 protobuf  gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTtransport PDtransportlib  PDbaselib PDpbmsgslib gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTrpcprotocol PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib  ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTkademlia PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(TESTfunctionalkademlia PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTknode PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp ${SYS_LIB} gtest )
 TARGET_LINK_LIBRARIES(maidsafe-dht PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib PDupnplib ${SYS_LIB} )
@@ -179,7 +184,7 @@ TARGET_LINK_LIBRARIES(maidsafe-dht PDkademlialib PDrpcprotocollib PDtransportlib
 IF (APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10  -D_FILE_OFFSET_BITS=64" )
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 " )
-  SET(TARGET_PROPERTIES_DEBUG TESTbase TESTknode TESTkademlia TESTtransport TESTrealmaidsafe TESTrealkademlia  LINK_FLAGS -fprofile-arcs -ftest-coverage)
+  SET(TARGET_PROPERTIES_DEBUG TESTbase TESTknode TESTkademlia TESTfunctionalkademlia TESTtransport TESTrealmaidsafe TESTrealkademlia  LINK_FLAGS -fprofile-arcs -ftest-coverage)
 ELSEIF (UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized ")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 ")
@@ -224,9 +229,9 @@ IF(WIN32)
 ADD_TEST(Knode ${EXECUTABLE_OUTPUT_PATH}/TESTknode.exe)
 ENDIF()
 IF(UNIX)
-	FOREACH(TESTTYPE TESTfs TESTbase TESTkademlia TESTtransport TESTrpcprotocol)
+	FOREACH(TESTTYPE TESTfs TESTbase TESTkademlia TESTfunctionalkademlia TESTtransport TESTrpcprotocol)
 ELSE(UNIX)
-	FOREACH(TESTTYPE TESTbase.exe TESTkademlia.exe TESTtransport.exe  TESTrpcprotocol.exe)
+	FOREACH(TESTTYPE TESTbase.exe TESTkademlia.exe TESTfunctionalkademlia.exe TESTtransport.exe  TESTrpcprotocol.exe)
 ENDIF(UNIX)
 	EXEC_PROGRAM(${EXECUTABLE_OUTPUT_PATH}/${TESTTYPE} ARGS --gtest_list_tests OUTPUT_VARIABLE maid_tests)
 	if(WIN32)

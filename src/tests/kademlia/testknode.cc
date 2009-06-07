@@ -883,105 +883,105 @@ TEST_F(KNodeTest, BEH_KAD_StartStopNode) {
   cb_.Reset();
 }
 
-TEST_F(KNodeTest, FUNC_KAD_StartStopRandomNodes) {
-  unsigned int N = 6;
-  unsigned int n = 0;
-  CryptoPP::AutoSeededRandomPool rng;
-  CryptoPP::Integer rand_num(rng, 32);
-  boost::uint32_t num;
-
-  // Generate set of N nodes to be started and stopped
-  std::set<int> nodes;
-  std::set<int>::iterator it;
-  while (nodes.size() < N) {
-    if (!rand_num.IsConvertableToLong()) {
-      num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
-        rand_num.AbsoluteValue().ConvertToLong());
-    } else {
-      num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-    }
-    int r_node = 1 + static_cast<int>(num % 19);
-    nodes.insert(r_node);
-    rand_num.Randomize(rng, 32);
-  }
-
-  // Generate times to start and stop
-  boost::uint64_t stop_times[N];
-  boost::uint64_t restart_times[N];
-  boost::uint64_t largest_time = 4;
-
-  for (n = 0; n < N; ++n) {
-    if (!rand_num.IsConvertableToLong()) {
-      num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
-        rand_num.AbsoluteValue().ConvertToLong());
-    } else {
-      num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-    }
-    rand_num.Randomize(rng, 32);
-    stop_times[n] = 5 + static_cast<boost::uint64_t>(num % 100);
-    restart_times[n] = 1;
-    while (stop_times[n] >= restart_times[n]) {
-      if (!rand_num.IsConvertableToLong()) {
-        num = std::numeric_limits<uint32_t>::max() +
-          static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-      } else {
-        num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-      }
-      rand_num.Randomize(rng, 32);
-      restart_times[n] = 5 + static_cast<boost::uint64_t>(num % 100);
-    }
-    restart_times[n] += 5;
-    if (restart_times[n] > largest_time) {
-      largest_time = restart_times[n];
-    }
-  }
-
-  // Printing the schedule
-  n = 0;
-  printf("\n\n\nSchedule:\nNode\tStop Time\tRestart Time\n");
-  for (it = nodes.begin(); it != nodes.end(); ++it) {
-    printf("%i\t%llu\t\t%llu\n", *it, stop_times[n], restart_times[n]);
-    n++;
-  }
-  printf("\n\n\n");
-
-  // Adding execution to call later timer
-  n = 0;
-  base::CallLaterTimer clt;
-  for (it = nodes.begin(); it != nodes.end(); ++it) {
-    cb_.Reset();
-    std::string db_local_ = "KnodeTest/datastore" + base::itos(62001 + *it);
-    std::string kad_config_file = db_local_ + "/.kadconfig";
-    clt.AddCallLater(stop_times[n] * 1000,
-                     boost::bind(&kad::KNode::Leave, knodes_[*it].get()));
-    base::callback_func_type f = boost::bind(&GeneralKadCallback::CallbackFunc,
-                                             &cb_,
-                                             _1);
-    clt.AddCallLater(restart_times[n] * 1000,
-                     boost::bind(&kad::KNode::Join,
-                                 knodes_[*it].get(),
-                                 knodes_[*it]->node_id(),
-                                 kad_config_file,
-                                 f,
-                                 false)
-                    );
-    n++;
-  }
-
-  boost::progress_timer t;
-  printf("largest time: %llu\n", largest_time);
-  while (t.elapsed() < largest_time + 10) {
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
-    printf("elapsed: %f\n", t.elapsed());
-  }
-
-  for (it = nodes.begin(); it != nodes.end(); ++it) {
-    ASSERT_TRUE(knodes_[*it]->is_joined()) <<
-      "Node " << *it << " did not rejoin";
-  }
-  nodes.clear();
-}
-
+//TEST_F(KNodeTest, FUNC_KAD_StartStopRandomNodes) {
+//  unsigned int N = 6;
+//  unsigned int n = 0;
+//  CryptoPP::AutoSeededRandomPool rng;
+//  CryptoPP::Integer rand_num(rng, 32);
+//  boost::uint32_t num;
+//
+//  // Generate set of N nodes to be started and stopped
+//  std::set<int> nodes;
+//  std::set<int>::iterator it;
+//  while (nodes.size() < N) {
+//    if (!rand_num.IsConvertableToLong()) {
+//      num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
+//        rand_num.AbsoluteValue().ConvertToLong());
+//    } else {
+//      num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+//    }
+//    int r_node = 1 + static_cast<int>(num % 19);
+//    nodes.insert(r_node);
+//    rand_num.Randomize(rng, 32);
+//  }
+//
+//  // Generate times to start and stop
+//  boost::uint64_t stop_times[N];
+//  boost::uint64_t restart_times[N];
+//  boost::uint64_t largest_time = 4;
+//
+//  for (n = 0; n < N; ++n) {
+//    if (!rand_num.IsConvertableToLong()) {
+//      num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
+//        rand_num.AbsoluteValue().ConvertToLong());
+//    } else {
+//      num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+//    }
+//    rand_num.Randomize(rng, 32);
+//    stop_times[n] = 5 + static_cast<boost::uint64_t>(num % 100);
+//    restart_times[n] = 1;
+//    while (stop_times[n] >= restart_times[n]) {
+//      if (!rand_num.IsConvertableToLong()) {
+//        num = std::numeric_limits<uint32_t>::max() +
+//          static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+//      } else {
+//        num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+//      }
+//      rand_num.Randomize(rng, 32);
+//      restart_times[n] = 5 + static_cast<boost::uint64_t>(num % 100);
+//    }
+//    restart_times[n] += 5;
+//    if (restart_times[n] > largest_time) {
+//      largest_time = restart_times[n];
+//    }
+//  }
+//
+//  // Printing the schedule
+//  n = 0;
+//  printf("\n\n\nSchedule:\nNode\tStop Time\tRestart Time\n");
+//  for (it = nodes.begin(); it != nodes.end(); ++it) {
+//    printf("%i\t%llu\t\t%llu\n", *it, stop_times[n], restart_times[n]);
+//    n++;
+//  }
+//  printf("\n\n\n");
+//
+//  // Adding execution to call later timer
+//  n = 0;
+//  base::CallLaterTimer clt;
+//  for (it = nodes.begin(); it != nodes.end(); ++it) {
+//    cb_.Reset();
+//    std::string db_local_ = "KnodeTest/datastore" + base::itos(62001 + *it);
+//    std::string kad_config_file = db_local_ + "/.kadconfig";
+//    clt.AddCallLater(stop_times[n] * 1000,
+//                     boost::bind(&kad::KNode::Leave, knodes_[*it].get()));
+//    base::callback_func_type f = boost::bind(&GeneralKadCallback::CallbackFunc,
+//                                             &cb_,
+//                                             _1);
+//    clt.AddCallLater(restart_times[n] * 1000,
+//                     boost::bind(&kad::KNode::Join,
+//                                 knodes_[*it].get(),
+//                                 knodes_[*it]->node_id(),
+//                                 kad_config_file,
+//                                 f,
+//                                 false)
+//                    );
+//    n++;
+//  }
+//
+//  boost::progress_timer t;
+//  printf("largest time: %llu\n", largest_time);
+//  while (t.elapsed() < largest_time + 10) {
+//    boost::this_thread::sleep(boost::posix_time::seconds(5));
+//    printf("elapsed: %f\n", t.elapsed());
+//  }
+//
+//  for (it = nodes.begin(); it != nodes.end(); ++it) {
+//    ASSERT_TRUE(knodes_[*it]->is_joined()) <<
+//      "Node " << *it << " did not rejoin";
+//  }
+//  nodes.clear();
+//}
+//
 
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
