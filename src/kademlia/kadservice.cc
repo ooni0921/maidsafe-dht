@@ -163,7 +163,7 @@ void KadService::FindNode(google::protobuf::RpcController *,
     exclude_contacts.push_back(sender);
     knode_->FindKClosestNodes(key, &closest_contacts, exclude_contacts);
     bool found_node = false;
-    for (int i = 0; i < static_cast<int>(closest_contacts.size()); i++) {
+    for (int i = 0; i < static_cast<int>(closest_contacts.size()); ++i) {
       std::string contact_str;
       closest_contacts[i].SerialiseToString(&contact_str);
       response->add_closest_nodes(contact_str);

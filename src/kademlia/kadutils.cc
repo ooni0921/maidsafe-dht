@@ -31,26 +31,28 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 
 namespace kad {
-boost::mp_math::mp_int<> kademlia_distance(
-    const std::string &key_one,
-    const std::string &key_two) {
-  std::string enc_key_one, enc_key_two;
-  base::encode_to_hex(key_one, enc_key_one);
-  enc_key_one = "0x"+enc_key_one;
-  base::encode_to_hex(key_two, enc_key_two);
-  enc_key_two = "0x"+enc_key_two;
-  boost::mp_math::mp_int<> value_one(enc_key_one);
-  boost::mp_math::mp_int<> value_two(enc_key_two);
+BigInt StrToBigInt(const std::string &key) {
+  std::string enc_key("");
+  base::encode_to_hex(key, enc_key);
+  enc_key = "0x"+enc_key;
+  BigInt value(enc_key);
+  return value;
+}
+
+BigInt kademlia_distance(const std::string &key_one,
+                         const std::string &key_two) {
+  BigInt value_one = StrToBigInt(key_one);
+  BigInt value_two = StrToBigInt(key_two);
   return value_one ^ value_two;
 }
 
-std::string random_kademlia_id(const boost::mp_math::mp_int<> &min_range,
-  const boost::mp_math::mp_int<> &max_range) {
+std::string random_kademlia_id(const BigInt &min_range,
+                               const BigInt &max_range) {
   boost::mt19937 gen;
   gen.seed(static_cast<unsigned int>(base::random_32bit_uinteger()\
     ^static_cast<unsigned int>(std::time(0))));
   boost::mp_math::uniform_mp_int<> big_random(0, max_range - min_range);
-  boost::mp_math::mp_int<> rand_num = big_random(gen);
+  BigInt rand_num = big_random(gen);
   rand_num = rand_num % (max_range - min_range) + min_range;
   if (rand_num >= max_range)
     rand_num = max_range - 1;
@@ -73,11 +75,11 @@ std::string client_node_id() {
   return id;
 }
 std::string vault_random_id() {
-  boost::mp_math::mp_int<> min_range(0);
-  boost::mp_math::mp_int<> max_range(2);
+  BigInt min_range(0);
+  BigInt max_range(2);
   max_range.pow(kKeySizeBytes*8);
   max_range--;
   return random_kademlia_id(min_range, max_range);
 }
 
-}  // namespace
+}  // namespace kad

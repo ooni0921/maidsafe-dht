@@ -32,20 +32,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # pragma once
 #endif
 
-#include <boost/mp_math/mp_int.hpp>
 #include <string>
+#include "maidsafe/maidsafe-dht_config.h"
 
 namespace kad {
+BigInt StrToBigInt(const std::string &key);
 // kademlia distance the input of the kademlia keys must not be encoded
-boost::mp_math::mp_int<> kademlia_distance(const std::string &key_one,
-                                           const std::string &key_two);
-
-std::string random_kademlia_id(const boost::mp_math::mp_int<> &min_range,
-                               const boost::mp_math::mp_int<> &max_range);
-
+BigInt kademlia_distance(const std::string &key_one,
+                         const std::string &key_two);
+std::string random_kademlia_id(const BigInt &min_range,
+                               const BigInt &max_range);
 std::string client_node_id();
 std::string vault_random_id();
-
 }  // namespace kad
 
 #endif  // KADEMLIA_KADUTILS_H_

@@ -345,20 +345,35 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
   // not close to id to be searched for later, and ensure they are all
   // returned from the search.  Use one of these to search for later.
   std::string later_key("");
+  std::vector<std::string> rand_ids;
   for (int i = 0; i < K/2; ++i) {
-    int r = rand();  // NOLINT (Fraser)
-    std::string hex_id = crypto_.Hash(base::itos(r), "", crypto::STRING_STRING,
-                                      true);
-    if (hex_id[0] == 'a')
-      hex_id.replace(0, 1, "f");
+    bool unique(false);
+    std::string hex_id("");
+    while (!unique) {
+      int r = rand();  // NOLINT (Fraser)
+      hex_id = crypto_.Hash(base::itos(r), "", crypto::STRING_STRING, true);
+      if (hex_id[0] == 'a')
+        hex_id.replace(0, 1, "0");
+      unique = true;
+      if (rand_ids.size() > 0) {
+        for (boost::uint32_t j = 0; j < rand_ids.size(); ++j) {
+          if (rand_ids[j] == hex_id) {
+            unique = false;
+            break;
+          }
+        }
+      }
+      rand_ids.push_back(hex_id);
+    }
     std::string id;
     base::decode_from_hex(hex_id, id);
     later_key = id;
     std::string ip = "127.0.0.11";
     boost::uint16_t port = 10101+i;
     Contact contact(id, ip, port, ip, port);
-    EXPECT_GE(routingtable_->AddContact(contact), 0);
     Contact contactback;
+    EXPECT_FALSE(routingtable_->GetContact(id, &contactback));
+    EXPECT_EQ(routingtable_->AddContact(contact), 0);
     EXPECT_TRUE(routingtable_->GetContact(id, &contactback));
     EXPECT_EQ(id, contactback.node_id());
   }
@@ -381,7 +396,7 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
   for (int i = 0; i < 50; ++i) {
     std::string character = "1";
     std::string hex_id = "";
-    if (i < K-1)
+    if (i < K)
       character = "a";
     for (int j = 0; j < 126; ++j)
       hex_id += character;
@@ -391,7 +406,7 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
     std::string ip = "127.0.0.6";
     boost::uint16_t port = 9000+i;
     Contact contact(id, ip, port + i, ip, port + i);
-    if (i < K-1)
+    if (i < K)
       close_contacts.push_back(contact);
     EXPECT_GE(routingtable_->AddContact(contact), 0);
   }
@@ -430,6 +445,7 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   find_node_response.Clear();
+
   service_->FindNode(&controller, &find_node_request, &find_node_response,
                      done4);
   EXPECT_TRUE(find_node_response.IsInitialized());
@@ -441,9 +457,9 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
   for (int i = 0; i < K; ++i) {
     Contact contact;
     contact.ParseFromString(find_node_response.closest_nodes(i));
+    if (contact.node_id() == later_key)
+      found = true;
     for (itr = close_contacts.begin(); itr < close_contacts.end(); ++itr) {
-      if (contact.node_id() == later_key)
-        found = true;
       if (*itr == contact) {
         close_contacts.erase(itr);
         break;

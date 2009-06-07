@@ -820,15 +820,15 @@ void KNodeImpl::IterativeLookUp_CancelActiveProbe(
       !data->wait_for_key && !data->is_callbacked) {
     // force iteration
 //    guard.unlock();
-      printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe calling ");
-      printf("search iter\n", host_port_);
+      printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
+      printf(" calling search iter\n");
     IterativeLookUp_SearchIteration(data);
   } else {
-    printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe -- active ");
-    printf("probes %i\n", host_port_, data->active_probes.size());
+    printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
+    printf(" -- active probes %i\n", data->active_probes.size());
   }
-  printf("%i -- End--In KNode::IterativeLookUp_CancelActiveProbe -- active ");
-  printf("probes %i\n", host_port_, data->active_probes.size());
+  printf("%i -- End--In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
+  printf(" -- active probes %i\n", data->active_probes.size());
 }
 
 void KNodeImpl::IterativeLookUp_ExtendShortList(
@@ -952,8 +952,8 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
       }
     }
 //    guard.unlock();
-    printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList invalid response");
-    printf(" cancelling probe\n", host_port_);
+    printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList ", host_port_);
+    printf("invalid response cancelling probe\n");
     IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
     delete response;
 #ifdef DEBUG
@@ -1269,8 +1269,8 @@ void KNodeImpl::IterativeLookUp_SearchIteration(
       // (static_cast<int>(data->active_probes.size()) == 0)
       // IterativeLookUp is done, prepare the result and call back
 #ifdef DEBUG
-      printf("%i -- End 2 -KNodeImpl::IterativeLookUp_SearchIteration");
-      printf(" CallingBack\n", host_port_);
+      printf("%i -- End 2 -KNodeImpl::IterativeLookUp_", host_port_);
+      printf("SearchIteration CallingBack\n");
 #endif
       IterativeLookUp_Callback(data);
 #ifdef DEBUG
@@ -1284,8 +1284,8 @@ void KNodeImpl::IterativeLookUp_SearchIteration(
   // already found a value, stop iteration
   if ((data->method == FIND_VALUE) && (data->find_value_result.size() > 0)) {
 #ifdef DEBUG
-    printf("%i -- End 3 -KNodeImpl::IterativeLookUp_SearchIteration");
-    printf(" CallingBack\n", host_port_);
+    printf("%i -- End 3 -KNodeImpl::IterativeLookUp_", host_port_);
+    printf("SearchIteration CallingBack\n");
 #endif
     IterativeLookUp_Callback(data);
 #ifdef DEBUG

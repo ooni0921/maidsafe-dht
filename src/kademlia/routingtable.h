@@ -31,9 +31,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/mp_math/mp_int.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/cstdint.hpp>
+#include <list>
+#include <map>
 #include <string>
 #include <vector>
-#include <list>
+
+#include "maidsafe/maidsafe-dht_config.h"
 
 namespace kad {
 class KBucket;
@@ -72,16 +75,34 @@ class RoutingTable {
   void Clear();
 
  private:
-  std::vector< boost::shared_ptr<KBucket> > k_buckets_;
-  std::string holder_id_;  // holder's node_id
-  int bucket_of_p_;
-  int brother_bucket_of_p_;
   // Calculate the index of the k-bucket which is responsible for the specified
   // key (or ID)
   int KBucketIndex(const std::string &key);
-  // Split the kbucket in the specified index into two new ones
+  // Return vector of k-bucket indices sorted from closest to key to furthest
+  std::vector<int> SortBucketsByDistance(const std::string &key);
+  // Takes a vector of contacts arranged in arbitrary order and sorts them from
+  // closest to key to furthest.  Returns 0 on success.
+  int SortContactsByDistance(const std::string &key,
+                             std::vector<Contact> *contacts);
+  // Bisect the k-bucket in the specified index into two new ones
   void SplitKbucket(const int &index);
+  // Forces the brother k-bucket of the holder to accept a new contact which
+  // would normally be dropped if it is within the k closest contacts to the
+  // holder's ID.
   int ForceKAcceptNewPeer(const Contact &new_contact);
+  std::vector< boost::shared_ptr<KBucket> > k_buckets_;
+  // Mapping of each k-bucket's maximum address to its index in the vector of
+  // k-buckets
+  std::map<BigInt, int> bucket_upper_address_;
+  // Holder's node ID
+  std::string holder_id_;
+  // Index of k-bucket covering address space which incorporates holder's own
+  // node ID.  NB - holder's ID is never actually added to any of its k-buckets.
+  int bucket_of_holder_;
+  // Index of the only k-bucket covering same amount of address space as
+  // bucket_of_holder_ above.  This is the only bucket eligible to be considered
+  // for the ForceK function.
+  int brother_bucket_of_holder_;
 };
 }  // namespace kad
 #endif  // KADEMLIA_ROUTINGTABLE_H_

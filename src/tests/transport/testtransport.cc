@@ -910,7 +910,7 @@ TEST_F(TransportTest, BEH_TRANS_SendRespond) {
     }
   }
   ASSERT_TRUE(msg_handler1.msgs.empty());
-  ASSERT_EQ(9, msg_handler2.msgs.size());
+  ASSERT_EQ(static_cast<unsigned int>(9), msg_handler2.msgs.size());
   for (int i = 0; i < 9; i++) {
     for (unsigned int j = 0; j < msgs_sent; j++) {
       if (msgs[j] == msg_handler2.msgs.front()) {

@@ -185,6 +185,7 @@ void sleep(float secs) {
 }
 
 bool encode_to_hex(const std::string &value, std::string &result) {
+  result = "";
   CryptoPP::StringSource(reinterpret_cast<const byte*>(value.c_str()),
     value.size(), true,
     new CryptoPP::HexEncoder(new CryptoPP::StringSink(result), false));
@@ -192,6 +193,7 @@ bool encode_to_hex(const std::string &value, std::string &result) {
 }
 
 bool decode_from_hex(const std::string &value, std::string &result) {
+  result = "";
   CryptoPP::StringSource(reinterpret_cast<const byte*>(value.c_str()),
     value.size(), true,
     new CryptoPP::HexDecoder(new CryptoPP::StringSink(result)));
