@@ -185,17 +185,18 @@ void sleep(float secs) {
 }
 
 bool encode_to_hex(const std::string &value, std::string &result) {
-//  result = "";
-  CryptoPP::StringSource(value, true,
-      new CryptoPP::HexEncoder(new CryptoPP::StringSink(result), false));
+  CryptoPP::StringSource(reinterpret_cast<const byte*>(value.c_str()),
+    value.size(), true,
+    new CryptoPP::HexEncoder(new CryptoPP::StringSink(result), false));
   return (result.size() == value.size()*2);
 }
 
 bool decode_from_hex(const std::string &value, std::string &result) {
-//  result = "";
-  CryptoPP::StringSource(value, true,
-      new CryptoPP::HexDecoder(new CryptoPP::StringSink(result)));
-  return ((result.size() * 2) == value.size());
+  CryptoPP::StringSource(reinterpret_cast<const byte*>(value.c_str()),
+    value.size(), true,
+    new CryptoPP::HexDecoder(new CryptoPP::StringSink(result)));
+  return (static_cast<int>(result.size() * 2) ==
+    static_cast<int>(value.size()));
 }
 
 std::string inet_atob(const std::string &dec_ip) {
