@@ -524,7 +524,7 @@ void Transport::ReceiveHandler() {
                 if (t_msg.has_hp_msg()) {
                   HandleRendezvousMsgs(t_msg.hp_msg());
                   result = UDT::close((*it).second.u);
-                  incoming_sockets_.erase(it);
+                  dead_connections_ids.push_back((*it).first);
                 } else if (t_msg.has_rpc_msg()) {
                   IncomingMessages msg(connection_id);
                   msg.msg = t_msg.rpc_msg();
