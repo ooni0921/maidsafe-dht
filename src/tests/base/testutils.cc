@@ -126,7 +126,7 @@ TEST_F(UtilsTest, BEH_BASE_RandomString) {
 }
 
 TEST_F(UtilsTest, BEH_BASE_HexEncodeDecode) {
-  std::string str("Hello world! And hello nurse!!");
+  const std::string str("Hello world! And hello nurse!!");
   std::string encoded;
   ASSERT_TRUE(base::encode_to_hex(str, encoded)) << "Encoding failed.";
 
@@ -135,8 +135,10 @@ TEST_F(UtilsTest, BEH_BASE_HexEncodeDecode) {
 
   ASSERT_EQ(str, decoded) << "encoded -> decoded failed.";
 
-  ASSERT_FALSE(base::decode_from_hex(str, decoded)) << "Decoding passed when it should have failed.";
-  ASSERT_FALSE(base::encode_to_hex(decoded, encoded)) << "Encoding passed when it should have failed.";
+  ASSERT_FALSE(base::decode_from_hex(str, decoded))
+      << "Decoding passed when it should have failed.";
+  ASSERT_FALSE(base::encode_to_hex(decoded, encoded))
+      << "Encoding passed when it should have failed.";
 }
 
 
