@@ -515,7 +515,7 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
 
   bool finished = false;
   boost::progress_timer t;
-  while (!finished && t.elapsed() < 5) {
+  while (!finished && t.elapsed() < 10) {
       if (msg_handler[0].msgs.size() >= messages_size) {
         finished = true;
         continue;
