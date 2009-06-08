@@ -197,14 +197,15 @@ int Transport::Send(const std::string &remote_ip,
   int result = 0;
   // the node receiver is directly connected, no rendezvous information
   if (rendezvous_ip == "" && rendezvous_port == 0) {
-    if (!Connect(&skt, remote_ip, remote_port, false)) {
+    int conn_result = Connect(&skt, remote_ip, remote_port, false);
+    if (conn_result != 0) {
 #ifdef DEBUG
       printf("In Transport::Send(%i), ", listening_port_);
       printf("failed to connect to remote port %i socket.\n",
              remote_port);
 #endif
       UDT::close(skt);
-      return 1;
+      return conn_result;
     }
     if (type == STRING) {
       int64_t data_size = data.size();
@@ -239,7 +240,8 @@ int Transport::Send(const std::string &remote_ip,
       AddIncomingConnection(skt, conn_id);
   } else {
     UDTSOCKET rend_skt;
-    if (!Connect(&rend_skt, rendezvous_ip, rendezvous_port, false)) {
+    int conn_result = Connect(&rend_skt, rendezvous_ip, rendezvous_port, false);
+    if (conn_result != 0) {
 #ifdef DEBUG
       printf("In Transport::Send(%i), ", listening_port_);
       printf("failed to connect to rendezvouz port %i socket %i.\n",
@@ -256,7 +258,7 @@ int Transport::Send(const std::string &remote_ip,
                result);
       }
 #endif
-      return 1;
+      return conn_result;
     }
     TransportMessage t_msg;
     HolePunchingMsg *msg = t_msg.mutable_hp_msg();
@@ -275,9 +277,9 @@ int Transport::Send(const std::string &remote_ip,
       return 1;
     }
 
-    if (UDT::ERROR == UDT::send(rend_skt, ser_msg.c_str(), rend_data_size, 0)){
+    if (UDT::ERROR == UDT::send(rend_skt, ser_msg.c_str(), rend_data_size, 0)) {
       UDT::close(rend_skt);
-      return 0;
+      return 1;
     }
     // TODO(jose): establish connect in a thread or in another asynchronous
     // way to avoid blocking in the upper layers
@@ -296,7 +298,8 @@ int Transport::Send(const std::string &remote_ip,
     int retries = 4;
     bool connected = false;
     for (int i = 0; i < retries && !connected; i++) {
-      if (Connect(&skt, remote_ip, remote_port, false))
+      conn_result = Connect(&skt, remote_ip, remote_port, false);
+      if (conn_result == 0)
         connected = true;
     }
     if (!connected) {
@@ -315,7 +318,7 @@ int Transport::Send(const std::string &remote_ip,
                result);
       }
 #endif
-      return 1;
+      return conn_result;
     }
 
     int64_t data_size = data.size();
@@ -429,13 +432,15 @@ void Transport::ReceiveHandler() {
     for (it = incoming_sockets_.begin(); it != incoming_sockets_.end();
         it++) {
       int res = UDT::send((*it).second.u, NULL, 0, 0);
-      //if (UDT::send((*it).second.u, NULL, 0, 0) == 0) {
       if (res == 0) {
         UD_SET((*it).second.u, &readfds);
       } else {
-        printf("%d -- dead connection found %d \n"/*--- %s \n res=%i, removing it\n"*/,
-            listening_port_, (*it).first);//,
+#ifdef DEBUG
+        printf("%d -- dead connection found %d \n",
+            /*--- %s \n res=%i, removing it\n"*/
+            listening_port_, (*it).first);  // ,
 //            UDT::getlasterror().getErrorMessage(), res);
+#endif
         dead_connections_ids.push_back((*it).first);
       }
     }
@@ -532,7 +537,7 @@ void Transport::ReceiveHandler() {
                   }
                   msg_hdl_cond_.notify_one();
                 }
-              //break;
+              // break;
               }
             }
           }
@@ -657,7 +662,7 @@ void Transport::SendHandle() {
   }
 }
 
-bool Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
+int Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
       const uint16_t &peer_port, bool) {
   bool blocking = false;
   bool reuse_addr = true;
@@ -671,7 +676,7 @@ bool Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
 #ifdef DEBUG
     printf("Bind error: %s\n", UDT::getlasterror().getErrorMessage());
 #endif
-    return false;
+    return -1;
   }
 
   sockaddr_in peer_addr;
@@ -687,20 +692,20 @@ bool Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
     printf("remote ip %s", peer_address.c_str());
     printf(" bad address\n");
 #endif
-    return false;
+    return -1;
   }
-//#ifdef DEBUG
+// #ifdef DEBUG
 //  printf("remote address %s:%d\n", peer_address.c_str(), peer_port);
-//#endif
+// #endif
   if (UDT::ERROR == UDT::connect(*skt, reinterpret_cast<sockaddr*>(&peer_addr),
       sizeof(peer_addr))) {
 #ifdef DEBUG
     printf("UDT connect error %d: %s\n", UDT::getlasterror().getErrorCode(),
         UDT::getlasterror().getErrorMessage());
 #endif
-    return false;
+    return UDT::getlasterror().getErrorCode();
   }
-  return true;
+  return 0;
 }
 
 void Transport::HandleRendezvousMsgs(const HolePunchingMsg &message) {
@@ -728,7 +733,7 @@ void Transport::HandleRendezvousMsgs(const HolePunchingMsg &message) {
       message.port());
 #endif
     UDTSOCKET skt;
-    if (Connect(&skt, message.ip(), message.port(), true)) {
+    if (Connect(&skt, message.ip(), message.port(), true) == 0) {
       UDT::close(skt);
     }
   }
@@ -769,12 +774,12 @@ void Transport::PingHandle() {
       if (directly_connected_) return;
     }
     UDTSOCKET skt;
-//#ifdef DEBUG
+// #ifdef DEBUG
 //    printf("Transport::PingHandle(): rv_ip(%s) -- rv_port(%i)\n",
 //      my_rendezvous_ip_.c_str(), my_rendezvous_port_);
-//#endif
+// #endif
 
-    if (Connect(&skt, my_rendezvous_ip_, my_rendezvous_port_, false)) {
+    if (Connect(&skt, my_rendezvous_ip_, my_rendezvous_port_, false) == 0) {
       UDT::close(skt);
       bool dead_rendezvous_server = false;
       // it is not dead, no nead to return the ip and port
@@ -797,7 +802,7 @@ void Transport::PingHandle() {
 bool Transport::CanConnect(const std::string &ip, const uint16_t &port) {
   UDTSOCKET skt;
   bool result = false;
-  if (Connect(&skt, ip, port, false))
+  if (Connect(&skt, ip, port, false) == 0)
     result = true;
   UDT::close(skt);
   return result;
@@ -836,11 +841,11 @@ void Transport::AcceptConnHandler() {
 }
 
 void Transport::MessageHandler() {
-  while (true){
+  while (true) {
     {
       {
         boost::mutex::scoped_lock guard(msg_hdl_mutex_);
-        while(incoming_msgs_queue_.empty() && !stop_) {
+        while (incoming_msgs_queue_.empty() && !stop_) {
           msg_hdl_cond_.wait(guard);
         }
       }

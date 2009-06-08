@@ -61,7 +61,7 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 namespace transport {
 
 struct IncomingMessages {
-  IncomingMessages(const boost::uint32_t &id)
+  explicit IncomingMessages(const boost::uint32_t &id)
     : msg(), conn_id(id) {}
   IncomingMessages() : msg(), conn_id() {}
   rpcprotocol::RpcMessage msg;
@@ -134,7 +134,7 @@ class Transport {
   Transport& operator=(const Transport&);
   Transport(const Transport&);
   void SendHandle();
-  bool Connect(UDTSOCKET *skt, const std::string &peer_address,
+  int Connect(UDTSOCKET *skt, const std::string &peer_address,
       const uint16_t &peer_port, bool short_timeout);
   void PingHandle();
   void AcceptConnHandler();

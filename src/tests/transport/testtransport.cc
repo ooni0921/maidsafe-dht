@@ -35,7 +35,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht_config.h"
 #include "transport/transportapi.h"
 
-void send_string(transport::Transport* node,
+class TransportNode {
+ public:
+  TransportNode(transport::Transport *tnode) : tnode_(tnode),
+      successful_conn_(0), refused_conn_(0) {}
+  transport::Transport *tnode() { return tnode_; }
+  int successful_conn() { return successful_conn_; }
+  int refused_conn() { return refused_conn_; }
+  void IncreaseSuccessfulConn() { successful_conn_++; }
+  void IncreaseRefusedConn() { refused_conn_++; }
+ private:
+  transport::Transport *tnode_;
+  int successful_conn_, refused_conn_;
+};
+
+void send_string(TransportNode* node,
                  int port,
                  int repeat,
                  rpcprotocol::RpcMessage msg,
@@ -49,21 +63,25 @@ void send_string(transport::Transport* node,
   } else {
     ip = std::string("127.0.0.1");
   }
-  int sent = 0;
   for (int i = 0; i < repeat; ++i) {
-    if (node->Send(ip, port, "", 0, msg, &id, keep_conn) != 0)
-      printf("fail to send (%i)\n", our_port);
-    else
-      ++sent;
+    int send_res = node->tnode()->Send(ip, port, "", 0, msg, &id, keep_conn);
+    if (send_res == 1002) {
+      // connection refused - wait 10 sec and resend
+      boost::this_thread::sleep(boost::posix_time::seconds(10));
+      send_res = node->tnode()->Send(ip, port, "", 0, msg, &id, keep_conn);
+    }
+    if (send_res == 0) node->IncreaseSuccessfulConn();
+    else node->IncreaseRefusedConn();
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  printf("thread %i finished sending %i messages\n", our_port, sent);
+  printf("thread %i finished sending %i messages\n", our_port,
+      node->successful_conn());
 }
 
 class MessageHandler {
  public:
   MessageHandler(): msgs(), ids(), dead_server_(true), server_ip_(),
-    server_port_(0) {}
+    server_port_(0), node_(NULL) {}
   void OnMessage(const rpcprotocol::RpcMessage &msg,
       const boost::uint32_t conn_id) {
     std::string message;
@@ -71,6 +89,8 @@ class MessageHandler {
     msgs.push_back(message);
     ids.push_back(conn_id);
     printf("message %i arrived\n", msgs.size());
+    if (node_ != NULL)
+      node_->CloseConnection(conn_id);
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
     const boost::uint16_t &port) {
@@ -78,11 +98,15 @@ class MessageHandler {
     server_ip_ = ip;
     server_port_ = port;
   }
+  void set_node(transport::Transport *node) {
+    node_ = node;
+  }
   std::list<std::string> msgs;
   std::list<boost::uint32_t> ids;
   bool dead_server_;
   std::string server_ip_;
   boost::uint16_t server_port_;
+  transport::Transport *node_;
 };
 
 class MessageHandlerEchoReq {
@@ -442,7 +466,7 @@ TEST_F(TransportTest, BEH_TRANS_TimeoutForSendingToAWrongPeer) {
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
   rpc_msg.set_message_id(2000);
   rpc_msg.set_args(base::RandomString(64*1024));
-  ASSERT_EQ(1, node1.Send("127.0.0.1", 52002, "", 0, rpc_msg, &id, false));
+  ASSERT_NE(1, node1.Send("127.0.0.1", 52002, "", 0, rpc_msg, &id, false));
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   node1.Stop();
 }
@@ -455,6 +479,7 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
   const int kFirstPort = 52000;
   MessageHandler msg_handler[kNumNodes];
   transport::Transport* nodes[kNumNodes];
+  TransportNode* tnodes[kNumNodes-1];
   boost::thread_group thr_grp;
   boost::thread *thrd;
   rpcprotocol::RpcMessage rpc_msg;
@@ -470,17 +495,23 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
       boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[i],
                   _1, _2, _3)));
     if (i != 0) {
-      thrd = new boost::thread(&send_string, trans, kFirstPort, kRepeatSend,
+      TransportNode *tnode = new TransportNode(trans);
+      thrd = new boost::thread(&send_string, tnode, kFirstPort, kRepeatSend,
                                rpc_msg, false, kFirstPort+i);
       thr_grp.add_thread(thrd);
+      tnodes[i-1] = tnode;
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    } else {
+      msg_handler[i].set_node(trans);
     }
     nodes[i] = trans;
   }
 
   thr_grp.join_all();
-  unsigned int messages_size = (kNumNodes - 1) * kRepeatSend;
-  printf("messages_size = %i\n", messages_size);
+  unsigned int messages_size = 0;
+  for (int i = 0; i < kNumNodes - 1; i++) {
+    messages_size += tnodes[i]->successful_conn();
+  }
 
   bool finished = false;
   boost::progress_timer t;
@@ -494,14 +525,18 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
 
   for (int k = 0; k < kNumNodes; ++k)
     nodes[k]->Stop();
+  printf("total number of successful connections = %i\n", messages_size);
   ASSERT_EQ(messages_size, msg_handler[0].msgs.size());
   while (!msg_handler[0].msgs.empty()) {
     std::string msg = msg_handler[0].msgs.back();
     EXPECT_EQ(sent_msg, msg);
     msg_handler[0].msgs.pop_back();
   }
-  for (int k = 0; k < kNumNodes; ++k)
+  for (int k = 0; k < kNumNodes; ++k) {
+    if (k < kNumNodes - 1)
+      delete tnodes[k];
     delete nodes[k];
+  }
 }
 
 TEST_F(TransportTest, BEH_TRANS_GetRemotePeerAddress) {
