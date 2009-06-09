@@ -72,6 +72,7 @@ class KadServicesTest: public testing::Test {
                       contact_(),
                       crypto_(),
                       node_id_(""),
+                      remote_node_id_(""),
                       service_(),
                       datastore_(),
                       routingtable_() {
@@ -90,7 +91,10 @@ class KadServicesTest: public testing::Test {
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
     base::decode_from_hex(hex_id, node_id_);
-    contact_.set_node_id(node_id_);
+    hex_id = "22222222222222222222222222222222222222222222222222222222222222222"
+             "222222222222222222222222222222222222222222222222222222222222222";
+    base::decode_from_hex(hex_id, remote_node_id_);
+    contact_.set_node_id(remote_node_id_);
     contact_.set_ip("127.0.0.1");
     contact_.set_port(1234);
     contact_.set_local_ip("127.0.0.2");
@@ -126,17 +130,9 @@ class KadServicesTest: public testing::Test {
     service_ = knodeimpl_->premote_service_;
     datastore_ = knodeimpl_->pdata_store_;
     routingtable_ = knodeimpl_->prouting_table_;
-#ifdef WIN32
-    HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(hconsole, 11 | 0 << 4);
-#endif
   }
 
   virtual void TearDown() {
-#ifdef WIN32
-    HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(hconsole, 7 | 0 << 4);
-#endif
     cb_.Reset();
     knodeimpl_->Leave();
     EXPECT_FALSE(knodeimpl_->is_joined());
@@ -156,6 +152,7 @@ class KadServicesTest: public testing::Test {
   ContactInfo contact_;
   crypto::Crypto crypto_;
   std::string node_id_;
+  std::string remote_node_id_;
   boost::shared_ptr<KadService> service_;
   boost::shared_ptr<DataStore> datastore_;
   boost::shared_ptr<RoutingTable> routingtable_;
@@ -194,6 +191,8 @@ TEST_F(KadServicesTest, BEH_KAD_Ping) {
   EXPECT_EQ(kRpcResultFailure, ping_response.result());
   EXPECT_FALSE(ping_response.has_echo());
   EXPECT_EQ(node_id_, ping_response.node_id());
+  Contact contactback;
+  EXPECT_FALSE(routingtable_->GetContact(remote_node_id_, &contactback));
   // Check success.
   ping_request.set_ping("ping");
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
@@ -204,6 +203,7 @@ TEST_F(KadServicesTest, BEH_KAD_Ping) {
   EXPECT_EQ(kRpcResultSuccess, ping_response.result());
   EXPECT_EQ("pong", ping_response.echo());
   EXPECT_EQ(node_id_, ping_response.node_id());
+  EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
 }
 
 TEST_F(KadServicesTest, BEH_KAD_FindValue) {
@@ -231,6 +231,8 @@ TEST_F(KadServicesTest, BEH_KAD_FindValue) {
   EXPECT_EQ(0, find_value_response.values_size());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_, find_value_response.node_id());
+  Contact contactback;
+  EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
   // Populate routing table & datastore & search for non-existant key.  Ensure k
   // contacts have IDs close to key being searched for.
   std::vector<std::string> ids;
@@ -341,6 +343,8 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
   EXPECT_EQ(0, find_node_response.values_size());
   EXPECT_FALSE(find_node_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_, find_node_response.node_id());
+  Contact contactback;
+  EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
   // Populate routing table with a few random contacts (< K), ensure they are
   // not close to id to be searched for later, and ensure they are all
   // returned from the search.  Use one of these to search for later.
@@ -377,7 +381,7 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
     EXPECT_TRUE(routingtable_->GetContact(id, &contactback));
     EXPECT_EQ(id, contactback.node_id());
   }
-  EXPECT_EQ(K/2, routingtable_->Size());
+  EXPECT_EQ((K/2) + 1, routingtable_->Size());
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   find_node_response.Clear();
@@ -505,6 +509,8 @@ TEST_F(KadServicesTest, BEH_KAD_Store) {
   std::vector<std::string> values;
   EXPECT_TRUE(datastore_->LoadItem(key, values));
   EXPECT_EQ(value1, values[0]);
+  Contact contactback;
+  EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
 
   // Store value2
   // Allow thread to sleep so that second value has a different last published
@@ -549,7 +555,7 @@ TEST_F(KadServicesTest, BEH_KAD_Downlist) {
     std::string hex_id(""), id("");
     for (int j = 0; j < 128; ++j)
       hex_id += character;
-    base::decode_from_hex(hex_id, id);
+    ASSERT_TRUE(base::decode_from_hex(hex_id, id));
     std::string ip = "127.0.0.6";
     boost::uint16_t port = 5432+i;
     Contact contact(id, ip, port, ip, port);
