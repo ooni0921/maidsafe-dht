@@ -103,6 +103,8 @@ class RoutingTable {
   // bucket_of_holder_ above.  This is the only bucket eligible to be considered
   // for the ForceK function.
   int brother_bucket_of_holder_;
+  // Upper limit of address space.
+  BigInt address_space_upper_address_;
 };
 }  // namespace kad
 #endif  // KADEMLIA_ROUTINGTABLE_H_

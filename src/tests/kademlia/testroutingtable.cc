@@ -217,14 +217,15 @@ TEST_F(TestRoutingTable, BEH_KAD_NoSplitKBucket) {
   std::string ip = "127.0.0.1";
   unsigned short port = 8880;
   for (int i = 0; i < kad::K; i++) {
-    std::string id("");
-    base::decode_from_hex(contacts_id[i], id);
+    contact_id = "";
+    base::decode_from_hex(contacts_id[i], contact_id);
     port++;
-    kad::Contact contact(id, ip, port, ip, port);
+    kad::Contact contact(contact_id, ip, port, ip, port);
     contacts[i] = contact;
     ASSERT_EQ(0, routingtable.AddContact(contact));
   }
 
+  contact_id = "";
   base::decode_from_hex(contacts_id[kad::K], contact_id);
   port++;
   kad::Contact contact1(contact_id, ip, port, ip, port);

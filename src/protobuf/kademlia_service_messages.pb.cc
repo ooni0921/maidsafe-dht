@@ -333,9 +333,10 @@ void protobuf_BuildDesc_kademlia_5fservice_5fmessages_2eproto_AssignGlobalDescri
     NatDetectionPingRequest_descriptor_, NatDetectionPingRequest::default_instance_);
   NatDetectionPingResponse_descriptor_ = file->message_type(14);
   NatDetectionPingResponse::default_instance_ = new NatDetectionPingResponse();
-  static const int NatDetectionPingResponse_offsets_[2] = {
+  static const int NatDetectionPingResponse_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(NatDetectionPingResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(NatDetectionPingResponse, echo_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(NatDetectionPingResponse, node_id_),
   };
   NatDetectionPingResponse_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -409,8 +410,9 @@ void protobuf_BuildDesc_kademlia_5fservice_5fmessages_2eproto() {
     "(\005\022\021\n\tsender_id\030\004 \002(\014\"&\n\024NatDetectionRes"
     "ponse\022\016\n\006result\030\001 \002(\014\"N\n\027NatDetectionPin"
     "gRequest\022\014\n\004ping\030\001 \002(\014\022%\n\013sender_info\030\002 "
-    "\002(\0132\020.kad.ContactInfo\"8\n\030NatDetectionPin"
-    "gResponse\022\016\n\006result\030\001 \002(\014\022\014\n\004echo\030\002 \001(\014", 1399,
+    "\002(\0132\020.kad.ContactInfo\"I\n\030NatDetectionPin"
+    "gResponse\022\016\n\006result\030\001 \002(\014\022\014\n\004echo\030\002 \001(\014\022"
+    "\017\n\007node_id\030\003 \001(\014", 1416,
   &protobuf_BuildDesc_kademlia_5fservice_5fmessages_2eproto_AssignGlobalDescriptors);
 }
 
@@ -1325,11 +1327,13 @@ const ::google::protobuf::Reflection* NatDetectionPingRequest::GetReflection() c
 
 const ::std::string NatDetectionPingResponse::_default_result_;
 const ::std::string NatDetectionPingResponse::_default_echo_;
+const ::std::string NatDetectionPingResponse::_default_node_id_;
 NatDetectionPingResponse::NatDetectionPingResponse()
   : ::google::protobuf::Message(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
-    echo_(const_cast< ::std::string*>(&_default_echo_)) {
+    echo_(const_cast< ::std::string*>(&_default_echo_)),
+    node_id_(const_cast< ::std::string*>(&_default_node_id_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -1339,7 +1343,8 @@ NatDetectionPingResponse::NatDetectionPingResponse(const NatDetectionPingRespons
   : ::google::protobuf::Message(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
-    echo_(const_cast< ::std::string*>(&_default_echo_)) {
+    echo_(const_cast< ::std::string*>(&_default_echo_)),
+    node_id_(const_cast< ::std::string*>(&_default_node_id_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
 }
@@ -1350,6 +1355,9 @@ NatDetectionPingResponse::~NatDetectionPingResponse() {
   }
   if (echo_ != &_default_echo_) {
     delete echo_;
+  }
+  if (node_id_ != &_default_node_id_) {
+    delete node_id_;
   }
   if (this != default_instance_) {
   }

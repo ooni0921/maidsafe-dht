@@ -38,14 +38,16 @@ RoutingTable::RoutingTable(const std::string &holder_id)
       bucket_upper_address_(),
       holder_id_(holder_id),
       bucket_of_holder_(0),
-      brother_bucket_of_holder_(-1) {
+      brother_bucket_of_holder_(-1),
+      address_space_upper_address_("2") {
   BigInt min_range(0);
-  BigInt max_range("2");
-  max_range.pow(kKeySizeBytes*8);
-  max_range--;
-  boost::shared_ptr<KBucket> kbucket(new KBucket(min_range, max_range));
+  address_space_upper_address_.pow(kKeySizeBytes*8);
+  address_space_upper_address_--;
+  boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
+                                                 address_space_upper_address_));
   k_buckets_.push_back(kbucket);
-  bucket_upper_address_.insert(std::pair<BigInt, int>(max_range, 0));
+  bucket_upper_address_.insert(std::pair<BigInt, int>
+                               (address_space_upper_address_, 0));
 }
 
 RoutingTable::~RoutingTable() {
@@ -61,6 +63,8 @@ int RoutingTable::KBucketIndex(const std::string &key) {
 //      found = true;
 //  return result-1;
   BigInt bint = StrToBigInt(key);
+  if (bint > address_space_upper_address_)
+    return -1;
   std::map<BigInt, int>::iterator lower_bound_iter =
       bucket_upper_address_.lower_bound(bint);
   return (*lower_bound_iter).second;
@@ -100,6 +104,8 @@ int RoutingTable::SortContactsByDistance(const std::string &key,
 
 bool RoutingTable::GetContact(const std::string &node_id, Contact *contact) {
   int index = KBucketIndex(node_id);
+  if (index < 0)
+    return false;
   if (!k_buckets_[index]->GetContact(node_id, contact))
     return false;
   return true;
@@ -107,12 +113,16 @@ bool RoutingTable::GetContact(const std::string &node_id, Contact *contact) {
 
 void RoutingTable::TouchKBucket(const std::string &node_id) {
   int index = KBucketIndex(node_id);
+  if (index < 0)
+    return;
   k_buckets_[index]->set_last_accessed(base::get_epoch_time());
 }
 
 void RoutingTable::RemoveContact(const std::string &node_id,
   const bool &force) {
   int index = KBucketIndex(node_id);
+  if (index < 0)
+    return;
   k_buckets_[index]->RemoveContact(node_id, force);
 }
 
@@ -159,7 +169,9 @@ void RoutingTable::SplitKbucket(const int &index) {
 
 int RoutingTable::AddContact(const Contact &new_contact) {
   int index = KBucketIndex(new_contact.node_id());
-  KBucketExitCode exitcode = k_buckets_[index]->AddContact(new_contact);
+  KBucketExitCode exitcode = FAIL;
+  if (index >= 0)
+    exitcode = k_buckets_[index]->AddContact(new_contact);
   switch (exitcode) {
     case SUCCEED: return 0;
     case FULL: if (!k_buckets_[index]->KeyInRange(holder_id_)) {
@@ -184,6 +196,8 @@ void RoutingTable::FindCloseNodes(
     std::vector<Contact> *close_nodes,
     const std::vector<Contact> &exclude_contacts) {
   int index = KBucketIndex(key);
+  if (index < 0)
+    return;
   k_buckets_[index]->GetContacts(count, exclude_contacts, close_nodes);
   bool full = (count == static_cast<int>(close_nodes->size()));
   if (full)

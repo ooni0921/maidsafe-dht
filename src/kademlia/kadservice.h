@@ -27,13 +27,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef KADEMLIA_KADSERVICE_H_
 #define KADEMLIA_KADSERVICE_H_
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
+#include "base/routingtable.h"
 #include "gtest/gtest_prod.h"
 #include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/kademlia_service.pb.h"
-#include "base/routingtable.h"
 
 namespace kad {
 class KNodeImpl;
@@ -84,8 +84,12 @@ class KadService : public KademliaService {
   virtual void Bootstrap(google::protobuf::RpcController *controller,
       const BootstrapRequest *request, BootstrapResponse *response,
       google::protobuf::Closure *done);
+  friend class NatDetectionTest;
  private:
   FRIEND_TEST(KadServicesTest, BEH_KAD_ValidateSignedRequest);
+  FRIEND_TEST(NatDetectionTest, BEH_KAD_SendNatDet);
+  FRIEND_TEST(NatDetectionTest, BEH_KAD_BootstrapNatDetRv);
+  FRIEND_TEST(NatDetectionTest, BEH_KAD_CompleteBootstrapNatDet);
   bool ValidateSignedRequest(const std::string &public_key, const std::string
       &signed_public_key, const std::string &signed_request, const std::string
       &key);

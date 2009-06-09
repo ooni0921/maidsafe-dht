@@ -262,6 +262,7 @@ class KNodeImpl {
   inline bool is_joined() const { return is_joined_; }
   inline KadRpcs* kadrpcs() { return &kadrpcs_; }
   friend class KadServicesTest;
+  friend class NatDetectionTest;
  private:
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);

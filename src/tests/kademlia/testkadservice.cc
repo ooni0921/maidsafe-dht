@@ -91,8 +91,8 @@ class KadServicesTest: public testing::Test {
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
     base::decode_from_hex(hex_id, node_id_);
-    hex_id = "22222222222222222222222222222222222222222222222222222222222222222"
-             "222222222222222222222222222222222222222222222222222222222222222";
+    hex_id = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+             "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
     base::decode_from_hex(hex_id, remote_node_id_);
     contact_.set_node_id(remote_node_id_);
     contact_.set_ip("127.0.0.1");
@@ -585,7 +585,7 @@ TEST_F(KadServicesTest, BEH_KAD_Downlist) {
   // Give the function time to allow any ping rpcs to timeout (they shouldn't
   // be called though)
   boost::this_thread::sleep(boost::posix_time::seconds(2));
-  EXPECT_EQ(7, routingtable_->Size());
+  EXPECT_EQ(8, routingtable_->Size());
 
   // Check downlist works for one we have.
   downlist_request.clear_downlist();
@@ -603,7 +603,7 @@ TEST_F(KadServicesTest, BEH_KAD_Downlist) {
     count += 50;
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
-  EXPECT_EQ(6, routingtable_->Size());
+  EXPECT_EQ(7, routingtable_->Size());
   Contact testcontact;
   EXPECT_FALSE(routingtable_->GetContact(contacts[5].node_id(), &testcontact));
 
@@ -623,7 +623,7 @@ TEST_F(KadServicesTest, BEH_KAD_Downlist) {
     count += 50;
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
-  EXPECT_EQ(5, routingtable_->Size());
+  EXPECT_EQ(6, routingtable_->Size());
   EXPECT_FALSE(routingtable_->GetContact(contacts[6].node_id(), &testcontact));
 
   // Check downlist with multiple valid nodes
@@ -642,7 +642,7 @@ TEST_F(KadServicesTest, BEH_KAD_Downlist) {
     count += 50;
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
-  EXPECT_EQ(2, routingtable_->Size());
+  EXPECT_EQ(3, routingtable_->Size());
   for (int i = 0; i < 5; ++i) {
     if (i > 1)
       EXPECT_FALSE(routingtable_->GetContact(contacts[i].node_id(),
