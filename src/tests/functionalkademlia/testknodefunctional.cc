@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/progress.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include <cryptopp/integer.h>
 #include <cryptopp/osrng.h>
 
@@ -89,7 +90,6 @@ class FunctionalKNodeTest: public testing::Test {
 };
 
 TEST_F(FunctionalKNodeTest, FUNC_KAD_StartStopRandomNodes) {
-
   // Variable declaration
   std::string kad_config_file("");
   std::vector< boost::shared_ptr<rpcprotocol::ChannelManager> >
@@ -236,8 +236,6 @@ TEST_F(FunctionalKNodeTest, FUNC_KAD_StartStopRandomNodes) {
 
       restart_count[r_node] = (num % maxRestartCycles) + 1;
       total_restart_count += restart_count[r_node];
-
-      //printf("Selected node: %d\t\trestarts: %d\n", r_node, restart_count[r_node]);
     }
   }
 
@@ -250,32 +248,35 @@ TEST_F(FunctionalKNodeTest, FUNC_KAD_StartStopRandomNodes) {
   // - check if stopped nodes were restarted
 
   base::CallLaterTimer clt;
-  //boost::progress_timer t;
   boost::uint32_t t_start = base::get_epoch_time();
   boost::uint32_t t_elapsed = 0;
 
-  while ((t_elapsed < largest_time + 20) && (finished_count < total_restart_count)) {
-
+  while ((t_elapsed < largest_time + 20) &&
+        (finished_count < total_restart_count)) {
     // check recently started nodes
     for (it = started_nodes.begin(); it != started_nodes.end(); ++it) {
-
       ASSERT_TRUE(knodes_[*it]->is_joined()) << "Node " << *it << " went down";
 
       running_nodes.insert(*it);
 
       if (restart_count[*it] > 0) {
-
         // Generate times to stop and restart
         if (!rand_num.IsConvertableToLong()) {
           num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
             rand_num.AbsoluteValue().ConvertToLong());
         } else {
-          num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+          num = static_cast<uint32_t>(
+            rand_num.AbsoluteValue().ConvertToLong());
         }
         rand_num.Randomize(rng, 32);
+
+        // Approximate the uptime distribution given in "A Measurement Study of
+        // Peer-to-Peer File Sharing Systems" by Saroiu et al, fig. 6.
+        // The median of 60 minutes is converted to roughly 10 seconds and
+        // another two seconds are added; the total range is [3,113] seconds.
         stop_times[*it] = t_elapsed + 2 +
-                          static_cast<boost::uint64_t>(num % 80);
-        // todo: use realistic uptime distribution
+          boost::numeric_cast<uint32_t>(std::ceil(2.0/6.0 *
+          std::exp((num % 100)/17.0)));
 
         if (!rand_num.IsConvertableToLong()) {
           num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
@@ -284,6 +285,8 @@ TEST_F(FunctionalKNodeTest, FUNC_KAD_StartStopRandomNodes) {
           num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
         }
         rand_num.Randomize(rng, 32);
+
+        // The node re-joins after 10 to 29 seconds.
         restart_times[*it] = stop_times[*it] + 10 +
                              static_cast<boost::uint64_t>(num % 20);
 
@@ -298,19 +301,20 @@ TEST_F(FunctionalKNodeTest, FUNC_KAD_StartStopRandomNodes) {
         std::string kad_config_file = db_local_ + "/.kadconfig";
         clt.AddCallLater((stop_times[*it] - t_elapsed) * 1000,
                          boost::bind(&kad::KNode::Leave, knodes_[*it].get()));
-        base::callback_func_type f = boost::bind(&GeneralKadCallback::CallbackFunc,
-                                                 &cb_,
-                                                 _1);
+        base::callback_func_type f = boost::bind(
+          &GeneralKadCallback::CallbackFunc,
+          &cb_,
+          _1);
         clt.AddCallLater((restart_times[*it] - t_elapsed) * 1000,
                          boost::bind(&kad::KNode::Join,
                                      knodes_[*it].get(),
                                      knodes_[*it]->node_id(),
                                      kad_config_file,
                                      f,
-                                     false)
-                        );
+                                     false));
 
-        printf("Node %d is running, %d restarts left (next one from %u to %u).\n",
+        printf("Node %d is running, %d restarts left" \
+               " (next one from %u to %u).\n",
                *it, restart_count[*it], stop_times[*it], restart_times[*it]);
 
         --restart_count[*it];
@@ -344,7 +348,7 @@ TEST_F(FunctionalKNodeTest, FUNC_KAD_StartStopRandomNodes) {
     t_elapsed = base::get_epoch_time() - t_start;
     printf("elapsed: %u\t\tcompleted: %d of %d\t\tdown: %d\n", t_elapsed,
            finished_count, total_restart_count, stopped_nodes.size());
-  } // main loop
+  }  // main loop
 
   printf("elapsed: %u\t\tdone, last restart: %u\n", t_elapsed, largest_time);
 
