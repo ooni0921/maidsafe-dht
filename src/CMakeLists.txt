@@ -155,7 +155,6 @@ ELSEIF (WIN32)
 		 -mi386pe
 		-lstdc++
 		-lws2_32
-		c:/usr/lib/libwx_mswu-2.8.a
 		c:/usr/lib/libboost_system-mgw43-mt-1_37.lib
 		c:/usr/lib/libboost_filesystem-mgw43-mt-1_37.lib
 		c:/usr/lib/libboost_regex-mgw43-mt-1_37.lib
@@ -201,7 +200,7 @@ ELSE(MSVC)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 ")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -finline-functions  -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wall -Wfloat-equal -Wlong-long  -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector  -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static  -DWIN32_LEAN_AND_MEAN  -D__MINGW__  -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static   -mthreads -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501  -Ic:\\usr\\lib\\wx\\include\\msw-unicode-release-static-2.8 -I c:\\usr\\include\\wx-2.8 -D__WXMSW__ -mthreads ")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static  -DWIN32_LEAN_AND_MEAN  -D__MINGW__  -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static   -mthreads -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501  -mthreads ")
   SET_TARGET_PROPERTIES(PDpbmsgslib PROPERTIES COMPILE_FLAGS -w )
 ENDIF(MSVC)
 ENDIF(APPLE)
