@@ -330,17 +330,14 @@ void KadService::NatDetection(google::protobuf::RpcController *controller,
       Contact node_a;
       if (node_a.ParseFromString(request->newcomer())) {
         NatDetectionPingResponse *resp = new NatDetectionPingResponse();
-        struct NatDetectionPingData data =
-          {request->sender_id(), response, done, controller};
+        struct NatDetectionPingData data = {request->sender_id(), response,
+                                            done, controller};
         google::protobuf::Closure *done =
-          google::protobuf::NewCallback<KadService,
-            const NatDetectionPingResponse*,
-            struct NatDetectionPingData>(this,
-              &KadService::Bootstrap_NatDetectionPing,
-              resp,
-              data);
+            google::protobuf::NewCallback<KadService,
+            const NatDetectionPingResponse*, struct NatDetectionPingData>
+            (this, &KadService::Bootstrap_NatDetectionPing, resp, data);
         knode_->kadrpcs()->NatDetectionPing(node_a.host_ip(),
-          node_a.host_port(), resp, done);
+            node_a.host_port(), resp, done);
         return;
       }
     } else if (request->type() == 2) {
@@ -348,8 +345,8 @@ void KadService::NatDetection(google::protobuf::RpcController *controller,
       Contact node_b;
       Contact node_a;
       if (node_a.ParseFromString(request->newcomer()) &&
-        node_b.ParseFromString(request->bootstrap_node()) &&
-        node_a.node_id() != client_node_id()) {
+          node_b.ParseFromString(request->bootstrap_node()) &&
+          node_a.node_id() != client_node_id()) {
         knode_->AddContact(node_a, true);
         NatDetectionPingResponse *resp = new NatDetectionPingResponse();
         struct NatDetectionPingData data =
@@ -502,7 +499,7 @@ void KadService::SendNatDetection(struct NatDetectionData data) {
   } else {
     Contact node_c = random_contacts.front();
     data.node_c = node_c;
-    // printf("node c\n%s", node_c.ToString().c_str());
+//     printf("node c %s", node_c.ToString().c_str());
     // Node B asks C to try ping A
     std::string newcomer_str;
     data.newcomer.SerialiseToString(&newcomer_str);

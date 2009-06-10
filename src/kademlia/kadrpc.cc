@@ -144,6 +144,7 @@ void KadRpcs::NatDetection(const std::string &newcomer,
   KademliaService::Stub service(channel.get());
   service.NatDetection(&controller, &args, resp, cb);
 }
+
 void KadRpcs::NatDetectionPing(const std::string &remote_ip,
     const boost::uint16_t &remote_port,
     NatDetectionPingResponse *resp,

@@ -448,7 +448,7 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
     }
     kadrpcs_.set_info(contact_info());
 #ifdef DEBUG
-    printf("Bootstrap End no bs contacts\n");
+    printf("Bootstrap End no bootstrap contacts.\n");
 #endif
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
