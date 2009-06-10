@@ -59,6 +59,7 @@ const int kNetworkSize = 20;
 const int kTestK = 4;
 const int initialNodePort = 62000;
 const unsigned int N = 10;
+const unsigned int maxRestartCycles = 5;
 
 inline void create_rsakeys(std::string *pub_key, std::string *priv_key) {
   crypto::RsaKeyPair kp;
@@ -193,32 +194,25 @@ TEST_F(FunctionalKNodeTest, FUNC_KAD_StartStopRandomNodes) {
 #endif
 
   // Nodes to use for testing
-  unsigned int n = 0;
   CryptoPP::AutoSeededRandomPool rng;
   CryptoPP::Integer rand_num(rng, 32);
   boost::uint32_t num;
 
-  // Generate set of N nodes to be started and stopped
-  std::set<int> nodes;
+  std::set<int> running_nodes;
+  std::set<int> started_nodes;
+  std::set<int> stopped_nodes;
   std::set<int>::iterator it;
-  while (nodes.size() < N) {
-    if (!rand_num.IsConvertableToLong()) {
-      num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
-        rand_num.AbsoluteValue().ConvertToLong());
-    } else {
-      num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-    }
-    int r_node = 1 + static_cast<int>(num % 19);
-    nodes.insert(r_node);
-    rand_num.Randomize(rng, 32);
-  }
 
-  // Generate times to start and stop
-  boost::uint64_t stop_times[N];
-  boost::uint64_t restart_times[N];
-  boost::uint64_t largest_time = 4;
+  int finished_count = 0;
+  int total_restart_count = 0;
+  int restart_count[kNetworkSize];  // todo: replace sparse arrays with map
+                                    //       for big kNetworkSize
+  boost::uint32_t stop_times[kNetworkSize];
+  boost::uint32_t restart_times[kNetworkSize];
+  boost::uint32_t largest_time = 4;
 
-  for (n = 0; n < N; ++n) {
+  // Generate set of N nodes to be used for stopping and restarting
+  while (started_nodes.size() < N) {
     if (!rand_num.IsConvertableToLong()) {
       num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
         rand_num.AbsoluteValue().ConvertToLong());
@@ -226,91 +220,146 @@ TEST_F(FunctionalKNodeTest, FUNC_KAD_StartStopRandomNodes) {
       num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
     }
     rand_num.Randomize(rng, 32);
-    stop_times[n] = 5 + static_cast<boost::uint64_t>(num % 100);
-    restart_times[n] = 1;
-    while (stop_times[n] >= restart_times[n]) {
+
+    int r_node = 1 + static_cast<int>(num % (kNetworkSize-1));
+    std::pair<std::set<int>::iterator, bool> pr;
+    pr = started_nodes.insert(r_node);
+    if (pr.second) {
+      // number of restarts per node
       if (!rand_num.IsConvertableToLong()) {
-        num = std::numeric_limits<uint32_t>::max() +
-          static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+        num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
+          rand_num.AbsoluteValue().ConvertToLong());
       } else {
         num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
       }
       rand_num.Randomize(rng, 32);
-      restart_times[n] = 5 + static_cast<boost::uint64_t>(num % 100);
-    }
-    restart_times[n] += 5;
-    if (restart_times[n] > largest_time) {
-      largest_time = restart_times[n];
+
+      restart_count[r_node] = (num % maxRestartCycles) + 1;
+      total_restart_count += restart_count[r_node];
+
+      //printf("Selected node: %d\t\trestarts: %d\n", r_node, restart_count[r_node]);
     }
   }
 
-  // Printing the schedule
-  n = 0;
-  printf("\n\n\nSchedule:\nNode\tStop Time\tRestart Time\n");
-  for (it = nodes.begin(); it != nodes.end(); ++it) {
-    printf("%i\t%llu\t\t%llu\n", *it, stop_times[n], restart_times[n]);
-    n++;
-  }
-  printf("\n\n\n");
+  cb_.Reset();
 
-  // Adding execution to call later timer
-  n = 0;
+  // Main loop:
+  // - check if recently started nodes are running and schedule a new restart
+  //   for them
+  // - check if running nodes were stopped
+  // - check if stopped nodes were restarted
+
   base::CallLaterTimer clt;
-  for (it = nodes.begin(); it != nodes.end(); ++it) {
-    cb_.Reset();
-    std::string db_local_ = "KnodeTest/datastore" +
-                            base::itos(initialNodePort + 1 + *it);
-    std::string kad_config_file = db_local_ + "/.kadconfig";
-    clt.AddCallLater(stop_times[n] * 1000,
-                     boost::bind(&kad::KNode::Leave, knodes_[*it].get()));
-    base::callback_func_type f = boost::bind(&GeneralKadCallback::CallbackFunc,
-                                             &cb_,
-                                             _1);
-    clt.AddCallLater(restart_times[n] * 1000,
-                     boost::bind(&kad::KNode::Join,
-                                 knodes_[*it].get(),
-                                 knodes_[*it]->node_id(),
-                                 kad_config_file,
-                                 f,
-                                 false)
-                    );
-    n++;
-  }
+  //boost::progress_timer t;
+  boost::uint32_t t_start = base::get_epoch_time();
+  boost::uint32_t t_elapsed = 0;
 
-  boost::progress_timer t;
-  printf("Largest time: %llu\n", largest_time);
+  while ((t_elapsed < largest_time + 20) && (finished_count < total_restart_count)) {
 
-  int finished_count = 0;
-  std::set<int> stopped_nodes;
-  while ((t.elapsed() < largest_time + 10) && (finished_count != N)) {
-    for (it = nodes.begin(); it != nodes.end(); ++it) {
+    // check recently started nodes
+    for (it = started_nodes.begin(); it != started_nodes.end(); ++it) {
+
+      ASSERT_TRUE(knodes_[*it]->is_joined()) << "Node " << *it << " went down";
+
+      running_nodes.insert(*it);
+
+      if (restart_count[*it] > 0) {
+
+        // Generate times to stop and restart
+        if (!rand_num.IsConvertableToLong()) {
+          num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
+            rand_num.AbsoluteValue().ConvertToLong());
+        } else {
+          num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+        }
+        rand_num.Randomize(rng, 32);
+        stop_times[*it] = t_elapsed + 2 +
+                          static_cast<boost::uint64_t>(num % 80);
+        // todo: use realistic uptime distribution
+
+        if (!rand_num.IsConvertableToLong()) {
+          num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
+            rand_num.AbsoluteValue().ConvertToLong());
+        } else {
+          num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+        }
+        rand_num.Randomize(rng, 32);
+        restart_times[*it] = stop_times[*it] + 10 +
+                             static_cast<boost::uint64_t>(num % 20);
+
+        if (restart_times[*it] > largest_time) {
+          largest_time = restart_times[*it];
+        }
+
+
+        // Adding execution to call later timer
+        std::string db_local_ = "FunctionalKnodeTest/datastore" +
+                                base::itos(initialNodePort + *it);
+        std::string kad_config_file = db_local_ + "/.kadconfig";
+        clt.AddCallLater((stop_times[*it] - t_elapsed) * 1000,
+                         boost::bind(&kad::KNode::Leave, knodes_[*it].get()));
+        base::callback_func_type f = boost::bind(&GeneralKadCallback::CallbackFunc,
+                                                 &cb_,
+                                                 _1);
+        clt.AddCallLater((restart_times[*it] - t_elapsed) * 1000,
+                         boost::bind(&kad::KNode::Join,
+                                     knodes_[*it].get(),
+                                     knodes_[*it]->node_id(),
+                                     kad_config_file,
+                                     f,
+                                     false)
+                        );
+
+        printf("Node %d is running, %d restarts left (next one from %u to %u).\n",
+               *it, restart_count[*it], stop_times[*it], restart_times[*it]);
+
+        --restart_count[*it];
+      } else {
+        printf("Node %d is running, no restarts left.\n", *it);
+      }
+
+      started_nodes.erase(*it);
+    }
+
+    // check running nodes
+    for (it = running_nodes.begin(); it != running_nodes.end(); ++it) {
       if (!knodes_[*it]->is_joined()) {
         stopped_nodes.insert(*it);
         printf("Node %d has been shut down.\n", *it);
-        nodes.erase(*it);
+        running_nodes.erase(*it);
       }
     }
-    printf("Stopped nodes size: %d\n", finished_count);
-    std::set<int>::iterator it_sn;
-    for (it_sn = stopped_nodes.begin(); it_sn != stopped_nodes.end(); ++it_sn) {
-      if (knodes_[*it_sn]->is_joined()) {
-        finished_count++;
-        printf("Node %d has re-joined (count=%d).\n", *it_sn, finished_count);
-        stopped_nodes.erase(*it_sn);
-      }
-    }
-    boost::this_thread::sleep(boost::posix_time::seconds(2));
-    printf("elapsed: %f\t\tcount %d\n", t.elapsed(), finished_count);
-  }
 
-  EXPECT_EQ(N, finished_count) << "One of the nodes(" << N << " vs. " <<
-      finished_count << ") did not complete it's cycle";
-  for (it = nodes.begin(); it != nodes.end(); ++it) {
+    // check stopped nodes
+    for (it = stopped_nodes.begin(); it != stopped_nodes.end(); ++it) {
+      if (knodes_[*it]->is_joined()) {
+        finished_count++;
+        started_nodes.insert(*it);
+        printf("Node %d has re-joined.\n", *it);
+        stopped_nodes.erase(*it);
+      }
+    }
+
+    boost::this_thread::sleep(boost::posix_time::seconds(2));
+    t_elapsed = base::get_epoch_time() - t_start;
+    printf("elapsed: %u\t\tcompleted: %d of %d\t\tdown: %d\n", t_elapsed,
+           finished_count, total_restart_count, stopped_nodes.size());
+  } // main loop
+
+  printf("elapsed: %u\t\tdone, last restart: %u\n", t_elapsed, largest_time);
+
+  EXPECT_EQ(total_restart_count, finished_count) << "One of the nodes(" <<
+            total_restart_count << " vs. " << finished_count <<
+            ") did not complete it's cycle";
+
+  for (it = stopped_nodes.begin(); it != stopped_nodes.end(); ++it) {
     ASSERT_TRUE(knodes_[*it]->is_joined()) <<
       "Node " << *it << " did not rejoin";
   }
+
   stopped_nodes.clear();
-  nodes.clear();
+  started_nodes.clear();
+  running_nodes.clear();
 
   // Cleaning up after the test
   boost::this_thread::sleep(boost::posix_time::seconds(10));
