@@ -445,3 +445,26 @@ TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
   delete out_channel;
   delete stubservice;
 }
+
+TEST_F(RpcProtocolTest, BEH_RPC_CheckLocalAddress) {
+  std::vector<std::string> local_ips = base::get_local_addresses();
+  if (local_ips.size() == 1) {
+    printf("checking local address %s\n", local_ips[0].c_str());
+    ASSERT_FALSE(client_chann_manager->CheckLocalAddress(local_ips[0],
+      "127.0.0.1", 35001));
+    ASSERT_TRUE(client_chann_manager->CheckLocalAddress(local_ips[0],
+      local_ips[0], 35001));
+  } else if (local_ips.size() > 1) {
+    std::string server_addr = local_ips[0];
+    for (int i = 1; i < local_ips.size(); i++) {
+      printf("checking local address %s connecting to address %s\n",
+        local_ips[i].c_str(), server_addr.c_str());
+      ASSERT_FALSE(client_chann_manager->CheckLocalAddress(local_ips[i],
+        server_addr, 35001));
+    }
+    ASSERT_TRUE(client_chann_manager->CheckLocalAddress(local_ips[0],
+      server_addr, 35001));
+  } else {
+    printf("no local addresses where retrieved\n");
+  }
+}

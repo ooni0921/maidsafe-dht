@@ -106,10 +106,6 @@ KNodeImpl::KNodeImpl(
           local_host_port_(0), stopping_(false), upnp_started_(false),
           upnp_ios_(), upnp_(), upnp_half_open_(NULL),
           upnp_user_agent_("maidsafe"), upnp_mapped_port_(0), upnp_udp_map_(0) {
-//  for (int i = 0; i < 14; ++i) {
-//    boost::shared_ptr<boost::mutex> mutex(new boost::mutex);
-//    mutex_.push_back(mutex);
-//  }
   try {
     if (!fs::exists(datastore_dir))
       fs::create_directories(datastore_dir);
@@ -122,14 +118,6 @@ KNodeImpl::KNodeImpl(
   fs::path db_(datastore_dir, fs::native);
   db_ /= "datastore.db";
   pdata_store_->Init(db_.string(), kReuseDatabase);
-  if (host_ip_ == "") {
-    // Get local address as the external ip address...??!!
-    boost::asio::ip::address local_address;
-    if (base::get_local_address(&local_address)) {
-      host_ip_ = local_address.to_string();
-      local_host_ip_ = local_address.to_string();
-    }
-  }
 }
 
 KNodeImpl::KNodeImpl(
@@ -168,14 +156,6 @@ KNodeImpl::KNodeImpl(
   fs::path db_(datastore_dir, fs::native);
   db_ /= "datastore.db";
   pdata_store_->Init(db_.string(), kReuseDatabase);
-  if (host_ip_ == "") {
-    // Get local address as the external ip address...??!!
-    boost::asio::ip::address local_address;
-    if (base::get_local_address(&local_address)) {
-      host_ip_ = local_address.to_string();
-      local_host_ip_ = local_address.to_string();
-    }
-  }
 }
 
 KNodeImpl::~KNodeImpl() {
@@ -515,12 +495,35 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
 
 void KNodeImpl::Join_RefreshNode(base::callback_func_type cb,
                                  const bool &port_forwarded) {
+  if (stopping_) return;
   // build list of bootstrapping nodes
   LoadBootstrapContacts();
   // Initiate the Kademlia joining sequence - perform a search for this
   // node's own ID
   kadrpcs_.set_info(contact_info());
-  // is_joined_ = true;
+  // Getting local IP and temporarily setting host_ip_ == local_host_ip_
+  std::vector<std::string> local_ips = base::get_local_addresses();
+  bool got_local_address = false;
+  for (int i = 0; i < bootstrapping_nodes_.size() && !got_local_address; i++) {
+    std::string remote_ip = base::inet_btoa(bootstrapping_nodes_[i].host_ip());
+    for (int j = 0; j < local_ips.size() && !got_local_address; j++) {
+      if (pchannel_manager_->CheckLocalAddress(local_ips[j], remote_ip,
+          bootstrapping_nodes_[i].host_port())) {
+        host_ip_ = local_ips[j];
+        local_host_ip_ = local_ips[j];
+        got_local_address = true;
+      }
+    }
+  }
+  if (!got_local_address) {
+    boost::asio::ip::address local_address;
+    if (base::get_local_address(&local_address)) {
+      host_ip_ = local_address.to_string();
+      local_host_ip_ = local_address.to_string();
+    }
+  }
+
+
   Join_Bootstrapping(cb, bootstrapping_nodes_, port_forwarded);
 }
 

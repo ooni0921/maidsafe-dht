@@ -267,6 +267,8 @@ void get_net_interfaces(std::vector<struct device_struct> *alldevices);
 // Return the first local network interface found.
 bool get_local_address(boost::asio::ip::address *local_address);
 
+std::vector<std::string> get_local_addresses();
+
 // Generate a 32bit signed integer
 // Use this function if receiving it in a variable that is int or int32_t
 // or if before assinging to a signed int variable you are doing a modulo op

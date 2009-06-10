@@ -120,11 +120,6 @@ int ChannelManagerImpl::StartTransport(boost::uint16_t port,
     count_++;
     try_port_ = ((port + count_) % (kMaxPort - kMinPort + 1)) + kMinPort;
   }
-  // Get local address as the external ip address...??!!
-  boost::asio::ip::address local_address;
-  if (base::get_local_address(&local_address)) {
-    external_ip_ = local_address.to_string();
-  }
   external_port_ = try_port_;
   routingtable_ = std::auto_ptr<base::PDRoutingTableHandler>(
     new base::PDRoutingTableHandler(base::itos(external_port_)));
@@ -309,5 +304,10 @@ bool ChannelManagerImpl::CheckConnection(const std::string &ip,
     dec_lip = ip;
   }
   return ptransport_->CanConnect(dec_lip, port);
+}
+
+bool ChannelManagerImpl::CheckLocalAddress(const std::string &local_ip,
+    const std::string &remote_ip, const uint16_t &remote_port) {
+  return ptransport_->CheckConnection(local_ip, remote_ip, remote_port);
 }
 }

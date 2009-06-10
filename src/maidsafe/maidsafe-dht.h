@@ -160,6 +160,8 @@ class ChannelManager {
   boost::uint16_t external_port() const;
   std::string external_ip() const;
   bool CheckConnection(const std::string &ip, const uint16_t &port);
+  bool CheckLocalAddress(const std::string &local_ip,
+      const std::string &remote_ip, const uint16_t &remote_port);
  private:
   boost::shared_ptr<ChannelManagerImpl> pimpl_;
 };

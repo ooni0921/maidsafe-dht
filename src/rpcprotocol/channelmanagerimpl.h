@@ -78,8 +78,9 @@ class ChannelManagerImpl {
     return ptransport_;
   }
   boost::uint16_t external_port() const {return external_port_;}
-  std::string external_ip() const {return external_ip_;}
   bool CheckConnection(const std::string &ip, const uint16_t &port);
+  bool CheckLocalAddress(const std::string &local_ip,
+    const std::string &remote_ip, const uint16_t &remote_port);
  private:
   void DeleteRequest(const boost::uint32_t &req_id);
   void TimerHandler(const boost::uint32_t &req_id);

@@ -130,6 +130,8 @@ class Transport {
                            boost::uint16_t my_rendezvous_port);
   void StopPingRendezvous();
   bool CanConnect(const std::string &ip, const uint16_t &port);
+  bool CheckConnection(const std::string &local_ip,
+      const std::string &remote_ip, const uint16_t &remote_port);
  private:
   Transport& operator=(const Transport&);
   Transport(const Transport&);

@@ -885,4 +885,41 @@ int Transport::Send(boost::uint32_t connection_id,
   msg.SerializeToString(&ser_msg);
   return Send(connection_id, ser_msg, STRING);
 }
+
+bool Transport::CheckConnection(const std::string &local_ip,
+      const std::string &remote_ip, const uint16_t &remote_port) {
+  struct addrinfo hints, *local, *remote;
+  memset(&hints, 0, sizeof(struct addrinfo));
+  hints.ai_flags = AI_PASSIVE;
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  if (0 != getaddrinfo(local_ip.c_str(), "0", &hints, &local))
+    return false;
+
+  UDTSOCKET skt = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
+  if (UDT::ERROR == UDT::bind(skt, local->ai_addr, local->ai_addrlen)) {
+#ifdef DEBUG
+    printf("bind error: %s\n", UDT::getlasterror().getErrorMessage());
+#endif
+    return false;
+  }
+
+  std::string str_remote_port = boost::lexical_cast<std::string>(remote_port);
+  if (0 != getaddrinfo(remote_ip.c_str(), str_remote_port.c_str(),
+      &hints, &remote)) {
+#ifdef DEBUG
+    printf("Invalid remote address\n");
+#endif
+    return false;
+  }
+  if (UDT::ERROR == UDT::connect(skt, remote->ai_addr, remote->ai_addrlen)) {
+#ifdef DEBUG
+      printf("connect error: %s\n", UDT::getlasterror().getErrorMessage());
+#endif
+      return false;
+   }
+   UDT::close(skt);
+   return true;
+
+}
 };  // namespace transport

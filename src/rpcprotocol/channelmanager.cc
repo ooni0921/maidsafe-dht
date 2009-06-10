@@ -91,12 +91,13 @@ boost::uint16_t ChannelManager::external_port() const {
   return pimpl_->external_port();
 }
 
-std::string ChannelManager::external_ip() const {
-  return pimpl_->external_ip();
-}
-
 bool ChannelManager::CheckConnection(const std::string &ip,
                                      const uint16_t &port) {
   return pimpl_->CheckConnection(ip, port);
+}
+
+bool ChannelManager::CheckLocalAddress(const std::string &local_ip,
+    const std::string &remote_ip, const uint16_t &remote_port) {
+  return pimpl_->CheckLocalAddress(local_ip, remote_ip, remote_port);
 }
 }  // namespace rpcprotocol

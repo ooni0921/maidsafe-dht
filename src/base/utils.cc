@@ -472,4 +472,21 @@ uint32_t random_32bit_uinteger() {
   }
 }
 
+std::vector<std::string> get_local_addresses() {
+  // get all network interfaces
+  std::vector<std::string> addresses;
+  std::vector<struct device_struct> alldevices;
+  get_net_interfaces(&alldevices);
+  if (!alldevices.empty()) {
+    // take the first non-bogus IP address
+    for (unsigned int i = 0; i < alldevices.size(); i++) {
+      if (alldevices[i].ip_address.to_string().substr(0, 2) != "0." &&
+          alldevices[i].ip_address.to_string().substr(0, 4) != "127." &&
+          alldevices[i].ip_address.to_string().substr(0, 8) != "169.254.") {
+        addresses.push_back(alldevices[i].ip_address.to_string());
+      }
+    }
+  }
+  return addresses;
+}
 }  // namespace base

@@ -1074,7 +1074,7 @@ TEST_F(TransportTest, BEH_TRANS_SendViaRdz) {
 }
 
 TEST_F(TransportTest, BEH_TRANS_NoNotificationForInvalidMsgs) {
-  transport::Transport node1, node2, node3;
+  transport::Transport node1, node2;
   MessageHandler msg_handler1, msg_handler2;
   ASSERT_EQ(0, node1.Start(52001,
     boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2),
@@ -1092,4 +1092,35 @@ TEST_F(TransportTest, BEH_TRANS_NoNotificationForInvalidMsgs) {
   node2.Stop();
   ASSERT_TRUE(msg_handler1.msgs.empty());
   ASSERT_TRUE(msg_handler2.msgs.empty());
+}
+
+TEST_F(TransportTest, BEH_TRANS_CheckConnection) {
+  transport::Transport node1, node2;
+  MessageHandler msg_handler1, msg_handler2;
+  ASSERT_EQ(0, node1.Start(52001,
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2),
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
+                _1, _2, _3)));
+  ASSERT_EQ(0, node2.Start(52002,
+    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2),
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler2,
+                _1, _2, _3)));
+  std::vector<std::string> local_ips = base::get_local_addresses();
+  if (local_ips.size() == 1) {
+    printf("checking local address %s\n", local_ips[0].c_str());
+    ASSERT_FALSE(node1.CheckConnection(local_ips[0], "127.0.0.1", 52002));
+    ASSERT_TRUE(node1.CheckConnection(local_ips[0], local_ips[0], 52002));
+  } else if (local_ips.size() > 1) {
+    std::string server_addr = local_ips[0];
+    for (int i = 1; i < local_ips.size(); i++) {
+      printf("checking local address %s connecting to address %s\n",
+        local_ips[i].c_str(), server_addr.c_str());
+      ASSERT_FALSE(node1.CheckConnection(local_ips[i], server_addr, 52002));
+    }
+    ASSERT_TRUE(node1.CheckConnection(local_ips[0], server_addr, 52002));
+  } else {
+    printf("no local addresses where retrieved\n");
+  }
+  node1.Stop();
+  node2.Stop();
 }
