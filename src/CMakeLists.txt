@@ -98,6 +98,7 @@ LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})                                 
 FILE(GLOB T_FUNC_KADEMLIA_C "tests/functionalkademlia/*.c*")                      #
 FILE(GLOB T_FUNC_KADEMLIA_H "tests/functionalkademlia/*.h*")                      #
 LIST(APPEND T_FUNC_KADEMLIA_DIR ${T_FUNC_KADEMLIA_C} ${T_FUNC_KADEMLIA_H})                      #
+LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "tests/kademlia/testknode.cc")                      #
 
 ######################################################################################
 #All Platforms:  Add Test Exes and Create all maidsafe-dht libs                                 #
