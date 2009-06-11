@@ -95,7 +95,7 @@ KNodeImpl::KNodeImpl(
     node_type type)
         : routingtable_mutex_(), kadconfig_mutex_(),
           extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
-          ptimer_(new base::CallLaterTimer()),
+          activeprobes_mutex_(), ptimer_(new base::CallLaterTimer()),
           pchannel_manager_(channel_manager), pservice_channel_(),
           pdata_store_(new DataStore()), premote_service_(),
           kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
@@ -106,6 +106,10 @@ KNodeImpl::KNodeImpl(
           local_host_port_(0), stopping_(false), upnp_started_(false),
           upnp_ios_(), upnp_(), upnp_half_open_(NULL),
           upnp_user_agent_("maidsafe"), upnp_mapped_port_(0), upnp_udp_map_(0) {
+//  for (int i = 0; i < 14; ++i) {
+//    boost::shared_ptr<boost::mutex> mutex(new boost::mutex);
+//    mutex_.push_back(mutex);
+//  }
   try {
     if (!fs::exists(datastore_dir))
       fs::create_directories(datastore_dir);
@@ -118,6 +122,14 @@ KNodeImpl::KNodeImpl(
   fs::path db_(datastore_dir, fs::native);
   db_ /= "datastore.db";
   pdata_store_->Init(db_.string(), kReuseDatabase);
+  if (host_ip_ == "") {
+    // Get local address as the external ip address...??!!
+    boost::asio::ip::address local_address;
+    if (base::get_local_address(&local_address)) {
+      host_ip_ = local_address.to_string();
+      local_host_ip_ = local_address.to_string();
+    }
+  }
 }
 
 KNodeImpl::KNodeImpl(
@@ -129,7 +141,7 @@ KNodeImpl::KNodeImpl(
     const int &beta)
         : routingtable_mutex_(), kadconfig_mutex_(),
           extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
-          ptimer_(new base::CallLaterTimer()),
+          activeprobes_mutex_(), ptimer_(new base::CallLaterTimer()),
           pchannel_manager_(channel_manager), pservice_channel_(),
           pdata_store_(new DataStore()), premote_service_(),
           kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
@@ -156,26 +168,46 @@ KNodeImpl::KNodeImpl(
   fs::path db_(datastore_dir, fs::native);
   db_ /= "datastore.db";
   pdata_store_->Init(db_.string(), kReuseDatabase);
+  if (host_ip_ == "") {
+    // Get local address as the external ip address...??!!
+    boost::asio::ip::address local_address;
+    if (base::get_local_address(&local_address)) {
+      host_ip_ = local_address.to_string();
+      local_host_ip_ = local_address.to_string();
+    }
+  }
 }
 
 KNodeImpl::~KNodeImpl() {
-#ifdef VERBOSE_DEBUG
-  printf("\t\tIn KNode (on port %i) destructor.\n", host_port_);
-#endif
+//#ifdef VERBOSE_DEBUG
+//  printf("\t\tIn KNode (on port %i) destructor.\n", host_port_);
+//#endif
   if (is_joined_) {
-#ifdef VERBOSE_DEBUG
-    printf("\t\tIn KNode destructor(%i), outside mutex.\n", host_port_);
-#endif
+//#ifdef VERBOSE_DEBUG
+//    printf("\t\tIn KNode destructor(%i), outside mutex.\n", host_port_);
+//#endif
 //    boost::mutex::scoped_lock guard(*mutex_[0]);
     UnRegisterKadService();
     is_joined_ = false;
     pdata_store_->Close();
   }
+//  printf("\t\tIn KNode (on port %i) destructor.\n", host_port_);
   if (upnp_started_ && upnp_mapped_port_ > 0) {
     UnMapUPnP();
   }
+//  printf("\t\tIn KNode (on port %i) destructor.\n", host_port_);
   upnp_started_ = false;
   upnp_mapped_port_ = 0;
+//  activeprobes_mutex_.unlock();
+//  if(routingtable_mutex_.try_lock())
+//    printf("routingtable_mutex_.try_lock(): %d\n", 1);
+//  printf("kadconfig_mutex_.try_lock(): %d\n", kadconfig_mutex_.try_lock());
+//  printf("extendshortlist_mutex_.try_lock(): %d\n", extendshortlist_mutex_.try_lock());
+//  printf("joinbootstrapping_mutex_.try_lock(): %d\n", joinbootstrapping_mutex_.try_lock());
+//  printf("leave_mutex_.try_lock(): %d\n", leave_mutex_.try_lock());
+//  printf("activeprobes_mutex_.try_lock(): %d\n", activeprobes_mutex_.try_lock());
+//
+//  ptimer_->CancelAll();
 }
 
 inline void KNodeImpl::CallbackWithFailure(base::callback_func_type cb) {
@@ -428,7 +460,7 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
     }
     kadrpcs_.set_info(contact_info());
 #ifdef DEBUG
-    printf("Bootstrap End no bootstrap contacts.\n");
+    printf("Bootstrap End no bs contacts\n");
 #endif
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
@@ -495,35 +527,12 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
 
 void KNodeImpl::Join_RefreshNode(base::callback_func_type cb,
                                  const bool &port_forwarded) {
-  if (stopping_) return;
   // build list of bootstrapping nodes
   LoadBootstrapContacts();
   // Initiate the Kademlia joining sequence - perform a search for this
   // node's own ID
   kadrpcs_.set_info(contact_info());
-  // Getting local IP and temporarily setting host_ip_ == local_host_ip_
-  std::vector<std::string> local_ips = base::get_local_addresses();
-  bool got_local_address = false;
-  for (int i = 0; i < bootstrapping_nodes_.size() && !got_local_address; i++) {
-    std::string remote_ip = base::inet_btoa(bootstrapping_nodes_[i].host_ip());
-    for (int j = 0; j < local_ips.size() && !got_local_address; j++) {
-      if (pchannel_manager_->CheckLocalAddress(local_ips[j], remote_ip,
-          bootstrapping_nodes_[i].host_port())) {
-        host_ip_ = local_ips[j];
-        local_host_ip_ = local_ips[j];
-        got_local_address = true;
-      }
-    }
-  }
-  if (!got_local_address) {
-    boost::asio::ip::address local_address;
-    if (base::get_local_address(&local_address)) {
-      host_ip_ = local_address.to_string();
-      local_host_ip_ = local_address.to_string();
-    }
-  }
-
-
+  // is_joined_ = true;
   Join_Bootstrapping(cb, bootstrapping_nodes_, port_forwarded);
 }
 
@@ -797,18 +806,18 @@ void KNodeImpl::RefreshRoutine() {
 void KNodeImpl::IterativeLookUp_CancelActiveProbe(
     Contact sender,
     boost::shared_ptr<IterativeLookUpData> data) {
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::IterativeLookUp_CancelActiveProbe(%i), outside mutex\n",
-         host_port_);
-#endif
-//  boost::mutex::scoped_lock guard(*mutex_[5]);
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::IterativeLookUp_CancelActiveProbe(%i), inside mutex.\n",
-         host_port_);
-#endif
-  if (!is_joined_ && data->method != BOOTSTRAP)
+  printf("%i -- Beginning -- In KNode::IterativeLookUp_CancelActiveProbe",
+        host_port_);
+  printf(" -- active probes %i\n", data->active_probes.size());
+
+  if (!is_joined_ && data->method != BOOTSTRAP) {
+    printf("%i -- KNodeImpl::IterativeLookUp_CancelActiveProbe -- "
+           " !is_joined_ && data->method != BOOTSTRAP\n", host_port_);
     return;
+  }
   std::list<Contact>::iterator it;
+
+  activeprobes_mutex_.lock();
   for (it = data->active_probes.begin(); it != data->active_probes.end();
       ++it) {
     if (sender.node_id() == data->key)
@@ -821,16 +830,18 @@ void KNodeImpl::IterativeLookUp_CancelActiveProbe(
 
   if (static_cast<int>(data->active_probes.size()) <= beta_ &&
       !data->wait_for_key && !data->is_callbacked) {
-    // force iteration
-//    guard.unlock();
-      printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
-      printf(" calling search iter\n");
+    printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
+    printf(" calling IterativeLookUp_SearchIteration");
+    printf(" -- active probes %i\n", data->active_probes.size());
+    activeprobes_mutex_.unlock();
     IterativeLookUp_SearchIteration(data);
   } else {
     printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
     printf(" -- active probes %i\n", data->active_probes.size());
+    activeprobes_mutex_.unlock();
   }
-  printf("%i -- End--In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
+  printf("%i -- End -- In KNode::IterativeLookUp_CancelActiveProbe",
+        host_port_);
   printf(" -- active probes %i\n", data->active_probes.size());
 }
 
@@ -858,10 +869,10 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
     RemoveContact(callback_data.sender.node_id());
     is_valid = false;
     callback_data.data->dead_ids.push_back(callback_data.sender.node_id());
-    #ifdef DEBUG
+#ifdef DEBUG
       printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList resp invalid\n",
           host_port_);
-    #endif
+#endif
   }
 
   if (is_valid) {
@@ -1160,10 +1171,12 @@ void KNodeImpl::IterativeLookUp_Callback(
   printf("%i -- calling back iterative lookup callback\n", host_port_);
   data->cb(ser_result);
   printf("%i -- calledback iterative lookup callback\n", host_port_);
+  activeprobes_mutex_.lock();
   data->active_probes_after_callback = data->active_probes.size();
+  activeprobes_mutex_.unlock();
   if (data->active_probes_after_callback != 0) {
-     printf("%i -- iterative lookup callback -- still with active probes\n",
-         host_port_);
+    printf("%i -- iterative lookup callback -- still with active probes\n",
+           host_port_);
     return;
   }
   IterativeLookUp_SendDownlist(data);
@@ -1314,7 +1327,9 @@ void KNodeImpl::IterativeLookUp_SearchIteration(
     }
     if (!is_already_contacted) {
       Contact remote = *it;
+      activeprobes_mutex_.lock();
       data->active_probes.push_back(remote);
+      activeprobes_mutex_.unlock();
       FindResponse *resp = new FindResponse();
       FindCallbackArgs callback_args(data);
       callback_args.sender = remote;
@@ -1354,19 +1369,28 @@ void KNodeImpl::IterativeLookUp_SearchIteration(
         } else if (data->key == remote.node_id()) {
             data->wait_for_key = true;
         }
+//        activeprobes_mutex_.unlock();
         kadrpcs_.FindNode(data->key, contact_ip, contact_port, resp, done,
                           local);
       } else if (data->method == FIND_VALUE) {
+//        activeprobes_mutex_.unlock();
         kadrpcs_.FindValue(data->key, contact_ip, contact_port, resp, done,
                            local);
       }
       // finished sending
       data->already_contacted.push_back(remote);
       ++contacted_now;
-      if (contacted_now == alpha_) break;
+      if (contacted_now == alpha_) {
+//        activeprobes_mutex_.unlock();
+        break;
+      }
     }
   }
-  if (data->active_probes.size() == 0) {
+//  activeprobes_mutex_.unlock();
+  activeprobes_mutex_.lock();
+  int n = data->active_probes.size();
+  activeprobes_mutex_.unlock();
+  if (n == 0) {
     // No active probes were sent, there will be no any improvement, so we're
     // done.
 #ifdef DEBUG

@@ -111,6 +111,37 @@ class Env: public testing::Environment {
     fs::create_directories("KnodeTest");
     // setup the nodes without starting them
     for (int  i = 0; i < kNetworkSize; ++i) {
+      // Deleting the DBs in the app dir
+      boost::filesystem::path app_path("");
+#if defined(MAIDSAFE_POSIX)
+      app_path = boost::filesystem::path("/var/cache/maidsafe/",
+        boost::filesystem::native);
+#elif defined(MAIDSAFE_WIN32)
+      TCHAR szpth[MAX_PATH];
+      if (SUCCEEDED(SHGetFolderPath(NULL,
+                                    CSIDL_COMMON_APPDATA,
+                                    NULL,
+                                    0,
+                                    szpth))) {
+        std::ostringstream stm;
+        const std::ctype<char> &ctfacet =
+            std::use_facet< std::ctype<char> >(stm.getloc());
+        for (size_t i = 0; i < wcslen(szpth); ++i)
+          stm << ctfacet.narrow(szpth[i], 0);
+        app_path = boost::filesystem::path(stm.str(), boost::filesystem::native);
+        app_path /= "maidsafe";
+      }
+#elif defined(MAIDSAFE_APPLE)
+      app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
+#endif
+      app_path /= base::itos(62001 + i);
+      try {
+        if (fs::exists(app_path))
+          fs::remove_all(app_path);
+      }
+      catch(const std::exception &e_) {
+        printf("%s\n", e_.what());
+      }
       boost::shared_ptr<rpcprotocol::ChannelManager>
           channel_manager_local_(new rpcprotocol::ChannelManager());
       channel_managers_.push_back(channel_manager_local_);
@@ -130,6 +161,38 @@ class Env: public testing::Environment {
                     _1, _2, _3)));
       knodes_.push_back(knode_local_);
       cb_.Reset();
+    }
+
+    // Delete the app file for the client node on port 63001
+    boost::filesystem::path app_path("");
+#if defined(MAIDSAFE_POSIX)
+    app_path = boost::filesystem::path("/var/cache/maidsafe/",
+      boost::filesystem::native);
+#elif defined(MAIDSAFE_WIN32)
+    TCHAR szpth[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPath(NULL,
+                                  CSIDL_COMMON_APPDATA,
+                                  NULL,
+                                  0,
+                                  szpth))) {
+      std::ostringstream stm;
+      const std::ctype<char> &ctfacet =
+          std::use_facet< std::ctype<char> >(stm.getloc());
+      for (size_t i = 0; i < wcslen(szpth); ++i)
+        stm << ctfacet.narrow(szpth[i], 0);
+      app_path = boost::filesystem::path(stm.str(), boost::filesystem::native);
+      app_path /= "maidsafe";
+    }
+#elif defined(MAIDSAFE_APPLE)
+    app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
+#endif
+    app_path /= base::itos(63001);
+    try {
+      if (fs::exists(app_path))
+        fs::remove_all(app_path);
+    }
+    catch(const std::exception &e_) {
+      printf("%s\n", e_.what());
     }
 
     // start node 1 and add his details to kad config protobuf
@@ -239,14 +302,74 @@ class Env: public testing::Environment {
       channel_managers_[i]->StopTransport();
       knodes_[i].reset();
       channel_managers_[i].reset();
+      // Deleting the DBs in the app dir
+      boost::filesystem::path app_path("");
+#if defined(MAIDSAFE_POSIX)
+      app_path = boost::filesystem::path("/var/cache/maidsafe/",
+        boost::filesystem::native);
+#elif defined(MAIDSAFE_WIN32)
+      TCHAR szpth[MAX_PATH];
+      if (SUCCEEDED(SHGetFolderPath(NULL,
+                                    CSIDL_COMMON_APPDATA,
+                                    NULL,
+                                    0,
+                                    szpth))) {
+        std::ostringstream stm;
+        const std::ctype<char> &ctfacet =
+            std::use_facet< std::ctype<char> >(stm.getloc());
+        for (size_t i = 0; i < wcslen(szpth); ++i)
+          stm << ctfacet.narrow(szpth[i], 0);
+        app_path = boost::filesystem::path(stm.str(), boost::filesystem::native);
+        app_path /= "maidsafe";
+      }
+#elif defined(MAIDSAFE_APPLE)
+      app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
+#endif
+      app_path /= base::itos(62001 + i);
+      try {
+        if (fs::exists(app_path))
+          fs::remove_all(app_path);
+      }
+      catch(const std::exception &e_) {
+        printf("%s\n", e_.what());
+      }
     }
+    boost::filesystem::path app_path("");
+#if defined(MAIDSAFE_POSIX)
+    app_path = boost::filesystem::path("/var/cache/maidsafe/",
+      boost::filesystem::native);
+#elif defined(MAIDSAFE_WIN32)
+    TCHAR szpth[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPath(NULL,
+                                  CSIDL_COMMON_APPDATA,
+                                  NULL,
+                                  0,
+                                  szpth))) {
+      std::ostringstream stm;
+      const std::ctype<char> &ctfacet =
+          std::use_facet< std::ctype<char> >(stm.getloc());
+      for (size_t i = 0; i < wcslen(szpth); ++i)
+        stm << ctfacet.narrow(szpth[i], 0);
+      app_path = boost::filesystem::path(stm.str(), boost::filesystem::native);
+      app_path /= "maidsafe";
+    }
+#elif defined(MAIDSAFE_APPLE)
+    app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
+#endif
+    app_path /= base::itos(63001);
     try {
+      if (fs::exists(app_path))
+        fs::remove_all(app_path);
       if (fs::exists("KnodeTest"))
         fs::remove_all("KnodeTest");
     }
     catch(const std::exception &e_) {
       printf("%s\n", e_.what());
     }
+    knodes_.clear();
+    channel_managers_.clear();
+    dbs_.clear();
+    node_ids.clear();
     printf("Finished tear down.\n");
   }
 
@@ -254,6 +377,122 @@ class Env: public testing::Environment {
   Env(const Env&);
   Env &operator=(const Env&);
 };
+
+TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
+  boost::shared_ptr<boost::mutex>
+      mutex_local_(new boost::mutex);
+  boost::shared_ptr<rpcprotocol::ChannelManager>
+      channel_manager_local_(new rpcprotocol::ChannelManager());
+  std::string db_local_ = "KnodeTest/datastore"+base::itos(63001);
+  boost::scoped_ptr<kad::KNode> knode_local_(new kad::KNode(db_local_,
+                                             channel_manager_local_,
+                                             kad::CLIENT,
+                                             kTestK,
+                                             kad::kAlpha,
+                                             kad::kBeta));
+  EXPECT_EQ(0, channel_manager_local_->StartTransport(63001,
+    boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_local_.get(),
+                _1, _2, _3)));
+  knode_local_->Join("",
+                     kad_config_file,
+                     boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
+                     false);
+  wait_result(&cb_);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
+  // Doing a storevalue
+  std::string key = cry_obj_.Hash("dccxxvdeee432cc", "", crypto::STRING_STRING,
+      false);
+  std::string value = base::RandomString(1024*10);  // 10KB
+  StoreValueCallback cb_1;
+  std::string pub_key(""), priv_key(""), sig_pub_key(""), sig_req("");
+  create_rsakeys(&pub_key, &priv_key);
+  create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
+  knode_local_->StoreValue(key, value, pub_key, sig_pub_key, sig_req,
+      boost::bind(&StoreValueCallback::CallbackFunc, &cb_1, _1));
+  wait_result(&cb_1);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
+
+  // loading the value with another existing node
+  FindCallback cb_2;
+  knodes_[11]->FindValue(key, boost::bind(&FindCallback::CallbackFunc,
+    &cb_2, _1));
+  wait_result(&cb_2);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
+  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  bool got_value = false;
+  for (std::list<std::string>::iterator it = cb_2.values().begin();
+       it != cb_2.values().end(); it++) {
+    if (value == *it) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value)
+    FAIL();
+  cb_2.Reset();
+
+  // loading the value with the client
+  knode_local_->FindValue(key, boost::bind(&FindCallback::CallbackFunc,
+    &cb_2, _1));
+  wait_result(&cb_2);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
+  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  got_value = false;
+  for (std::list<std::string>::iterator it = cb_2.values().begin();
+       it != cb_2.values().end(); it++) {
+    if (value == *it) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value)
+    FAIL();
+  cb_2.Reset();
+
+  // Doing a find closest nodes with the client
+  std::string key1 = cry_obj_.Hash("2evvnf3xssas21", "", crypto::STRING_STRING,
+      false);
+  FindCallback cb_3;
+  knode_local_->FindCloseNodes(key1,
+      boost::bind(&FindCallback::CallbackFunc, &cb_3, _1));
+  wait_result(&cb_3);
+  // make sure the nodes returned are what we expect.
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_3.result());
+  ASSERT_NE(static_cast<unsigned int>(0), cb_3.closest_nodes().size());
+  std::list<std::string> closest_nodes_str = cb_3.closest_nodes();
+  std::list<std::string>::iterator it;
+  std::list<kad::Contact> closest_nodes;
+  for (it = closest_nodes_str.begin(); it != closest_nodes_str.end();
+      it++) {
+    kad::Contact node;
+    node.ParseFromString(*it);
+    closest_nodes.push_back(node);
+  }
+  ASSERT_EQ(static_cast<unsigned int>(kTestK), closest_nodes.size());
+  std::list<kad::Contact> all_nodes;
+  for (int i = 0; i < kNetworkSize; i++) {
+    kad::Contact node(knodes_[i]->node_id(), knodes_[i]->host_ip(),
+        knodes_[i]->host_port());
+    all_nodes.push_back(node);
+  }
+  kad::SortContactList(&all_nodes, key1);
+  std::list<kad::Contact>::iterator it1, it2;
+  it2= closest_nodes.begin();
+  for (it1 = closest_nodes.begin(); it1 != closest_nodes.end();
+      it1++, it2++) {
+    ASSERT_TRUE(*it1 == *it2);
+  }
+
+  // Checking no node has stored the clients node in its routing table
+  for (int i = 0; i < kNetworkSize; i++) {
+    kad::Contact client_node;
+    ASSERT_FALSE(knodes_[i]->GetContact(knode_local_->node_id(), &client_node));
+  }
+  cb_.Reset();
+  knode_local_->Leave();
+  ASSERT_FALSE(knode_local_->is_joined());
+  channel_manager_local_->StopTransport();
+}
 
 TEST_F(KNodeTest, BEH_KAD_FindClosestNodes) {
   std::string key = cry_obj_.Hash("2evvnf3xssas21", "", crypto::STRING_STRING,
@@ -312,12 +551,15 @@ TEST_F(KNodeTest, BEH_KAD_StoreAndLoadSmallValue) {
   int number = 0;
   for (int i = 0; i < kNetworkSize; i++) {
     std::vector<std::string> values;
+    bool b = false;
     knodes_[i]->FindValueLocal(key, values);
-    if (values.size() >= 1) {
-      ASSERT_EQ(static_cast<unsigned int>(1), values.size());
-      ASSERT_EQ(value, values[0]);
-//      printf("%i, ", i);
-      number++;
+    if (values.size() > 0) {
+      for (int n = 0; n < values.size() && !b; ++n) {
+        if (value == values[n]) {
+          number++;
+          b = true;
+        }
+      }
     }
   }
 //  printf(" ***********\n\n");
@@ -329,8 +571,21 @@ TEST_F(KNodeTest, BEH_KAD_StoreAndLoadSmallValue) {
     &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_EQ(static_cast<unsigned int>(1), cb_1.values().size());
-  ASSERT_EQ(value, cb_1.values().front());
+  ASSERT_LE(static_cast<unsigned int>(1), cb_1.values().size());
+  bool got_value = false;
+  for (std::list<std::string>::iterator it = cb_1.values().begin();
+       it != cb_1.values().end(); it++) {
+    if ( (*it).empty())
+      continue;
+    if (value == *it) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value) {
+    printf("FAIL node 17\n");
+    FAIL();
+  }
 //  printf("***********Found value via node 17***********\n");
   // load the value from no.1 node
   cb_1.Reset();
@@ -340,8 +595,20 @@ TEST_F(KNodeTest, BEH_KAD_StoreAndLoadSmallValue) {
                                          _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_EQ(static_cast<unsigned int>(1), cb_1.values().size());
-  ASSERT_EQ(value, cb_1.values().front());
+  ASSERT_LE(static_cast<unsigned int>(1), cb_1.values().size());
+  got_value = false;
+  for (std::list<std::string>::iterator it = cb_1.values().begin();
+       it != cb_1.values().end(); it++) {
+    if (value == *it) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value) {
+    printf("FAIL node 0\n");
+    FAIL();
+  }
+  cb_1.Reset();
 //  printf("***********Found value via node 0***********\n");
 }
 
@@ -362,12 +629,16 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   // calculate number of nodes which hold this key/value pair
   int number = 0;
   for (int i = 0; i < kNetworkSize; i++) {
+    bool b = false;
     std::vector<std::string> values;
     knodes_[i]->FindValueLocal(key, values);
-    if (values.size() >= 1) {
-      ASSERT_EQ(static_cast<unsigned int>(1), values.size());
-      ASSERT_EQ(value, values[0]);
-      number++;
+    if (values.size() > 0) {
+      for (int n = 0; n < values.size(); ++n) {
+        if (value == values[n]) {
+          number++;
+          b = true;
+        }
+      }
     }
   }
   ASSERT_EQ(kTestK, number);
@@ -377,16 +648,34 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
       boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_EQ(static_cast<unsigned int>(1), cb_1.values().size());
-  ASSERT_EQ(value, cb_1.values().front());
+  ASSERT_LE(static_cast<unsigned int>(1), cb_1.values().size());
+  bool got_value = false;
+  for (std::list<std::string>::iterator it = cb_1.values().begin();
+       it != cb_1.values().end(); it++) {
+    if (value == *it) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value)
+    FAIL();
   // load the value from no.12 node
   FindCallback cb_2;
   knodes_[11]->FindValue(key,
       boost::bind(&FindCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_EQ(static_cast<unsigned int>(1), cb_2.values().size());
-  ASSERT_EQ(value, cb_2.values().front());
+  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  got_value = false;
+  for (std::list<std::string>::iterator it = cb_2.values().begin();
+       it != cb_2.values().end(); it++) {
+    if (value == *it) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value)
+    FAIL();
 }
 
 TEST_F(KNodeTest, BEH_KAD_LoadNonExistingValue) {
@@ -497,8 +786,17 @@ TEST_F(KNodeTest, BEH_KAD_FindValueWithDeadNodes) {
       boost::bind(&FakeCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_EQ(static_cast<unsigned int>(1), cb_2.values().size());
-  ASSERT_EQ(value, cb_2.values().front());
+  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  bool got_value = false;
+  for (std::list<std::string>::iterator it = cb_2.values().begin();
+       it != cb_2.values().end(); it++) {
+    if (value == *it) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value)
+    FAIL();
   // Restart dead nodes
   for (int i = 0; i < kTestK - 1; ++i) {
     cb_.Reset();
@@ -652,122 +950,6 @@ TEST_F(KNodeTest, BEH_KAD_PingIncorrectNodeLocalAddr) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
 }
 
-TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
-  boost::shared_ptr<boost::mutex>
-      mutex_local_(new boost::mutex);
-  boost::shared_ptr<rpcprotocol::ChannelManager>
-      channel_manager_local_(new rpcprotocol::ChannelManager());
-  std::string db_local_ = "KnodeTest/datastore"+base::itos(63001);
-  boost::scoped_ptr<kad::KNode> knode_local_(new kad::KNode(db_local_,
-                                             channel_manager_local_,
-                                             kad::CLIENT,
-                                             kTestK,
-                                             kad::kAlpha,
-                                             kad::kBeta));
-  EXPECT_EQ(0, channel_manager_local_->StartTransport(63001,
-    boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_local_.get(),
-                _1, _2, _3)));
-  knode_local_->Join("",
-                     kad_config_file,
-                     boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-                     false);
-  wait_result(&cb_);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
-  // Doing a storevalue
-  std::string key = cry_obj_.Hash("dccxxvdeee432cc", "", crypto::STRING_STRING,
-      false);
-  std::string value = base::RandomString(1024*10);  // 10KB
-  StoreValueCallback cb_1;
-  std::string pub_key(""), priv_key(""), sig_pub_key(""), sig_req("");
-  create_rsakeys(&pub_key, &priv_key);
-  create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
-  knode_local_->StoreValue(key, value, pub_key, sig_pub_key, sig_req,
-      boost::bind(&StoreValueCallback::CallbackFunc, &cb_1, _1));
-  wait_result(&cb_1);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-
-  // loading the value with another existing node
-  FindCallback cb_2;
-  knodes_[11]->FindValue(key, boost::bind(&FindCallback::CallbackFunc,
-    &cb_2, _1));
-  wait_result(&cb_2);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
-  bool got_value = false;
-  for (std::list<std::string>::iterator it = cb_2.values().begin();
-       it != cb_2.values().end(); it++) {
-    if (value == *it) {
-      got_value = true;
-      break;
-    }
-  }
-  if (!got_value)
-    FAIL();
-  cb_2.Reset();
-
-  // loading the value with the client
-  knode_local_->FindValue(key, boost::bind(&FindCallback::CallbackFunc,
-    &cb_2, _1));
-  wait_result(&cb_2);
-  ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
-  got_value = false;
-  for (std::list<std::string>::iterator it = cb_2.values().begin();
-       it != cb_2.values().end(); it++) {
-    if (value == *it) {
-      got_value = true;
-      break;
-    }
-  }
-  if (!got_value)
-    FAIL();
-  cb_2.Reset();
-
-  // Doing a find closest nodes with the client
-  std::string key1 = cry_obj_.Hash("2evvnf3xssas21", "", crypto::STRING_STRING,
-      false);
-  FindCallback cb_3;
-  knode_local_->FindCloseNodes(key1,
-      boost::bind(&FindCallback::CallbackFunc, &cb_3, _1));
-  wait_result(&cb_3);
-  // make sure the nodes returned are what we expect.
-  ASSERT_EQ(kad::kRpcResultSuccess, cb_3.result());
-  ASSERT_NE(static_cast<unsigned int>(0), cb_3.closest_nodes().size());
-  std::list<std::string> closest_nodes_str = cb_3.closest_nodes();
-  std::list<std::string>::iterator it;
-  std::list<kad::Contact> closest_nodes;
-  for (it = closest_nodes_str.begin(); it != closest_nodes_str.end();
-      it++) {
-    kad::Contact node;
-    node.ParseFromString(*it);
-    closest_nodes.push_back(node);
-  }
-  ASSERT_EQ(static_cast<unsigned int>(kTestK), closest_nodes.size());
-  std::list<kad::Contact> all_nodes;
-  for (int i = 0; i < kNetworkSize; i++) {
-    kad::Contact node(knodes_[i]->node_id(), knodes_[i]->host_ip(),
-        knodes_[i]->host_port());
-    all_nodes.push_back(node);
-  }
-  kad::SortContactList(&all_nodes, key1);
-  std::list<kad::Contact>::iterator it1, it2;
-  it2= closest_nodes.begin();
-  for (it1 = closest_nodes.begin(); it1 != closest_nodes.end();
-      it1++, it2++) {
-    ASSERT_TRUE(*it1 == *it2);
-  }
-
-  // Checking no node has stored the clients node in its routing table
-  for (int i = 0; i < kNetworkSize; i++) {
-    kad::Contact client_node;
-    ASSERT_FALSE(knodes_[i]->GetContact(knode_local_->node_id(), &client_node));
-  }
-  cb_.Reset();
-  knode_local_->Leave();
-  ASSERT_FALSE(knode_local_->is_joined());
-  channel_manager_local_->StopTransport();
-}
-
 TEST_F(KNodeTest, BEH_KAD_FindDeadNode) {
   // find an existing node that has gone down
   // select a random node from node 1 to node 19
@@ -882,106 +1064,6 @@ TEST_F(KNodeTest, BEH_KAD_StartStopNode) {
   ASSERT_TRUE(knodes_[r_node]->is_joined());
   cb_.Reset();
 }
-
-//TEST_F(KNodeTest, FUNC_KAD_StartStopRandomNodes) {
-//  unsigned int N = 6;
-//  unsigned int n = 0;
-//  CryptoPP::AutoSeededRandomPool rng;
-//  CryptoPP::Integer rand_num(rng, 32);
-//  boost::uint32_t num;
-//
-//  // Generate set of N nodes to be started and stopped
-//  std::set<int> nodes;
-//  std::set<int>::iterator it;
-//  while (nodes.size() < N) {
-//    if (!rand_num.IsConvertableToLong()) {
-//      num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
-//        rand_num.AbsoluteValue().ConvertToLong());
-//    } else {
-//      num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-//    }
-//    int r_node = 1 + static_cast<int>(num % 19);
-//    nodes.insert(r_node);
-//    rand_num.Randomize(rng, 32);
-//  }
-//
-//  // Generate times to start and stop
-//  boost::uint64_t stop_times[N];
-//  boost::uint64_t restart_times[N];
-//  boost::uint64_t largest_time = 4;
-//
-//  for (n = 0; n < N; ++n) {
-//    if (!rand_num.IsConvertableToLong()) {
-//      num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(
-//        rand_num.AbsoluteValue().ConvertToLong());
-//    } else {
-//      num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-//    }
-//    rand_num.Randomize(rng, 32);
-//    stop_times[n] = 5 + static_cast<boost::uint64_t>(num % 100);
-//    restart_times[n] = 1;
-//    while (stop_times[n] >= restart_times[n]) {
-//      if (!rand_num.IsConvertableToLong()) {
-//        num = std::numeric_limits<uint32_t>::max() +
-//          static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-//      } else {
-//        num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-//      }
-//      rand_num.Randomize(rng, 32);
-//      restart_times[n] = 5 + static_cast<boost::uint64_t>(num % 100);
-//    }
-//    restart_times[n] += 5;
-//    if (restart_times[n] > largest_time) {
-//      largest_time = restart_times[n];
-//    }
-//  }
-//
-//  // Printing the schedule
-//  n = 0;
-//  printf("\n\n\nSchedule:\nNode\tStop Time\tRestart Time\n");
-//  for (it = nodes.begin(); it != nodes.end(); ++it) {
-//    printf("%i\t%llu\t\t%llu\n", *it, stop_times[n], restart_times[n]);
-//    n++;
-//  }
-//  printf("\n\n\n");
-//
-//  // Adding execution to call later timer
-//  n = 0;
-//  base::CallLaterTimer clt;
-//  for (it = nodes.begin(); it != nodes.end(); ++it) {
-//    cb_.Reset();
-//    std::string db_local_ = "KnodeTest/datastore" + base::itos(62001 + *it);
-//    std::string kad_config_file = db_local_ + "/.kadconfig";
-//    clt.AddCallLater(stop_times[n] * 1000,
-//                     boost::bind(&kad::KNode::Leave, knodes_[*it].get()));
-//    base::callback_func_type f = boost::bind(&GeneralKadCallback::CallbackFunc,
-//                                             &cb_,
-//                                             _1);
-//    clt.AddCallLater(restart_times[n] * 1000,
-//                     boost::bind(&kad::KNode::Join,
-//                                 knodes_[*it].get(),
-//                                 knodes_[*it]->node_id(),
-//                                 kad_config_file,
-//                                 f,
-//                                 false)
-//                    );
-//    n++;
-//  }
-//
-//  boost::progress_timer t;
-//  printf("largest time: %llu\n", largest_time);
-//  while (t.elapsed() < largest_time + 10) {
-//    boost::this_thread::sleep(boost::posix_time::seconds(5));
-//    printf("elapsed: %f\n", t.elapsed());
-//  }
-//
-//  for (it = nodes.begin(); it != nodes.end(); ++it) {
-//    ASSERT_TRUE(knodes_[*it]->is_joined()) <<
-//      "Node " << *it << " did not rejoin";
-//  }
-//  nodes.clear();
-//}
-//
 
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);

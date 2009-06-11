@@ -262,7 +262,6 @@ class KNodeImpl {
   inline bool is_joined() const { return is_joined_; }
   inline KadRpcs* kadrpcs() { return &kadrpcs_; }
   friend class KadServicesTest;
-  friend class NatDetectionTest;
  private:
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
@@ -338,6 +337,7 @@ class KNodeImpl {
   boost::mutex extendshortlist_mutex_;
   boost::mutex joinbootstrapping_mutex_;
   boost::mutex leave_mutex_;
+  boost::mutex activeprobes_mutex_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
   boost::shared_ptr<rpcprotocol::ChannelManager> pchannel_manager_;
   boost::shared_ptr<rpcprotocol::Channel> pservice_channel_;
