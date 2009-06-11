@@ -237,37 +237,38 @@ TEST_F(RpcProtocolTest, BEH_RPC_RegisterAChannel) {
 }
 
 TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
-  PingTestService *service1 = new PingTestService();
-  TestOpService *service2 = new TestOpService();
-  MirrorTestService *service3 = new MirrorTestService();
-  MirrorTestService *service4 = new MirrorTestService();
+  boost::scoped_ptr<PingTestService> service1(new PingTestService());
+  boost::scoped_ptr<TestOpService> service2(new TestOpService());
+  boost::scoped_ptr<MirrorTestService> service3(new MirrorTestService());
+  boost::scoped_ptr<MirrorTestService> service4(new MirrorTestService());
   // creating a channel for the service
-  rpcprotocol::Channel *service_channel1 = new rpcprotocol::Channel(
-      server_chann_manager);
-  service_channel1->SetService(service1);
+  boost::scoped_ptr<rpcprotocol::Channel>
+      service_channel1(new rpcprotocol::Channel(server_chann_manager));
+  service_channel1->SetService(service1.get());
   server_chann_manager->RegisterChannel(service1->GetDescriptor()->name(),
-      service_channel1);
-  rpcprotocol::Channel *service_channel2 = new rpcprotocol::Channel(
-      server_chann_manager);
-  service_channel2->SetService(service2);
+      service_channel1.get());
+  boost::scoped_ptr<rpcprotocol::Channel>
+      service_channel2(new rpcprotocol::Channel(server_chann_manager));
+  service_channel2->SetService(service2.get());
   server_chann_manager->RegisterChannel(service2->GetDescriptor()->name(),
-      service_channel2);
-  rpcprotocol::Channel *service_channel3 = new rpcprotocol::Channel(
-      server_chann_manager);
-  service_channel3->SetService(service3);
+      service_channel2.get());
+  boost::scoped_ptr<rpcprotocol::Channel>
+      service_channel3(new rpcprotocol::Channel(server_chann_manager));
+  service_channel3->SetService(service3.get());
   server_chann_manager->RegisterChannel(service3->GetDescriptor()->name(),
-      service_channel3);
-  rpcprotocol::Channel *service_channel4 = new rpcprotocol::Channel(
-      server_chann_manager);
-  service_channel4->SetService(service4);
+      service_channel3.get());
+  boost::scoped_ptr<rpcprotocol::Channel>
+      service_channel4(new rpcprotocol::Channel(server_chann_manager));
+  service_channel4->SetService(service4.get());
   server_chann_manager->RegisterChannel(service4->GetDescriptor()->name(),
-      service_channel4);
+      service_channel4.get());
   // creating a channel for the client to send a request to the service
   rpcprotocol::Controller controller;
   controller.set_timeout(5);
-  rpcprotocol::Channel *out_channel =
-      new rpcprotocol::Channel(client_chann_manager, "127.0.0.1", 35001, true);
-  tests::PingTest* stubservice1 = new tests::PingTest::Stub(out_channel);
+  boost::scoped_ptr<rpcprotocol::Channel> out_channel(new rpcprotocol::Channel(
+      client_chann_manager, "127.0.0.1", 35001, true));
+  boost::scoped_ptr<tests::PingTest>
+      stubservice1(new tests::PingTest::Stub(out_channel.get()));
   tests::PingRequest req1;
   tests::PingResponse resp1;
   req1.set_ping("ping");
@@ -286,7 +287,8 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
   ASSERT_EQ("pong", resultholder.ping_res.pong());
   resultholder.Reset();
 
-  tests::TestOp* stubservice2 = new tests::TestOp::Stub(out_channel);
+  boost::scoped_ptr<tests::TestOp>
+      stubservice2(new tests::TestOp::Stub(out_channel.get()));
   tests::BinaryOpRequest req2;
   tests::BinaryOpResponse resp2;
   req2.set_first(3);
@@ -304,7 +306,8 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
   }
   ASSERT_EQ(5, resultholder.op_res.result());
 
-  tests::MirrorTest* stubservice3 = new tests::MirrorTest::Stub(out_channel);
+  boost::scoped_ptr<tests::MirrorTest>
+      stubservice3(new tests::MirrorTest::Stub(out_channel.get()));
   tests::StringMirrorRequest req3;
   tests::StringMirrorResponse resp3;
   req3.set_message(base::RandomString(5 * 1024 * 1024));
@@ -327,10 +330,13 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
 //    "Result of mirror wrong.";
 
   resultholder.Reset();
-  tests::MirrorTest* stubservice4 = new tests::MirrorTest::Stub(out_channel);
+  boost::scoped_ptr<tests::MirrorTest>
+      stubservice4(new tests::MirrorTest::Stub(out_channel.get()));
   tests::StringMirrorRequest req4;
   tests::StringMirrorResponse resp4;
-  req4.set_message(base::RandomString(5 * 1024 * 1024));
+  std::string test_str = base::RandomString(5 * 1024 * 1024);
+  test_str.replace(test_str.size()-10, 10, "0123456789");
+  req4.set_message(test_str);
   req4.set_ip("127.0.0.1");
   req4.set_port(35002);
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<ResultHolder,
@@ -339,25 +345,17 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
   rpcprotocol::Controller controller4;
   controller4.set_timeout(20);
   stubservice4->Mirror(&controller4, &req4, &resp4, done4);
-  while (resultholder.mirror_res.mirrored_string() == "-") {
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  while (!resultholder.mirror_res.IsInitialized()) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
-  ASSERT_NE("+", resultholder.mirror_res.mirrored_string()) <<
-    "Result of mirror wrong.";
-
-  delete service_channel1;
-  delete service_channel2;
-  delete service_channel3;
-  delete service_channel4;
-  delete stubservice1;
-  delete stubservice2;
-  delete stubservice3;
-  delete stubservice4;
-  delete out_channel;
-  delete service1;
-  delete service2;
-  delete service3;
-  delete service4;
+  if ("+" == resultholder.mirror_res.mirrored_string()) {
+    ASSERT_EQ("9876543210",
+              resultholder.mirror_res.mirrored_string().substr(0, 9));
+    printf("Result of mirror wrong.\n");
+    FAIL();
+  }
+//  ASSERT_NE("+", resultholder.mirror_res.mirrored_string()) <<
+//    "Result of mirror wrong.";
 }
 
 TEST_F(RpcProtocolTest, BEH_RPC_ServerAndClientAtSameTime) {
@@ -444,27 +442,4 @@ TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
   ASSERT_FALSE(resultholder.ping_res.has_pong());
   delete out_channel;
   delete stubservice;
-}
-
-TEST_F(RpcProtocolTest, BEH_RPC_CheckLocalAddress) {
-  std::vector<std::string> local_ips = base::get_local_addresses();
-  if (local_ips.size() == 1) {
-    printf("checking local address %s\n", local_ips[0].c_str());
-    ASSERT_FALSE(client_chann_manager->CheckLocalAddress(local_ips[0],
-      "127.0.0.1", 35001));
-    ASSERT_TRUE(client_chann_manager->CheckLocalAddress(local_ips[0],
-      local_ips[0], 35001));
-  } else if (local_ips.size() > 1) {
-    std::string server_addr = local_ips[0];
-    for (int i = 1; i < local_ips.size(); i++) {
-      printf("checking local address %s connecting to address %s\n",
-        local_ips[i].c_str(), server_addr.c_str());
-      ASSERT_FALSE(client_chann_manager->CheckLocalAddress(local_ips[i],
-        server_addr, 35001));
-    }
-    ASSERT_TRUE(client_chann_manager->CheckLocalAddress(local_ips[0],
-      server_addr, 35001));
-  } else {
-    printf("no local addresses where retrieved\n");
-  }
 }
