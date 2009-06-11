@@ -73,11 +73,15 @@ class RoutingTable {
   int KbucketSize() const;
   int Size() const;
   void Clear();
-
- private:
   // Calculate the index of the k-bucket which is responsible for the specified
   // key (or ID)
   int KBucketIndex(const std::string &key);
+  Contact GetLastSeenContact(const int &kbucket_index);
+
+ private:
+//  // Calculate the index of the k-bucket which is responsible for the specified
+//  // key (or ID)
+//  int KBucketIndex(const std::string &key);
   // Return vector of k-bucket indices sorted from closest to key to furthest
   std::vector<int> SortBucketsByDistance(const std::string &key);
   // Takes a vector of contacts arranged in arbitrary order and sorts them from

@@ -61,6 +61,8 @@ class KBucket {
   bool KeyInRange(const std::string &key);
   // return the number of contacts in this k-bucket
   int Size() const;
+  // returns last seen contact of the kbucket (end of the list)
+  Contact LastSeenContact();
   boost::uint32_t last_accessed() const;
   void set_last_accessed(const boost::uint32_t &time_accessed);
   BigInt range_min() const;

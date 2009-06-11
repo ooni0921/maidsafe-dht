@@ -179,7 +179,11 @@ int RoutingTable::AddContact(const Contact &new_contact) {
                    // Force a peer always accept peers belonging to the brother
                    // bucket of the peer in case they are amongst k closet
                    // neighbours
-                   return ForceKAcceptNewPeer(new_contact);
+                   if (ForceKAcceptNewPeer(new_contact) != 0) {
+                     return 2;
+                   } else {
+                     return 0;
+                   }
                  }
                  return 2;
                }
@@ -364,4 +368,10 @@ int RoutingTable::ForceKAcceptNewPeer(const Contact &new_contact) {
   return -1;
 }
 
+Contact RoutingTable::GetLastSeenContact(const int &kbucket_index) {
+  Contact last_seen;
+  if (kbucket_index > static_cast<int>(k_buckets_.size()) - 1)
+    return last_seen;
+  return k_buckets_[kbucket_index]->LastSeenContact();
+}
 }  // namespace kad

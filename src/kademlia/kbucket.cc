@@ -145,6 +145,16 @@ void KBucket::GetContacts(int count, const std::vector<Contact>
       }
     }
 }
+
 BigInt KBucket::range_min() const { return range_min_; }
+
 BigInt KBucket::range_max() const { return range_max_; }
+
+Contact KBucket::LastSeenContact() {
+  if (contacts_.empty()) {
+    Contact empty;
+    return empty;
+  }
+  return contacts_.back();
+}
 }  // namespace kad

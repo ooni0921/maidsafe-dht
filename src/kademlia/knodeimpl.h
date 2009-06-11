@@ -231,7 +231,7 @@ class KNodeImpl {
                          const std::vector<Contact> &exclude_contacts);
   void Ping(const std::string &node_id, base::callback_func_type cb);
   void Ping(const Contact &remote, base::callback_func_type cb);
-  void AddContact(Contact new_contact, bool only_db);
+  int AddContact(Contact new_contact, bool only_db);
   void RemoveContact(const std::string &node_id);
   bool GetContact(const std::string &id, Contact *contact);
   void FindValueLocal(const std::string &key,
@@ -250,6 +250,7 @@ class KNodeImpl {
                                            const std::string &ext_ip);
   void UpdatePDRTContactToRemote(const std::string &node_id);
   ContactInfo contact_info() const;
+  void CheckToInsert(const Contact &new_contact);
   inline std::string node_id() const {
     return (type_ == CLIENT) ? fake_client_node_id_ : node_id_;
   }
@@ -262,6 +263,7 @@ class KNodeImpl {
   inline bool is_joined() const { return is_joined_; }
   inline KadRpcs* kadrpcs() { return &kadrpcs_; }
   friend class KadServicesTest;
+  friend class NatDetectionTest;
  private:
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
@@ -332,6 +334,8 @@ class KNodeImpl {
                          int map_transport);
   void UPnPMap(boost::uint16_t host_port);
   void UnMapUPnP();
+  void CheckToInsert_Callback(const std::string &result, std::string id,
+      Contact new_contact);
   boost::mutex routingtable_mutex_;
   boost::mutex kadconfig_mutex_;
   boost::mutex extendshortlist_mutex_;

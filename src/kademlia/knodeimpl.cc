@@ -532,7 +532,28 @@ void KNodeImpl::Join_RefreshNode(base::callback_func_type cb,
   // Initiate the Kademlia joining sequence - perform a search for this
   // node's own ID
   kadrpcs_.set_info(contact_info());
-  // is_joined_ = true;
+  // Getting local IP and temporarily setting host_ip_ == local_host_ip_
+  std::vector<std::string> local_ips = base::get_local_addresses();
+  bool got_local_address = false;
+  for (unsigned int i = 0; i < bootstrapping_nodes_.size()
+       && !got_local_address; i++) {
+    std::string remote_ip = base::inet_btoa(bootstrapping_nodes_[i].host_ip());
+    for (unsigned int j = 0; j < local_ips.size() && !got_local_address; j++) {
+      if (pchannel_manager_->CheckLocalAddress(local_ips[j], remote_ip,
+          bootstrapping_nodes_[i].host_port())) {
+        host_ip_ = local_ips[j];
+        local_host_ip_ = local_ips[j];
+        got_local_address = true;
+      }
+    }
+  }
+  if (!got_local_address) {
+    boost::asio::ip::address local_address;
+    if (base::get_local_address(&local_address)) {
+      host_ip_ = local_address.to_string();
+      local_host_ip_ = local_address.to_string();
+    }
+  }
   Join_Bootstrapping(cb, bootstrapping_nodes_, port_forwarded);
 }
 
@@ -1902,15 +1923,8 @@ void KNodeImpl::Ping(const Contact &remote, base::callback_func_type cb) {
   }
 }
 
-void KNodeImpl::AddContact(Contact new_contact, bool only_db) {
-//  printf("\t\tIn KNode::AddContact(%i), 1.\n", host_port_);
-//  if (new_contact.node_id() == "")
-//    printf("new_contact.node_id() is empty string.\n");
-//  if (new_contact.node_id() == client_node_id())
-//    printf("new_contact.node_id() is client node.\n");
-//  if (new_contact.node_id() == node_id_)
-//    printf("new_contact.node_id() is this node's ID.\n");
-
+int KNodeImpl::AddContact(Contact new_contact, bool only_db) {
+  int result = -1;
   if (new_contact.node_id() != "" && new_contact.node_id() != client_node_id()
       && new_contact.node_id() != node_id_) {
 //    printf("\t\tIn KNode::AddContact(%i), 2.\n", host_port_);
@@ -1918,7 +1932,9 @@ void KNodeImpl::AddContact(Contact new_contact, bool only_db) {
       boost::mutex::scoped_lock gaurd(routingtable_mutex_);
 //      printf("\t\tIn KNode::AddContact(%i), 3.\n", host_port_);
       new_contact.set_last_seen(base::get_epoch_milliseconds());
-      prouting_table_->AddContact(new_contact);
+      result = prouting_table_->AddContact(new_contact);
+    } else {
+      result = 0;
     }
 //    printf("\t\tIn KNode::AddContact(%i), 4.\n", host_port_);
 
@@ -1943,6 +1959,7 @@ void KNodeImpl::AddContact(Contact new_contact, bool only_db) {
 //    printf("\t\tIn KNode::AddContact(%i), 7.\n", host_port_);
   }
 //  printf("\t\tIn KNode::AddContact(%i), 8.\n", host_port_);
+  return result;
 }
 
 void KNodeImpl::RemoveContact(const std::string &node_id) {
@@ -2244,5 +2261,26 @@ ContactInfo KNodeImpl::contact_info() const {
   info.set_local_port(local_host_port_);
   info.set_rv_port(rv_port_);
   return info;
+}
+
+void KNodeImpl::CheckToInsert(const Contact &new_contact) {
+  if (!is_joined_) return;
+  int index = prouting_table_->KBucketIndex(new_contact.node_id());
+  Contact last_seen;
+  last_seen = prouting_table_->GetLastSeenContact(index);
+  Ping(last_seen, boost::bind(&KNodeImpl::CheckToInsert_Callback, this, _1,
+    new_contact.node_id(), new_contact));
+}
+
+void KNodeImpl::CheckToInsert_Callback(const std::string &result,
+    std::string id, Contact new_contact) {
+  if (!is_joined_) return;
+  PingResponse result_msg;
+  if (!result_msg.ParseFromString(result) ||
+      result_msg.result() != kRpcResultSuccess) {
+    boost::mutex::scoped_lock gaurd(routingtable_mutex_);
+    prouting_table_->RemoveContact(id, true);
+    prouting_table_->AddContact(new_contact);
+  }
 }
 }  // namespace kad

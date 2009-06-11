@@ -243,7 +243,7 @@ TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
   }
 }
 
-TEST_F(TestKbucket, BEH_ADD_AddSameContact) {
+TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   BigInt min_value(0);
   std::string hex_max_val;
   for (int i=0;i<kKeySizeBytes*2;i++)
@@ -308,7 +308,31 @@ TEST_F(TestKbucket, BEH_ADD_AddSameContact) {
   ASSERT_TRUE(kbucket.GetContact(cry_obj.Hash("newid",
       "", crypto::STRING_STRING,false), &contact4));
   ASSERT_TRUE(contact4 == contacts[0]) << "the contact readded was not placed at the begging of the list";
+}
 
-
+TEST_F(TestKbucket, BEH_KAD_GetLastSeenContact) {
+  BigInt min_value(0);
+  std::string hex_max_val;
+  for (int i=0;i<kKeySizeBytes*2;i++)
+    hex_max_val += "f";
+  hex_max_val = "0x" + hex_max_val;
+  BigInt max_value(hex_max_val);
+  KBucket kbucket(min_value,max_value);
+  std::string id[kad::K - 1];
+  std::string ip = "127.0.0.1";
+  unsigned short port[kad::K - 1];
+  Contact empty;
+  Contact rec;
+  rec = kbucket.LastSeenContact();
+  ASSERT_TRUE(empty == rec);
+  for (int i=0; i < kad::K - 1; i++) {
+    id[i] = cry_obj.Hash(base::itos(i), "", crypto::STRING_STRING,false);
+    port[i] = 8880 + i;
+    Contact contact(id[i], ip, port[i], ip, port[i]);
+    Contact firstinput(id[0], ip, port[0], ip, port[0]);
+    ASSERT_EQ(SUCCEED,kbucket.AddContact(contact));
+    Contact last_seen = kbucket.LastSeenContact();
+    ASSERT_TRUE(firstinput == last_seen);
+  }
 }
 
