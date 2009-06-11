@@ -531,7 +531,7 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
   ASSERT_FALSE(routingtable.GetContact(furthest_contact.node_id(),
                                        &furthest_contact1));
   // new peer which is not among K closest peers won't be accepted
-  ASSERT_EQ(1, routingtable.AddContact(furthest_contact));
+  ASSERT_EQ(2, routingtable.AddContact(furthest_contact));
   ASSERT_EQ(2*kad::K-1, routingtable.Size());
   // make the routingtable split further, there will be 4 buckets
   for (int i = 0; i < kad::K - 1; i++) {
@@ -563,7 +563,7 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
   ASSERT_FALSE(routingtable.GetContact(furthest_contact2.node_id(),
                                        &furthest_contact3));
   // new peer which is not among K closest peers won't be accepted
-  ASSERT_EQ(1, routingtable.AddContact(furthest_contact2));
+  ASSERT_EQ(2, routingtable.AddContact(furthest_contact2));
   ASSERT_EQ(3*kad::K-1, routingtable.Size());
 }
 
