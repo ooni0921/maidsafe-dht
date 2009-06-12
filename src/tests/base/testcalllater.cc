@@ -32,10 +32,16 @@ namespace base {
 
 class Lynyrd {
  public:
-  Lynyrd() : count_(0) /*, mutex_()*/ {}
-  ~Lynyrd() { printf("Dtor\n"); }
+  Lynyrd() : count_(0) , mutex_(new boost::mutex){}
+  ~Lynyrd() {
+    printf("Dtor\n");
+  }
   void Skynyrd() {
-//    boost::mutex::scoped_lock guard(mutex_);
+    if (mutex_.use_count() == 0) {
+      printf("mutex was destroyed\n");
+      return;
+    }
+    boost::mutex::scoped_lock guard(*mutex_.get());
     ++count_;
     printf("*");
   }
@@ -47,7 +53,7 @@ class Lynyrd {
   Lynyrd(const Lynyrd&);
   Lynyrd& operator=(const Lynyrd&);
   int count_;
-//  boost::mutex mutex_;
+  boost::shared_ptr<boost::mutex> mutex_;
 };
 
 class CallLaterTest : public testing::Test {
@@ -57,6 +63,7 @@ class CallLaterTest : public testing::Test {
   virtual void SetUp() {}
   virtual void TearDown() {}
   CallLaterTimer clt_;
+
  private:
   CallLaterTest(const CallLaterTest&);
   CallLaterTest& operator=(const CallLaterTest&);
@@ -78,8 +85,9 @@ TEST_F(CallLaterTest, BEH_BASE_AddDestroyCallLater) {
   ASSERT_TRUE(clt_.IsStarted());
   {
     Lynyrd sweethome;
-    clt_.AddCallLater(20, boost::bind(&Lynyrd::Skynyrd, &sweethome));
+     clt_.AddCallLater(20, boost::bind(&Lynyrd::Skynyrd, &sweethome));
   }
+  //delete timer;
   boost::this_thread::sleep(boost::posix_time::milliseconds(250));
 }
 
