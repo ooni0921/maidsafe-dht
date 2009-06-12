@@ -222,7 +222,6 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenReplies) {
     base::decode_from_hex(bucket2ids[i], id);
     kad::Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes[0]->AddContact(contact, false));
-    if (i == 1) last_seen = contact;
     port++;
   }
   for (int i = 0; i < 3; i++) {
@@ -252,6 +251,12 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenReplies) {
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   ASSERT_FALSE(nodes[0]->GetContact(contact.node_id(), &rec_contact));
   ASSERT_TRUE(nodes[0]->GetContact(last_seen.node_id(), &rec_contact));
+
+  nodes[0]->CheckToInsert(contact);
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
+  ASSERT_TRUE(nodes[0]->GetContact(contact.node_id(), &rec_contact));
+  ASSERT_TRUE(nodes[0]->GetContact(last_seen.node_id(), &rec_contact));
+
 
   nodes[1]->Leave();
   nodes[0]->Leave();
