@@ -128,7 +128,8 @@ class Env: public testing::Environment {
             std::use_facet< std::ctype<char> >(stm.getloc());
         for (size_t i = 0; i < wcslen(szpth); ++i)
           stm << ctfacet.narrow(szpth[i], 0);
-        app_path = boost::filesystem::path(stm.str(), boost::filesystem::native);
+        app_path = boost::filesystem::path(stm.str(),
+                                           boost::filesystem::native);
         app_path /= "maidsafe";
       }
 #elif defined(MAIDSAFE_APPLE)
@@ -319,7 +320,8 @@ class Env: public testing::Environment {
             std::use_facet< std::ctype<char> >(stm.getloc());
         for (size_t i = 0; i < wcslen(szpth); ++i)
           stm << ctfacet.narrow(szpth[i], 0);
-        app_path = boost::filesystem::path(stm.str(), boost::filesystem::native);
+        app_path = boost::filesystem::path(stm.str(),
+                                           boost::filesystem::native);
         app_path /= "maidsafe";
       }
 #elif defined(MAIDSAFE_APPLE)
@@ -419,10 +421,22 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
   ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  std::vector<std::string> local(cb_2.values().begin(), cb_2.values().end());
+//  printf("%i\n", cb_2.values().size());
   bool got_value = false;
-  for (std::list<std::string>::iterator it = cb_2.values().begin();
-       it != cb_2.values().end(); it++) {
-    if (value == *it) {
+//  for (std::list<std::string>::iterator it = cb_2.values().begin();
+//       it != cb_2.values().end(); ++it) {
+//    if (value == *it) {
+//      got_value = true;
+//      break;
+//    }
+//  }
+  for (unsigned int p = 0; p < local.size(); ++p) {
+    if (value == local[p]) {
+//      std::string hex1(""), hex2("");
+//      base::encode_to_hex(value, hex1);
+//      base::encode_to_hex(local[p], hex2);
+//      printf("Value - %s\tlocal[p] - %s\n", hex1.c_str(), hex2.c_str());
       got_value = true;
       break;
     }
@@ -554,7 +568,7 @@ TEST_F(KNodeTest, BEH_KAD_StoreAndLoadSmallValue) {
     bool b = false;
     knodes_[i]->FindValueLocal(key, values);
     if (values.size() > 0) {
-      for (int n = 0; n < values.size() && !b; ++n) {
+      for (boost::uint32_t n = 0; n < values.size() && !b; ++n) {
         if (value == values[n]) {
           number++;
           b = true;
@@ -633,7 +647,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
     std::vector<std::string> values;
     knodes_[i]->FindValueLocal(key, values);
     if (values.size() > 0) {
-      for (int n = 0; n < values.size(); ++n) {
+      for (boost::uint32_t n = 0; n < values.size(); ++n) {
         if (value == values[n]) {
           number++;
           b = true;
@@ -883,10 +897,11 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knodes_[r_node].get(), _1, _2, _3)));
   cb_.Reset();
-  knodes_[r_node]->Join(node_ids[r_node],
-                        kad_config_file,
-                        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-                        false);
+  knodes_[r_node]->Join(
+      node_ids[r_node],
+      kad_config_file,
+      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
+      false);
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());
@@ -971,10 +986,11 @@ TEST_F(KNodeTest, BEH_KAD_FindDeadNode) {
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knodes_[r_node].get(), _1, _2, _3)));
   cb_.Reset();
-  knodes_[r_node]->Join(node_ids[r_node],
-                        kad_config_file,
-                        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-                        false);
+  knodes_[r_node]->Join(
+      node_ids[r_node],
+      kad_config_file,
+      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
+      false);
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());
@@ -1008,7 +1024,7 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
   ASSERT_TRUE(node->is_joined());
   cb_.Reset();
   std::string ip = knodes_[1]->host_ip();
-  boost::uint16_t port = knodes_[1]->host_port();
+//  boost::uint16_t port = knodes_[1]->host_port();
   knodes_[1]->Leave();
   ASSERT_FALSE(knodes_[1]->is_joined());
   channel_managers_[1]->StopTransport();

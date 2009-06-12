@@ -106,10 +106,6 @@ KNodeImpl::KNodeImpl(
           local_host_port_(0), stopping_(false), upnp_started_(false),
           upnp_ios_(), upnp_(), upnp_half_open_(NULL),
           upnp_user_agent_("maidsafe"), upnp_mapped_port_(0), upnp_udp_map_(0) {
-//  for (int i = 0; i < 14; ++i) {
-//    boost::shared_ptr<boost::mutex> mutex(new boost::mutex);
-//    mutex_.push_back(mutex);
-//  }
   try {
     if (!fs::exists(datastore_dir))
       fs::create_directories(datastore_dir);
@@ -122,14 +118,6 @@ KNodeImpl::KNodeImpl(
   fs::path db_(datastore_dir, fs::native);
   db_ /= "datastore.db";
   pdata_store_->Init(db_.string(), kReuseDatabase);
-  if (host_ip_ == "") {
-    // Get local address as the external ip address...??!!
-    boost::asio::ip::address local_address;
-    if (base::get_local_address(&local_address)) {
-      host_ip_ = local_address.to_string();
-      local_host_ip_ = local_address.to_string();
-    }
-  }
 }
 
 KNodeImpl::KNodeImpl(
@@ -152,10 +140,6 @@ KNodeImpl::KNodeImpl(
           local_host_port_(0), stopping_(false), upnp_started_(false),
           upnp_ios_(), upnp_(), upnp_half_open_(NULL),
           upnp_user_agent_("maidsafe"), upnp_mapped_port_(0), upnp_udp_map_(0) {
-//  for (int i = 0; i < 14; ++i) {
-//    boost::shared_ptr<boost::mutex> mutex(new boost::mutex);
-//    mutex_.push_back(mutex);
-//  }
   try {
     if (!fs::exists(datastore_dir))
       fs::create_directories(datastore_dir);
@@ -168,25 +152,16 @@ KNodeImpl::KNodeImpl(
   fs::path db_(datastore_dir, fs::native);
   db_ /= "datastore.db";
   pdata_store_->Init(db_.string(), kReuseDatabase);
-  if (host_ip_ == "") {
-    // Get local address as the external ip address...??!!
-    boost::asio::ip::address local_address;
-    if (base::get_local_address(&local_address)) {
-      host_ip_ = local_address.to_string();
-      local_host_ip_ = local_address.to_string();
-    }
-  }
 }
 
 KNodeImpl::~KNodeImpl() {
-//#ifdef VERBOSE_DEBUG
-//  printf("\t\tIn KNode (on port %i) destructor.\n", host_port_);
-//#endif
+#ifdef VERBOSE_DEBUG
+  printf("\t\tIn KNode (on port %i) destructor.\n", host_port_);
+#endif
   if (is_joined_) {
-//#ifdef VERBOSE_DEBUG
-//    printf("\t\tIn KNode destructor(%i), outside mutex.\n", host_port_);
-//#endif
-//    boost::mutex::scoped_lock guard(*mutex_[0]);
+#ifdef VERBOSE_DEBUG
+    printf("\t\tIn KNode destructor(%i), outside mutex.\n", host_port_);
+#endif
     UnRegisterKadService();
     is_joined_ = false;
     pdata_store_->Close();
@@ -202,10 +177,13 @@ KNodeImpl::~KNodeImpl() {
 //  if(routingtable_mutex_.try_lock())
 //    printf("routingtable_mutex_.try_lock(): %d\n", 1);
 //  printf("kadconfig_mutex_.try_lock(): %d\n", kadconfig_mutex_.try_lock());
-//  printf("extendshortlist_mutex_.try_lock(): %d\n", extendshortlist_mutex_.try_lock());
-//  printf("joinbootstrapping_mutex_.try_lock(): %d\n", joinbootstrapping_mutex_.try_lock());
+//  printf("extendshortlist_mutex_.try_lock(): %d\n",
+//         extendshortlist_mutex_.try_lock());
+//  printf("joinbootstrapping_mutex_.try_lock(): %d\n",
+//         joinbootstrapping_mutex_.try_lock());
 //  printf("leave_mutex_.try_lock(): %d\n", leave_mutex_.try_lock());
-//  printf("activeprobes_mutex_.try_lock(): %d\n", activeprobes_mutex_.try_lock());
+//  printf("activeprobes_mutex_.try_lock(): %d\n",
+//         activeprobes_mutex_.try_lock());
 //
 //  ptimer_->CancelAll();
 }
@@ -460,7 +438,7 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
     }
     kadrpcs_.set_info(contact_info());
 #ifdef DEBUG
-    printf("Bootstrap End no bs contacts\n");
+    printf("Bootstrap End no bootstrap contacts.\n");
 #endif
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
@@ -527,6 +505,8 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
 
 void KNodeImpl::Join_RefreshNode(base::callback_func_type cb,
                                  const bool &port_forwarded) {
+  if (stopping_)
+    return;
   // build list of bootstrapping nodes
   LoadBootstrapContacts();
   // Initiate the Kademlia joining sequence - perform a search for this
