@@ -250,6 +250,7 @@ class KNodeImpl {
                                            const std::string &ext_ip);
   void UpdatePDRTContactToRemote(const std::string &node_id);
   ContactInfo contact_info() const;
+  void StopRvPing();
   void CheckToInsert(const Contact &new_contact);
   inline std::string node_id() const {
     return (type_ == CLIENT) ? fake_client_node_id_ : node_id_;

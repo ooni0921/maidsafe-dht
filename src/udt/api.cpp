@@ -1090,6 +1090,10 @@ void CUDTUnited::removeSocket(const UDTSOCKET u)
       set<UDTSOCKET> tbc;
       for (set<UDTSOCKET>::iterator q = i->second->m_pQueuedSockets->begin(); q != i->second->m_pQueuedSockets->end(); ++ q)
       {
+         std::map<UDTSOCKET, CUDTSocket*>::iterator it;
+         it = m_Sockets.find(*q);
+         if (it == m_Sockets.end())
+           continue;
          m_Sockets[*q]->m_pUDT->close();
          m_Sockets[*q]->m_TimeStamp = CTimer::getTime();
          m_Sockets[*q]->m_Status = CUDTSocket::CLOSED;

@@ -60,6 +60,7 @@ class ChannelManagerImpl {
   void RegisterChannel(const std::string &service_name, Channel* channel);
   void UnRegisterChannel(const std::string &service_name);
   void ClearChannels();
+  void ClearCallLaters();
   int StartTransport(boost::uint16_t port,
       boost::function<void(const bool&, const std::string&,
                            const boost::uint16_t&)> notify_dead_server);

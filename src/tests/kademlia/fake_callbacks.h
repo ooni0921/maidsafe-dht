@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TESTS_KADEMLIA_FAKE_CALLBACKS_H_
 
 #include <list>
+#include <vector>
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/general_messages.pb.h"
@@ -97,12 +98,12 @@ class FindCallback : public FakeCallback {
     values_.clear();
     closest_nodes_.clear();
   };
-  std::list<std::string> values() const {return values_;}
-  std::list<std::string> closest_nodes() const {return closest_nodes_;}
+  std::vector<std::string> values() const {return values_;}
+  std::vector<std::string> closest_nodes() const {return closest_nodes_;}
  private:
   kad::FindResponse result_msg;
-  std::list<std::string> values_;
-  std::list<std::string> closest_nodes_;
+  std::vector<std::string> values_;
+  std::vector<std::string> closest_nodes_;
 };
 
 class FindNodeCallback : public FakeCallback {
@@ -246,7 +247,6 @@ class GeneralKadCallback : public FakeCallback {
 inline void wait_result(FakeCallback *cb) {
   while (1) {
     {
-//      boost::mutex::scoped_lock guard(*mutex);
       if (cb->result() != "")
         return;
     }

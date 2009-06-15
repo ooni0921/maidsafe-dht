@@ -436,9 +436,9 @@ void Transport::ReceiveHandler() {
         UD_SET((*it).second.u, &readfds);
       } else {
 #ifdef DEBUG
-        printf("%d -- dead connection found %d \n",
+//        printf("%d -- dead connection found %d \n",
             /*--- %s \n res=%i, removing it\n"*/
-            listening_port_, (*it).first);  // ,
+//            listening_port_, (*it).first);  // ,
 //            UDT::getlasterror().getErrorMessage(), res);
 #endif
         dead_connections_ids.push_back((*it).first);

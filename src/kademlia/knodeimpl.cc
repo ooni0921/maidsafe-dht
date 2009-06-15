@@ -2057,6 +2057,7 @@ void KNodeImpl::RegisterKadService() {
 void KNodeImpl::UnRegisterKadService() {
   pchannel_manager_->UnRegisterChannel(
       premote_service_->GetDescriptor()->name());
+  pchannel_manager_->ClearCallLaters();
   pservice_channel_.reset();
   premote_service_.reset();
 }
@@ -2262,5 +2263,9 @@ void KNodeImpl::CheckToInsert_Callback(const std::string &result,
     prouting_table_->RemoveContact(id, true);
     prouting_table_->AddContact(new_contact);
   }
+}
+
+void KNodeImpl::StopRvPing() {
+  pchannel_manager_->ptransport()->StopPingRendezvous();
 }
 }  // namespace kad

@@ -117,6 +117,7 @@ class KNode {
                                            const std::string &ext_ip);
   void UpdatePDRTContactToRemote(const std::string &node_id);
   ContactInfo contact_info() const;
+  void StopRvPing();
   std::string node_id() const;
   std::string host_ip() const;
   boost::uint16_t host_port() const;
@@ -144,6 +145,7 @@ class ChannelManager {
   void RegisterChannel(const std::string &service_name, Channel* channel);
   void UnRegisterChannel(const std::string &service_name);
   void ClearChannels();
+  void ClearCallLaters();
   int StartTransport(
       boost::uint16_t port,
       boost::function<void(const bool&, const std::string&,

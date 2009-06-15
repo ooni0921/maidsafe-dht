@@ -296,6 +296,9 @@ class Env: public testing::Environment {
 #endif
     printf("In tear down.\n");
     for (int i = kNetworkSize-1; i >= 0; i--) {
+      knodes_[i]->StopRvPing();
+    }
+    for (int i = kNetworkSize-1; i >= 0; i--) {
       printf("stopping node %i\n", i);
       cb_.Reset();
       knodes_[i]->Leave();
@@ -421,22 +424,9 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
   ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
-  std::vector<std::string> local(cb_2.values().begin(), cb_2.values().end());
-//  printf("%i\n", cb_2.values().size());
   bool got_value = false;
-//  for (std::list<std::string>::iterator it = cb_2.values().begin();
-//       it != cb_2.values().end(); ++it) {
-//    if (value == *it) {
-//      got_value = true;
-//      break;
-//    }
-//  }
-  for (unsigned int p = 0; p < local.size(); ++p) {
-    if (value == local[p]) {
-//      std::string hex1(""), hex2("");
-//      base::encode_to_hex(value, hex1);
-//      base::encode_to_hex(local[p], hex2);
-//      printf("Value - %s\tlocal[p] - %s\n", hex1.c_str(), hex2.c_str());
+  for (unsigned int i = 0; i < cb_2.values().size(); i++) {
+    if (value == cb_2.values()[i]) {
       got_value = true;
       break;
     }
@@ -452,9 +442,8 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
   ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
   got_value = false;
-  for (std::list<std::string>::iterator it = cb_2.values().begin();
-       it != cb_2.values().end(); it++) {
-    if (value == *it) {
+  for (unsigned int i = 0; i < cb_2.values().size(); i++) {
+    if (value == cb_2.values()[i]) {
       got_value = true;
       break;
     }
@@ -473,7 +462,9 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
   // make sure the nodes returned are what we expect.
   ASSERT_EQ(kad::kRpcResultSuccess, cb_3.result());
   ASSERT_NE(static_cast<unsigned int>(0), cb_3.closest_nodes().size());
-  std::list<std::string> closest_nodes_str = cb_3.closest_nodes();
+  std::list<std::string> closest_nodes_str;// = cb_3.closest_nodes();
+  for (unsigned int i = 0; i < cb_3.closest_nodes().size(); i++)
+    closest_nodes_str.push_back(cb_3.closest_nodes()[i]);
   std::list<std::string>::iterator it;
   std::list<kad::Contact> closest_nodes;
   for (it = closest_nodes_str.begin(); it != closest_nodes_str.end();
@@ -518,7 +509,9 @@ TEST_F(KNodeTest, BEH_KAD_FindClosestNodes) {
   // make sure the nodes returned are what we expect.
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_NE(static_cast<unsigned int>(0), cb_1.closest_nodes().size());
-  std::list<std::string> closest_nodes_str = cb_1.closest_nodes();
+  std::list<std::string> closest_nodes_str; // = cb_1.closest_nodes();
+  for (unsigned int i = 0; i < cb_1.closest_nodes().size(); i++)
+    closest_nodes_str.push_back(cb_1.closest_nodes()[i]);
   std::list<std::string>::iterator it;
   std::list<kad::Contact> closest_nodes;
   for (it = closest_nodes_str.begin(); it != closest_nodes_str.end();
@@ -587,11 +580,8 @@ TEST_F(KNodeTest, BEH_KAD_StoreAndLoadSmallValue) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_LE(static_cast<unsigned int>(1), cb_1.values().size());
   bool got_value = false;
-  for (std::list<std::string>::iterator it = cb_1.values().begin();
-       it != cb_1.values().end(); it++) {
-    if ( (*it).empty())
-      continue;
-    if (value == *it) {
+  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+    if (value == cb_1.values()[i]) {
       got_value = true;
       break;
     }
@@ -611,9 +601,8 @@ TEST_F(KNodeTest, BEH_KAD_StoreAndLoadSmallValue) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_LE(static_cast<unsigned int>(1), cb_1.values().size());
   got_value = false;
-  for (std::list<std::string>::iterator it = cb_1.values().begin();
-       it != cb_1.values().end(); it++) {
-    if (value == *it) {
+  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+    if (value == cb_1.values()[i]) {
       got_value = true;
       break;
     }
@@ -664,9 +653,8 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_LE(static_cast<unsigned int>(1), cb_1.values().size());
   bool got_value = false;
-  for (std::list<std::string>::iterator it = cb_1.values().begin();
-       it != cb_1.values().end(); it++) {
-    if (value == *it) {
+  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+    if (value == cb_1.values()[i]) {
       got_value = true;
       break;
     }
@@ -681,9 +669,8 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
   ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
   got_value = false;
-  for (std::list<std::string>::iterator it = cb_2.values().begin();
-       it != cb_2.values().end(); it++) {
-    if (value == *it) {
+  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+    if (value == cb_1.values()[i]) {
       got_value = true;
       break;
     }
@@ -802,9 +789,8 @@ TEST_F(KNodeTest, BEH_KAD_FindValueWithDeadNodes) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
   ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
   bool got_value = false;
-  for (std::list<std::string>::iterator it = cb_2.values().begin();
-       it != cb_2.values().end(); it++) {
-    if (value == *it) {
+  for (unsigned int i = 0; i < cb_2.values().size(); i++) {
+    if (value == cb_2.values()[i]) {
       got_value = true;
       break;
     }

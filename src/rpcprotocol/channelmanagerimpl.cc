@@ -293,6 +293,12 @@ void ChannelManagerImpl::ClearChannels() {
   channels_.clear();
 }
 
+void ChannelManagerImpl::ClearCallLaters() {
+  boost::mutex::scoped_lock guard(req_mutex_);
+  ptimer_->CancelAll();
+  pending_req_.clear();
+}
+
 bool ChannelManagerImpl::CheckConnection(const std::string &ip,
     const uint16_t &port) {
   if (!is_started)

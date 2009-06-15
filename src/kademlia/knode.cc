@@ -184,4 +184,8 @@ bool KNode::is_joined() const {
 KadRpcs* KNode::kadrpcs() {
   return pimpl_->kadrpcs();
 }
+
+void KNode::StopRvPing() {
+  pimpl_->StopRvPing();
+}
 }  // namespace kad

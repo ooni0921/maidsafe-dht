@@ -83,6 +83,10 @@ void ChannelManager::ClearChannels() {
   pimpl_->ClearChannels();
 }
 
+void ChannelManager::ClearCallLaters() {
+  pimpl_->ClearCallLaters();
+}
+
 boost::shared_ptr<transport::Transport> ChannelManager::ptransport() {
   return pimpl_->ptransport();
 }
