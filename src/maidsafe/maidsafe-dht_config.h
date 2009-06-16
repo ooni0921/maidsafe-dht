@@ -104,7 +104,7 @@ const int kRepublishTime = 43200;  // 12 hours
 const int kExpireTime = kRepublishTime+3600;
 
 // Kademlia RPC timeout duration (in milliseconds).
-const int kRpcTimeout = 7000;
+// const int kRpcTimeout = 10000;
 
 // RPC result constants.
 const std::string kRpcResultSuccess("T");
@@ -334,7 +334,7 @@ const int kMaxPort = 65535;
 const int kMinPort = 5000;
 
 // RPC timeout duration (in milliseconds).
-const int kRpcTimeout = 7000;  // 7 seconds
+const int kRpcTimeout = 10000;  // 10 seconds
 
 // RPC result constants.
 const std::string kStartTransportSuccess("T");

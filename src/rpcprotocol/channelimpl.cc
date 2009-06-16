@@ -118,7 +118,8 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
                         &conn_id,
                         true)) {
 #ifdef DEBUG
-    printf("Failed to send request %i.\n", msg.message_id());
+    printf("%i --- Failed to send request %i.\n", msg.message_id(),
+      pmanager_->external_port());
 #endif
     // Set short timeout as request has already failed.
     ctrl->set_timeout(1);

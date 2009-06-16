@@ -859,7 +859,7 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   // Wait for a RPC timeout interval until the downlist are handled in the
   // network
   boost::this_thread::sleep(boost::posix_time::seconds(
-      4*(kad::kRpcTimeout/1000+1)));
+      4*(rpcprotocol::kRpcTimeout/1000+1)));
   // Compute the sum of the nodes whose routing table contain r_node again
   int sum_1 = 0;
   for (int i = 1; i < kNetworkSize; i++) {

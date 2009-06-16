@@ -1508,7 +1508,7 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
     StoreResponse store_value_result;
     std::string store_value_result_str;
     double d = K_ * kMinSuccessfulPecentageStore;
-    if (callback_data.data->save_nodes > static_cast<int>(d)) {
+    if (callback_data.data->save_nodes >= static_cast<int>(d)) {
       // Succeeded - min. number of copies were stored
       store_value_result.set_result(kRpcResultSuccess);
   }  else {
