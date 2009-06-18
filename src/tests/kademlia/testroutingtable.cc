@@ -49,6 +49,7 @@ bool TestInRange(const std::string &key, const kad::BigInt &min_range,
   return static_cast<bool>(min_range <= key_val && key_val <= max_range);
 }
 
+
 class TestRoutingTable : public testing::Test {
  public:
   TestRoutingTable() : cry_obj() {}
@@ -639,4 +640,69 @@ TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
   ASSERT_TRUE(last_first == result);
   result = routingtable.GetLastSeenContact(2);
   ASSERT_TRUE(empty == result);
+}
+
+TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
+  std::string holder_id_enc("7"), holder_id;
+  for (int i = 1; i < kad::kKeySizeBytes*2; i++)
+    holder_id_enc += "1";
+  std::vector<kad::Contact> ids1(kad::K/2);
+  std::vector<kad::Contact> ids2(kad::K-2);
+  base::decode_from_hex(holder_id_enc, holder_id);
+  kad::RoutingTable routingtable(holder_id);
+  std::string ip = "127.0.0.1";
+  uint16_t port = 8000;
+  for (int i = 0; i < kad::K/2; i++) {
+    std::string id(kad::kKeySizeBytes*2, '6'), rep(i, 'a'), dec_id;
+    id.replace(1, i, rep);
+    base::decode_from_hex(id, dec_id);
+    kad::Contact contact(dec_id, ip, port, ip, port);
+    ids1[i] = contact;
+    port ++;
+    ASSERT_EQ(0, routingtable.AddContact(ids1[i]));
+  }
+  for (int i = 0; i < kad::K-2; i++) {
+    std::string id(kad::kKeySizeBytes*2, 'f'), rep(kad::K-1-i, '0'), dec_id;
+    id.replace(1, kad::K-1-i, rep);
+    base::decode_from_hex(id, dec_id);
+    kad::Contact contact(dec_id, ip, port, ip, port);
+    ids2[i] = contact;
+    port ++;
+    ASSERT_EQ(0, routingtable.AddContact(ids2[i]));
+    ASSERT_EQ(kad::kKeySizeBytes*2, id.size());
+  }
+  ASSERT_EQ(2, routingtable.KbucketSize());
+  std::string id1(kad::kKeySizeBytes, 0x5);
+  std::vector<kad::Contact> cts, ex;
+  routingtable.FindCloseNodes(id1, kad::K, &cts, ex);
+  ASSERT_EQ(kad::K, cts.size());
+  // Getting nodes that are not in cts
+  for (int i = 0; i < kad::K/2; i++) {
+    bool in_cts = false;
+    for (int j = 0; j < cts.size() && !in_cts; j++) {
+      if (cts[j] == ids1[i])
+        in_cts = true;
+    }
+    if (!in_cts)
+      ex.push_back(ids1[i]);
+  }
+  ASSERT_EQ(0, ex.size());
+  for (int i = 0; i < kad::K-2; i++) {
+    bool in_cts = false;
+    for (int j = 0; j < cts.size() && !in_cts; j++) {
+      if (cts[j] == ids2[i])
+        in_cts = true;
+    }
+    if (!in_cts)
+      ex.push_back(ids2[i]);
+  }
+  ASSERT_NE(0, ex.size());
+  // Checking distances
+  for (int i = 0; i < cts.size(); i++) {
+    kad::BigInt cts_to_id = kad::kademlia_distance(id1, cts[i].node_id());
+    for (int j = 0; j < ex.size(); j++) {
+      kad::BigInt ex_to_id = kad::kademlia_distance(id1, ex[j].node_id());
+      ASSERT_TRUE(cts_to_id < ex_to_id);
+    }
+  }
 }
