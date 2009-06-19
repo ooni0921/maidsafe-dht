@@ -187,7 +187,7 @@ class Env: public testing::Environment {
 #elif defined(MAIDSAFE_APPLE)
     app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
 #endif
-    app_path /= base::itos(63001);
+    app_path /= base::itos(63301);
     try {
       if (fs::exists(app_path))
         fs::remove_all(app_path);
@@ -809,34 +809,50 @@ TEST_F(KNodeTest, BEH_KAD_FindValueWithDeadNodes) {
 }
 
 TEST_F(KNodeTest, FUNC_KAD_Downlist) {
+  boost::this_thread::sleep(boost::posix_time::seconds(2));
   // select a random node from node 1 to node 19
   int r_node = 1 + rand() % 19;  // NOLINT (Fraser)
   std::string r_node_id = knodes_[r_node]->node_id();
   // Compute the sum of the nodes whose routing table contain r_node
   int sum_0 = 0;
-  bool contacted_holder = false;
+  std::vector<int> holders;
   for (int i = 1; i < kNetworkSize; i++) {
     if (i != r_node) {
       kad::Contact test_contact;
       if (knodes_[i]->GetContact(r_node_id, &test_contact)) {
         if (test_contact.failed_rpc() == kad::kFailedRpc) {
           sum_0++;
-          if (!contacted_holder) {
-            kad::Contact dead_node(knodes_[i]->node_id(), knodes_[i]->host_ip(),
-              knodes_[i]->host_port(), knodes_[i]->local_host_ip(),
-              knodes_[i]->local_host_port());
-            PingCallback cb_2;
-            knodes_[0]->Ping(dead_node,
-              boost::bind(&PingCallback::CallbackFunc, &cb_2, _1));
-            wait_result(&cb_2);
-            ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-            contacted_holder = true;
-          }
+          printf("node %i has the dead node \n", knodes_[i]->host_port());
+          holders.push_back(i);
         }
       }
     }
   }
   cb_.Reset();
+  // finding the closest node to the dead node
+  int closest_node = 0;
+  kad::BigInt smallest_distance = kad::kademlia_distance(r_node_id,
+    knodes_[holders[0]]->node_id());
+  for (int i = 1; i < holders.size(); i++) {
+    kad::BigInt distance = kad::kademlia_distance(r_node_id,
+      knodes_[holders[i]]->node_id());
+    if (smallest_distance > distance) {
+      smallest_distance = distance;
+      closest_node = i;
+    }
+  }
+
+  kad::Contact holder(knodes_[holders[closest_node]]->node_id(),
+    knodes_[holders[closest_node]]->host_ip(),
+    knodes_[holders[closest_node]]->host_port(),
+    knodes_[holders[closest_node]]->local_host_ip(),
+    knodes_[holders[closest_node]]->local_host_port());
+  PingCallback cb_3;
+  knodes_[0]->Ping(holder,
+    boost::bind(&PingCallback::CallbackFunc, &cb_3, _1));
+  wait_result(&cb_3);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_3.result());
+
   FindNodeCallback cb_1;
   kad::Contact dead_node(r_node_id, knodes_[r_node]->host_ip(),
     knodes_[r_node]->host_port(), knodes_[r_node]->local_host_ip(),
