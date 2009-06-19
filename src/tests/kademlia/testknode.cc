@@ -295,7 +295,7 @@ class Env: public testing::Environment {
     SetConsoleTextAttribute(hconsole, 7 | 0 << 4);
 #endif
     printf("In tear down.\n");
-    for (int i = kNetworkSize-1; i >= 0; i--) {
+    for (int i = kNetworkSize-1; i >= 1; i--) {
       knodes_[i]->StopRvPing();
     }
     for (int i = kNetworkSize-1; i >= 0; i--) {
