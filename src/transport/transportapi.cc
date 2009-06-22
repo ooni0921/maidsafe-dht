@@ -64,7 +64,8 @@ Transport::Transport() : stop_(true),
                          directly_connected_(false),
                          accepted_connections_(0),
                          msgs_sent_(0),
-                         last_id_(0) {
+                         last_id_(0),
+                         data_activated_() {
   UDT::startup();
 }
 
@@ -474,6 +475,7 @@ void Transport::ReceiveHandler() {
 #endif
                 result = UDT::close((*it).second.u);
                 (*it).second.data.reset();
+                data_activated_.erase((*it).first);
                 incoming_sockets_.erase(it);
                 break;
               }
@@ -484,6 +486,7 @@ void Transport::ReceiveHandler() {
             } else {
               result = UDT::close((*it).second.u);
               (*it).second.data.reset();
+              data_activated_.erase((*it).first);
               incoming_sockets_.erase(it);
               break;
             }
@@ -505,11 +508,13 @@ void Transport::ReceiveHandler() {
 #endif
                 result = UDT::close((*it).second.u);
                 (*it).second.data.reset();
+                data_activated_.erase((*it).first);
                 incoming_sockets_.erase(it);
                 break;
               }
               continue;
             }
+            data_activated_.insert((*it).first);
             (*it).second.received_size += rsize;
             if ((*it).second.expect_size <= (*it).second.received_size) {
               ++last_id_;
@@ -595,14 +600,26 @@ void Transport::CloseConnection(boost::uint32_t connection_id) {
 //             UDT::getlasterror().getErrorMessage());
 //  #endif
     incoming_sockets_.erase(connection_id);
+    data_activated_.erase(connection_id);
   }
 }
 
-bool Transport::ConnectionExists(boost::uint32_t connection_id) {
+bool Transport::ConnectionExists(const boost::uint32_t &connection_id) {
   std::map<boost::uint32_t, IncomingData>::iterator it;
   boost::mutex::scoped_lock guard(recv_mutex_);
   it = incoming_sockets_.find(connection_id);
   if (it != incoming_sockets_.end()) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool Transport::HasReceivedData(const boost::uint32_t &connection_id) {
+  std::set<boost::uint32_t>::iterator it;
+  boost::mutex::scoped_lock guard(recv_mutex_);
+  it = data_activated_.find(connection_id);
+  if (it != data_activated_.end()) {
     return true;
   } else {
     return false;
@@ -857,8 +874,12 @@ void Transport::MessageHandler() {
         msg.conn_id = incoming_msgs_queue_.front().conn_id;
         incoming_msgs_queue_.pop_front();
       }
+      {
+        boost::mutex::scoped_lock gaurd(recv_mutex_);
+        data_activated_.erase(msg.conn_id);
+      }
       message_notifier_(msg.msg, msg.conn_id);
-      boost::this_thread::sleep(boost::posix_time::milliseconds(20));
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     }
   }
 }

@@ -130,14 +130,21 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     conn_id, msg.message_id());
 #endif
   req.connection_id = conn_id;
-  pmanager_->AddPendingRequest(msg.message_id(), req);
-  // pmanager_->AddConnectionToReq(req_id, conn_id);
   // in case no timeout was set in the controller use the default one
   if (ctrl->timeout() != 0) {
-    pmanager_->AddReqToTimer(msg.message_id(), ctrl->timeout());
+    req.timeout = ctrl->timeout();
   } else {
-    pmanager_->AddReqToTimer(msg.message_id(), kRpcTimeout);
+    req.timeout = kRpcTimeout;
   }
+  pmanager_->AddPendingRequest(msg.message_id(), req);
+  pmanager_->AddReqToTimer(msg.message_id(), req.timeout);
+  // pmanager_->AddConnectionToReq(req_id, conn_id);
+  // in case no timeout was set in the controller use the default one
+//  if (ctrl->timeout() != 0) {
+//    pmanager_->AddReqToTimer(msg.message_id(), ctrl->timeout());
+//  } else {
+//    pmanager_->AddReqToTimer(msg.message_id(), kRpcTimeout);
+//  }
 }
 
 std::string ChannelImpl::GetServiceName(const std::string &full_name) {

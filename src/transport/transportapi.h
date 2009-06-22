@@ -121,7 +121,8 @@ class Transport {
   inline bool is_stopped() { return stop_; }
   struct sockaddr& peer_address() { return peer_address_; }
   void HandleRendezvousMsgs(const HolePunchingMsg &message);
-  bool ConnectionExists(boost::uint32_t connection_id);
+  bool ConnectionExists(const boost::uint32_t &connection_id);
+  bool HasReceivedData(const boost::uint32_t &connection_id);
   void AddIncomingConnection(UDTSOCKET u);
   void AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id);
   inline boost::uint16_t listening_port() { return listening_port_; }
@@ -166,6 +167,7 @@ class Transport {
   bool directly_connected_;
   int accepted_connections_, msgs_sent_;
   boost::uint32_t last_id_;
+  std::set<boost::uint32_t> data_activated_;
 };
 
 };  // namespace transport

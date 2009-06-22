@@ -1682,14 +1682,8 @@ void KNodeImpl::StoreValue(const std::string &key,
 }
 
 void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
-//#ifdef SHOW_MUTEX
-//  printf("\t\tIn KNode::FindValue(%i), outside mutex.\n", host_port_);
-//#endif
-//  boost::mutex::scoped_lock guard(*mutex_[7]);
-//#ifdef SHOW_MUTEX
-//  printf("\t\tIn KNode::FindValue(%i), inside mutex.\n", host_port_);
-//#endif
   std::vector<std::string> values;
+  //  Searching for value in local DataStore first
   FindValueLocal(key, values);
   if (values.size() !=  0) {
     kad::FindResponse result_msg;
@@ -1700,11 +1694,10 @@ void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
     result_msg.SerializeToString(&ser_find_result);
     cb(ser_find_result);
   }
+
+  //  Value not found localy, looking for it in the network
   std::vector<Contact> start_up_short_list;
   IterativeLookUp(key, start_up_short_list, FIND_VALUE, cb);
-//#ifdef SHOW_MUTEX
-//  printf("\t\tIn KNode::FindValue(%i), unlock.\n", host_port_);
-//#endif
 }
 
 void KNodeImpl::FindNode_GetNode(const std::string &result,

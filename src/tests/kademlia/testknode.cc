@@ -135,7 +135,7 @@ class Env: public testing::Environment {
 #elif defined(MAIDSAFE_APPLE)
       app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
 #endif
-      app_path /= base::itos(62001 + i);
+      app_path /= base::itos(62000 + i);
       try {
         if (fs::exists(app_path))
           fs::remove_all(app_path);
@@ -147,7 +147,7 @@ class Env: public testing::Environment {
           channel_manager_local_(new rpcprotocol::ChannelManager());
       channel_managers_.push_back(channel_manager_local_);
 
-      std::string db_local_ = "KnodeTest/datastore"+base::itos(62001+i);
+      std::string db_local_ = "KnodeTest/datastore"+base::itos(62000+i);
       dbs_.push_back(db_local_);
 
       boost::shared_ptr<kad::KNode>
@@ -157,7 +157,7 @@ class Env: public testing::Environment {
                                       kTestK,
                                       kad::kAlpha,
                                       kad::kBeta));
-      EXPECT_EQ(0, channel_managers_[i]->StartTransport(62001+i,
+      EXPECT_EQ(0, channel_managers_[i]->StartTransport(62000+i,
         boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_local_.get(),
                     _1, _2, _3)));
       knodes_.push_back(knode_local_);
@@ -187,7 +187,7 @@ class Env: public testing::Environment {
 #elif defined(MAIDSAFE_APPLE)
     app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
 #endif
-    app_path /= base::itos(63301);
+    app_path /= base::itos(63001);
     try {
       if (fs::exists(app_path))
         fs::remove_all(app_path);
@@ -330,7 +330,7 @@ class Env: public testing::Environment {
 #elif defined(MAIDSAFE_APPLE)
       app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
 #endif
-      app_path /= base::itos(62001 + i);
+      app_path /= base::itos(62000 + i);
       try {
         if (fs::exists(app_path))
           fs::remove_all(app_path);
@@ -895,7 +895,7 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   ASSERT_LT(sum_1, sum_0);
 
   // Restart dead node
-  ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(62001+r_node,
+  ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(62000+r_node,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knodes_[r_node].get(), _1, _2, _3)));
   cb_.Reset();
@@ -984,7 +984,7 @@ TEST_F(KNodeTest, BEH_KAD_FindDeadNode) {
   ASSERT_EQ(kad::kRpcResultFailure, cb_1.result());
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   // Restart dead node
-  ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(62001+r_node,
+  ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(62000+r_node,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knodes_[r_node].get(), _1, _2, _3)));
   cb_.Reset();
@@ -1002,15 +1002,22 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
   cb_.Reset();
   std::string db_local = "KnodeTest/datastore"+base::itos(65001);
   std::string kconf_file = db_local + "/.kadconfig";
+  boost::filesystem::create_directories(db_local);
   base::KadConfig kad_config;
-  base::KadConfig::Contact *kad_contact_ = kad_config.add_contact();
+  base::KadConfig::Contact *kad_contact = kad_config.add_contact();
   std::string hex_id;
-  base::encode_to_hex(knodes_[1]->node_id(), hex_id);
-  kad_contact_->set_node_id(hex_id);
-  kad_contact_->set_ip(knodes_[1]->host_ip());
-  kad_contact_->set_port(knodes_[1]->host_port());
-  kad_contact_->set_local_ip(knodes_[1]->local_host_ip());
-  kad_contact_->set_local_port(knodes_[1]->local_host_port());
+  base::encode_to_hex(knodes_[4]->node_id(), hex_id);
+  kad_contact->set_node_id(hex_id);
+  kad_contact->set_ip(knodes_[4]->host_ip());
+  kad_contact->set_port(knodes_[4]->host_port());
+  kad_contact->set_local_ip(knodes_[4]->local_host_ip());
+  kad_contact->set_local_port(knodes_[4]->local_host_port());
+  std::fstream output2(kconf_file.c_str(),
+    std::ios::out | std::ios::trunc | std::ios::binary);
+  ASSERT_TRUE(kad_config.SerializeToOstream(&output2));
+  output2.close();
+
+
   boost::shared_ptr<rpcprotocol::ChannelManager> ch_man(
       new rpcprotocol::ChannelManager());
   boost::scoped_ptr<kad::KNode> node(new kad::KNode(db_local, ch_man,
@@ -1025,12 +1032,12 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(node->is_joined());
   cb_.Reset();
-  std::string ip = knodes_[1]->host_ip();
+  std::string ip = knodes_[4]->host_ip();
 //  boost::uint16_t port = knodes_[1]->host_port();
-  knodes_[1]->Leave();
-  ASSERT_FALSE(knodes_[1]->is_joined());
-  channel_managers_[1]->StopTransport();
-  printf("Node 1 killed\n");
+  knodes_[4]->Leave();
+  ASSERT_FALSE(knodes_[4]->is_joined());
+  channel_managers_[4]->StopTransport();
+  printf("Node 4 killed\n");
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   printf("finished waiting to notice dead node\n");
   bool finished_bootstrap = false;
@@ -1045,17 +1052,17 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
   node->Leave();
   ch_man->StopTransport();
   // Restart dead node
-  ASSERT_EQ(0, channel_managers_[1]->StartTransport(62002,
-      boost::bind(&kad::KNode::HandleDeadRendezvousServer, knodes_[1].get(), _1,
+  ASSERT_EQ(0, channel_managers_[4]->StartTransport(62004,
+      boost::bind(&kad::KNode::HandleDeadRendezvousServer, knodes_[4].get(), _1,
       _2, _3)));
   cb_.Reset();
-  knodes_[1]->Join(node_ids[1],
+  knodes_[4]->Join(node_ids[4],
                    kad_config_file,
                    boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
                    false);
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
-  ASSERT_TRUE(knodes_[1]->is_joined());
+  ASSERT_TRUE(knodes_[4]->is_joined());
 }
 
 TEST_F(KNodeTest, BEH_KAD_StartStopNode) {

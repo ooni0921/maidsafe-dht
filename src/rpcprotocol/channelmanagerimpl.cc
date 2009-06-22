@@ -68,9 +68,6 @@ void ChannelManagerImpl::AddReqToTimer(const boost::uint32_t &req_id,
   if (!is_started) {
     return;
   }
-//  #ifdef DEBUG
-//    printf("timeout added %d\n", timeout);
-//  #endif
   ptimer_->AddCallLater(timeout,
       boost::bind(&ChannelManagerImpl::TimerHandler, this, req_id));
 }
@@ -260,24 +257,31 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
   req_mutex_.lock();
   it = pending_req_.find(req_id);
   if (it != pending_req_.end()) {
-#ifdef DEBUG
-    printf("transport %d Request times out. RPC ID: %d. Connection ID: %d.\n",
-           ptransport_->listening_port(),
-           req_id,
-           pending_req_[req_id].connection_id);
-#endif
-    // call back without modifying the response
-    google::protobuf::Closure* done = pending_req_[req_id].callback;
     boost::uint32_t connection_id = pending_req_[req_id].connection_id;
-    pending_req_.erase(req_id);
-    req_mutex_.unlock();
-    printf("%i -- executing request after timeout. id = %i\n",
-      external_port_, req_id);
-    done->Run();
-    printf("%i -- executed request after timeout. id = %i\n",
-      external_port_, req_id);
-    if (connection_id != 0)
-      ptransport_->CloseConnection(connection_id);
+    int timeout = pending_req_[req_id].timeout;
+    if (ptransport_->HasReceivedData(connection_id)) {
+      req_mutex_.unlock();
+      printf("reseting timeout\n");
+      AddReqToTimer(req_id, timeout);
+    } else {
+#ifdef DEBUG
+      printf("transport %d Request times out. RPC ID: %d. Connection ID: %d.\n",
+             ptransport_->listening_port(),
+             req_id,
+             pending_req_[req_id].connection_id);
+#endif
+      // call back without modifying the response
+      google::protobuf::Closure* done = pending_req_[req_id].callback;
+      pending_req_.erase(req_id);
+      req_mutex_.unlock();
+      printf("%i -- executing request after timeout. id = %i\n",
+        external_port_, req_id);
+      done->Run();
+      printf("%i -- executed request after timeout. id = %i\n",
+        external_port_, req_id);
+      if (connection_id != 0)
+        ptransport_->CloseConnection(connection_id);
+    }
   } else {
     req_mutex_.unlock();
   }
