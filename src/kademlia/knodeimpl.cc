@@ -1682,18 +1682,29 @@ void KNodeImpl::StoreValue(const std::string &key,
 }
 
 void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::FindValue(%i), outside mutex.\n", host_port_);
-#endif
+//#ifdef SHOW_MUTEX
+//  printf("\t\tIn KNode::FindValue(%i), outside mutex.\n", host_port_);
+//#endif
 //  boost::mutex::scoped_lock guard(*mutex_[7]);
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::FindValue(%i), inside mutex.\n", host_port_);
-#endif
+//#ifdef SHOW_MUTEX
+//  printf("\t\tIn KNode::FindValue(%i), inside mutex.\n", host_port_);
+//#endif
+  std::vector<std::string> values;
+  FindValueLocal(key, values);
+  if (values.size() !=  0) {
+    kad::FindResponse result_msg;
+    result_msg.set_result(kad::kRpcResultSuccess);
+    for (int n = 0; n < values.size(); ++n)
+      result_msg.add_values(values[n]);
+    std::string ser_find_result;
+    result_msg.SerializeToString(&ser_find_result);
+    cb(ser_find_result);
+  }
   std::vector<Contact> start_up_short_list;
   IterativeLookUp(key, start_up_short_list, FIND_VALUE, cb);
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::FindValue(%i), unlock.\n", host_port_);
-#endif
+//#ifdef SHOW_MUTEX
+//  printf("\t\tIn KNode::FindValue(%i), unlock.\n", host_port_);
+//#endif
 }
 
 void KNodeImpl::FindNode_GetNode(const std::string &result,
