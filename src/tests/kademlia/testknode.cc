@@ -289,7 +289,7 @@ class Env: public testing::Environment {
   }
 
   virtual void TearDown() {
-    boost::this_thread::sleep(boost::posix_time::seconds(10));
+    boost::this_thread::sleep(boost::posix_time::seconds(5));
 #ifdef WIN32
     HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hconsole, 7 | 0 << 4);
@@ -388,8 +388,24 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
       mutex_local_(new boost::mutex);
   boost::shared_ptr<rpcprotocol::ChannelManager>
       channel_manager_local_(new rpcprotocol::ChannelManager());
-  std::string db_local_ = "KnodeTest/datastore"+base::itos(63001);
-  boost::scoped_ptr<kad::KNode> knode_local_(new kad::KNode(db_local_,
+  std::string db_local = "KnodeTest/datastore"+base::itos(63001);
+  boost::filesystem::create_directories(db_local);
+  std::string config_file = db_local + "/.kadconfig";
+  base::KadConfig conf;
+  base::KadConfig::Contact *ctc = conf.add_contact();
+  std::string hex_id;
+  base::encode_to_hex(knodes_[0]->node_id(), hex_id);
+  ctc->set_node_id(hex_id);
+  ctc->set_ip(knodes_[0]->host_ip());
+  ctc->set_port(knodes_[0]->host_port());
+  ctc->set_local_ip(knodes_[0]->local_host_ip());
+  ctc->set_local_port(knodes_[0]->local_host_port());
+  std::fstream output2(config_file.c_str(),
+    std::ios::out | std::ios::trunc | std::ios::binary);
+  ASSERT_TRUE(conf.SerializeToOstream(&output2));
+  output2.close();
+
+  boost::scoped_ptr<kad::KNode> knode_local_(new kad::KNode(db_local,
                                              channel_manager_local_,
                                              kad::CLIENT,
                                              kTestK,
@@ -399,7 +415,7 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
     boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_local_.get(),
                 _1, _2, _3)));
   knode_local_->Join("",
-                     kad_config_file,
+                     config_file,
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
                      false);
   wait_result(&cb_);
@@ -645,7 +661,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
     }
   }
   ASSERT_EQ(kTestK, number);
-  // load the value from no.11 node
+  // load the value from no.10 node
   FindCallback cb_1;
   knodes_[10]->FindValue(key,
       boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
@@ -661,7 +677,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   }
   if (!got_value)
     FAIL();
-  // load the value from no.12 node
+  // load the value from no.11 node
   FindCallback cb_2;
   knodes_[11]->FindValue(key,
       boost::bind(&FindCallback::CallbackFunc, &cb_2, _1));
@@ -800,7 +816,8 @@ TEST_F(KNodeTest, BEH_KAD_FindValueWithDeadNodes) {
   // Restart dead nodes
   for (int i = 0; i < kTestK - 1; ++i) {
     cb_.Reset();
-    knodes_[2 + i]->Join(node_ids[2 + i], kad_config_file,
+    std::string conf_file = dbs_[2 + i] + "/.kadconfig";
+    knodes_[2 + i]->Join(node_ids[2 + i], conf_file,
         boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
     wait_result(&cb_);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
@@ -833,7 +850,7 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   int closest_node = 0;
   kad::BigInt smallest_distance = kad::kademlia_distance(r_node_id,
     knodes_[holders[0]]->node_id());
-  for (int i = 1; i < holders.size(); i++) {
+  for (unsigned int i = 1; i < holders.size(); i++) {
     kad::BigInt distance = kad::kademlia_distance(r_node_id,
       knodes_[holders[i]]->node_id());
     if (smallest_distance > distance) {
@@ -899,11 +916,9 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knodes_[r_node].get(), _1, _2, _3)));
   cb_.Reset();
-  knodes_[r_node]->Join(
-      node_ids[r_node],
-      kad_config_file,
-      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-      false);
+  std::string conf_file = dbs_[r_node] + "/.kadconfig";
+  knodes_[r_node]->Join(node_ids[r_node], conf_file,
+      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());
@@ -945,7 +960,7 @@ TEST_F(KNodeTest, BEH_KAD_AllDirectlyConnected) {
   }
 }
 
-TEST_F(KNodeTest, BEH_KAD_PingIncorrectNodeLocalAddr) {
+TEST_F(KNodeTest, BEH_KAD_IncorrectNodeLocalAddrPing) {
   // knodes_[4]->set_local_port(knodes_[6]->local_port());
   kad::Contact remote(knodes_[8]->node_id(), knodes_[8]->host_ip(),
       knodes_[8]->host_port(), knodes_[8]->local_host_ip(),
@@ -988,11 +1003,9 @@ TEST_F(KNodeTest, BEH_KAD_FindDeadNode) {
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knodes_[r_node].get(), _1, _2, _3)));
   cb_.Reset();
-  knodes_[r_node]->Join(
-      node_ids[r_node],
-      kad_config_file,
-      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-      false);
+  std::string conf_file = dbs_[r_node] + "/.kadconfig";
+  knodes_[r_node]->Join(node_ids[r_node], conf_file,
+      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());
@@ -1043,7 +1056,7 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
   bool finished_bootstrap = false;
   boost::progress_timer t;
   while (!finished_bootstrap) {
-    if (node->is_joined() || t.elapsed() > 4)
+    if (node->is_joined() || t.elapsed() > 10)
       finished_bootstrap = true;
     else
       boost::this_thread::sleep(boost::posix_time::milliseconds(50));
@@ -1056,10 +1069,9 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
       boost::bind(&kad::KNode::HandleDeadRendezvousServer, knodes_[4].get(), _1,
       _2, _3)));
   cb_.Reset();
-  knodes_[4]->Join(node_ids[4],
-                   kad_config_file,
-                   boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-                   false);
+  std::string conf_file = dbs_[4] + "/.kadconfig";
+  knodes_[4]->Join(node_ids[4], conf_file,
+      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[4]->is_joined());
@@ -1080,10 +1092,9 @@ TEST_F(KNodeTest, BEH_KAD_StartStopNode) {
   kadconf_file.close();
   ASSERT_LT(0, kconf.contact_size());
   cb_.Reset();
-  knodes_[r_node]->Join(knodes_[r_node]->node_id(),
-                   kadconfig_path,
-                   boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-                   false);
+  std::string conf_file = dbs_[r_node] + "/.kadconfig";
+  knodes_[r_node]->Join(knodes_[r_node]->node_id(), conf_file,
+    boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());

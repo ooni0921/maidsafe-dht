@@ -1069,7 +1069,7 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
     if (!test_contact.ParseFromString(response->closest_nodes(i))) {
       continue;
     }
-    AddContact(test_contact, false);
+    // AddContact(test_contact, false);
     is_new = true;
     for (it2 = callback_data.data->short_list.begin();
          it2 != callback_data.data->short_list.end(); ++it2) {
