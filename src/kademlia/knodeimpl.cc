@@ -1693,6 +1693,7 @@ void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
     std::string ser_find_result;
     result_msg.SerializeToString(&ser_find_result);
     cb(ser_find_result);
+    return;
   }
 
   //  Value not found localy, looking for it in the network
