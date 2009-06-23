@@ -37,8 +37,15 @@ class TestKnodes : public testing::Test {
   virtual ~TestKnodes() {}
  protected:
   void SetUp() {
+   try {
+     if (boost::filesystem::exists("KNodeTest"))
+       boost::filesystem::remove_all("KNodeTest");
+   }
+   catch(const std::exception &e_) {
+     printf("%s\n", e_.what());
+   }
     std::string datastore = "KNodeTest";
-    boost::uint16_t port = 8000;
+    boost::uint16_t port = 9100;
     for (int i=0; i < 2; i++) {
       datastore_dir[i] = datastore + "/Datastore" + base::itos(port);
       boost::filesystem::create_directories(
@@ -65,6 +72,9 @@ class TestKnodes : public testing::Test {
    catch(const std::exception &e_) {
      printf("%s\n", e_.what());
    }
+   nodes.clear();
+   ch_managers.clear();
+   datastore_dir.clear();
   }
   std::vector< boost::shared_ptr<kad::KNodeImpl> > nodes;
   std::vector< boost::shared_ptr<rpcprotocol::ChannelManager> > ch_managers;
