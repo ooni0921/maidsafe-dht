@@ -251,7 +251,6 @@ class KNodeImpl {
   void UpdatePDRTContactToRemote(const std::string &node_id);
   ContactInfo contact_info() const;
   void StopRvPing();
-  void CheckToInsert(const Contact &new_contact);
   inline std::string node_id() const {
     return (type_ == CLIENT) ? fake_client_node_id_ : node_id_;
   }
@@ -268,6 +267,8 @@ class KNodeImpl {
  private:
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
+  FRIEND_TEST(TestKnodes, BEH_KAD_TestLastSeenNotReply);
+  FRIEND_TEST(TestKnodes, BEH_KAD_TestLastSeenReplies);
   inline void CallbackWithFailure(base::callback_func_type cb);
   void Bootstrap_Callback(const boost::shared_ptr<BootstrapResponse> response,
                           BootstrapData data);
@@ -335,6 +336,7 @@ class KNodeImpl {
                          int map_transport);
   void UPnPMap(boost::uint16_t host_port);
   void UnMapUPnP();
+  void CheckToInsert(const Contact &new_contact);
   void CheckToInsert_Callback(const std::string &result, std::string id,
       Contact new_contact);
   boost::mutex routingtable_mutex_;

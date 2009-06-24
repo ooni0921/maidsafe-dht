@@ -62,7 +62,8 @@ class ChannelManagerImpl {
   void UnRegisterChannel(const std::string &service_name);
   void ClearChannels();
   void ClearCallLaters();
-  int StartTransport(boost::uint16_t port,
+  int StartTransport(
+      boost::uint16_t port,
       boost::function<void(const bool&, const std::string&,
                            const boost::uint16_t&)> notify_dead_server);
   int StopTransport();
@@ -74,12 +75,11 @@ class ChannelManagerImpl {
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
   void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
-  void AddConnectionToReq(const boost::uint32_t &req_id,
-      const boost::uint32_t &conn_id);
   inline boost::shared_ptr<transport::Transport> ptransport() {
     return ptransport_;
   }
   boost::uint16_t external_port() const {return external_port_;}
+  std::string external_ip() const {return external_ip_;}
   bool CheckConnection(const std::string &ip, const uint16_t &port);
   bool CheckLocalAddress(const std::string &local_ip,
     const std::string &remote_ip, const uint16_t &remote_port);

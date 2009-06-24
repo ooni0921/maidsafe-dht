@@ -658,7 +658,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
     base::decode_from_hex(id, dec_id);
     kad::Contact contact(dec_id, ip, port, ip, port);
     ids1[i] = contact;
-    port ++;
+    ++port;
     ASSERT_EQ(0, routingtable.AddContact(ids1[i]));
   }
   for (int i = 0; i < kad::K-2; i++) {
@@ -667,9 +667,9 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
     base::decode_from_hex(id, dec_id);
     kad::Contact contact(dec_id, ip, port, ip, port);
     ids2[i] = contact;
-    port ++;
+    ++port;
     ASSERT_EQ(0, routingtable.AddContact(ids2[i]));
-    ASSERT_EQ(kad::kKeySizeBytes*2, id.size());
+    ASSERT_EQ(static_cast<boost::uint64_t>(kad::kKeySizeBytes)*2, id.size());
   }
   ASSERT_EQ(2, routingtable.KbucketSize());
   std::string id1(kad::kKeySizeBytes, 0x5);
@@ -679,28 +679,28 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
   // Getting nodes that are not in cts
   for (int i = 0; i < kad::K/2; i++) {
     bool in_cts = false;
-    for (int j = 0; j < cts.size() && !in_cts; j++) {
+    for (boost::uint32_t j = 0; j < cts.size() && !in_cts; j++) {
       if (cts[j] == ids1[i])
         in_cts = true;
     }
     if (!in_cts)
       ex.push_back(ids1[i]);
   }
-  ASSERT_EQ(0, ex.size());
+  ASSERT_EQ(static_cast<boost::uint16_t>(0), ex.size());
   for (int i = 0; i < kad::K-2; i++) {
     bool in_cts = false;
-    for (int j = 0; j < cts.size() && !in_cts; j++) {
+    for (boost::uint32_t j = 0; j < cts.size() && !in_cts; j++) {
       if (cts[j] == ids2[i])
         in_cts = true;
     }
     if (!in_cts)
       ex.push_back(ids2[i]);
   }
-  ASSERT_NE(0, ex.size());
+  ASSERT_NE(static_cast<boost::uint16_t>(0), ex.size());
   // Checking distances
-  for (int i = 0; i < cts.size(); i++) {
+  for (boost::uint32_t i = 0; i < cts.size(); i++) {
     kad::BigInt cts_to_id = kad::kademlia_distance(id1, cts[i].node_id());
-    for (int j = 0; j < ex.size(); j++) {
+    for (boost::uint32_t j = 0; j < ex.size(); j++) {
       kad::BigInt ex_to_id = kad::kademlia_distance(id1, ex[j].node_id());
       ASSERT_TRUE(cts_to_id < ex_to_id);
     }

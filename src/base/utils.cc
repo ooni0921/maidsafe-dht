@@ -175,15 +175,6 @@ std::string RandomString(int length) {
   return str;
 }
 
-void sleep(float secs) {
-  boost::xtime xt;
-  boost::xtime_get(&xt, boost::TIME_UTC);
-  int sec = static_cast<int>(secs);
-  xt.sec += sec;
-  xt.nsec += static_cast<boost::int_fast32_t>((secs-sec)*1000000000);
-  boost::thread::sleep(xt);
-}
-
 bool encode_to_hex(const std::string &value, std::string &result) {
   CryptoPP::StringSource(reinterpret_cast<const byte*>(value.c_str()),
     value.size(), true,

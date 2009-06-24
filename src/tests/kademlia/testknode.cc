@@ -478,7 +478,7 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
   // make sure the nodes returned are what we expect.
   ASSERT_EQ(kad::kRpcResultSuccess, cb_3.result());
   ASSERT_NE(static_cast<unsigned int>(0), cb_3.closest_nodes().size());
-  std::list<std::string> closest_nodes_str;// = cb_3.closest_nodes();
+  std::list<std::string> closest_nodes_str;  // = cb_3.closest_nodes();
   for (unsigned int i = 0; i < cb_3.closest_nodes().size(); i++)
     closest_nodes_str.push_back(cb_3.closest_nodes()[i]);
   std::list<std::string>::iterator it;
@@ -525,7 +525,7 @@ TEST_F(KNodeTest, BEH_KAD_FindClosestNodes) {
   // make sure the nodes returned are what we expect.
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_NE(static_cast<unsigned int>(0), cb_1.closest_nodes().size());
-  std::list<std::string> closest_nodes_str; // = cb_1.closest_nodes();
+  std::list<std::string> closest_nodes_str;  // = cb_1.closest_nodes();
   for (unsigned int i = 0; i < cb_1.closest_nodes().size(); i++)
     closest_nodes_str.push_back(cb_1.closest_nodes()[i]);
   std::list<std::string>::iterator it;

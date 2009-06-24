@@ -37,7 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class TransportNode {
  public:
-  TransportNode(transport::Transport *tnode) : tnode_(tnode),
+  explicit TransportNode(transport::Transport *tnode) : tnode_(tnode),
       successful_conn_(0), refused_conn_(0) {}
   transport::Transport *tnode() { return tnode_; }
   int successful_conn() { return successful_conn_; }
@@ -70,8 +70,10 @@ void send_string(TransportNode* node,
       boost::this_thread::sleep(boost::posix_time::seconds(10));
       send_res = node->tnode()->Send(ip, port, "", 0, msg, &id, keep_conn);
     }
-    if (send_res == 0) node->IncreaseSuccessfulConn();
-    else node->IncreaseRefusedConn();
+    if (send_res == 0)
+      node->IncreaseSuccessfulConn();
+    else
+      node->IncreaseRefusedConn();
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
   printf("thread %i finished sending %i messages\n", our_port,
@@ -1112,7 +1114,7 @@ TEST_F(TransportTest, BEH_TRANS_CheckConnection) {
     ASSERT_TRUE(node1.CheckConnection(local_ips[0], local_ips[0], 52002));
   } else if (local_ips.size() > 1) {
     std::string server_addr = local_ips[0];
-    for (int i = 1; i < local_ips.size(); i++) {
+    for (boost::uint32_t i = 1; i < local_ips.size(); i++) {
       printf("checking local address %s connecting to address %s\n",
         local_ips[i].c_str(), server_addr.c_str());
       ASSERT_FALSE(node1.CheckConnection(local_ips[i], server_addr, 52002));

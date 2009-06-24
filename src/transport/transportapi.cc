@@ -536,7 +536,7 @@ void Transport::ReceiveHandler() {
 #ifdef DEBUG
                   printf("message for id %d arrived\n", connection_id);
 #endif
-                  {
+                  {  // NOLINT Fraser
                     boost::mutex::scoped_lock guard1(msg_hdl_mutex_);
                     incoming_msgs_queue_.push_back(msg);
                   }
@@ -628,14 +628,15 @@ bool Transport::HasReceivedData(const boost::uint32_t &connection_id) {
 
 void Transport::SendHandle() {
   while (true) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     {
       boost::mutex::scoped_lock guard(send_mutex_);
       while (outgoing_queue_.empty() && !stop_) {
         send_cond_.wait(guard);
       }
     }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-    if (stop_) return;
+    if (stop_)
+      return;
     std::list<OutgoingData>::iterator it;
     {
       boost::mutex::scoped_lock guard(send_mutex_);
@@ -917,7 +918,8 @@ bool Transport::CheckConnection(const std::string &local_ip,
   if (0 != getaddrinfo(local_ip.c_str(), "0", &hints, &local))
     return false;
 
-  UDTSOCKET skt = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
+  UDTSOCKET skt = UDT::socket(local->ai_family, local->ai_socktype,
+                              local->ai_protocol);
   if (UDT::ERROR == UDT::bind(skt, local->ai_addr, local->ai_addrlen)) {
 #ifdef DEBUG
     printf("bind error: %s\n", UDT::getlasterror().getErrorMessage());
@@ -935,12 +937,11 @@ bool Transport::CheckConnection(const std::string &local_ip,
   }
   if (UDT::ERROR == UDT::connect(skt, remote->ai_addr, remote->ai_addrlen)) {
 #ifdef DEBUG
-      printf("connect error: %s\n", UDT::getlasterror().getErrorMessage());
+    printf("connect error: %s\n", UDT::getlasterror().getErrorMessage());
 #endif
-      return false;
-   }
-   UDT::close(skt);
-   return true;
-
+    return false;
+  }
+  UDT::close(skt);
+  return true;
 }
 };  // namespace transport

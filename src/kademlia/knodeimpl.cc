@@ -1400,8 +1400,8 @@ void KNodeImpl::IterativeLookUp_SearchIteration(
 #endif
     IterativeLookUp_Callback(data);
     return;
-  } else if ((static_cast<int>(data->short_list.size()) < K_)&&
-      (data->active_contacts.size() < data->short_list.size())) {
+//  } else if ((static_cast<int>(data->short_list.size()) < K_)&&
+//      (data->active_contacts.size() < data->short_list.size())) {
     // Schedule the next iteration if there are any active calls (Kademlia uses
     // loose parallelism).
     // Set the RPC request timeout
@@ -1688,7 +1688,7 @@ void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
   if (values.size() !=  0) {
     kad::FindResponse result_msg;
     result_msg.set_result(kad::kRpcResultSuccess);
-    for (int n = 0; n < values.size(); ++n)
+    for (boost::uint64_t n = 0; n < values.size(); ++n)
       result_msg.add_values(values[n]);
     std::string ser_find_result;
     result_msg.SerializeToString(&ser_find_result);
