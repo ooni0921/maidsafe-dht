@@ -26,16 +26,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include  <gtest/gtest.h>
+#include <fstream>
 #include "maidsafe/maidsafe-dht.h"
 #include "kademlia/knodeimpl.h"
 #include "tests/kademlia/fake_callbacks.h"
+#include "transport/transportapi.h"
 
 namespace kad {
 
 class TestKnodes : public testing::Test {
  public:
   TestKnodes() : nodes(2), ch_managers(2), datastore_dir(2) {}
-  virtual ~TestKnodes() {}
+  virtual ~TestKnodes() {
+    UDT::cleanup();
+  }
  protected:
   void SetUp() {
     try {
