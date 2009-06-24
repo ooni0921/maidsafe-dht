@@ -518,6 +518,7 @@ void Transport::ReceiveHandler() {
             (*it).second.received_size += rsize;
             if ((*it).second.expect_size <= (*it).second.received_size) {
               ++last_id_;
+              printf("%d -- Transport::ReceiveHandler last_id_: %d\n", listening_port_, last_id_);
               std::string message = std::string((*it).second.data.get(),
                                     (*it).second.expect_size);
               boost::uint32_t connection_id = (*it).first;

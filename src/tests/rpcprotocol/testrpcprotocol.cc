@@ -323,11 +323,9 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
   if ("+" != resultholder.mirror_res.mirrored_string()) {
-    printf("did not timed out\n");
+    printf("Did not time out.\n");
     FAIL();
   }
-//  ASSERT_EQ("+", resultholder.mirror_res.mirrored_string()) <<
-//    "Result of mirror wrong.";
 
   resultholder.Reset();
   boost::scoped_ptr<tests::MirrorTest>
@@ -345,17 +343,20 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
   rpcprotocol::Controller controller4;
   controller4.set_timeout(20);
   stubservice4->Mirror(&controller4, &req4, &resp4, done4);
-  while (!resultholder.mirror_res.IsInitialized()) {
+
+  while (resultholder.mirror_res.mirrored_string() == "-") {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   if ("+" == resultholder.mirror_res.mirrored_string()) {
-    ASSERT_EQ("9876543210",
-              resultholder.mirror_res.mirrored_string().substr(0, 9));
     printf("Result of mirror wrong.\n");
     FAIL();
   }
-//  ASSERT_NE("+", resultholder.mirror_res.mirrored_string()) <<
-//    "Result of mirror wrong.";
+  ASSERT_EQ("9876543210", 
+      resultholder.mirror_res.mirrored_string().substr(0, 10));
+
+  // Cleanup
+  RpcProtocolTest::server_chann_manager->ClearCallLaters();
+  RpcProtocolTest::client_chann_manager->ClearCallLaters();
 }
 
 TEST_F(RpcProtocolTest, BEH_RPC_ServerAndClientAtSameTime) {

@@ -1051,15 +1051,12 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
   ASSERT_FALSE(knodes_[4]->is_joined());
   channel_managers_[4]->StopTransport();
   printf("Node 4 killed\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  while (node->is_joined()) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+  }
   printf("finished waiting to notice dead node\n");
-  bool finished_bootstrap = false;
-  boost::progress_timer t;
-  while (!finished_bootstrap) {
-    if (node->is_joined() || t.elapsed() > 10)
-      finished_bootstrap = true;
-    else
-      boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+  while (!node->is_joined()) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
   ASSERT_TRUE(node->is_joined());
   node->Leave();
