@@ -109,6 +109,9 @@ class MessageHandler {
   std::string server_ip_;
   boost::uint16_t server_port_;
   transport::Transport *node_;
+ private:
+  MessageHandler(const MessageHandler&);
+  MessageHandler& operator=(const MessageHandler&);
 };
 
 class MessageHandlerEchoReq {
@@ -143,6 +146,9 @@ class MessageHandlerEchoReq {
   bool dead_server_;
   std::string server_ip_;
   boost::uint16_t server_port_;
+ private:
+  MessageHandlerEchoReq(const MessageHandlerEchoReq&);
+  MessageHandlerEchoReq& operator=(const MessageHandlerEchoReq&);
 };
 
 class MessageHandlerEchoResp {
@@ -176,6 +182,9 @@ class MessageHandlerEchoResp {
   bool dead_server_;
   std::string server_ip_;
   boost::uint16_t server_port_;
+ private:
+  MessageHandlerEchoResp(const MessageHandlerEchoResp&);
+  MessageHandlerEchoResp& operator=(const MessageHandlerEchoResp&);
 };
 
 class TransportTest: public testing::Test {

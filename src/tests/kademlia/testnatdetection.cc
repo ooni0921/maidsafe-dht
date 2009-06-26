@@ -44,7 +44,7 @@ namespace kad {
 
 class Callback {
  public:
-  Callback() {}
+  Callback() : response_() {}
   explicit Callback(BootstrapResponse *response) : response_(response) {}
   void CallbackFunction() {}
   void CallbackSendNatDet() {
