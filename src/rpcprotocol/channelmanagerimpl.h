@@ -47,11 +47,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rpcprotocol {
 
 struct PendingReq {
-  PendingReq() : args(NULL), callback(NULL), connection_id(0), timeout(0) {}
+  PendingReq() : args(NULL), callback(NULL), connection_id(0), timeout(0),
+    size_rec(0) {}
   google::protobuf::Message* args;
   google::protobuf::Closure* callback;
   boost::uint32_t connection_id;
   int timeout;
+  int64_t size_rec;
 };
 
 class ChannelManagerImpl {

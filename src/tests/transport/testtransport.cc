@@ -129,6 +129,14 @@ class MessageHandlerEchoReq {
     msg.SerializeToString(&message);
     msgs.push_back(message);
     ids.push_back(conn_id);
+    struct sockaddr addr;
+    if (!node_->GetPeerAddr(conn_id, &addr))
+      printf("addr not found\n");
+    std::string peer_ip(inet_ntoa(((\
+        struct sockaddr_in *)&addr)->sin_addr));
+      boost::uint16_t peer_port =
+        ntohs(((struct sockaddr_in *)&addr)->sin_port);
+    printf("sender: %s:%d\n", peer_ip.c_str(), peer_port);
     printf("message %i arrived\n", msgs.size());
     // replying same msg
     if (msgs.size() < 10)
@@ -526,7 +534,7 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
 
   bool finished = false;
   boost::progress_timer t;
-  while (!finished && t.elapsed() < 10) {
+  while (!finished && t.elapsed() < 20) {
       if (msg_handler[0].msgs.size() >= messages_size) {
         finished = true;
         continue;
@@ -789,7 +797,7 @@ TEST_F(TransportTest, FUNC_TRANS_PingDeadRendezvousServer) {
   ASSERT_EQ(std::string(""), msg_handler[0].server_ip_);
   ASSERT_EQ(0, msg_handler[0].server_port_);
   rendezvous_node.Stop();
-  boost::this_thread::sleep(boost::posix_time::seconds(15));
+  boost::this_thread::sleep(boost::posix_time::seconds(28));
   node1.Stop();
   ASSERT_TRUE(msg_handler[0].dead_server_);
   ASSERT_EQ(std::string("127.0.0.1"), msg_handler[0].server_ip_);
@@ -819,7 +827,7 @@ TEST_F(TransportTest, FUNC_TRANS_ReconnectToDifferentServer) {
   ASSERT_EQ(std::string(""), msg_handler[0].server_ip_);
   ASSERT_EQ(0, msg_handler[0].server_port_);
   rendezvous_node1.Stop();
-  boost::this_thread::sleep(boost::posix_time::seconds(17));
+  boost::this_thread::sleep(boost::posix_time::seconds(21));
   ASSERT_TRUE(msg_handler[0].dead_server_);
   ASSERT_EQ(std::string("127.0.0.1"), msg_handler[0].server_ip_);
   ASSERT_EQ(52002, msg_handler[0].server_port_);

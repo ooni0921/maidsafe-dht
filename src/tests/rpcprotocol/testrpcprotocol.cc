@@ -351,7 +351,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
     printf("Result of mirror wrong.\n");
     FAIL();
   }
-  ASSERT_EQ("9876543210", 
+  ASSERT_EQ("9876543210",
       resultholder.mirror_res.mirrored_string().substr(0, 10));
 
   // Cleanup
@@ -443,4 +443,41 @@ TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
   ASSERT_FALSE(resultholder.ping_res.has_pong());
   delete out_channel;
   delete stubservice;
+}
+
+TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
+  MirrorTestService *service = new MirrorTestService;
+  // creating a channel for the service
+  rpcprotocol::Channel *service_channel = new rpcprotocol::Channel(
+      server_chann_manager);
+  service_channel->SetService(service);
+  server_chann_manager->RegisterChannel(service->GetDescriptor()->name(),
+      service_channel);
+  // creating a channel for the client to send a request to the service
+  rpcprotocol::Controller controller;
+  controller.set_timeout(4);
+  rpcprotocol::Channel *out_channel =
+      new rpcprotocol::Channel(client_chann_manager, "127.0.0.1", 35001, true);
+  tests::MirrorTest* stubservice = new tests::MirrorTest::Stub(out_channel);
+  tests::StringMirrorRequest req;
+  tests::StringMirrorResponse resp;
+  req.set_message(base::RandomString(5 * 1024 * 1024));
+  req.set_ip("127.0.0.1");
+  req.set_port(35002);
+  ResultHolder resultholder;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<ResultHolder,
+      const tests::StringMirrorResponse*>(&resultholder,
+      &ResultHolder::GetMirrorResult, &resp);
+  stubservice->Mirror(&controller, &req, &resp, done);
+  while (resultholder.mirror_res.mirrored_string() == "-") {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+  if ("+" == resultholder.mirror_res.mirrored_string()) {
+    printf("Result of mirror wrong.\n");
+    FAIL();
+  }
+  delete service_channel;
+  delete stubservice;
+  delete out_channel;
+  delete service;
 }

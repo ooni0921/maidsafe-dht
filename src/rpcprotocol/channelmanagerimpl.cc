@@ -162,7 +162,9 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
       if (!decoded_bootstrap.ParseFromString(decoded_msg.args())) {
         return;
       }
-      struct sockaddr peer_addr = ptransport_->peer_address();
+      struct sockaddr peer_addr;
+      if (!ptransport_->GetPeerAddr(connection_id, &peer_addr))
+        return;
       std::string peer_ip(inet_ntoa(((\
         struct sockaddr_in *)&peer_addr)->sin_addr));
       boost::uint16_t peer_port =
@@ -257,22 +259,25 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
   req_mutex_.lock();
   it = pending_req_.find(req_id);
   if (it != pending_req_.end()) {
-    boost::uint32_t connection_id = pending_req_[req_id].connection_id;
-    int timeout = pending_req_[req_id].timeout;
-    if (ptransport_->HasReceivedData(connection_id)) {
+    int64_t size_rec = (*it).second.size_rec;
+    boost::uint32_t connection_id = (*it).second.connection_id;
+    int timeout = (*it).second.timeout;
+    if (ptransport_->HasReceivedData(connection_id, &size_rec)) {
       req_mutex_.unlock();
-      printf("reseting timeout\n");
+      (*it).second.size_rec = size_rec;
+#ifdef DEBUG
+      printf("(%d) Reseting timeout for RPC ID: %d.  Connection ID: %d\n",
+        ptransport_->listening_port(), req_id, connection_id);
       AddReqToTimer(req_id, timeout);
+#endif
     } else {
 #ifdef DEBUG
       printf("transport %d Request times out. RPC ID: %d. Connection ID: %d.\n",
-             ptransport_->listening_port(),
-             req_id,
-             pending_req_[req_id].connection_id);
+             ptransport_->listening_port(), req_id, connection_id);
 #endif
       // call back without modifying the response
-      google::protobuf::Closure* done = pending_req_[req_id].callback;
-      pending_req_.erase(req_id);
+      google::protobuf::Closure* done = (*it).second.callback;
+      pending_req_.erase(it);
       req_mutex_.unlock();
       printf("%i -- executing request after timeout. id = %i\n",
         external_port_, req_id);

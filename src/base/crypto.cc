@@ -90,8 +90,7 @@ std::string Crypto::SecurePassword(const std::string &password, int pin) {
 //  HASH
 void Crypto::set_hash_algorithm(const std::string &algorithmtype) {
   if ( (algorithmtype == "SHA1") || (algorithmtype == "SHA256") || \
-    (algorithmtype == "SHA224") || (algorithmtype == "SHA512") || \
-    (algorithmtype == "SHA384") )
+    (algorithmtype == "SHA512") || (algorithmtype == "SHA384") )
       hash_algorithm_ = algorithmtype;
 }
 
@@ -140,61 +139,6 @@ std::string Crypto::SHA1Hash(const std::string &input,
           new CryptoPP::HashFilter(hash,
           new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
           false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-  }
-  return buffer;
-}
-
-std::string Crypto::SHA224Hash(const std::string &input,
-                               const std::string &output,
-                               const operationtype &ot) {
-  std::string buffer;
-  CryptoPP::StringSource *s_source = new CryptoPP::StringSource;
-  CryptoPP::FileSource *f_source = new CryptoPP::FileSource;
-  CryptoPP::SHA224 hash;
-  switch (ot) {
-    case STRING_STRING:
-      s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-        (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      delete s_source;
-      break;
-    case STRING_FILE:
-      buffer = output;
-      try {
-        s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-          (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-          false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete s_source;
-      break;
-    case FILE_STRING:
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-    case FILE_FILE:
-      buffer = output;
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-            new CryptoPP::HashFilter(hash,
-            new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str(),
-            false))));
       }
       catch(const CryptoPP::Exception &e) {
         buffer = "";
@@ -384,8 +328,6 @@ std::string Crypto::Hash(const std::string &input,
     result = SHA1Hash(input, output, ot);
   else if (hash_algorithm_ == "SHA256")
     result = SHA256Hash(input, output, ot);
-  else if (hash_algorithm_ == "SHA224")
-    result = SHA224Hash(input, output, ot);
   else if (hash_algorithm_ == "SHA384")
     result = SHA384Hash(input, output, ot);
   else
@@ -399,7 +341,7 @@ std::string Crypto::Hash(const std::string &input,
   return result;
 }
 
-//  SYNC
+//  SYMM
 bool Crypto::set_symm_algorithm(const std::string &algorithmtype) {
   if ( algorithmtype == "AES_256")
     symm_algorithm_ = algorithmtype;

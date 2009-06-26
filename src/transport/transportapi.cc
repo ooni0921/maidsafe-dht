@@ -65,7 +65,8 @@ Transport::Transport() : stop_(true),
                          accepted_connections_(0),
                          msgs_sent_(0),
                          last_id_(0),
-                         data_activated_() {
+                         data_arrived_(),
+                         ips_from_connections_() {
   UDT::startup();
 }
 
@@ -475,7 +476,6 @@ void Transport::ReceiveHandler() {
 #endif
                 result = UDT::close((*it).second.u);
                 (*it).second.data.reset();
-                data_activated_.erase((*it).first);
                 incoming_sockets_.erase(it);
                 break;
               }
@@ -486,7 +486,6 @@ void Transport::ReceiveHandler() {
             } else {
               result = UDT::close((*it).second.u);
               (*it).second.data.reset();
-              data_activated_.erase((*it).first);
               incoming_sockets_.erase(it);
               break;
             }
@@ -508,13 +507,12 @@ void Transport::ReceiveHandler() {
 #endif
                 result = UDT::close((*it).second.u);
                 (*it).second.data.reset();
-                data_activated_.erase((*it).first);
+                // data_activated_.erase((*it).first);
                 incoming_sockets_.erase(it);
                 break;
               }
               continue;
             }
-            data_activated_.insert((*it).first);
             (*it).second.received_size += rsize;
             if ((*it).second.expect_size <= (*it).second.received_size) {
               ++last_id_;
@@ -537,8 +535,10 @@ void Transport::ReceiveHandler() {
 #ifdef DEBUG
                   printf("message for id %d arrived\n", connection_id);
 #endif
+                  data_arrived_.insert(connection_id);
                   {  // NOLINT Fraser
                     boost::mutex::scoped_lock guard1(msg_hdl_mutex_);
+                    ips_from_connections_[connection_id] = peer_address_;
                     incoming_msgs_queue_.push_back(msg);
                   }
                   msg_hdl_cond_.notify_one();
@@ -601,7 +601,7 @@ void Transport::CloseConnection(boost::uint32_t connection_id) {
 //             UDT::getlasterror().getErrorMessage());
 //  #endif
     incoming_sockets_.erase(connection_id);
-    data_activated_.erase(connection_id);
+    data_arrived_.erase(connection_id);
   }
 }
 
@@ -616,15 +616,34 @@ bool Transport::ConnectionExists(const boost::uint32_t &connection_id) {
   }
 }
 
-bool Transport::HasReceivedData(const boost::uint32_t &connection_id) {
-  std::set<boost::uint32_t>::iterator it;
+bool Transport::HasReceivedData(const boost::uint32_t &connection_id,
+    int64_t *size) {
+  std::map<boost::uint32_t, IncomingData>::iterator it1;
+  std::set<boost::uint32_t>::iterator it2;
+  bool result = false;
   boost::mutex::scoped_lock guard(recv_mutex_);
-  it = data_activated_.find(connection_id);
-  if (it != data_activated_.end()) {
-    return true;
+  it1 = incoming_sockets_.find(connection_id);
+  if (it1 != incoming_sockets_.end()) {
+    if ((*it1).second.received_size > *size) {
+      *size = (*it1).second.received_size;
+      result = true;
+    } else {
+      it2 = data_arrived_.find(connection_id);
+      if (it2 != data_arrived_.end()) {
+        result = true;
+      } else {
+        result = false;
+      }
+    }
   } else {
-    return false;
+    it2 = data_arrived_.find(connection_id);
+    if (it2 != data_arrived_.end()) {
+      result = true;
+    } else {
+      result = false;
+    }
   }
+  return result;
 }
 
 void Transport::SendHandle() {
@@ -719,7 +738,9 @@ int Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
   if (UDT::ERROR == UDT::connect(*skt, reinterpret_cast<sockaddr*>(&peer_addr),
       sizeof(peer_addr))) {
 #ifdef DEBUG
-    printf("UDT connect error %d: %s\n", UDT::getlasterror().getErrorCode(),
+    printf("(%d) UDT connect error to %s:%d. %d: %s\n", listening_port_,
+        peer_address.c_str(), peer_port,
+        UDT::getlasterror().getErrorCode(),
         UDT::getlasterror().getErrorMessage());
 #endif
     return UDT::getlasterror().getErrorCode();
@@ -805,19 +826,36 @@ void Transport::PingHandle() {
       rendezvous_notifier_(dead_rendezvous_server, "", 0);
       boost::this_thread::sleep(boost::posix_time::seconds(8));
     } else {
-      {
-        boost::mutex::scoped_lock lock(ping_rendez_mutex_);
-        ping_rendezvous_ = false;
+      // retrying two more times to connect to make sure
+      // two seconds between each ping
+      bool alive = false;
+      for (int i = 0; i < 2 && !alive; i++) {
+        boost::this_thread::sleep(boost::posix_time::seconds(2));
+        if (Connect(&skt, my_rendezvous_ip_, my_rendezvous_port_, false) == 0) {
+          UDT::close(skt);
+          alive = true;
+        }
       }
-      // check in case Stop was called before timeout of connection, then
-      // there is no need to call rendezvous_notifier_
-      if (stop_) return;
-      bool dead_rendezvous_server = true;
-      rendezvous_notifier_(dead_rendezvous_server, my_rendezvous_ip_,
-        my_rendezvous_port_);
+      if (!alive) {
+        {
+          boost::mutex::scoped_lock lock(ping_rendez_mutex_);
+          ping_rendezvous_ = false;
+        }
+        // check in case Stop was called before timeout of connection, then
+        // there is no need to call rendezvous_notifier_
+        if (stop_) return;
+        bool dead_rendezvous_server = true;
+        rendezvous_notifier_(dead_rendezvous_server, my_rendezvous_ip_,
+          my_rendezvous_port_);
+      } else {
+        bool dead_rendezvous_server = false;
+        rendezvous_notifier_(dead_rendezvous_server, "", 0);
+        boost::this_thread::sleep(boost::posix_time::seconds(8));
+      }
     }
   }
 }
+
 bool Transport::CanConnect(const std::string &ip, const uint16_t &port) {
   UDTSOCKET skt;
   bool result = false;
@@ -878,9 +916,10 @@ void Transport::MessageHandler() {
       }
       {
         boost::mutex::scoped_lock gaurd(recv_mutex_);
-        data_activated_.erase(msg.conn_id);
+        data_arrived_.erase(msg.conn_id);
       }
       message_notifier_(msg.msg, msg.conn_id);
+      ips_from_connections_.erase(msg.conn_id);
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     }
   }
@@ -943,6 +982,16 @@ bool Transport::CheckConnection(const std::string &local_ip,
     return false;
   }
   UDT::close(skt);
+  return true;
+}
+
+bool Transport::GetPeerAddr(const boost::uint32_t &conn_id,
+    struct sockaddr *addr) {
+  std::map<boost::uint32_t, struct sockaddr>::iterator it;
+  it = ips_from_connections_.find(conn_id);
+  if (it == ips_from_connections_.end())
+    return false;
+  *addr = ips_from_connections_[conn_id];
   return true;
 }
 };  // namespace transport

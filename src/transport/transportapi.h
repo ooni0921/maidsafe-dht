@@ -120,9 +120,10 @@ class Transport {
   void Stop();
   inline bool is_stopped() { return stop_; }
   struct sockaddr& peer_address() { return peer_address_; }
+  bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr *addr);
   void HandleRendezvousMsgs(const HolePunchingMsg &message);
   bool ConnectionExists(const boost::uint32_t &connection_id);
-  bool HasReceivedData(const boost::uint32_t &connection_id);
+  bool HasReceivedData(const boost::uint32_t &connection_id, int64_t *size);
   void AddIncomingConnection(UDTSOCKET u);
   void AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id);
   inline boost::uint16_t listening_port() { return listening_port_; }
@@ -167,7 +168,8 @@ class Transport {
   bool directly_connected_;
   int accepted_connections_, msgs_sent_;
   boost::uint32_t last_id_;
-  std::set<boost::uint32_t> data_activated_;
+  std::set<boost::uint32_t> data_arrived_;
+  std::map<boost::uint32_t, struct sockaddr> ips_from_connections_;
 };
 
 };  // namespace transport

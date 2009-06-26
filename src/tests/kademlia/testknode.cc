@@ -985,13 +985,15 @@ TEST_F(KNodeTest, BEH_KAD_IncorrectNodeLocalAddrPing) {
 TEST_F(KNodeTest, BEH_KAD_FindDeadNode) {
   // find an existing node that has gone down
   // select a random node from node 1 to node 19
-  int r_node = rand() % 19;  // NOLINT (Fraser)
+  int r_node = 1 + rand() % 19;  // NOLINT (Fraser)
+  printf("+++++++++++++++++ r_node = %d \n", r_node);
   std::string r_node_id = knodes_[r_node]->node_id();
   knodes_[r_node]->Leave();
   ASSERT_FALSE(knodes_[r_node]->is_joined());
   channel_managers_[r_node]->StopTransport();
 //  boost::this_thread::sleep(boost::posix_time::seconds(10));
   // Do a find node
+  printf("+++++++++++++++++Node stopped %d \n", r_node);
   FindNodeCallback cb_1;
   knodes_[19]->FindNode(r_node_id,
       boost::bind(&FindNodeCallback::CallbackFunc, &cb_1, _1), false);
@@ -999,6 +1001,7 @@ TEST_F(KNodeTest, BEH_KAD_FindDeadNode) {
   ASSERT_EQ(kad::kRpcResultFailure, cb_1.result());
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   // Restart dead node
+  printf("+++++++++++++++++Restarting %d \n", r_node);
   ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(62000+r_node,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knodes_[r_node].get(), _1, _2, _3)));

@@ -268,6 +268,7 @@ TEST_F(CryptoTest, BEH_BASE_SymmEncrypt) {
     std::ifstream result_file;
 
     ASSERT_TRUE(ct.SymmEncrypt(data,"",STRING_STRING,key) == "") << "Output data empty";
+    ASSERT_TRUE(ct.SymmDecrypt(data,"",STRING_STRING,key) == "") << "Output data empty";
     EXPECT_TRUE(ct.set_symm_algorithm("AES_256"));
     std::string cipher_data = ct.SymmEncrypt(data,"",STRING_STRING,key);
     ASSERT_EQ("result1.txt", ct.SymmEncrypt(data,"result1.txt",STRING_FILE,key));

@@ -60,7 +60,6 @@ class Crypto {
   //  HASH Funtion
   //  Hash Algorithms
   //   -SHA1 = sha 128
-  //   -SHA224 = sha 224
   //   -SHA256 = sha 256
   //   -SHA384 = sha 284
   //   -SHA512 = sha 512
@@ -75,7 +74,7 @@ class Crypto {
                    const operationtype &ot,
                    bool hex);
 
-  //  SYNC
+  //  SYMMETRIC
   //  Symmetric Encryption Algorithm
   //    -AES_256
   //  Encryption and Decryption return an empty string if the input from
@@ -132,9 +131,6 @@ class Crypto {
   std::string SHA1Hash(const std::string &input,
                        const std::string &output,
                        const operationtype &ot);
-  std::string SHA224Hash(const std::string &input,
-                         const std::string &output,
-                         const operationtype &ot);
   std::string SHA256Hash(const std::string &input,
                          const std::string &output,
                          const operationtype &ot);
