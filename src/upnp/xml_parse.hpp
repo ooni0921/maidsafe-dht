@@ -62,7 +62,7 @@ namespace libtorrent
 			char const* val_start = 0;
 			int token;
 			// look for tag start
-			for(; *p != '<' && p != end; ++p);
+			for(; *p != '<' && p != end; ++p) {} ;
 
 			if (p != start)
 			{
@@ -82,12 +82,12 @@ namespace libtorrent
 			++p;
 
 			// parse the name of the tag.
-			for (start = p; p != end && *p != '>' && !std::isspace(*p); ++p);
+			for (start = p; p != end && *p != '>' && !std::isspace(*p); ++p) {};
 
 			char* tag_name_end = p;
 
 			// skip the attributes for now
-			for (; p != end && *p != '>'; ++p);
+			for (; p != end && *p != '>'; ++p) {};
 
 			// parse error
 			if (p == end)
@@ -149,15 +149,15 @@ namespace libtorrent
 			for (char* i = tag_name_end; i < tag_end; ++i)
 			{
 				// find start of attribute name
-				for (; i != tag_end && std::isspace(*i); ++i);
+				for (; i != tag_end && std::isspace(*i); ++i) {};
 				if (i == tag_end) break;
 				start = i;
 				// find end of attribute name
-				for (; i != tag_end && *i != '=' && !std::isspace(*i); ++i);
+				for (; i != tag_end && *i != '=' && !std::isspace(*i); ++i) {};
 				char* name_end = i;
 
 				// look for equality sign
-				for (; i != tag_end && *i != '='; ++i);
+				for (; i != tag_end && *i != '='; ++i) {} ;
 
 				if (i == tag_end)
 				{
@@ -169,7 +169,7 @@ namespace libtorrent
 				}
 
 				++i;
-				for (; i != tag_end && std::isspace(*i); ++i);
+				for (; i != tag_end && std::isspace(*i); ++i) {};
 				// check for parse error (values must be quoted)
 				if (i == tag_end || (*i != '\'' && *i != '\"'))
 				{
@@ -182,7 +182,7 @@ namespace libtorrent
 				char quote = *i;
 				++i;
 				val_start = i;
-				for (; i != tag_end && *i != quote; ++i);
+				for ( ; i != tag_end && *i != quote; ++i) {};
 				// parse error (missing end quote)
 				if (i == tag_end)
 				{

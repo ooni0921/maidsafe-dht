@@ -103,7 +103,7 @@ namespace libtorrent { namespace
 
 #if defined TORRENT_LINUX
 
-	int read_nl_sock(int sock, char *buf, int bufsize, int seq, int pid)
+	int read_nl_sock(int sock, char *buf, int bufsize, __u32 seq, __u32 pid)
 	{
 		nlmsghdr* nl_hdr;
 

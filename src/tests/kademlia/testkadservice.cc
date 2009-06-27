@@ -117,7 +117,7 @@ class KadServicesTest: public testing::Test {
     fs::create_directories("KadServicesTest");
     EXPECT_EQ(0, channel_manager_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
-        knodeimpl_.get(), _1, _2, _3)));
+        knodeimpl_.get(), _1)));
     cb_.Reset();
     knodeimpl_->Join(node_id_, kad_config_file_,
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),

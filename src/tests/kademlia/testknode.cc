@@ -159,7 +159,7 @@ class Env: public testing::Environment {
                                       kad::kBeta));
       EXPECT_EQ(0, channel_managers_[i]->StartTransport(62000+i,
         boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_local_.get(),
-                    _1, _2, _3)));
+                    _1)));
       knodes_.push_back(knode_local_);
       cb_.Reset();
     }
@@ -413,7 +413,7 @@ TEST_F(KNodeTest, BEH_KAD_ClientKnodeConnect) {
                                              kad::kBeta));
   EXPECT_EQ(0, channel_manager_local_->StartTransport(63001,
     boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_local_.get(),
-                _1, _2, _3)));
+                _1)));
   knode_local_->Join("",
                      config_file,
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
@@ -914,7 +914,7 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   // Restart dead node
   ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(62000+r_node,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
-      knodes_[r_node].get(), _1, _2, _3)));
+      knodes_[r_node].get(), _1)));
   cb_.Reset();
   std::string conf_file = dbs_[r_node] + "/.kadconfig";
   knodes_[r_node]->Join(node_ids[r_node], conf_file,
@@ -1004,7 +1004,7 @@ TEST_F(KNodeTest, BEH_KAD_FindDeadNode) {
   printf("+++++++++++++++++Restarting %d \n", r_node);
   ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(62000+r_node,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
-      knodes_[r_node].get(), _1, _2, _3)));
+      knodes_[r_node].get(), _1)));
   cb_.Reset();
   std::string conf_file = dbs_[r_node] + "/.kadconfig";
   knodes_[r_node]->Join(node_ids[r_node], conf_file,
@@ -1040,7 +1040,7 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
       kad::VAULT, kTestK, kad::kAlpha, kad::kBeta));
   EXPECT_EQ(0, ch_man->StartTransport(65001,
         boost::bind(&kad::KNode::HandleDeadRendezvousServer, node.get(),
-                    _1, _2, _3)));
+                    _1)));
   cb_.Reset();
   node->Join("", kconf_file,
       boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
@@ -1066,8 +1066,8 @@ TEST_F(KNodeTest, BEH_KAD_RebootstrapNode) {
   ch_man->StopTransport();
   // Restart dead node
   ASSERT_EQ(0, channel_managers_[4]->StartTransport(62004,
-      boost::bind(&kad::KNode::HandleDeadRendezvousServer, knodes_[4].get(), _1,
-      _2, _3)));
+      boost::bind(&kad::KNode::HandleDeadRendezvousServer, knodes_[4].get(), _1
+                  )));
   cb_.Reset();
   std::string conf_file = dbs_[4] + "/.kadconfig";
   knodes_[4]->Join(node_ids[4], conf_file,

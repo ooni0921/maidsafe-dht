@@ -58,8 +58,7 @@ class TestKnodes : public testing::Test {
       ch_managers[i].reset(new rpcprotocol::ChannelManager());
       nodes[i].reset(new KNodeImpl(datastore_dir[i], ch_managers[i], VAULT));
       ch_managers[i]->StartTransport(port,
-        boost::bind(&KNodeImpl::HandleDeadRendezvousServer, nodes[i].get(), _1,
-        _2, _3));
+        boost::bind(&KNodeImpl::HandleDeadRendezvousServer, nodes[i].get(), _1));
       port++;
     }
   }

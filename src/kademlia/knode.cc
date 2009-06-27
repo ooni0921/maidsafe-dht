@@ -128,10 +128,8 @@ void KNode::GetRandomContacts(const int &count,
   pimpl_->GetRandomContacts(count, exclude_contacts, contacts);
 }
 
-void KNode::HandleDeadRendezvousServer(const bool &dead_server,
-                                       const std::string &ip,
-                                       const uint16_t &port) {
-  pimpl_->HandleDeadRendezvousServer(dead_server, ip, port);
+void KNode::HandleDeadRendezvousServer(const bool &dead_server) {
+  pimpl_->HandleDeadRendezvousServer(dead_server);
 }
 
 connect_to_node KNode::CheckContactLocalAddress(const std::string &id,

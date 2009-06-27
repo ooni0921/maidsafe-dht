@@ -108,9 +108,7 @@ class KNode {
   void GetRandomContacts(const int &count,
                          const std::vector<Contact> &exclude_contacts,
                          std::vector<Contact> *contacts);
-  void HandleDeadRendezvousServer(const bool &dead_server,
-                                  const std::string &ip,
-                                  const uint16_t &port);
+  void HandleDeadRendezvousServer(const bool &dead_server);
   connect_to_node CheckContactLocalAddress(const std::string &id,
                                            const std::string &ip,
                                            const uint16_t &port,

@@ -2009,9 +2009,7 @@ void KNodeImpl::GetRandomContacts(
   return;
 }
 
-void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server,
-                                           const std::string &ip,
-                                           const uint16_t &port) {
+void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
   if (stopping_) return;
 #ifdef SHOW_MUTEX
   printf("\t\tIn KNode::HandleDeadRendezvousServer(%i), outside mutex.\n",

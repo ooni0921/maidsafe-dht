@@ -125,7 +125,7 @@ class NatDetectionTest: public testing::Test {
     base::decode_from_hex(hex_id, node_idA_);
     ASSERT_EQ(0, channel_managerA_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
-        knodeimpl1_.get(), _1, _2, _3)));
+        knodeimpl1_.get(), _1)));
     cb_.Reset();
     knodeimpl1_->Join(node_idA_, kad_config_fileA_,
                       boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
@@ -148,7 +148,7 @@ class NatDetectionTest: public testing::Test {
     base::decode_from_hex(hex_id, node_idB_);
     ASSERT_EQ(0, channel_managerB_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
-        knodeimpl2_.get(), _1, _2, _3)));
+        knodeimpl2_.get(), _1)));
     cb_.Reset();
     knodeimpl2_->Join(node_idB_, kad_config_fileB_,
                       boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
@@ -171,7 +171,7 @@ class NatDetectionTest: public testing::Test {
     base::decode_from_hex(hex_id, node_idC_);
     ASSERT_EQ(0, channel_managerC_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
-        knodeimpl3_.get(), _1, _2, _3)));
+        knodeimpl3_.get(), _1)));
     cb_.Reset();
     knodeimpl3_->Join(node_idC_, kad_config_fileC_,
                       boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
