@@ -120,7 +120,9 @@ add_library(PDpbmsgslib STATIC  ${M_PROTOBUF_DIR})
 add_library(PDrpcprotocollib STATIC  ${M_RPCPROTO_DIR})
 add_library(PDTESTrpcprotocollib STATIC  ${M_RPCPROTO_DIR})
 add_library(PDupnplib STATIC ${M_UPNP_DIR})
-add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR}  )
+add_library(maidsafe-dht STATIC ${M_BASE_DIR} ) # this is a bit of a hack to create a tiny lib
+						   # then link it later - to save recompiling 
+						   # everything with each change 
 ##########################################################################################
 #Set up some extra compiler and linker flags for the tests mainly                        #
 ##########################################################################################
