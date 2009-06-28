@@ -62,7 +62,8 @@ int main(){
 #endif
   boost::asio::deadline_timer timer(io_service);
   std::string user_agent = "haiyang.ma";
-  boost::intrusive_ptr<libtorrent::upnp> my_upnp = new libtorrent::upnp(io_service, half_open, libtorrent::address_v4(),
+  boost::intrusive_ptr<libtorrent::upnp> my_upnp =
+      new libtorrent::upnp(io_service, half_open, libtorrent::address_v4(),
       user_agent,boost::bind(&on_port_mapping, _1, _2, _3, 1), false);
   std::cout <<"discovering the UPnP device..." <<std::endl;
   my_upnp->discover_device();
