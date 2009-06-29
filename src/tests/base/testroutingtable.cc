@@ -51,7 +51,7 @@ class PDRoutingTableHandlerTest: public testing::Test {
 //  } catch(std::exception &) {}
 //}
 
-TEST_F(PDRoutingTableHandlerTest, AddTuple) {
+TEST_F(PDRoutingTableHandlerTest, BEH_BASE_AddTuple) {
   std::string kademlia_id = base::RandomString(64);
   std::string host_ip("192.168.1.188");
   boost::uint16_t host_port = 8888;
@@ -86,7 +86,7 @@ TEST_F(PDRoutingTableHandlerTest, AddTuple) {
   routingtable1.Clear();
 }
 
-TEST_F(PDRoutingTableHandlerTest, ReadTuple) {
+TEST_F(PDRoutingTableHandlerTest, BEH_BASE_ReadTuple) {
   std::string kademlia_id = base::RandomString(64);
   std::string host_ip("192.168.1.188");
   boost::uint16_t host_port = 8888;
@@ -149,7 +149,7 @@ TEST_F(PDRoutingTableHandlerTest, ReadTuple) {
   routingtable.Clear();
 }
 
-TEST_F(PDRoutingTableHandlerTest, DeleteTuple) {
+TEST_F(PDRoutingTableHandlerTest, BEH_BASE_DeleteTuple) {
   std::string kademlia_id = base::RandomString(64);
   std::string host_ip("192.168.1.188");
   boost::uint16_t host_port = 8888;
@@ -182,7 +182,7 @@ TEST_F(PDRoutingTableHandlerTest, DeleteTuple) {
   routingtable.Clear();
 }
 
-TEST_F(PDRoutingTableHandlerTest, UpdateTuple) {
+TEST_F(PDRoutingTableHandlerTest, BEH_BASE_UpdateTuple) {
   std::string kademlia_id = base::RandomString(64);
   std::string host_ip("192.168.1.188");
   boost::uint16_t host_port = 8888;
