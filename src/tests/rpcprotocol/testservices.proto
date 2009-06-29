@@ -26,6 +26,7 @@ message StringMirrorRequest {
   required string message = 1;
   required string ip = 2;
   required int32 port = 3;
+  optional bool not_pause = 4;
 }
 
 message StringMirrorResponse {

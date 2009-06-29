@@ -771,7 +771,7 @@ TEST_F(TransportTest, FUNC_TRANS_PingRendezvousServer) {
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
                 _1, _2, _3)));
   node1.StartPingRendezvous(false, "127.0.0.1", 52002);
-  boost::this_thread::sleep(boost::posix_time::seconds(20));
+  boost::this_thread::sleep(boost::posix_time::seconds(12));
   node1.Stop();
   ASSERT_FALSE(msg_handler[0].dead_server_);
   ASSERT_EQ(std::string(""), msg_handler[0].server_ip_);
@@ -792,12 +792,12 @@ TEST_F(TransportTest, FUNC_TRANS_PingDeadRendezvousServer) {
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
                 _1, _2, _3)));
   node1.StartPingRendezvous(false, "127.0.0.1", 52002);
-  boost::this_thread::sleep(boost::posix_time::seconds(9));
+  boost::this_thread::sleep(boost::posix_time::seconds(12));
   ASSERT_FALSE(msg_handler[0].dead_server_);
   ASSERT_EQ(std::string(""), msg_handler[0].server_ip_);
   ASSERT_EQ(0, msg_handler[0].server_port_);
   rendezvous_node.Stop();
-  boost::this_thread::sleep(boost::posix_time::seconds(28));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   node1.Stop();
   ASSERT_TRUE(msg_handler[0].dead_server_);
   ASSERT_EQ(std::string("127.0.0.1"), msg_handler[0].server_ip_);
@@ -822,17 +822,17 @@ TEST_F(TransportTest, FUNC_TRANS_ReconnectToDifferentServer) {
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[2],
                 _1, _2, _3)));
   node1.StartPingRendezvous(false, "127.0.0.1", 52002);
-  boost::this_thread::sleep(boost::posix_time::seconds(9));
+  boost::this_thread::sleep(boost::posix_time::seconds(12));
   ASSERT_FALSE(msg_handler[0].dead_server_);
   ASSERT_EQ(std::string(""), msg_handler[0].server_ip_);
   ASSERT_EQ(0, msg_handler[0].server_port_);
   rendezvous_node1.Stop();
-  boost::this_thread::sleep(boost::posix_time::seconds(21));
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
   ASSERT_TRUE(msg_handler[0].dead_server_);
   ASSERT_EQ(std::string("127.0.0.1"), msg_handler[0].server_ip_);
   ASSERT_EQ(52002, msg_handler[0].server_port_);
   node1.StartPingRendezvous(false, "127.0.0.1", 52003);
-  boost::this_thread::sleep(boost::posix_time::seconds(9));
+  boost::this_thread::sleep(boost::posix_time::seconds(12));
   ASSERT_FALSE(msg_handler[0].dead_server_);
   ASSERT_EQ(std::string(""), msg_handler[0].server_ip_);
   ASSERT_EQ(0, msg_handler[0].server_port_);

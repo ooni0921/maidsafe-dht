@@ -109,10 +109,11 @@ void protobuf_AssignDesc_testservices_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(BinaryOpResponse));
   StringMirrorRequest_descriptor_ = file->message_type(4);
-  static const int StringMirrorRequest_offsets_[3] = {
+  static const int StringMirrorRequest_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StringMirrorRequest, message_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StringMirrorRequest, ip_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StringMirrorRequest, port_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StringMirrorRequest, not_pause_),
   };
   StringMirrorRequest_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -199,16 +200,17 @@ void protobuf_AddDesc_testservices_2eproto() {
     "ng\030\002 \002(\t\"J\n\017BinaryOpRequest\022\r\n\005first\030\001 \002"
     "(\005\022\016\n\006second\030\002 \002(\005\022\n\n\002ip\030\003 \002(\t\022\014\n\004port\030\004"
     " \002(\005\"\"\n\020BinaryOpResponse\022\016\n\006result\030\001 \002(\005"
-    "\"@\n\023StringMirrorRequest\022\017\n\007message\030\001 \002(\t"
-    "\022\n\n\002ip\030\002 \002(\t\022\014\n\004port\030\003 \002(\005\"/\n\024StringMirr"
-    "orResponse\022\027\n\017mirrored_string\030\001 \002(\t2;\n\010P"
-    "ingTest\022/\n\004Ping\022\022.tests.PingRequest\032\023.te"
-    "sts.PingResponse2~\n\006TestOp\0226\n\003Add\022\026.test"
-    "s.BinaryOpRequest\032\027.tests.BinaryOpRespon"
-    "se\022<\n\tMultiplyl\022\026.tests.BinaryOpRequest\032"
-    "\027.tests.BinaryOpResponse2O\n\nMirrorTest\022A"
-    "\n\006Mirror\022\032.tests.StringMirrorRequest\032\033.t"
-    "ests.StringMirrorResponse", 625);
+    "\"S\n\023StringMirrorRequest\022\017\n\007message\030\001 \002(\t"
+    "\022\n\n\002ip\030\002 \002(\t\022\014\n\004port\030\003 \002(\005\022\021\n\tnot_pause\030"
+    "\004 \001(\010\"/\n\024StringMirrorResponse\022\027\n\017mirrore"
+    "d_string\030\001 \002(\t2;\n\010PingTest\022/\n\004Ping\022\022.tes"
+    "ts.PingRequest\032\023.tests.PingResponse2~\n\006T"
+    "estOp\0226\n\003Add\022\026.tests.BinaryOpRequest\032\027.t"
+    "ests.BinaryOpResponse\022<\n\tMultiplyl\022\026.tes"
+    "ts.BinaryOpRequest\032\027.tests.BinaryOpRespo"
+    "nse2O\n\nMirrorTest\022A\n\006Mirror\022\032.tests.Stri"
+    "ngMirrorRequest\032\033.tests.StringMirrorResp"
+    "onse", 644);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "testservices.proto", &protobuf_RegisterTypes);
   PingRequest::default_instance_ = new PingRequest();
@@ -1347,6 +1349,7 @@ const ::std::string StringMirrorRequest::_default_ip_;
 const int StringMirrorRequest::kMessageFieldNumber;
 const int StringMirrorRequest::kIpFieldNumber;
 const int StringMirrorRequest::kPortFieldNumber;
+const int StringMirrorRequest::kNotPauseFieldNumber;
 #endif  // !_MSC_VER
 
 StringMirrorRequest::StringMirrorRequest()
@@ -1355,7 +1358,8 @@ StringMirrorRequest::StringMirrorRequest()
     _cached_size_(0),
     message_(const_cast< ::std::string*>(&_default_message_)),
     ip_(const_cast< ::std::string*>(&_default_ip_)),
-    port_(0) {
+    port_(0),
+    not_pause_(false) {
   SharedCtor();
 }
 
@@ -1367,7 +1371,8 @@ StringMirrorRequest::StringMirrorRequest(const StringMirrorRequest& from)
     _cached_size_(0),
     message_(const_cast< ::std::string*>(&_default_message_)),
     ip_(const_cast< ::std::string*>(&_default_ip_)),
-    port_(0) {
+    port_(0),
+    not_pause_(false) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -1377,6 +1382,7 @@ void StringMirrorRequest::SharedCtor() {
   message_ = const_cast< ::std::string*>(&_default_message_);
   ip_ = const_cast< ::std::string*>(&_default_ip_);
   port_ = 0;
+  not_pause_ = false;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -1423,6 +1429,7 @@ void StringMirrorRequest::Clear() {
       }
     }
     port_ = 0;
+    not_pause_ = false;
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
@@ -1467,6 +1474,20 @@ bool StringMirrorRequest::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormat::ReadInt32(
               input, &port_));
         _set_bit(2);
+        if (input->ExpectTag(32)) goto parse_not_pause;
+        break;
+      }
+      
+      // optional bool not_pause = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_not_pause:
+        DO_(::google::protobuf::internal::WireFormat::ReadBool(
+              input, &not_pause_));
+        _set_bit(3);
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -1510,6 +1531,11 @@ void StringMirrorRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteInt32(3, this->port(), output);
   }
   
+  // optional bool not_pause = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormat::WriteBool(4, this->not_pause(), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -1531,6 +1557,11 @@ void StringMirrorRequest::SerializeWithCachedSizes(
   // required int32 port = 3;
   if (_has_bit(2)) {
     target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(3, this->port(), target);
+  }
+  
+  // optional bool not_pause = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBoolToArray(4, this->not_pause(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -1561,6 +1592,11 @@ int StringMirrorRequest::ByteSize() const {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::Int32Size(
           this->port());
+    }
+    
+    // optional bool not_pause = 4;
+    if (has_not_pause()) {
+      total_size += 1 + 1;
     }
     
   }
@@ -1597,6 +1633,9 @@ void StringMirrorRequest::MergeFrom(const StringMirrorRequest& from) {
     if (from._has_bit(2)) {
       set_port(from.port());
     }
+    if (from._has_bit(3)) {
+      set_not_pause(from.not_pause());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -1618,6 +1657,7 @@ void StringMirrorRequest::Swap(StringMirrorRequest* other) {
     std::swap(message_, other->message_);
     std::swap(ip_, other->ip_);
     std::swap(port_, other->port_);
+    std::swap(not_pause_, other->not_pause_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

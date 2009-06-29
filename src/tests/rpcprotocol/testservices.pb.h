@@ -536,6 +536,13 @@ class StringMirrorRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 port() const;
   inline void set_port(::google::protobuf::int32 value);
   
+  // optional bool not_pause = 4;
+  inline bool has_not_pause() const;
+  inline void clear_not_pause();
+  static const int kNotPauseFieldNumber = 4;
+  inline bool not_pause() const;
+  inline void set_not_pause(bool value);
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -545,10 +552,11 @@ class StringMirrorRequest : public ::google::protobuf::Message {
   ::std::string* ip_;
   static const ::std::string _default_ip_;
   ::google::protobuf::int32 port_;
+  bool not_pause_;
   friend void  protobuf_AddDesc_testservices_2eproto();
   friend void protobuf_AssignDesc_testservices_2eproto();
   friend void protobuf_ShutdownFile_testservices_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -1251,6 +1259,22 @@ inline ::google::protobuf::int32 StringMirrorRequest::port() const {
 inline void StringMirrorRequest::set_port(::google::protobuf::int32 value) {
   _set_bit(2);
   port_ = value;
+}
+
+// optional bool not_pause = 4;
+inline bool StringMirrorRequest::has_not_pause() const {
+  return _has_bit(3);
+}
+inline void StringMirrorRequest::clear_not_pause() {
+  not_pause_ = false;
+  _clear_bit(3);
+}
+inline bool StringMirrorRequest::not_pause() const {
+  return not_pause_;
+}
+inline void StringMirrorRequest::set_not_pause(bool value) {
+  _set_bit(3);
+  not_pause_ = value;
 }
 
 // -------------------------------------------------------------------
