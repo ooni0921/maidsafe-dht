@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/function.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <list>
+#include "gtest/gtest_prod.h"
 
 namespace base {
 
@@ -52,14 +53,24 @@ class CallLaterTimer {
   // execute the expired calls
   void TryExecute();
   inline bool IsStarted() { return is_started_; }
-  void CancelAll();
+  int CancelAll();
   bool CancelOne(int calllater_id);
   // Delay msecs milliseconds to call the function specified by cb
   int AddCallLater(boost::uint64_t msecs, calllater_func cb);
+  friend class CallLaterTest;
 
  private:
+  FRIEND_TEST(CallLaterTest, BEH_BASE_AddCallLater);
+  FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyCallLater);
+  FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyAgainCallLater);
+  FRIEND_TEST(CallLaterTest, BEH_BASE_AddManyCallLaters);
+  FRIEND_TEST(CallLaterTest, BEH_BASE_AddRemoveCallLaters);
+  FRIEND_TEST(CallLaterTest, BEH_BASE_AddPtrCallLater);
+  FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyPtrCallLater);
+  FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyAgainPtrCallLater);
   CallLaterTimer(const CallLaterTimer&);
   CallLaterTimer& operator=(const CallLaterTimer&);
+  int list_size();
   boost::mutex mutex_;
   int calllater_id_;
   bool is_started_;

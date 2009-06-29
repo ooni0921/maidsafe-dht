@@ -34,21 +34,30 @@ class Lynyrd {
  public:
   Lynyrd() : count_(0) , mutex_(new boost::mutex){}
   ~Lynyrd() {
-    printf("Dtor\n");
+    printf("\nDtor\n");
   }
   void Skynyrd() {
-    if (mutex_.use_count() == 0) {
-      printf("mutex was destroyed\n");
+  if (mutex_.use_count() == 0) {
+      printf("Mutex was destroyed.\n");
       return;
     }
     boost::mutex::scoped_lock guard(*mutex_.get());
+//    printf("------- %d --------\n", count_);
     ++count_;
-    printf("*");
+//    printf("******* %d ********\n", count_);
   }
   void Alabama() {
     Skynyrd();
   }
-  int count() { return count_; }
+  int count() {
+    boost::mutex::scoped_lock guard(*mutex_.get());
+    return count_;
+  }
+  void reset() {
+    boost::mutex::scoped_lock guard(*mutex_.get());
+    count_ = 0;
+  }
+
  private:
   Lynyrd(const Lynyrd&);
   Lynyrd& operator=(const Lynyrd&);
@@ -72,105 +81,164 @@ class CallLaterTest : public testing::Test {
 TEST_F(CallLaterTest, BEH_BASE_AddCallLater) {
   // Most basic test - create object on stack and call a method later.
   ASSERT_TRUE(clt_.IsStarted());
+  clt_.CancelAll();
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
   Lynyrd sweethome;
+  ASSERT_EQ(0, sweethome.count());
   clt_.AddCallLater(50, boost::bind(&Lynyrd::Skynyrd, &sweethome));
-  EXPECT_EQ(0, sweethome.count());
-  boost::this_thread::sleep(boost::posix_time::milliseconds(250));
-  EXPECT_EQ(1, sweethome.count());
+  while (sweethome.count() < 1)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(250));
+  ASSERT_EQ(1, sweethome.count());
+  ASSERT_EQ(0, clt_.CancelAll()) <<
+      "Some calls were cancelled, list not empty";
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
 }
 
 TEST_F(CallLaterTest, BEH_BASE_AddDestroyCallLater) {
   // Create object on stack, set up call later, then before called, destroy
   // object.
   ASSERT_TRUE(clt_.IsStarted());
+  clt_.CancelAll();
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
   {
     Lynyrd sweethome;
-     clt_.AddCallLater(20, boost::bind(&Lynyrd::Skynyrd, &sweethome));
+    clt_.AddCallLater(20, boost::bind(&Lynyrd::Skynyrd, &sweethome));
   }
   //delete timer;
   boost::this_thread::sleep(boost::posix_time::milliseconds(250));
+  ASSERT_EQ(0, clt_.CancelAll()) <<
+      "Some calls were cancelled, list not empty";
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
 }
 
 TEST_F(CallLaterTest, BEH_BASE_AddDestroyAgainCallLater) {
   // As above, except call a method which itself calls a method of the destroyed
   // object.
   ASSERT_TRUE(clt_.IsStarted());
+  clt_.CancelAll();
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
   {
     Lynyrd sweethome;
     clt_.AddCallLater(20, boost::bind(&Lynyrd::Alabama, &sweethome));
   }
   boost::this_thread::sleep(boost::posix_time::milliseconds(250));
+  ASSERT_EQ(0, clt_.CancelAll()) <<
+      "Some calls were cancelled, list not empty";
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
 }
 
 TEST_F(CallLaterTest, BEH_BASE_AddManyCallLaters) {
   // Set up 100 calls fairly closely spaced
   ASSERT_TRUE(clt_.IsStarted());
+  clt_.CancelAll();
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
   Lynyrd sweethome;
   for (int i = 0; i < 100; ++i)
     clt_.AddCallLater(50 + (20*i), boost::bind(&Lynyrd::Skynyrd, &sweethome));
-  EXPECT_EQ(0, sweethome.count());
-  boost::this_thread::sleep(boost::posix_time::milliseconds(2500));
-  EXPECT_EQ(100, sweethome.count());
-  printf("\n");
+  while (sweethome.count() < 100)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(100, sweethome.count()) << "Count in variable != 100";
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
+  printf("\nFirst 100 call laters executed.\n");
   // Set up 100 calls very closely spaced
   for (int j = 0; j < 100; ++j)
     clt_.AddCallLater(50, boost::bind(&Lynyrd::Skynyrd, &sweethome));
-  boost::this_thread::sleep(boost::posix_time::milliseconds(2500));
-  EXPECT_EQ(200, sweethome.count());
+  while (sweethome.count() < 200)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(200, sweethome.count()) << "Count in variable != 200";
+  printf("\nSecond 100 call laters executed.\n");
+  ASSERT_EQ(0, clt_.CancelAll()) <<
+      "Some calls were cancelled, list not empty";
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
 }
 
 TEST_F(CallLaterTest, BEH_BASE_AddRemoveCallLaters) {
   // Set up 100 calls and remove 50 of them before they start
   ASSERT_TRUE(clt_.IsStarted());
+  clt_.CancelAll();
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
   Lynyrd sweethome;
   std::vector<int> call_ids;
-  for (int i = 0; i < 100; ++i)
-    call_ids.push_back(clt_.AddCallLater(250 + (20*i),
+  printf("Before scheduling 1st run\n");
+  for (int i = 0; i < 100; ++i) {
+    call_ids.push_back(clt_.AddCallLater(2000 + (20*i),
         boost::bind(&Lynyrd::Skynyrd, &sweethome)));
-  EXPECT_EQ(0, sweethome.count());
+  }
+  printf("Scheduled 1st run, before cancelling %d\n", clt_.list_size());
   for (int j = 0; j < 50; ++j)
     EXPECT_TRUE(clt_.CancelOne(call_ids[j]));
-  boost::this_thread::sleep(boost::posix_time::milliseconds(2450));
-  EXPECT_EQ(50, sweethome.count());
+  while (sweethome.count() < 50) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  ASSERT_EQ(0, clt_.CancelAll()) <<
+      "Some calls were cancelled, list not empty";
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
+  sweethome.reset();
+  ASSERT_EQ(0, sweethome.count());
+
   // Set up 100 calls again, then remove them all before they start
+  printf("Finished 1st run, before scheduling 2nd.\n");
   for (int k = 0; k < 100; ++k)
-    clt_.AddCallLater(250 + (20*k), boost::bind(&Lynyrd::Skynyrd, &sweethome));
-  clt_.CancelAll();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(2450));
-  EXPECT_EQ(50, sweethome.count());
+    clt_.AddCallLater(2000 + (20*k), boost::bind(&Lynyrd::Skynyrd, &sweethome));
+  int n = clt_.CancelAll();
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
+  while (sweethome.count() < 100 - n) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  ASSERT_EQ(100 - n, sweethome.count()) << "Count in variable incorrect";
+  sweethome.reset();
+  ASSERT_EQ(0, sweethome.count());
+  printf("Finished 2nd run, before scheduling 3rd.\n");
+
   // Set up 100 calls again, then remove them all while they're being run.
-  for (int l = 0; l < 100; ++l)
+  for (int l = 1; l < 101; ++l)
     clt_.AddCallLater(10*l, boost::bind(&Lynyrd::Skynyrd, &sweethome));
   boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-  clt_.CancelAll();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(2450));
+  n = clt_.CancelAll();
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
+  while (sweethome.count() < 100 - n) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  ASSERT_EQ(100 - n, sweethome.count()) <<
+    "Count in variable incorrect";
 }
 
 TEST_F(CallLaterTest, BEH_BASE_AddPtrCallLater) {
   // Basic call later, but this time to method of object created on heap.
   ASSERT_TRUE(clt_.IsStarted());
+  clt_.CancelAll();
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
   boost::scoped_ptr<Lynyrd> sweethome(new Lynyrd());
+  ASSERT_EQ(0, sweethome->count());
   clt_.AddCallLater(20, boost::bind(&Lynyrd::Skynyrd, sweethome.get()));
-  EXPECT_EQ(0, sweethome->count());
   boost::this_thread::sleep(boost::posix_time::milliseconds(250));
-  EXPECT_EQ(1, sweethome->count());
+  ASSERT_EQ(0, clt_.CancelAll()) <<
+      "Some calls were cancelled, list not empty";
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
 }
 
 TEST_F(CallLaterTest, BEH_BASE_AddDestroyPtrCallLater) {
   // Create object on heap, set up call later, then before called, destroy
   // object.
   ASSERT_TRUE(clt_.IsStarted());
+  clt_.CancelAll();
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
   {
     boost::scoped_ptr<Lynyrd> sweethome(new Lynyrd());
     clt_.AddCallLater(20, boost::bind(&Lynyrd::Skynyrd, sweethome.get()));
   }
   boost::this_thread::sleep(boost::posix_time::milliseconds(250));
+  ASSERT_EQ(0, clt_.CancelAll()) <<
+      "Some calls were not cancelled, list not empty";
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
 }
 
 TEST_F(CallLaterTest, BEH_BASE_AddDestroyAgainPtrCallLater) {
   // As above, except call a method which itself calls a method of the destroyed
   // object.
   ASSERT_TRUE(clt_.IsStarted());
+  clt_.CancelAll();
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
   {
     boost::scoped_ptr<Lynyrd> sweethome(new Lynyrd());
     clt_.AddCallLater(20, boost::bind(&Lynyrd::Alabama, sweethome.get()));
@@ -181,6 +249,9 @@ TEST_F(CallLaterTest, BEH_BASE_AddDestroyAgainPtrCallLater) {
   EXPECT_EQ(0, sweethome1.count());
   boost::this_thread::sleep(boost::posix_time::milliseconds(250));
   EXPECT_EQ(1, sweethome1.count());
+  ASSERT_EQ(0, clt_.CancelAll()) <<
+      "Some calls were not cancelled, list not empty";
+  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
 }
 
 }  // namespace base

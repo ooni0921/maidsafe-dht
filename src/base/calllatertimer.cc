@@ -63,19 +63,35 @@ CallLaterTimer::~CallLaterTimer() {
 
 void CallLaterTimer::TryExecute() {
   while (true) {
+//    printf("CallLaterTimer::TryExecute 1\n");
     {
+//      printf("CallLaterTimer::TryExecute 2\n");
       boost::mutex::scoped_lock guard(mutex_);
+//      printf("CallLaterTimer::TryExecute 3\n");
       while (calllaters_.empty() && is_started_)
         cond_.wait(guard);
+//      printf("CallLaterTimer::TryExecute 4\n");
     }
     if (!is_started_) return;
+//    printf("CallLaterTimer::TryExecute 5\n");
     mutex_.lock();
+//    printf("CallLaterTimer::TryExecute 6 list size(): %d\n",
+//        calllaters_.size());
     if (calllaters_.front().time_to_execute <= get_epoch_milliseconds()) {
-      calllater_func cb = calllaters_.front().cb;
+//      printf("CallLaterTimer::TryExecute 7 list size(): %d\n",
+//        calllaters_.size());
+      CallLaterMap clm_element = calllaters_.front();
+      calllater_func cb = clm_element.cb;
+//      printf("CallLaterTimer::TryExecute 8 list size(): %d\n",
+//        calllaters_.size());
       calllaters_.pop_front();
+//      printf("CallLaterTimer::TryExecute 9 list size(): %d\n",
+//        calllaters_.size());
       mutex_.unlock();
       try {
+//        printf("CallLaterTimer::TryExecute before CB.\n");
         cb();
+//        printf("CallLaterTimer::TryExecute after CB.\n");
       }
       catch(const std::exception &e) {
         // TODO(dan): Logging this.
@@ -84,9 +100,14 @@ void CallLaterTimer::TryExecute() {
 #endif
       }
     } else {
+//      printf("CallLaterTimer::TryExecute 11 list size(): %d\n",
+//          calllaters_.size());
       mutex_.unlock();
+//      printf("CallLaterTimer::TryExecute 12\n");
     }
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//    printf("CallLaterTimer::TryExecute 13\n");
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//    printf("CallLaterTimer::TryExecute 14\n");
   }
 }
 
@@ -119,8 +140,19 @@ bool CallLaterTimer::CancelOne(int calllater_id) {
   return false;
 }
 
-void CallLaterTimer::CancelAll() {
+int CallLaterTimer::CancelAll() {
+//  printf("CallLaterTimer::CancelAll 1\n");
   boost::mutex::scoped_lock guard(mutex_);
+//  printf("CallLaterTimer::CancelAll 2\n");
+  int n = calllaters_.size();
+//  printf("CallLaterTimer::CancelAll 3\n");
   calllaters_.clear();
+//  printf("CallLaterTimer::CancelAll 4\n");
+  return n;
+}
+
+int CallLaterTimer::list_size() {
+  boost::mutex::scoped_lock guard(mutex_);
+  return calllaters_.size();
 }
 }  // namespace base
