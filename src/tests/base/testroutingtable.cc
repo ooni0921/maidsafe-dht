@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 #include "base/routingtable.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
@@ -42,14 +43,18 @@ class PDRoutingTableHandlerTest: public testing::Test {
   }
 };
 
-//TEST_F(PDRoutingTableHandlerTest, ConnectAndCloseRoutingtable) {
-//  base::PDRoutingTableHandler routingtable;
-//  ASSERT_EQ(0, routingtable.Connect("routingtable.db"));
-//  ASSERT_EQ(0, routingtable.Close());
-//  try {
-//    boost::filesystem::remove(boost::filesystem::path("routingtable.db"));
-//  } catch(std::exception &) {}
-//}
+TEST_F(PDRoutingTableHandlerTest, ConnectAndCloseRoutingtable) {
+  std::string dbname("routingtable");
+  dbname += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".db");
+  base::PDRoutingTableHandler routingtable(dbname);
+  try {
+    boost::filesystem::remove(boost::filesystem::path(dbname));
+  }
+  catch(const std::exception &e) {
+    printf("%s\n", e.what());
+  }
+}
 
 TEST_F(PDRoutingTableHandlerTest, BEH_BASE_AddTuple) {
   std::string kademlia_id = base::RandomString(64);
@@ -61,29 +66,30 @@ TEST_F(PDRoutingTableHandlerTest, BEH_BASE_AddTuple) {
   boost::uint32_t rtt = 200;
   boost::uint16_t rank = 5;
   boost::uint32_t space = 55555;
-  base::PDRoutingTableTuple tuple_to_store(kademlia_id,
-                                     host_ip,
-                                     host_port,
-                                     rendezvous_ip,
-                                     rendezvous_port,
-                                     public_key,
-                                     rtt,
-                                     rank,
-                                     space);
-  base::PDRoutingTableHandler routingtable;
-  // ASSERT_EQ(0, routingtable.Connect("routingtable.db"));
+  base::PDRoutingTableTuple tuple_to_store(kademlia_id, host_ip, host_port,
+      rendezvous_ip, rendezvous_port, public_key, rtt, rank, space);
+  std::string dbname("routingtable");
+  dbname += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".db");
+  base::PDRoutingTableHandler routingtable(dbname);
   ASSERT_EQ(0, routingtable.AddTuple(tuple_to_store));
   ASSERT_EQ(0, routingtable.AddTuple(tuple_to_store));
-//  ASSERT_EQ(0, routingtable.Close());
   try {
-    boost::filesystem::remove(boost::filesystem::path("routingtable.db"));
-  } catch(std::exception &) {}
-  base::PDRoutingTableHandler routingtable1("routingtable1.db");
-  // ASSERT_EQ(0, routingtable.Connect("routingtable.db"));
+    boost::filesystem::remove(boost::filesystem::path(dbname));
+  }
+  catch(const std::exception &e) {
+    printf("Couldn't remove %s\n", dbname.c_str());
+  }
+  std::string dbname1("routingtable_");
+  dbname += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".db");
+  base::PDRoutingTableHandler routingtable1(dbname1);
   ASSERT_EQ(0, routingtable1.AddTuple(tuple_to_store));
   ASSERT_EQ(0, routingtable1.AddTuple(tuple_to_store));
   routingtable.Clear();
   routingtable1.Clear();
+  ASSERT_FALSE(boost::filesystem::exists(boost::filesystem::path(dbname)));
+  ASSERT_FALSE(boost::filesystem::exists(boost::filesystem::path(dbname1)));
 }
 
 TEST_F(PDRoutingTableHandlerTest, BEH_BASE_ReadTuple) {
@@ -96,17 +102,13 @@ TEST_F(PDRoutingTableHandlerTest, BEH_BASE_ReadTuple) {
   boost::uint32_t rtt = 200;
   boost::uint16_t rank = 5;
   boost::uint32_t space = 55555;
-  base::PDRoutingTableTuple tuple_to_store(kademlia_id,
-                                     host_ip,
-                                     host_port,
-                                     rendezvous_ip,
-                                     rendezvous_port,
-                                     public_key,
-                                     rtt,
-                                     rank,
-                                     space);
-  base::PDRoutingTableHandler routingtable;
-  // ASSERT_EQ(0, routingtable.Connect("routingtable.db"));
+  base::PDRoutingTableTuple tuple_to_store(kademlia_id, host_ip, host_port,
+      rendezvous_ip, rendezvous_port, public_key, rtt, rank, space);
+  std::string dbname("routingtable");
+  dbname += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".db");
+  base::PDRoutingTableHandler routingtable(dbname);
+
   base::PDRoutingTableTuple non_existing_tuple;
   ASSERT_EQ(1, routingtable.GetTupleInfo(kademlia_id, &non_existing_tuple));
   ASSERT_EQ(0, routingtable.AddTuple(tuple_to_store));
@@ -121,16 +123,9 @@ TEST_F(PDRoutingTableHandlerTest, BEH_BASE_ReadTuple) {
   ASSERT_EQ(tuple_to_store.rank(), retrieved_tuple.rank());
   ASSERT_EQ(tuple_to_store.space(), retrieved_tuple.space());
 
-  base::PDRoutingTableTuple tuple_to_store1(kademlia_id,
-                                     host_ip,
-                                     host_port + 1,
-                                     rendezvous_ip,
-                                     rendezvous_port + 1,
-                                     public_key,
-                                     rtt + 1,
-                                     rank,
-                                     space + 1);
-  // ASSERT_EQ(0, routingtable.Connect("routingtable.db"));
+  base::PDRoutingTableTuple tuple_to_store1(kademlia_id, host_ip, host_port + 1,
+      rendezvous_ip, rendezvous_port + 1, public_key, rtt + 1, rank, space + 1);
+
   ASSERT_EQ(0, routingtable.AddTuple(tuple_to_store1));
   base::PDRoutingTableTuple retrieved_tuple1;
   ASSERT_EQ(0, routingtable.GetTupleInfo(kademlia_id, &retrieved_tuple1));
@@ -142,11 +137,9 @@ TEST_F(PDRoutingTableHandlerTest, BEH_BASE_ReadTuple) {
   ASSERT_EQ(tuple_to_store1.rtt(), retrieved_tuple1.rtt());
   ASSERT_EQ(tuple_to_store1.rank(), retrieved_tuple1.rank());
   ASSERT_EQ(tuple_to_store1.space(), retrieved_tuple1.space());
-  // ASSERT_EQ(0, routingtable.Close());
-  try {
-    boost::filesystem::remove(boost::filesystem::path("routingtable.db"));
-  } catch(std::exception &) {}
+
   routingtable.Clear();
+  ASSERT_FALSE(boost::filesystem::exists(boost::filesystem::path(dbname)));
 }
 
 TEST_F(PDRoutingTableHandlerTest, BEH_BASE_DeleteTuple) {
@@ -159,27 +152,21 @@ TEST_F(PDRoutingTableHandlerTest, BEH_BASE_DeleteTuple) {
   boost::uint32_t rtt = 32;
   boost::uint16_t rank = 5;
   boost::uint32_t space = 3232;
-  base::PDRoutingTableTuple tuple_to_store(kademlia_id,
-                                     host_ip,
-                                     host_port,
-                                     rendezvous_ip,
-                                     rendezvous_port,
-                                     public_key,
-                                     rtt,
-                                     rank,
-                                     space);
-  base::PDRoutingTableHandler routingtable;
-  // ASSERT_EQ(0, routingtable.Connect("routingtable.db"));
+  base::PDRoutingTableTuple tuple_to_store(kademlia_id, host_ip, host_port,
+      rendezvous_ip, rendezvous_port, public_key, rtt, rank, space);
+  std::string dbname("routingtable");
+  dbname += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".db");
+  base::PDRoutingTableHandler routingtable(dbname);
+
   ASSERT_EQ(0, routingtable.AddTuple(tuple_to_store));
   base::PDRoutingTableTuple retrieved_tuple;
   ASSERT_EQ(0, routingtable.GetTupleInfo(kademlia_id, &retrieved_tuple));
   ASSERT_EQ(0, routingtable.DeleteTupleByKadId(kademlia_id));
   ASSERT_EQ(1, routingtable.GetTupleInfo(kademlia_id, &retrieved_tuple));
-  // ASSERT_EQ(0, routingtable.Close());
-  try {
-    boost::filesystem::remove(boost::filesystem::path("routingtable.db"));
-  } catch(std::exception &) {}
+
   routingtable.Clear();
+  ASSERT_FALSE(boost::filesystem::exists(boost::filesystem::path(dbname)));
 }
 
 TEST_F(PDRoutingTableHandlerTest, BEH_BASE_UpdateTuple) {
@@ -192,17 +179,13 @@ TEST_F(PDRoutingTableHandlerTest, BEH_BASE_UpdateTuple) {
   boost::uint32_t rtt = 32;
   boost::uint16_t rank = 5;
   boost::uint32_t space = 3232;
-  base::PDRoutingTableTuple tuple_to_store(kademlia_id,
-                                     host_ip,
-                                     host_port,
-                                     rendezvous_ip,
-                                     rendezvous_port,
-                                     public_key,
-                                     rtt,
-                                     rank,
-                                     space);
-  base::PDRoutingTableHandler routingtable;
-  // ASSERT_EQ(0, routingtable.Connect("routingtable.db"));
+  base::PDRoutingTableTuple tuple_to_store(kademlia_id, host_ip, host_port,
+      rendezvous_ip, rendezvous_port, public_key, rtt, rank, space);
+  std::string dbname("routingtable");
+  dbname += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".db");
+  base::PDRoutingTableHandler routingtable(dbname);
+
   ASSERT_EQ(2, routingtable.ContactLocal(kademlia_id));
   ASSERT_EQ(0, routingtable.AddTuple(tuple_to_store));
   ASSERT_EQ(2, routingtable.ContactLocal(kademlia_id));
@@ -226,9 +209,7 @@ TEST_F(PDRoutingTableHandlerTest, BEH_BASE_UpdateTuple) {
   ASSERT_EQ(static_cast<boost::uint32_t>(50), retrieved_tuple.rtt());
   ASSERT_EQ(static_cast<boost::uint16_t>(10), retrieved_tuple.rank());
   ASSERT_EQ(static_cast<boost::uint32_t>(6666), retrieved_tuple.space());
-  // ASSERT_EQ(0, routingtable.Close());
-  try {
-    boost::filesystem::remove(boost::filesystem::path("routingtable.db"));
-  } catch(std::exception &) {}
+
   routingtable.Clear();
+  ASSERT_FALSE(boost::filesystem::exists(boost::filesystem::path(dbname)));
 }

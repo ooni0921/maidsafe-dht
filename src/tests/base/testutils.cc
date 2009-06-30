@@ -25,10 +25,11 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <cstdlib>
-#include <iostream>
 #include <gtest/gtest.h>
 #include <boost/timer.hpp>
+#include <boost/progress.hpp>
+#include <cstdlib>
+// #include <iostream>
 #include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/utils.h"
 
@@ -37,33 +38,42 @@ namespace {
 
 class UtilsTest : public testing::Test { };
 
-} // namespace
+}  // namespace
 
 TEST_F(UtilsTest, BEH_BASE_TidyPath) {
   const std::string dirty_path_ = "/dirty/dirty/boy";
-  ASSERT_EQ("dirty/dirty/boy", base::TidyPath(dirty_path_))<<"Failed to tidy path.";
+  ASSERT_EQ("dirty/dirty/boy", base::TidyPath(dirty_path_)) <<
+            "Failed to tidy path.";
   const std::string dirty_path_1 = "dirty/dirty/boy/";
-  ASSERT_EQ("dirty/dirty/boy", base::TidyPath(dirty_path_1))<<"Failed to tidy path.";
+  ASSERT_EQ("dirty/dirty/boy", base::TidyPath(dirty_path_1)) <<
+            "Failed to tidy path.";
   const std::string dirty_path_2 = "/dirty/dirty/boy/";
-  ASSERT_EQ("dirty/dirty/boy", base::TidyPath(dirty_path_2))<<"Failed to tidy path.";
+  ASSERT_EQ("dirty/dirty/boy", base::TidyPath(dirty_path_2)) <<
+            "Failed to tidy path.";
   const std::string dirty_path_3 = "dirty/dirty/boy";
-  ASSERT_EQ("dirty/dirty/boy", base::TidyPath(dirty_path_3))<<"Changed path which was already tidy.";
+  ASSERT_EQ("dirty/dirty/boy", base::TidyPath(dirty_path_3)) <<
+            "Changed path which was already tidy.";
   const std::string dirty_path_4 = "\\dirty\\dirty\\boy";
-  ASSERT_EQ("dirty\\dirty\\boy", base::TidyPath(dirty_path_4))<<"Failed to tidy path.";
+  ASSERT_EQ("dirty\\dirty\\boy", base::TidyPath(dirty_path_4)) <<
+            "Failed to tidy path.";
   const std::string dirty_path_5 = "dirty\\dirty\\boy\\";
-  ASSERT_EQ("dirty\\dirty\\boy", base::TidyPath(dirty_path_5))<<"Failed to tidy path.";
+  ASSERT_EQ("dirty\\dirty\\boy", base::TidyPath(dirty_path_5)) <<
+            "Failed to tidy path.";
   const std::string dirty_path_6 = "\\dirty\\dirty\\boy\\";
-  ASSERT_EQ("dirty\\dirty\\boy", base::TidyPath(dirty_path_6))<<"Failed to tidy path.";
+  ASSERT_EQ("dirty\\dirty\\boy", base::TidyPath(dirty_path_6)) <<
+            "Failed to tidy path.";
   const std::string dirty_path_7 = "dirty\\dirty\\boy";
-  ASSERT_EQ("dirty\\dirty\\boy", base::TidyPath(dirty_path_7))<<"Changed path which was already tidy.";
+  ASSERT_EQ("dirty\\dirty\\boy", base::TidyPath(dirty_path_7)) <<
+            "Changed path which was already tidy.";
   const std::string dirty_path_8 = "/";
-  ASSERT_EQ("/", base::TidyPath(dirty_path_8))<<"Changed path which was already tidy.";
+  ASSERT_EQ("/", base::TidyPath(dirty_path_8)) <<
+            "Changed path which was already tidy.";
   const std::string dirty_path_9 = "\\";
-  ASSERT_EQ("\\", base::TidyPath(dirty_path_9))<<"Changed path which was already tidy.";
+  ASSERT_EQ("\\", base::TidyPath(dirty_path_9)) <<
+            "Changed path which was already tidy.";
 }
 
 TEST_F(UtilsTest, BEH_BASE_IntegersAndStrings) {
-
   std::string p_str, n_str, l_str, ul_str, ull_str;
 
   int p = 1234567890;
@@ -79,32 +89,41 @@ TEST_F(UtilsTest, BEH_BASE_IntegersAndStrings) {
   ul_str = "4294967295";
   // ull_str = "18446744073709551615";
 
-  ASSERT_EQ(p, base::stoi(base::itos(p))) << "int -> string -> int failed for positive int.";
-  ASSERT_EQ(n, base::stoi(base::itos(n))) << "int -> string -> int failed for negative int.";
-  ASSERT_EQ(l, base::stoi_l(base::itos_l(l))) << "int -> string -> int failed for negative int32_t.";
-  ASSERT_EQ(ul, base::stoi_ul(base::itos_ul(ul))) << "int -> string -> int failed for uint32_t.";
-  // ASSERT_EQ(ull, base::stoi_ull(base::itos_ull(ull))) << "int -> string -> int failed for uint64_t.";
+  ASSERT_EQ(p, base::stoi(base::itos(p))) <<
+            "int -> string -> int failed for positive int.";
+  ASSERT_EQ(n, base::stoi(base::itos(n))) <<
+            "int -> string -> int failed for negative int.";
+  ASSERT_EQ(l, base::stoi_l(base::itos_l(l))) <<
+            "int -> string -> int failed for negative int32_t.";
+  ASSERT_EQ(ul, base::stoi_ul(base::itos_ul(ul))) <<
+            "int -> string -> int failed for uint32_t.";
 
-  ASSERT_EQ(p_str, base::itos(base::stoi(p_str))) << "string -> int -> string failed for positive int.";
-  ASSERT_EQ(n_str, base::itos(base::stoi(n_str))) << "string -> int -> string failed for negative int.";
-  ASSERT_EQ(l_str, base::itos_l(base::stoi_l(l_str))) << "string -> int -> string failed for negative int32_t.";
-  ASSERT_EQ(ul_str, base::itos_ul(base::stoi_ul(ul_str))) << "string -> int -> string failed failed for uint32_t.";
-  // ASSERT_EQ(ull_str, base::itos_ull(base::stoi_ull(ull_str))) << "string -> int -> string failed failed for uint64_t.";
+  ASSERT_EQ(p_str, base::itos(base::stoi(p_str))) <<
+            "string -> int -> string failed for positive int.";
+  ASSERT_EQ(n_str, base::itos(base::stoi(n_str))) <<
+            "string -> int -> string failed for negative int.";
+  ASSERT_EQ(l_str, base::itos_l(base::stoi_l(l_str))) <<
+            "string -> int -> string failed for negative int32_t.";
+  ASSERT_EQ(ul_str, base::itos_ul(base::stoi_ul(ul_str))) <<
+            "string -> int -> string failed failed for uint32_t.";
 }
 
 TEST_F(UtilsTest, BEH_BASE_QuoteSanitisation) {
   std::string quoted_string("dan's very own smers' magic tonic");
   std::string sanitised_string("dan''s very own smers'' magic tonic");
   base::SanitiseSingleQuotes(&quoted_string);
-  ASSERT_EQ(sanitised_string, quoted_string) << "String not properly sanitised for single quotes.";
+  ASSERT_EQ(sanitised_string, quoted_string) <<
+            "String not properly sanitised for single quotes.";
 }
 
 TEST_F(UtilsTest, BEH_BASE_RandomString) {
   unsigned int length = 4096;
   std::string first = base::RandomString(length);
   std::string second = base::RandomString(length);
-  ASSERT_EQ(length, first.length()) << "Size of first string is not the requested size: " << length;
-  ASSERT_EQ(length, second.length()) << "Size of second string is not the requested size: " << length;
+  ASSERT_EQ(length, first.length()) <<
+            "Size of first string is not the requested size: " << length;
+  ASSERT_EQ(length, second.length()) <<
+            "Size of second string is not the requested size: " << length;
   ASSERT_NE(first, second) << "The two 'random' strings are the same.";
   for (int i = 0; i < static_cast<int>(length); i++) {
     ASSERT_GT(127, static_cast<int>(first[i]));
@@ -144,7 +163,8 @@ TEST_F(UtilsTest, BEH_BASE_HexEncodeDecode) {
 
 TEST_F(UtilsTest, BEH_BASE_BoostAndAscii) {
   std::string dotted("132.248.59.1");
-  ASSERT_EQ(dotted, base::inet_btoa(base::inet_atob(dotted))) << "ASCII -> Boost IPv4 -> ASCII failed.";
+  ASSERT_EQ(dotted, base::inet_btoa(base::inet_atob(dotted))) <<
+            "ASCII -> Boost IPv4 -> ASCII failed.";
 }
 
 TEST_F(UtilsTest, BEH_BASE_TimeFunctions) {
@@ -165,13 +185,16 @@ TEST_F(UtilsTest, BEH_BASE_NextTransactionId) {
   boost::uint32_t id1 = base::generate_next_transaction_id(0);
   boost::uint32_t id2 = base::generate_next_transaction_id(0);
 
-  ASSERT_NE(static_cast<boost::uint32_t>(0), id1) << "Transaction id1 came back as 0.";
-  ASSERT_NE(static_cast<boost::uint32_t>(0), id2) << "Transaction id2 came back as 0.";
+  ASSERT_NE(static_cast<boost::uint32_t>(0), id1) <<
+            "Transaction id1 came back as 0.";
+  ASSERT_NE(static_cast<boost::uint32_t>(0), id2) <<
+            "Transaction id2 came back as 0.";
   ASSERT_NE(id1, id2) << "Transaction id1 and id2 came back the same.";
 
   id1 = 2147483646;
   id2 = base::generate_next_transaction_id(id1);
-  ASSERT_EQ(static_cast<boost::uint32_t>(1), id2) << "Transaction id2 came back different from 1: " << id2;
+  ASSERT_EQ(static_cast<boost::uint32_t>(1), id2) <<
+            "Transaction id2 came back different from 1: " << id2;
 }
 
 TEST_F(UtilsTest, BEH_BASE_DecimalAndAscii) {
@@ -190,7 +213,7 @@ TEST_F(UtilsTest, BEH_BASE_NetworkInterfaces) {
   std::vector<base::device_struct> alldevices;
   base::get_net_interfaces(&alldevices);
   ASSERT_NE(static_cast<boost::uint32_t>(0), alldevices.size());
-  for (unsigned int n=0; n<alldevices.size(); n++) {
+  for (unsigned int n = 0; n < alldevices.size(); n++) {
     base::device_struct ds = alldevices[n];
     printf("%s\n", ds.interface_.c_str());
   }
@@ -212,15 +235,16 @@ TEST_F(UtilsTest, BEH_BASE_NameValidation) {
   ASSERT_TRUE(base::ValidateName(control)) << "Error with the control string";
 
   ASSERT_FALSE(base::ValidateName(back_slash)) << "Error with back slashes";
-  ASSERT_FALSE(base::ValidateName(forward_slash)) << "Error with forward slashes";
+  ASSERT_FALSE(base::ValidateName(forward_slash)) <<
+               "Error with forward slashes";
   ASSERT_FALSE(base::ValidateName(colon)) << "Error with back colons";
   ASSERT_FALSE(base::ValidateName(asterisc)) << "Error with back asteriscs";
-  ASSERT_FALSE(base::ValidateName(question_mark)) << "Error with question marks";
+  ASSERT_FALSE(base::ValidateName(question_mark)) <<
+               "Error with question marks";
   ASSERT_FALSE(base::ValidateName(double_quotes)) << "Error with double quotes";
   ASSERT_FALSE(base::ValidateName(less_than)) << "Error with less thans";
   ASSERT_FALSE(base::ValidateName(greater_than)) << "Error with greater thans";
   ASSERT_FALSE(base::ValidateName(pipe)) << "Error with back pipes";
-
 }
 
 TEST_F(UtilsTest, BEH_BASE_RandomNumberGen) {

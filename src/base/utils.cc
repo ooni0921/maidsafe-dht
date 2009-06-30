@@ -210,21 +210,21 @@ std::string inet_btoa(const std::string &ipv4) {
 }
 
 boost::uint32_t get_epoch_time() {
-  boost::posix_time::ptime \
+  boost::posix_time::ptime
     t(boost::posix_time::microsec_clock::universal_time());
   boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
   return static_cast<boost::uint32_t>((t-start).total_seconds());
 }
 
 boost::uint64_t get_epoch_milliseconds() {
-  boost::posix_time::ptime \
+  boost::posix_time::ptime
     t(boost::posix_time::microsec_clock::universal_time());
   boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
   return static_cast<boost::uint64_t>((t-start).total_milliseconds());
 }
 
 boost::uint64_t get_epoch_nanoseconds() {
-  boost::posix_time::ptime \
+  boost::posix_time::ptime
     t(boost::posix_time::microsec_clock::universal_time());
   boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
   return static_cast<boost::uint64_t>((t-start).total_nanoseconds());
@@ -431,6 +431,7 @@ bool get_local_address(boost::asio::ip::address *local_address) {
     // take the first non-bogus IP address
     for (unsigned int i = 0; i < alldevices.size(); i++) {
       if (alldevices[i].ip_address.to_string().substr(0, 2) != "0." &&
+          alldevices[i].ip_address.to_string().substr(0, 7) != "169.254" &&
           alldevices[i].ip_address.to_string().substr(0, 4) != "127.") {
         *local_address = alldevices[i].ip_address;
         return true;
@@ -444,8 +445,8 @@ int32_t random_32bit_integer() {
   CryptoPP::AutoSeededRandomPool rng;
   CryptoPP::Integer rand_num(rng, 32);
   if (!rand_num.IsConvertableToLong()) {
-    return  std::numeric_limits<int32_t>::max() + static_cast<boost::int32_t>(\
-      rand_num.AbsoluteValue().ConvertToLong());
+    return  std::numeric_limits<int32_t>::max() +
+      static_cast<boost::int32_t>(rand_num.AbsoluteValue().ConvertToLong());
   } else {
     return static_cast<int32_t>(rand_num.AbsoluteValue().ConvertToLong());
   }
@@ -456,8 +457,8 @@ uint32_t random_32bit_uinteger() {
   CryptoPP::AutoSeededRandomPool rng;
   CryptoPP::Integer rand_num(rng, 32);
   if (!rand_num.IsConvertableToLong()) {
-    return std::numeric_limits<uint32_t>::max() + static_cast<boost::uint32_t>(\
-      rand_num.AbsoluteValue().ConvertToLong());
+    return std::numeric_limits<uint32_t>::max() +
+      static_cast<boost::uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
   } else {
     return static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
   }

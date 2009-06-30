@@ -71,18 +71,22 @@ void CallLaterTimer::TryExecute() {
     if (!is_started_) return;
     mutex_.lock();
     if (calllaters_.front().time_to_execute <= get_epoch_milliseconds()) {
-      CallLaterMap clm_element = calllaters_.front();
-      calllater_func cb = clm_element.cb;
-      calllaters_.pop_front();
-      mutex_.unlock();
-      try {
-        cb();
-      }
-      catch(const std::exception &e) {
-        // TODO(dan): Logging this.
-#ifdef DEBUG
-        printf("Exception in TryExecute: %s\n", e.what());
-#endif
+      if (!calllaters_.empty()) {
+        CallLaterMap clm_element = calllaters_.front();
+        calllater_func cb = clm_element.cb;
+        calllaters_.pop_front();
+        mutex_.unlock();
+        try {
+          cb();
+        }
+        catch(const std::exception &e) {
+          // TODO(dan): Logging this.
+  #ifdef DEBUG
+          printf("Exception in TryExecute: %s\n", e.what());
+  #endif
+        }
+      } else {
+        mutex_.unlock();
       }
     } else {
       mutex_.unlock();

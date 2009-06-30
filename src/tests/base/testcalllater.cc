@@ -32,7 +32,7 @@ namespace base {
 
 class Lynyrd {
  public:
-  Lynyrd() : count_(0) , mutex_(new boost::mutex){}
+  Lynyrd() : count_(0) , mutex_(new boost::mutex) {}
   ~Lynyrd() {
     printf("\nDtor\n");
   }
@@ -104,7 +104,6 @@ TEST_F(CallLaterTest, BEH_BASE_AddDestroyCallLater) {
     Lynyrd sweethome;
     clt_.AddCallLater(20, boost::bind(&Lynyrd::Skynyrd, &sweethome));
   }
-  //delete timer;
   boost::this_thread::sleep(boost::posix_time::milliseconds(250));
   ASSERT_EQ(0, clt_.CancelAll()) <<
       "Some calls were cancelled, list not empty";
@@ -193,7 +192,8 @@ TEST_F(CallLaterTest, BEH_BASE_AddRemoveCallLaters) {
   // Set up 100 calls again, then remove them all while they're being run.
   for (int l = 1; l < 101; ++l)
     clt_.AddCallLater(10*l, boost::bind(&Lynyrd::Skynyrd, &sweethome));
-  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+  while (clt_.list_size() > 5)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   n = clt_.CancelAll();
   ASSERT_EQ(0, clt_.list_size()) << "List not empty";
   while (sweethome.count() < 100 - n) {
