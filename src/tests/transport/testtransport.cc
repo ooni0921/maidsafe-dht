@@ -1130,13 +1130,14 @@ TEST_F(TransportTest, BEH_TRANS_CheckConnection) {
     ASSERT_FALSE(node1.CheckConnection(local_ips[0], "127.0.0.1", 52002));
     ASSERT_TRUE(node1.CheckConnection(local_ips[0], local_ips[0], 52002));
   } else if (local_ips.size() > 1) {
-    std::string server_addr = local_ips[0];
-    for (boost::uint32_t i = 1; i < local_ips.size(); i++) {
+//    std::string server_addr = local_ips[0];
+    std::string server_addr = "127.0.0.1";
+    for (boost::uint32_t i = 0; i < local_ips.size(); i++) {
       printf("checking local address %s connecting to address %s\n",
         local_ips[i].c_str(), server_addr.c_str());
       ASSERT_FALSE(node1.CheckConnection(local_ips[i], server_addr, 52002));
     }
-    ASSERT_TRUE(node1.CheckConnection(local_ips[0], server_addr, 52002));
+    ASSERT_TRUE(node1.CheckConnection(server_addr, server_addr, 52002));
   } else {
     printf("no local addresses where retrieved\n");
   }
