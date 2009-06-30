@@ -39,12 +39,14 @@ ChannelManagerImpl::ChannelManagerImpl()
       req_mutex_(),
       channels_mutex_(),
       id_mutex_(),
+      pend_timeout_mutex_(),
       current_request_id_(0),
       channels_(),
       pending_req_(),
       external_port_(0),
       external_ip_(""),
-      routingtable_() {}
+      routingtable_(),
+      pending_timeout_() {}
 
 ChannelManagerImpl::~ChannelManagerImpl() {
   if (is_started) {
@@ -52,6 +54,7 @@ ChannelManagerImpl::~ChannelManagerImpl() {
   }
   channels_.clear();
   pending_req_.clear();
+  pending_timeout_.clear();
 }
 
 void ChannelManagerImpl::AddPendingRequest(const boost::uint32_t &req_id,
@@ -109,7 +112,9 @@ int ChannelManagerImpl::StartTransport(boost::uint16_t port,
     if (0 == ptransport_->Start(try_port_,
                                 boost::bind(&ChannelManagerImpl::MessageArrive,
                                             this, _1, _2),
-                                notify_dead_server)) {
+                                notify_dead_server,
+                                boost::bind(&ChannelManagerImpl::RequestSent,
+                                  this, _1))) {
       start_res_ = 0;
       is_started = true;
       break;
@@ -324,5 +329,22 @@ bool ChannelManagerImpl::CheckConnection(const std::string &ip,
 bool ChannelManagerImpl::CheckLocalAddress(const std::string &local_ip,
     const std::string &remote_ip, const uint16_t &remote_port) {
   return ptransport_->CheckConnection(local_ip, remote_ip, remote_port);
+}
+
+void ChannelManagerImpl::RequestSent(const boost::uint32_t &connection_id) {
+  std::map<boost::uint32_t, PendingTimeOut>::iterator it;
+  boost::mutex::scoped_lock guard(pend_timeout_mutex_);
+  it = pending_timeout_.find(connection_id);
+  if (it != pending_timeout_.end())
+    AddReqToTimer((*it).second.req_id, (*it).second.timeout);
+}
+
+void ChannelManagerImpl::AddTimeOutRequest(const boost::uint32_t &connection_id,
+    const boost::uint32_t &req_id, const int &timeout) {
+  struct PendingTimeOut timestruct;
+  timestruct.req_id = req_id;
+  timestruct.timeout = timeout;
+  boost::mutex::scoped_lock guard(pend_timeout_mutex_);
+  pending_timeout_[connection_id] = timestruct;
 }
 }

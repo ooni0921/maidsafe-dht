@@ -110,7 +110,7 @@ class MirrorTestService : public tests::MirrorTest {
     ctrler->set_remote_ip(request->ip());
     ctrler->set_remote_port(request->port());
     if (!request->has_not_pause() || !request->not_pause()) {
-      boost::this_thread::sleep(boost::posix_time::seconds(1));
+      boost::this_thread::sleep(boost::posix_time::seconds(3));
     }
     done->Run();
   }
@@ -344,7 +344,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
       const tests::StringMirrorResponse*>(&resultholder,
       &ResultHolder::GetMirrorResult, &resp4);
   rpcprotocol::Controller controller4;
-  controller4.set_timeout(75);
+  controller4.set_timeout(20);
   stubservice4->Mirror(&controller4, &req4, &resp4, done4);
 
   while (resultholder.mirror_res.mirrored_string() == "-") {
@@ -460,13 +460,13 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
       service_channel);
   // creating a channel for the client to send a request to the service
   rpcprotocol::Controller controller;
-  controller.set_timeout(3);
+  controller.set_timeout(2);
   rpcprotocol::Channel *out_channel =
       new rpcprotocol::Channel(client_chann_manager, "127.0.0.1", 35001, true);
   tests::MirrorTest* stubservice = new tests::MirrorTest::Stub(out_channel);
   tests::StringMirrorRequest req;
   tests::StringMirrorResponse resp;
-  req.set_message(base::RandomString(1024*80));
+  req.set_message(base::RandomString(1024*1024));
   req.set_ip("127.0.0.1");
   req.set_port(35002);
   req.set_not_pause(true);

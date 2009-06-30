@@ -66,7 +66,8 @@ Transport::Transport() : stop_(true),
                          msgs_sent_(0),
                          last_id_(0),
                          data_arrived_(),
-                         ips_from_connections_() {
+                         ips_from_connections_(),
+                         send_notifier_() {
   UDT::startup();
 }
 
@@ -77,7 +78,8 @@ int Transport::Start(uint16_t port,
                      boost::function<void(const bool&,
                                           const std::string&,
                                           const boost::uint16_t&)>
-                         notify_dead_server) {
+                         notify_dead_server,
+                     boost::function<void(const boost::uint32_t&)> on_send) {
   if (!stop_)
     return 1;
   listening_port_ = port;
@@ -139,6 +141,7 @@ int Transport::Start(uint16_t port,
   }
   message_notifier_ = on_message;
   rendezvous_notifier_ = notify_dead_server;
+  send_notifier_ = on_send;
   current_id_ = base::generate_next_transaction_id(current_id_);
   return 0;
 }
@@ -160,7 +163,7 @@ int Transport::Send(boost::uint32_t connection_id,
   if (type == STRING) {
     int64_t data_size = data.size();
     struct OutgoingData out_data = {skt, data_size, 0,
-      boost::shared_array<char>(new char[data_size]), false};
+      boost::shared_array<char>(new char[data_size]), false, connection_id};
     memcpy(out_data.data.get(),
       const_cast<char*>(static_cast<const char*>(data.c_str())), data_size);
     {
@@ -211,8 +214,13 @@ int Transport::Send(const std::string &remote_ip,
     }
     if (type == STRING) {
       int64_t data_size = data.size();
+      if (keep_connection) {
+        AddIncomingConnection(skt, conn_id);
+      } else {
+        *conn_id = 0;
+      }
       struct OutgoingData out_data = {skt, data_size, 0,
-        boost::shared_array<char>(new char[data_size]), false};
+        boost::shared_array<char>(new char[data_size]), false, *conn_id};
       memcpy(out_data.data.get(),
         const_cast<char*>(static_cast<const char*>(data.c_str())), data_size);
       {
@@ -238,8 +246,8 @@ int Transport::Send(const std::string &remote_ip,
         return 1;
       }
     }
-    if (keep_connection)
-      AddIncomingConnection(skt, conn_id);
+//    if (keep_connection)
+//      AddIncomingConnection(skt, conn_id);
   } else {
     UDTSOCKET rend_skt;
     int conn_result = Connect(&rend_skt, rendezvous_ip, rendezvous_port, false);
@@ -285,18 +293,6 @@ int Transport::Send(const std::string &remote_ip,
     }
     // TODO(jose): establish connect in a thread or in another asynchronous
     // way to avoid blocking in the upper layers
-//    struct OutgoingData out_rend_data = {rend_skt, rend_data_size, 0,
-//      boost::shared_array<char>(new char[rend_data_size]), false};
-//    memcpy(out_rend_data.data.get(),
-//      const_cast<char*>(static_cast<const char*>(ser_msg.c_str())),
-//      rend_data_size);
-//    {
-//      boost::mutex::scoped_lock(out_mutex_);
-//      outgoing_queue_.push_back(out_rend_data);
-//    }
-//    printf("time: %s\n", make_daytime_string().c_str());
-//    boost::this_thread::sleep(boost::posix_time::seconds(2));
-//    printf("time: %s\n", make_daytime_string().c_str());
     int retries = 4;
     bool connected = false;
     for (int i = 0; i < retries && !connected; i++) {
@@ -324,8 +320,13 @@ int Transport::Send(const std::string &remote_ip,
     }
 
     int64_t data_size = data.size();
+    if (keep_connection) {
+      AddIncomingConnection(skt, conn_id);
+    } else {
+      *conn_id = 0;
+    }
     struct OutgoingData out_data = {skt, data_size, 0,
-      boost::shared_array<char>(new char[data_size]), false};
+      boost::shared_array<char>(new char[data_size]), false, *conn_id};
     memcpy(out_data.data.get(),
         const_cast<char*>(static_cast<const char*>(data.c_str())), data_size);
     {
@@ -333,8 +334,8 @@ int Transport::Send(const std::string &remote_ip,
       outgoing_queue_.push_back(out_data);
     }
     send_cond_.notify_one();
-    if (keep_connection)
-      AddIncomingConnection(skt, conn_id);
+//    if (keep_connection)
+//      AddIncomingConnection(skt, conn_id);
   }
   return 0;
 }
@@ -403,6 +404,7 @@ void Transport::Stop() {
   incoming_sockets_.clear();
   outgoing_queue_.clear();
   message_notifier_ = 0;
+  send_notifier_ = 0;
   freeaddrinfo(addrinfo_res_);
 #ifdef DEBUG
   printf("Accepted connections %i\n", accepted_connections_);
@@ -691,6 +693,7 @@ void Transport::SendHandle() {
         } else {
           // Finished sending data
 //          printf("%d -- message correctly sent\n", listening_port_);
+          send_notifier_(it->conn_id);
           outgoing_queue_.erase(it);
           msgs_sent_++;
           break;

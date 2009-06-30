@@ -56,6 +56,12 @@ struct PendingReq {
   int64_t size_rec;
 };
 
+struct PendingTimeOut {
+  PendingTimeOut() : req_id(0), timeout(0) {}
+  boost::uint32_t req_id;
+  int timeout;
+};
+
 class ChannelManagerImpl {
  public:
   ChannelManagerImpl();
@@ -85,13 +91,16 @@ class ChannelManagerImpl {
   bool CheckConnection(const std::string &ip, const uint16_t &port);
   bool CheckLocalAddress(const std::string &local_ip,
     const std::string &remote_ip, const uint16_t &remote_port);
+  void RequestSent(const boost::uint32_t &connection_id);
+  void AddTimeOutRequest(const boost::uint32_t &connection_id,
+    const boost::uint32_t &req_id, const int &timeout);
  private:
   void DeleteRequest(const boost::uint32_t &req_id);
   void TimerHandler(const boost::uint32_t &req_id);
   boost::shared_ptr<transport::Transport> ptransport_;
   bool is_started;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
-  boost::mutex req_mutex_, channels_mutex_, id_mutex_;
+  boost::mutex req_mutex_, channels_mutex_, id_mutex_, pend_timeout_mutex_;
   boost::uint32_t current_request_id_;
   std::map<std::string, Channel*> channels_;
   std::map<boost::uint32_t, PendingReq> pending_req_;
@@ -100,6 +109,7 @@ class ChannelManagerImpl {
   boost::uint16_t external_port_;
   std::string external_ip_;
   std::auto_ptr<base::PDRoutingTableHandler> routingtable_;
+  std::map<boost::uint32_t, PendingTimeOut> pending_timeout_;
 };
 }  // namespace rpcprotocol
 #endif  // RPCPROTOCOL_CHANNELMANAGERIMPL_H_

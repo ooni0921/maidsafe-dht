@@ -104,4 +104,9 @@ bool ChannelManager::CheckLocalAddress(const std::string &local_ip,
     const std::string &remote_ip, const uint16_t &remote_port) {
   return pimpl_->CheckLocalAddress(local_ip, remote_ip, remote_port);
 }
+
+void ChannelManager::AddTimeOutRequest(const boost::uint32_t &connection_id,
+    const boost::uint32_t &req_id, const int &timeout) {
+  return pimpl_->AddTimeOutRequest(connection_id, req_id, timeout);
+}
 }  // namespace rpcprotocol

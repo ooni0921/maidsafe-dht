@@ -136,10 +136,56 @@ TEST_F(TestContact, BEH_KAD_SerialiseToString) {
   kad::Contact contact1;
   std::string ser_contact1;
   ASSERT_FALSE(contact1.SerialiseToString(&ser_contact1));
-  contact1.ParseFromString(ser_contact);
+  ASSERT_TRUE(contact1.ParseFromString(ser_contact));
+  ASSERT_FALSE(contact1.ParseFromString("invaliddata"));
   ASSERT_EQ(ip, base::inet_btoa(contact1.host_ip()));
   ASSERT_EQ(port, contact1.host_port());
   ASSERT_EQ(node_id, contact1.node_id());
   ASSERT_EQ(local_ip, base::inet_btoa(contact1.local_ip()));
   ASSERT_EQ(local_port, contact1.host_port());
+}
+
+TEST_F(TestContact, BEH_KAD_Constructors) {
+  // empty contact
+  kad::Contact ctc1;
+  ASSERT_EQ("", ctc1.node_id());
+  ASSERT_EQ("", ctc1.host_ip());
+  ASSERT_EQ("", ctc1.local_ip());
+  ASSERT_EQ("", ctc1.rendezvous_ip());
+  ASSERT_EQ(0, ctc1.host_port());
+  ASSERT_EQ(0, ctc1.local_port());
+  ASSERT_EQ(0, ctc1.rendezvous_port());
+  ASSERT_EQ("Empty contact.\n", ctc1.ToString());
+
+  std::string ip = base::inet_atob("192.168.1.55");
+  unsigned short port = 8888;
+  std::string node_id = cry_obj.Hash("1238425", "", crypto::STRING_STRING,
+      false);
+  kad::Contact ctc2(node_id, ip, port);
+  ASSERT_EQ(node_id, ctc2.node_id());
+  ASSERT_EQ(ip, ctc2.host_ip());
+  ASSERT_EQ("", ctc2.local_ip());
+  ASSERT_EQ("", ctc2.rendezvous_ip());
+  ASSERT_EQ(port, ctc2.host_port());
+  ASSERT_EQ(0, ctc2.local_port());
+  ASSERT_EQ(0, ctc2.rendezvous_port());
+
+  kad::Contact ctc3(node_id, ip, port, ip, port);
+  ASSERT_EQ(node_id, ctc3.node_id());
+  ASSERT_EQ(ip, ctc3.host_ip());
+  ASSERT_EQ(ip, ctc3.local_ip());
+  ASSERT_EQ("", ctc3.rendezvous_ip());
+  ASSERT_EQ(port, ctc3.host_port());
+  ASSERT_EQ(port, ctc3.local_port());
+  ASSERT_EQ(0, ctc3.rendezvous_port());
+
+  kad::Contact ctc4(node_id, ip, port, ip, port, ip, port);
+  ASSERT_EQ(node_id, ctc4.node_id());
+  ASSERT_EQ(ip, ctc4.host_ip());
+  ASSERT_EQ(ip, ctc4.local_ip());
+  ASSERT_EQ(ip, ctc4.rendezvous_ip());
+  ASSERT_EQ(port, ctc4.host_port());
+  ASSERT_EQ(port, ctc4.local_port());
+  ASSERT_EQ(port, ctc4.rendezvous_port());
+  printf("ctc4: %s", ctc4.ToString().c_str());
 }

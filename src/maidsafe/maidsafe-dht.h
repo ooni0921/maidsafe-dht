@@ -162,6 +162,8 @@ class ChannelManager {
   bool CheckConnection(const std::string &ip, const uint16_t &port);
   bool CheckLocalAddress(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port);
+  void AddTimeOutRequest(const boost::uint32_t &connection_id,
+    const boost::uint32_t &req_id, const int &timeout);
  private:
   boost::shared_ptr<ChannelManagerImpl> pimpl_;
 };

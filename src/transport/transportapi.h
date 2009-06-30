@@ -81,6 +81,7 @@ struct OutgoingData {
   int64_t data_sent;
   boost::shared_array<char> data;
   bool sent_size;
+  boost::uint32_t conn_id;
 };
 
 class Transport {
@@ -115,7 +116,8 @@ class Transport {
                                  const boost::uint32_t&)> on_message,
             boost::function<void(const bool&,
                                  const std::string&,
-                                 const boost::uint16_t&)> notify_dead_server);
+                                 const boost::uint16_t&)> notify_dead_server,
+            boost::function<void(const boost::uint32_t&)> on_send);
   void CloseConnection(boost::uint32_t connection_id);
   void Stop();
   inline bool is_stopped() { return stop_; }
@@ -170,6 +172,7 @@ class Transport {
   boost::uint32_t last_id_;
   std::set<boost::uint32_t> data_arrived_;
   std::map<boost::uint32_t, struct sockaddr> ips_from_connections_;
+  boost::function<void(const boost::uint32_t&)> send_notifier_;
 };
 
 };  // namespace transport
