@@ -229,7 +229,8 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
 #endif
         done->Run();
 #ifdef DEBUG
-        printf("ChannelManager --- After executing Callback (done->Run ())\n");
+        printf("%i -- ChannelManager --- After executing ", external_port_);
+        printf("Callback (done->Run ())\n");
 #endif
         ptransport_->CloseConnection(connection_id);
       } else {
@@ -284,11 +285,15 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
       google::protobuf::Closure* done = (*it).second.callback;
       pending_req_.erase(it);
       req_mutex_.unlock();
+#ifdef DEBUG
       printf("%i -- executing request after timeout. id = %i\n",
         external_port_, req_id);
+#endif
       done->Run();
+#ifdef DEBUG
       printf("%i -- executed request after timeout. id = %i\n",
         external_port_, req_id);
+#endif
       if (connection_id != 0)
         ptransport_->CloseConnection(connection_id);
     }

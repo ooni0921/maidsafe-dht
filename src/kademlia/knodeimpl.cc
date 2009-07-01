@@ -807,13 +807,16 @@ void KNodeImpl::RefreshRoutine() {
 void KNodeImpl::IterativeLookUp_CancelActiveProbe(
     Contact sender,
     boost::shared_ptr<IterativeLookUpData> data) {
+#ifdef DEBUG
   printf("%i -- Beginning -- In KNode::IterativeLookUp_CancelActiveProbe",
-        host_port_);
+         host_port_);
   printf(" -- active probes %i\n", data->active_probes.size());
-
+#endif
   if (!is_joined_ && data->method != BOOTSTRAP) {
+#ifdef DEBUG
     printf("%i -- KNodeImpl::IterativeLookUp_CancelActiveProbe -- "
            " !is_joined_ && data->method != BOOTSTRAP\n", host_port_);
+#endif
     return;
   }
   std::list<Contact>::iterator it;
@@ -831,19 +834,25 @@ void KNodeImpl::IterativeLookUp_CancelActiveProbe(
 
   if (static_cast<int>(data->active_probes.size()) <= beta_ &&
       !data->wait_for_key && !data->is_callbacked) {
+#ifdef DEBUG
     printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
     printf(" calling IterativeLookUp_SearchIteration");
     printf(" -- active probes %i\n", data->active_probes.size());
+#endif
     activeprobes_mutex_.unlock();
     IterativeLookUp_SearchIteration(data);
   } else {
+#ifdef DEBUG
     printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
     printf(" -- active probes %i\n", data->active_probes.size());
+#endif
     activeprobes_mutex_.unlock();
   }
+#ifdef DEBUG
   printf("%i -- End -- In KNode::IterativeLookUp_CancelActiveProbe",
         host_port_);
   printf(" -- active probes %i\n", data->active_probes.size());
+#endif
 }
 
 void KNodeImpl::IterativeLookUp_ExtendShortList(
@@ -851,7 +860,7 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
     FindCallbackArgs callback_data) {
 #ifdef DEBUG
   printf("%i -- Start -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-    host_port_);
+         host_port_);
 #endif
 //  boost::mutex::scoped_lock guard(extendshortlist_mutex_);
   if (!is_joined_ && callback_data.data->method != BOOTSTRAP) {
@@ -863,16 +872,18 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
       return;
   }
   bool is_valid = true;
+#ifdef DEBUG
   if (!response->IsInitialized())
     printf("%i --- KNodeImpl::IterativeLookUp_ExtendShortList resp not init\n",
-        host_port_);
+           host_port_);
+#endif
   if (!response->IsInitialized() && callback_data.data->method != BOOTSTRAP) {
     RemoveContact(callback_data.sender.node_id());
     is_valid = false;
     callback_data.data->dead_ids.push_back(callback_data.sender.node_id());
 #ifdef DEBUG
       printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList resp invalid\n",
-          host_port_);
+             host_port_);
 #endif
   }
 
@@ -928,7 +939,9 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
   if ((!is_valid || response->result() == kRpcResultFailure) &&
       callback_data.data->method != BOOTSTRAP) {
     // callback can only be called once
+#ifdef DEBUG
     printf("%i -- wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww\n", host_port_);
+#endif
     if (callback_data.data->is_callbacked) {
       if (callback_data.data->active_probes_after_callback > 0) {
         --callback_data.data->active_probes_after_callback;
@@ -967,8 +980,10 @@ void KNodeImpl::IterativeLookUp_ExtendShortList(
       }
     }
 //    guard.unlock();
+#ifdef DEBUG
     printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList ", host_port_);
     printf("invalid response cancelling probe\n");
+#endif
     IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
     delete response;
 #ifdef DEBUG
@@ -1169,15 +1184,21 @@ void KNodeImpl::IterativeLookUp_Callback(
 //  sender_info->set_node_id("abc");
 //  sender_info->set_ip("ip");
 //  sender_info->set_port(0);
+#ifdef DEBUG
   printf("%i -- calling back iterative lookup callback\n", host_port_);
+#endif
   data->cb(ser_result);
+#ifdef DEBUG
   printf("%i -- calledback iterative lookup callback\n", host_port_);
+#endif
   activeprobes_mutex_.lock();
   data->active_probes_after_callback = data->active_probes.size();
   activeprobes_mutex_.unlock();
   if (data->active_probes_after_callback != 0) {
+#ifdef DEBUG
     printf("%i -- iterative lookup callback -- still with active probes\n",
            host_port_);
+#endif
     return;
   }
   IterativeLookUp_SendDownlist(data);
@@ -1188,7 +1209,9 @@ void KNodeImpl::IterativeLookUp_SendDownlist(
   // Implementation of downlist algorithm
   // At the end of the search the corresponding entries of the downlist are sent
   // to all peers which gave those entries to this node during its search
+#ifdef DEBUG
   printf("%i -- KNodeImple::IterativeLookUp_SendDownlist\n", host_port_);
+#endif
   if (data->downlist_sent || !is_joined_) return;
   if (data->dead_ids.empty()) {
     data->downlist_sent = true;
@@ -1488,15 +1511,21 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
     if (response->IsInitialized()) {
       if (response->result() == kRpcResultSuccess) {
         ++callback_data.data->save_nodes;
+#ifdef DEBUG
         printf("KNodeImpl::StoreValue_IterativeStoreValue:");
         printf("response->result()== kRpcResultSuccess\n");
+#endif
       }
       AddContact(callback_data.sender, false);
+#ifdef DEBUG
       printf("KNodeImpl::StoreValue_IterativeStoreValue: AddContact\n");
+#endif
     } else {
       // it has timeout
       RemoveContact(callback_data.sender.node_id());
+#ifdef DEBUG
       printf("KNodeImpl::StoreValue_IterativeStoreValue: RemoveContact\n");
+#endif
     }
     // nodes has been contacted -- timeout, responded with failure or success
     ++callback_data.data->contacted_nodes;
@@ -1511,7 +1540,7 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
     if (callback_data.data->save_nodes >= static_cast<int>(d)) {
       // Succeeded - min. number of copies were stored
       store_value_result.set_result(kRpcResultSuccess);
-  }  else {
+  } else {
       // Failed
       // TODO(Fraser#5#): 2009-05-15 - Need to handle failure properly, i.e.
       //                  delete those that did get stored, or try another full
@@ -1601,8 +1630,10 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(
     }
     if (closest_nodes.size() > 0) {
       bool stored_local = false;
+#ifdef DEBUG
       printf("KNodeImpl::StoreValue_ExecuteStoreRPCs -- %d\n",
         closest_nodes.size());
+#endif
       if ((static_cast<int>(closest_nodes.size()) >= K_)&&(type_ != CLIENT)) {
         // If this node itself is closer to the key than the last (furtherest)
         // node in the returned list, store the value at this node as well.
@@ -1613,7 +1644,9 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(
           pdata_store_->StoreItem(key, value, now, now);
           closest_nodes.pop_back();
           stored_local = true;
+#ifdef DEBUG
           printf("KNodeImpl::StoreValue_ExecuteStoreRPCs storing locally \n");
+#endif
         }
       } else if (type_ != CLIENT) {
         boost::uint32_t now = base::get_epoch_time();
@@ -2010,7 +2043,8 @@ void KNodeImpl::GetRandomContacts(
 }
 
 void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
-  if (stopping_) return;
+  if (stopping_)
+    return;
 #ifdef SHOW_MUTEX
   printf("\t\tIn KNode::HandleDeadRendezvousServer(%i), outside mutex.\n",
          host_port_);
@@ -2033,7 +2067,8 @@ void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
 
 void KNodeImpl::ReBootstrapping_Callback(const std::string &result) {
   base::GeneralResponse local_result;
-  if (stopping_) return;
+  if (stopping_)
+    return;
   if (!local_result.ParseFromString(result) ||
       local_result.result() == kRpcResultFailure) {
     // TODO(David): who should we inform if after trying to bootstrap again

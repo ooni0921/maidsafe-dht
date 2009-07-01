@@ -351,7 +351,7 @@ void Transport::Stop() {
       send_routine_->interrupt();
       send_routine_->join();
     }
-    send_routine_.reset();
+//    send_routine_.reset();
   }
   if (accept_routine_.get()) {
     if (!accept_routine_->timed_join(boost::posix_time::seconds(5))) {
@@ -359,7 +359,7 @@ void Transport::Stop() {
       accept_routine_->interrupt();
       accept_routine_->join();
     }
-    accept_routine_.reset();
+//    accept_routine_.reset();
   }
   if (recv_routine_.get()) {
     recv_cond_.notify_one();
@@ -368,7 +368,7 @@ void Transport::Stop() {
       recv_routine_->interrupt();
       recv_routine_->join();
     }
-    recv_routine_.reset();
+//    recv_routine_.reset();
   }
   if (ping_rendz_routine_.get()) {
     {
@@ -383,7 +383,7 @@ void Transport::Stop() {
       ping_rendz_routine_->interrupt();
       ping_rendz_routine_->join();
     }
-    ping_rendz_routine_.reset();
+//    ping_rendz_routine_.reset();
     ping_rendezvous_ = false;
   }
   if (handle_msgs_routine_.get()) {
@@ -393,12 +393,12 @@ void Transport::Stop() {
       handle_msgs_routine_->interrupt();
       handle_msgs_routine_->join();
     }
-    handle_msgs_routine_.reset();
+//    handle_msgs_routine_.reset();
   }
   UDT::close(listening_socket_);
   std::map<boost::uint32_t, IncomingData>::iterator it;
   for (it = incoming_sockets_.begin(); it != incoming_sockets_.end(); it++) {
-    (*it).second.data.reset();
+//    (*it).second.data.reset();
     UDT::close((*it).second.u);
   }
   incoming_sockets_.clear();
@@ -477,7 +477,7 @@ void Transport::ReceiveHandler() {
                        UDT::getlasterror().getErrorMessage());
 #endif
                 result = UDT::close((*it).second.u);
-                (*it).second.data.reset();
+//                (*it).second.data.reset();
                 incoming_sockets_.erase(it);
                 break;
               }
@@ -487,7 +487,7 @@ void Transport::ReceiveHandler() {
               (*it).second.expect_size = size;
             } else {
               result = UDT::close((*it).second.u);
-              (*it).second.data.reset();
+//              (*it).second.data.reset();
               incoming_sockets_.erase(it);
               break;
             }
@@ -508,7 +508,7 @@ void Transport::ReceiveHandler() {
                        UDT::getlasterror().getErrorMessage());
 #endif
                 result = UDT::close((*it).second.u);
-                (*it).second.data.reset();
+//                (*it).second.data.reset();
                 // data_activated_.erase((*it).first);
                 incoming_sockets_.erase(it);
                 break;
@@ -518,11 +518,14 @@ void Transport::ReceiveHandler() {
             (*it).second.received_size += rsize;
             if ((*it).second.expect_size <= (*it).second.received_size) {
               ++last_id_;
-              printf("%d -- Transport::ReceiveHandler last_id_: %d\n", listening_port_, last_id_);
+#ifdef DEBUG
+              printf("%d -- Transport::ReceiveHandler last_id_: %d\n",
+                     listening_port_, last_id_);
+#endif
               std::string message = std::string((*it).second.data.get(),
                                     (*it).second.expect_size);
               boost::uint32_t connection_id = (*it).first;
-              (*it).second.data.reset();
+//              (*it).second.data.reset();
               (*it).second.expect_size = 0;
               (*it).second.received_size = 0;
               TransportMessage t_msg;
@@ -593,8 +596,8 @@ void Transport::CloseConnection(boost::uint32_t connection_id) {
   boost::mutex::scoped_lock guard(recv_mutex_);
   it = incoming_sockets_.find(connection_id);
   if (it != incoming_sockets_.end()) {
-    if (incoming_sockets_[connection_id].data != NULL)
-      incoming_sockets_[connection_id].data.reset();
+//    if (incoming_sockets_[connection_id].data != NULL)
+//      incoming_sockets_[connection_id].data.reset();
     UDT::close(incoming_sockets_[connection_id].u);
 //  #ifdef DEBUG
 //      printf("In Transport::CloseConnection(%i), ", listening_port_);

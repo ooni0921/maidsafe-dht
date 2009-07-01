@@ -219,12 +219,16 @@ void KadService::Store(google::protobuf::RpcController *,
       if (!ValidateSignedRequest(request->public_key(),
           request->signed_public_key(),
           request->signed_request(), request->key())) {
+#ifdef DEBUG
         printf("failed to validate request for kad value\n");
+#endif
         response->set_result(kRpcResultFailure);
       } else {
         knode_->StoreValueLocal(request->key(), request->value());
         response->set_result(kRpcResultSuccess);
+#ifdef DEBUG
         printf("KadService::Store: StoreValueLocal\n");
+#endif
         knode_->AddContact(sender, false);
       }
   } else {
@@ -280,7 +284,9 @@ bool KadService::ValidateSignedRequest(const std::string &public_key,
       key, "", crypto::STRING_STRING, true), signed_request, public_key,
       crypto::STRING_STRING);
   } else {
+#ifdef DEBUG
     printf("failed to check sig KadService::ValidateSignedRequest\n");
+#endif
     return false;
   }
 }

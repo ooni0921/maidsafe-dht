@@ -136,6 +136,8 @@ namespace rpcprotocol {
 
 class RpcMessage;
 
+// Ensure that a one-to-one relationship is maintained between channelmanager &
+// knode.
 class ChannelManager {
  public:
   ChannelManager();

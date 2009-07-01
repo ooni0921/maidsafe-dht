@@ -270,11 +270,12 @@ boost::uint32_t inet_aton(const char * buf) {
 }
 
 // POSIX and APPLE Socket implementation
-#if defined(MAIDSAFE_POSIX) || defined (MAIDSAFE_APPLE) || defined (__MINGW__)
-  static boost::uint32_t SockAddrToUint32(struct sockaddr * a) {
-  return ((a)&&(a->sa_family == AF_INET)) ? \
-    ntohl(((struct sockaddr_in *)a)->sin_addr.s_addr) : 0;
-  }
+#if defined(MAIDSAFE_POSIX) || defined (MAIDSAFE_APPLE)
+// || defined (__MINGW__)
+static boost::uint32_t SockAddrToUint32(struct sockaddr * a) {
+  return ((a)&&(a->sa_family == AF_INET)) ?
+      ntohl(((struct sockaddr_in *)a)->sin_addr.s_addr) : 0;
+}
 #endif
 
 void get_net_interfaces(std::vector<struct device_struct> *alldevices) {
