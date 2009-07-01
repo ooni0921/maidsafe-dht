@@ -90,8 +90,8 @@ LIST(APPEND STYLE_RPCPROTO ${M_RPCPROTO_C} ${M_RPCPROTO_H})                     
 FILE(GLOB T_RPCPROTO_C "tests/rpcprotocol/*.c*")                   #
 FILE(GLOB T_RPCPROTO_H "tests/rpcprotocol/*.h*")                   #
 LIST(APPEND T_RPCPROTO_DIR ${T_RPCPROTO_C} ${T_RPCPROTO_H})                      #
-FILE(GLOB T_UPNP_C "upnp/*.c*")                                    #
-FILE(GLOB T_UPNP_H "upnp/*.h*")                                    #
+FILE(GLOB T_UPNP_C "tests/upnp/*.c*")                                    #
+FILE(GLOB T_UPNP_H "tests/upnp/*.h*")                                    #
 LIST(APPEND T_UPNP_DIR ${T_UPNP_C} ${T_UPNP_H})                                  #
 FILE(GLOB M_UPNP_C "upnp/*.c*")                                    #
 FILE(GLOB M_UPNP_H "upnp/*.h*")                                    #
@@ -175,7 +175,7 @@ TARGET_LINK_LIBRARIES(TESTrpcprotocol PDrpcprotocollib PDtransportlib  PDbaselib
 TARGET_LINK_LIBRARIES(TESTkademlia PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
 #TARGET_LINK_LIBRARIES(TESTfunctionalkademlia PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTknode PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
-TARGET_LINK_LIBRARIES(TESTupnp ${SYS_LIB} gtest )
+TARGET_LINK_LIBRARIES(TESTupnp PDbaselib gtest PDupnplib ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(maidsafe-dht PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib PDupnplib ${SYS_LIB} )
 #TARGET_LINK_LIBRARIES(PDupnplib ${SYS_LIB})
 
