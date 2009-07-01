@@ -110,7 +110,7 @@ add_executable(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR})
 add_executable(TESTknode "tests/kademlia/testknode.cc")
 add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR})
 add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR})
-add_executable(TESTupnp ${T_UPNP_DIR} "tests/upnp/testupnp.cc")
+add_executable(TESTupnp ${T_UPNP_DIR})
 #######################################################################################
 #Statically compile the pdlibs - then link applications/libraries to it                         #
 #######################################################################################
