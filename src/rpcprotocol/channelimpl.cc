@@ -110,7 +110,6 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     }
   // Set the RPC request timeout
   Controller *ctrl = static_cast<Controller*>(controller);
-  bool fail_send = false;
   if (0 == ptransport_->ConnectToSend(ip_, port_, rendezvous_ip,
       rendezvous_port, &conn_id, true)) {
     req.connection_id = conn_id;

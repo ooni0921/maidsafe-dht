@@ -344,12 +344,13 @@ void ChannelManagerImpl::RequestSent(const boost::uint32_t &connection_id,
   std::map<boost::uint32_t, PendingTimeOut>::iterator it;
   boost::mutex::scoped_lock guard(pend_timeout_mutex_);
   it = pending_timeout_.find(connection_id);
-  if (it != pending_timeout_.end())
+  if (it != pending_timeout_.end()) {
     if (success) {
       AddReqToTimer((*it).second.req_id, (*it).second.timeout);
     } else {
       AddReqToTimer((*it).second.req_id, 1000);
     }
+  }
 }
 
 void ChannelManagerImpl::AddTimeOutRequest(const boost::uint32_t &connection_id,
