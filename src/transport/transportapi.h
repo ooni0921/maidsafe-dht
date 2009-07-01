@@ -91,33 +91,23 @@ class Transport {
   ~Transport() { }
 
   enum DataType { STRING, FILE };
-  int Send(const std::string &remote_ip,
-           uint16_t remote_port,
-           const std::string &rendezvous_ip,
-           uint16_t rendezvous_port,
-           const rpcprotocol::RpcMessage &data,
-           boost::uint32_t *conn_id,
-           bool keep_connection);
-  int Send(boost::uint32_t connection_id,
-           const rpcprotocol::RpcMessage &data);
-  int Send(const std::string &remote_ip,
-           uint16_t remote_port,
-           const std::string &rendezvous_ip,
-           uint16_t rendezvous_port,
-           const std::string &data,
+  int ConnectToSend(const std::string &remote_ip, const uint16_t &remote_port,
+      const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
+      boost::uint32_t *conn_id, bool keep_connection);
+  int Send(const rpcprotocol::RpcMessage &data,
+           const boost::uint32_t &conn_id,
+           const bool &new_skt);
+  int Send(const std::string &data,
            DataType type,
-           boost::uint32_t *conn_id,
-           bool keep_connection);
-  int Send(boost::uint32_t connection_id,
-           const std::string &data,
-           DataType type);
+           const boost::uint32_t &conn_id,
+           const bool &new_skt);
   int Start(uint16_t port,
             boost::function<void(const rpcprotocol::RpcMessage&,
                                  const boost::uint32_t&)> on_message,
             boost::function<void(const bool&,
                                  const std::string&,
                                  const boost::uint16_t&)> notify_dead_server,
-            boost::function<void(const boost::uint32_t&)> on_send);
+            boost::function<void(const boost::uint32_t&, const bool&)> on_send);
   void CloseConnection(boost::uint32_t connection_id);
   void Stop();
   inline bool is_stopped() { return stop_; }
@@ -160,7 +150,8 @@ class Transport {
   std::map<boost::uint32_t, IncomingData> incoming_sockets_;
   std::list<OutgoingData> outgoing_queue_;
   std::list<IncomingMessages> incoming_msgs_queue_;
-  boost::mutex send_mutex_, ping_rendez_mutex_, recv_mutex_, msg_hdl_mutex_;
+  boost::mutex send_mutex_, ping_rendez_mutex_, recv_mutex_, msg_hdl_mutex_,
+    s_skts_mutex_;
   struct addrinfo addrinfo_hints_;
   struct addrinfo* addrinfo_res_;
   boost::uint32_t current_id_;
@@ -172,7 +163,8 @@ class Transport {
   boost::uint32_t last_id_;
   std::set<boost::uint32_t> data_arrived_;
   std::map<boost::uint32_t, struct sockaddr> ips_from_connections_;
-  boost::function<void(const boost::uint32_t&)> send_notifier_;
+  boost::function<void(const boost::uint32_t&, const bool&)> send_notifier_;
+  std::map<boost::uint32_t, UDTSOCKET> send_sockets_;
 };
 
 };  // namespace transport

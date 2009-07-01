@@ -114,7 +114,7 @@ int ChannelManagerImpl::StartTransport(boost::uint16_t port,
                                             this, _1, _2),
                                 notify_dead_server,
                                 boost::bind(&ChannelManagerImpl::RequestSent,
-                                  this, _1))) {
+                                  this, _1, _2))) {
       start_res_ = 0;
       is_started = true;
       break;
@@ -133,7 +133,8 @@ int ChannelManagerImpl::StopTransport() {
     return 0;
   }
   is_started = false;
-  ptimer_->CancelAll();
+  pending_timeout_.clear();
+  ClearCallLaters();
 #ifdef VERBOSE_DEBUG
   printf("\tIn ChannelManager::StopTransport() on port ");
   printf("%i, before ptransport_->Stop().\n", external_port_);
@@ -313,9 +314,11 @@ void ChannelManagerImpl::ClearChannels() {
 }
 
 void ChannelManagerImpl::ClearCallLaters() {
-  boost::mutex::scoped_lock guard(req_mutex_);
+  {
+    boost::mutex::scoped_lock guard(req_mutex_);
+    pending_req_.clear();
+  }
   ptimer_->CancelAll();
-  pending_req_.clear();
 }
 
 bool ChannelManagerImpl::CheckConnection(const std::string &ip,
@@ -336,12 +339,17 @@ bool ChannelManagerImpl::CheckLocalAddress(const std::string &local_ip,
   return ptransport_->CheckConnection(local_ip, remote_ip, remote_port);
 }
 
-void ChannelManagerImpl::RequestSent(const boost::uint32_t &connection_id) {
+void ChannelManagerImpl::RequestSent(const boost::uint32_t &connection_id,
+    const bool &success) {
   std::map<boost::uint32_t, PendingTimeOut>::iterator it;
   boost::mutex::scoped_lock guard(pend_timeout_mutex_);
   it = pending_timeout_.find(connection_id);
   if (it != pending_timeout_.end())
-    AddReqToTimer((*it).second.req_id, (*it).second.timeout);
+    if (success) {
+      AddReqToTimer((*it).second.req_id, (*it).second.timeout);
+    } else {
+      AddReqToTimer((*it).second.req_id, 1000);
+    }
 }
 
 void ChannelManagerImpl::AddTimeOutRequest(const boost::uint32_t &connection_id,

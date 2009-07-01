@@ -111,39 +111,39 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
   // Set the RPC request timeout
   Controller *ctrl = static_cast<Controller*>(controller);
   bool fail_send = false;
-  if (0 != ptransport_->Send(ip_,
-                        port_,
-                        rendezvous_ip,
-                        rendezvous_port,
-                        msg,
-                        &conn_id,
-                        true)) {
+  if (0 == ptransport_->ConnectToSend(ip_, port_, rendezvous_ip,
+      rendezvous_port, &conn_id, true)) {
+    req.connection_id = conn_id;
+    if (ctrl->timeout() != 0) {
+      req.timeout = ctrl->timeout();
+    } else {
+      req.timeout = kRpcTimeout;
+    }
+    pmanager_->AddPendingRequest(msg.message_id(), req);
+    pmanager_->AddTimeOutRequest(conn_id, msg.message_id(), req.timeout);
+    if (0 != ptransport_->Send(msg, conn_id, true)) {
 #ifdef DEBUG
-    printf("%i --- Failed to send request %i.\n", msg.message_id(),
-      pmanager_->external_port());
+    printf("%i --- Failed to send request with id %d\n",
+        pmanager_->external_port(), msg.message_id());
 #endif
-    // Set short timeout as request has already failed.
+    }
+  } else {
+#ifdef DEBUG
+    printf("%i --- Failed to connect to send rpc %s to %s:%d with id %d\n",
+        pmanager_->external_port(), msg.method().c_str(), ip_.c_str(), port_,
+        msg.message_id());
+#endif
     ctrl->set_timeout(1);
-    fail_send = true;
+    req.timeout = ctrl->timeout();
+    pmanager_->AddPendingRequest(msg.message_id(), req);
+    pmanager_->AddReqToTimer(msg.message_id(), req.timeout);
+    return;
   }
 #ifdef DEBUG
   printf("%i --- Sending rpc %s to %s:%d conn_id= %d -- rpc_id=%d\n",
     pmanager_->external_port(), msg.method().c_str(), ip_.c_str(), port_,
     conn_id, msg.message_id());
 #endif
-  req.connection_id = conn_id;
-  // in case no timeout was set in the controller use the default one
-  if (ctrl->timeout() != 0) {
-    req.timeout = ctrl->timeout();
-  } else {
-    req.timeout = kRpcTimeout;
-  }
-  pmanager_->AddPendingRequest(msg.message_id(), req);
-  if (fail_send) {
-    pmanager_->AddReqToTimer(msg.message_id(), req.timeout);
-  } else {
-    pmanager_->AddTimeOutRequest(conn_id, msg.message_id(), req.timeout);
-  }
 }
 
 std::string ChannelImpl::GetServiceName(const std::string &full_name) {
@@ -209,7 +209,7 @@ void ChannelImpl::SendResponse(const google::protobuf::Message *response,
   std::string ser_response;
   response->SerializeToString(&ser_response);
   response_msg.set_args(ser_response);
-  if (0 != ptransport_->Send(info.connection_id, response_msg)) {
+  if (0 != ptransport_->Send(response_msg, info.connection_id, false)) {
 #ifdef DEBUG
     printf("Failed to send response to connection %d.\n", info.connection_id);
 #endif
