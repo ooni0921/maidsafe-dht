@@ -33,7 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/shared_ptr.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/thread/mutex.hpp>
-
 #ifdef WIN32
   #include <ws2tcpip.h>
 // dirvine - ugly ugly hack !!
@@ -53,6 +52,7 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 #endif
 #include <list>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include "udt/udt.h"

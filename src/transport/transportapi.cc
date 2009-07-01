@@ -106,6 +106,18 @@ int Transport::Start(uint16_t port,
 #endif
     return 1;
   }
+  // Modify the port to reflect the port UDT has chosen
+  struct sockaddr_in name;
+  int namelen;
+  if (listening_port_ == 0) {
+    UDT::getsockname(listening_socket_, (struct sockaddr *)&name, &namelen);
+    listening_port_ = ntohs(name.sin_port);
+    std::string service = boost::lexical_cast<std::string>(listening_port_);
+    if (0 != getaddrinfo(NULL, service.c_str(), &addrinfo_hints_,
+        &addrinfo_res_)) {
+      return 1;
+    }
+  }
   // freeaddrinfo(res);
   if (UDT::ERROR == UDT::listen(listening_socket_, 20)) {
 #ifdef DEBUG
