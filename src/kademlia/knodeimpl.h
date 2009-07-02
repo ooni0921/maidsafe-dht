@@ -265,8 +265,6 @@ class KNodeImpl {
  private:
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
-  FRIEND_TEST(TestKnodes, BEH_KAD_TestLastSeenNotReply);
-  FRIEND_TEST(TestKnodes, FUNC_KAD_TestLastSeenReplies);
   inline void CallbackWithFailure(base::callback_func_type cb);
   void Bootstrap_Callback(const boost::shared_ptr<BootstrapResponse> response,
                           BootstrapData data);
@@ -337,12 +335,10 @@ class KNodeImpl {
   void CheckToInsert(const Contact &new_contact);
   void CheckToInsert_Callback(const std::string &result, std::string id,
       Contact new_contact);
-  boost::mutex routingtable_mutex_;
-  boost::mutex kadconfig_mutex_;
-  boost::mutex extendshortlist_mutex_;
-  boost::mutex joinbootstrapping_mutex_;
-  boost::mutex leave_mutex_;
-  boost::mutex activeprobes_mutex_;
+  void CheckAddContacts();
+  boost::mutex routingtable_mutex_, kadconfig_mutex_, extendshortlist_mutex_,
+      joinbootstrapping_mutex_, leave_mutex_, activeprobes_mutex_,
+      pendingcts_mutex_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
   boost::shared_ptr<rpcprotocol::ChannelManager> pchannel_manager_;
   boost::shared_ptr<rpcprotocol::Channel> pservice_channel_;
@@ -367,6 +363,9 @@ class KNodeImpl {
   std::string local_host_ip_;
   boost::uint16_t local_host_port_;
   bool stopping_;
+  std::list<Contact> contacts_to_add_;
+  boost::shared_ptr<boost::thread> addcontacts_routine_;
+  boost::condition_variable add_ctc_cond_;
   // for UPnP
   bool upnp_started_;
   libtorrent::io_service upnp_ios_;

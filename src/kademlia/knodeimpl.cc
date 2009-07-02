@@ -95,7 +95,8 @@ KNodeImpl::KNodeImpl(
     node_type type)
         : routingtable_mutex_(), kadconfig_mutex_(),
           extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
-          activeprobes_mutex_(), ptimer_(new base::CallLaterTimer()),
+          activeprobes_mutex_(), pendingcts_mutex_(),
+          ptimer_(new base::CallLaterTimer()),
           pchannel_manager_(channel_manager), pservice_channel_(),
           pdata_store_(new DataStore()), premote_service_(),
           kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
@@ -103,7 +104,8 @@ KNodeImpl::KNodeImpl(
           host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(), K_(K),
           alpha_(kAlpha), beta_(kBeta), refresh_routine_started_(false),
           kad_config_path_(""), routingtable_(), local_host_ip_(""),
-          local_host_port_(0), stopping_(false), upnp_started_(false),
+          local_host_port_(0), stopping_(false), contacts_to_add_(),
+          addcontacts_routine_(), add_ctc_cond_(), upnp_started_(false),
           upnp_ios_(), upnp_(), upnp_half_open_(NULL),
           upnp_user_agent_("maidsafe"), upnp_mapped_port_(0), upnp_udp_map_(0) {
   try {
@@ -129,7 +131,8 @@ KNodeImpl::KNodeImpl(
     const int &beta)
         : routingtable_mutex_(), kadconfig_mutex_(),
           extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
-          activeprobes_mutex_(), ptimer_(new base::CallLaterTimer()),
+          activeprobes_mutex_(), pendingcts_mutex_(),
+          ptimer_(new base::CallLaterTimer()),
           pchannel_manager_(channel_manager), pservice_channel_(),
           pdata_store_(new DataStore()), premote_service_(),
           kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
@@ -137,7 +140,8 @@ KNodeImpl::KNodeImpl(
           host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(),
           K_(k), alpha_(alpha), beta_(beta), refresh_routine_started_(false),
           kad_config_path_(""), routingtable_(), local_host_ip_(""),
-          local_host_port_(0), stopping_(false), upnp_started_(false),
+          local_host_port_(0), stopping_(false), contacts_to_add_(),
+          addcontacts_routine_(), add_ctc_cond_(), upnp_started_(false),
           upnp_ios_(), upnp_(), upnp_half_open_(NULL),
           upnp_user_agent_("maidsafe"), upnp_mapped_port_(0), upnp_udp_map_(0) {
   try {
@@ -426,6 +430,8 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
       // since it is a 1 network node, so it has no rendezvous server to ping
       pchannel_manager_->ptransport()->StartPingRendezvous(true, rv_ip_,
                                                            rv_port_);
+      addcontacts_routine_.reset(new boost::thread(&KNodeImpl::CheckAddContacts,
+          this));
       if (!refresh_routine_started_) {
         ptimer_->AddCallLater(kRefreshTime*1000,
                               boost::bind(&KNodeImpl::RefreshRoutine, this));
@@ -589,31 +595,24 @@ void KNodeImpl::Join(const std::string &node_id,
 }
 
 void KNodeImpl::Leave() {
-  boost::mutex::scoped_lock gaurd(leave_mutex_);
   if (is_joined_) {
     if (upnp_started_ && upnp_mapped_port_ > 0) {
       UnMapUPnP();
     }
     stopping_ = true;
     {
-#ifdef SHOW_MUTEX
-      printf("\t\tIn KNode::Leave(%i), outside mutex.\n", host_port_);
-#endif
-#ifdef SHOW_MUTEX
-      printf("\t\tIn KNode::Leave(%i), inside mutex.\n", host_port_);
-#endif
+      boost::mutex::scoped_lock gaurd(leave_mutex_);
       pchannel_manager_->ptransport()->StopPingRendezvous();
       ptimer_->CancelAll();
       UnRegisterKadService();
       is_joined_ = false;
+      add_ctc_cond_.notify_one();
+      addcontacts_routine_->join();
       upnp_started_ = false;
       upnp_mapped_port_ = 0;
       SaveBootstrapContacts();
       prouting_table_->Clear();
       routingtable_->Clear();
-#ifdef SHOW_MUTEX
-      printf("\t\tIn KNode::Leave(%i), unlock.\n", host_port_);
-#endif
     }
     stopping_ = false;
   }
@@ -1147,6 +1146,8 @@ void KNodeImpl::IterativeLookUp_Callback(
     } else {
       result.set_result(kRpcResultSuccess);
       is_joined_ = true;
+      addcontacts_routine_.reset(new boost::thread(&KNodeImpl::CheckAddContacts,
+          this));
     }
     result.SerializeToString(&ser_result);
   } else {
@@ -1945,25 +1946,19 @@ int KNodeImpl::AddContact(Contact new_contact, bool only_db) {
   int result = -1;
   if (new_contact.node_id() != "" && new_contact.node_id() != client_node_id()
       && new_contact.node_id() != node_id_) {
-//    printf("\t\tIn KNode::AddContact(%i), 2.\n", host_port_);
     if (!only_db) {
       boost::mutex::scoped_lock gaurd(routingtable_mutex_);
-//      printf("\t\tIn KNode::AddContact(%i), 3.\n", host_port_);
       new_contact.set_last_seen(base::get_epoch_milliseconds());
       result = prouting_table_->AddContact(new_contact);
     } else {
       result = 0;
     }
-//    printf("\t\tIn KNode::AddContact(%i), 4.\n", host_port_);
-
     // Adding to routing table db
     std::string remote_ip, rv_ip;
     remote_ip = base::inet_btoa(new_contact.host_ip());
     if (new_contact.rendezvous_ip() != "") {
-//      printf("\t\tIn KNode::AddContact(%i), 5.\n", host_port_);
       rv_ip = base::inet_btoa(new_contact.rendezvous_ip());
     }
-//    printf("\t\tIn KNode::AddContact(%i), 6.\n", host_port_);
     base::PDRoutingTableTuple tuple(new_contact.node_id(),
                                     remote_ip,
                                     new_contact.host_port(),
@@ -1974,9 +1969,14 @@ int KNodeImpl::AddContact(Contact new_contact, bool only_db) {
                                     0,
                                     0);
     routingtable_->AddTuple(tuple);
-//    printf("\t\tIn KNode::AddContact(%i), 7.\n", host_port_);
+    if (result == 2) {
+      {
+        boost::mutex::scoped_lock gaurd(pendingcts_mutex_);
+        contacts_to_add_.push_back(new_contact);
+      }
+      add_ctc_cond_.notify_one();
+    }
   }
-//  printf("\t\tIn KNode::AddContact(%i), 8.\n", host_port_);
   return result;
 }
 
@@ -2305,5 +2305,29 @@ void KNodeImpl::CheckToInsert_Callback(const std::string &result,
 
 void KNodeImpl::StopRvPing() {
   pchannel_manager_->ptransport()->StopPingRendezvous();
+}
+
+void KNodeImpl::CheckAddContacts() {
+  while (true) {
+    {
+      boost::mutex::scoped_lock guard(pendingcts_mutex_);
+      while (contacts_to_add_.empty() && is_joined_)
+        add_ctc_cond_.wait(guard);
+    }
+    if (!is_joined_ )
+      return;
+    Contact new_contact;
+    bool add_contact = false;
+    {
+      boost::mutex::scoped_lock guard(pendingcts_mutex_);
+      if (!contacts_to_add_.empty()) {
+        new_contact = contacts_to_add_.front();
+        contacts_to_add_.pop_front();
+        add_contact = true;
+      }
+    }
+    if (add_contact)
+      CheckToInsert(new_contact);
+  }
 }
 }  // namespace kad
