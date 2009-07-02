@@ -266,7 +266,7 @@ class KNodeImpl {
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
   FRIEND_TEST(TestKnodes, BEH_KAD_TestLastSeenNotReply);
-  FRIEND_TEST(TestKnodes, BEH_KAD_TestLastSeenReplies);
+  FRIEND_TEST(TestKnodes, FUNC_KAD_TestLastSeenReplies);
   inline void CallbackWithFailure(base::callback_func_type cb);
   void Bootstrap_Callback(const boost::shared_ptr<BootstrapResponse> response,
                           BootstrapData data);

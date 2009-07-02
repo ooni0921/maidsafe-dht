@@ -86,10 +86,10 @@ class KadService : public KademliaService {
       google::protobuf::Closure *done);
   friend class NatDetectionTest;
  private:
-  FRIEND_TEST(KadServicesTest, BEH_KAD_ValidateSignedRequest);
+  FRIEND_TEST(KadServicesTest, BEH_KAD_ServicesValidateSignedRequest);
   FRIEND_TEST(NatDetectionTest, BEH_KAD_SendNatDet);
   FRIEND_TEST(NatDetectionTest, BEH_KAD_BootstrapNatDetRv);
-  FRIEND_TEST(NatDetectionTest, BEH_KAD_CompleteBootstrapNatDet);
+  FRIEND_TEST(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet);
   bool ValidateSignedRequest(const std::string &public_key, const std::string
       &signed_public_key, const std::string &signed_request, const std::string
       &key);
