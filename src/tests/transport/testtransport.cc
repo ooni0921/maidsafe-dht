@@ -304,15 +304,9 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOne) {
   printf("messages sent correctly\n");
   boost::uint32_t now = base::get_epoch_time();
   bool msgs_received = false;
-  boost::mutex mutex;
-  while (!msgs_received && base::get_epoch_time() - now < 15) {
-    {
-      boost::mutex::scoped_lock guard(mutex);
-      if (msg_handler[3].msgs.size() >= 3)
-        msgs_received = true;
-    }
+  while (msg_handler[3].msgs.size() < 3 &&
+         base::get_epoch_time() - now < 15)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  }
   node1.Stop();
   node2.Stop();
   node3.Stop();
@@ -401,26 +395,14 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToMany) {
   ASSERT_EQ(0, node3.Send(rpc_msg, id, true));
   boost::uint32_t now = base::get_epoch_time();
   bool msgs_received[3] = {false, false, false};
-  boost::mutex mutex1;
-  boost::mutex mutex2;
-  boost::mutex mutex3;
   while ((!msgs_received[0] || !msgs_received[1] || !msgs_received[2]) &&
           base::get_epoch_time() - now < 15) {
-    {
-      boost::mutex::scoped_lock guard(mutex1);
-      if (msg_handler[3].msgs.size() >= 1)
-        msgs_received[0] = true;
-    }
-    {
-      boost::mutex::scoped_lock guard(mutex2);
-      if (msg_handler[4].msgs.size() >= 1)
-        msgs_received[1] = true;
-    }
-    {
-      boost::mutex::scoped_lock guard(mutex3);
-      if (msg_handler[5].msgs.size() >= 1)
-        msgs_received[2] = true;
-    }
+    if (msg_handler[3].msgs.size() >= 1)
+      msgs_received[0] = true;
+    if (msg_handler[4].msgs.size() >= 1)
+      msgs_received[1] = true;
+    if (msg_handler[5].msgs.size() >= 1)
+      msgs_received[2] = true;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   node1.Stop();
@@ -497,26 +479,14 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromOneToMany) {
 
   boost::uint32_t now = base::get_epoch_time();
   bool msgs_received[3] = {false, false, false};
-  boost::mutex mutex1;
-  boost::mutex mutex2;
-  boost::mutex mutex3;
   while ((!msgs_received[0] || !msgs_received[1] || !msgs_received[2]) &&
           base::get_epoch_time() - now < 15) {
-    {
-      boost::mutex::scoped_lock guard(mutex1);
-      if (msg_handler[1].msgs.size() >= 1)
-        msgs_received[0] = true;
-    }
-    {
-      boost::mutex::scoped_lock guard(mutex2);
-      if (msg_handler[2].msgs.size() >= 1)
-        msgs_received[1] = true;
-    }
-    {
-      boost::mutex::scoped_lock guard(mutex3);
-      if (msg_handler[3].msgs.size() >= 1)
-        msgs_received[2] = true;
-    }
+    if (msg_handler[1].msgs.size() >= 1)
+      msgs_received[0] = true;
+    if (msg_handler[2].msgs.size() >= 1)
+      msgs_received[1] = true;
+    if (msg_handler[3].msgs.size() >= 1)
+      msgs_received[2] = true;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   node1.Stop();
@@ -645,7 +615,8 @@ TEST_F(TransportTest, BEH_TRANS_GetRemotePeerAddress) {
   rpc_msg.SerializeToString(&sent_msg);
   ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, &id, false));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  while (msg_handler[1].msgs.empty())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   struct sockaddr peer_addr = node2.peer_address();
   std::string peer_ip(inet_ntoa(((struct sockaddr_in *)&peer_addr)->sin_addr));
   boost::uint16_t peer_port =

@@ -151,8 +151,8 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   Contact rec_contact;
   ASSERT_FALSE(nodes[0]->GetContact(contact.node_id(), &rec_contact));
 
-  // nodes[0]->CheckToInsert(contact);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  // waiting for the ping to the last seen contact to timeout
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(nodes[0]->GetContact(contact.node_id(), &rec_contact));
   ASSERT_TRUE(contact == rec_contact);
   ASSERT_FALSE(nodes[0]->GetContact(last_seen.node_id(), &rec_contact));
@@ -261,15 +261,15 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   Contact rec_contact;
   ASSERT_FALSE(nodes[0]->GetContact(contact.node_id(), &rec_contact));
 
-  // nodes[0]->CheckToInsert(contact);
+  // wait for last seen contact to reply to ping
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   ASSERT_FALSE(nodes[0]->GetContact(contact.node_id(), &rec_contact));
   ASSERT_TRUE(nodes[0]->GetContact(last_seen.node_id(), &rec_contact));
 
-  //nodes[0]->CheckToInsert(contact);
   ASSERT_EQ(2, nodes[0]->AddContact(contact, false));
 
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  // wait for ping to last seen contact to timeout
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(nodes[0]->GetContact(contact.node_id(), &rec_contact));
   ASSERT_TRUE(nodes[0]->GetContact(last_seen.node_id(), &rec_contact));
 
