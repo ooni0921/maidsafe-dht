@@ -142,7 +142,7 @@ std::string Contact::ToString() {
   }
   std::string ser_contact("");
   std::string enc_id("");
-  base::encode_to_hex(node_id_, enc_id);
+  base::encode_to_hex(node_id_, &enc_id);
   std::string port(base::itos(host_port_));
   ser_contact = "Node_id: " + enc_id + "\n";
   std::string dec_ip(base::inet_btoa(host_ip_));

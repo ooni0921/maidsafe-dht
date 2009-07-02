@@ -238,7 +238,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_RegisterAChannel) {
   delete service;
 }
 
-TEST_F(RpcProtocolTest, BEH_RPC_MultipleChannelsRegistered) {
+TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
   boost::scoped_ptr<PingTestService> service1(new PingTestService());
   boost::scoped_ptr<TestOpService> service2(new TestOpService());
   boost::scoped_ptr<MirrorTestService> service3(new MirrorTestService());

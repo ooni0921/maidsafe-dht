@@ -203,8 +203,8 @@ bool DataStore::StoreItem(const std::string &key,
     boost::uint32_t last_published_time,
     boost::uint32_t original_published_time) {
 #ifdef DEBUG
-//  std::string hex_key;
-//  base::encode_to_hex(key, hex_key);
+//  std::string hex_key("");
+//  base::encode_to_hex(key, &hex_key);
 //  printf("**************************************************\n");
 //  printf("Value to insert in vault db: %s\n", hex_key.c_str());
 //  printf("**************************************************\n");

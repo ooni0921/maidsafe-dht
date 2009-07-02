@@ -51,10 +51,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>  // included in apple's net/route.h
 #include <ifaddrs.h>  // used for old implementation of LocalIPPort() remove
                       // when new soln impmltd.
-//  // do we need these?
-//  #include <arpa/inet.h>
-//  #include <netinet/in.h>
-//  #include <errno.h>
 #endif
 
 #include <boost/asio.hpp>
@@ -230,12 +226,10 @@ std::string itos(int value);
 int stoi(std::string value);
 
 // Encode a string to hex.
-bool encode_to_hex(const std::string &value, std::string &result);
-// TODO(Fraser#5#): 2009-05-16 - Amend &result to pass by pointer.
+bool encode_to_hex(const std::string &non_hex_in, std::string *hex_out);
 
 // Decode a string from hex.
-bool decode_from_hex(const std::string &value, std::string &result);
-// TODO(Fraser#5#): 2009-05-16 - Amend &result to pass by pointer.
+bool decode_from_hex(const std::string &hex_in, std::string *non_hex_out);
 
 // Return the number of seconds since 1st January 1970.
 boost::uint32_t get_epoch_time();

@@ -25,8 +25,8 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include  <gtest/gtest.h>
-#include <fstream>
+#include <gtest/gtest.h>
+#include <fstream>  // NOLINT (Fraser) - needed for kadconfig
 #include "maidsafe/maidsafe-dht.h"
 #include "kademlia/knodeimpl.h"
 #include "tests/kademlia/fake_callbacks.h"
@@ -58,7 +58,8 @@ class TestKnodes : public testing::Test {
       ch_managers[i].reset(new rpcprotocol::ChannelManager());
       nodes[i].reset(new KNodeImpl(datastore_dir[i], ch_managers[i], VAULT));
       ch_managers[i]->StartTransport(port,
-        boost::bind(&KNodeImpl::HandleDeadRendezvousServer, nodes[i].get(), _1));
+        boost::bind(&KNodeImpl::HandleDeadRendezvousServer, nodes[i].get(),
+        _1));
       port++;
     }
   }
@@ -120,30 +121,30 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   Contact last_seen;
   std::string ip = "127.0.0.1";
   for (int i = 1 ; i < K-2; i++) {
-    std::string id;
-    base::decode_from_hex(bucket2ids[i], id);
+    std::string id("");
+    base::decode_from_hex(bucket2ids[i], &id);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes[0]->AddContact(contact, false));
     if (i == 1) last_seen = contact;
     port++;
   }
   for (int i = 0; i < 3; i++) {
-    std::string id;
-    base::decode_from_hex(bucket1ids[i], id);
+    std::string id("");
+    base::decode_from_hex(bucket1ids[i], &id);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes[0]->AddContact(contact, false));
     port++;
   }
   for (int i = K-2; i < K+1; i++) {
-    std::string id;
-    base::decode_from_hex(bucket2ids[i], id);
+    std::string id("");
+    base::decode_from_hex(bucket2ids[i], &id);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes[0]->AddContact(contact, false));
     port++;
   }
   id = "";
   port++;
-  base::decode_from_hex(bucket2ids[0], id);
+  base::decode_from_hex(bucket2ids[0], &id);
   Contact contact(id, ip, port, ip, port);
   ASSERT_EQ(2, nodes[0]->AddContact(contact, false));
 
@@ -167,7 +168,7 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   ASSERT_FALSE(nodes[0]->is_joined());
 }
 
-TEST_F(TestKnodes, BEH_KAD_TestLastSeenReplies) {
+TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   std::string kconfig_file = datastore_dir[0] + "/.kadconfig";
   std::string kconfig_file1 = datastore_dir[1] + "/.kadconfig";
   std::string id("7"), id2("9");
@@ -186,8 +187,8 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenReplies) {
   // routing table
   base::KadConfig kad_config1;
   base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-  std::string hex_id;
-  base::encode_to_hex(nodes[0]->node_id(), hex_id);
+  std::string hex_id("");
+  base::encode_to_hex(nodes[0]->node_id(), &hex_id);
   kad_contact->set_node_id(hex_id);
   kad_contact->set_ip(nodes[0]->host_ip());
   kad_contact->set_port(nodes[0]->host_port());
@@ -231,29 +232,29 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenReplies) {
 
   std::string ip = "127.0.0.1";
   for (int i = 1 ; i < K-3; i++) {
-    std::string id;
-    base::decode_from_hex(bucket2ids[i], id);
+    std::string id("");
+    base::decode_from_hex(bucket2ids[i], &id);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes[0]->AddContact(contact, false));
     port++;
   }
   for (int i = 0; i < 3; i++) {
-    std::string id;
-    base::decode_from_hex(bucket1ids[i], id);
+    std::string id("");
+    base::decode_from_hex(bucket1ids[i], &id);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes[0]->AddContact(contact, false));
     port++;
   }
   for (int i = K-3; i < K; i++) {
-    std::string id;
-    base::decode_from_hex(bucket2ids[i], id);
+    std::string id("");
+    base::decode_from_hex(bucket2ids[i], &id);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes[0]->AddContact(contact, false));
     port++;
   }
   id = "";
   port++;
-  base::decode_from_hex(bucket2ids[0], id);
+  base::decode_from_hex(bucket2ids[0], &id);
   Contact contact(id, ip, port, ip, port);
   ASSERT_EQ(2, nodes[0]->AddContact(contact, false));
 

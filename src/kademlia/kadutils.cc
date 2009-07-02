@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 BigInt StrToBigInt(const std::string &key) {
   std::string enc_key("");
-  base::encode_to_hex(key, enc_key);
+  base::encode_to_hex(key, &enc_key);
   enc_key = "0x"+enc_key;
   BigInt value(enc_key);
   return value;
@@ -61,12 +61,12 @@ std::string random_kademlia_id(const BigInt &min_range,
   std::ostringstream os;
   os.setf(std::ios_base::hex, std::ios_base::basefield);
   os << rand_num;
-  std::string result;
+  std::string result("");
   std::string temp = os.str();
   if (temp.size() < 2 * kKeySizeBytes) {
     temp = std::string(2 * kKeySizeBytes - temp.size(), '0') + temp;
   }
-  base::decode_from_hex(temp, result);
+  base::decode_from_hex(temp, &result);
   return result;
 }
 

@@ -122,7 +122,7 @@ class NatDetectionTest: public testing::Test {
     std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
-    base::decode_from_hex(hex_id, node_idA_);
+    base::decode_from_hex(hex_id, &node_idA_);
     ASSERT_EQ(0, channel_managerA_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
         knodeimpl1_.get(), _1)));
@@ -145,7 +145,7 @@ class NatDetectionTest: public testing::Test {
     // Node B.
     hex_id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    base::decode_from_hex(hex_id, node_idB_);
+    base::decode_from_hex(hex_id, &node_idB_);
     ASSERT_EQ(0, channel_managerB_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
         knodeimpl2_.get(), _1)));
@@ -168,7 +168,7 @@ class NatDetectionTest: public testing::Test {
     // Node C.
     hex_id = "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
              "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-    base::decode_from_hex(hex_id, node_idC_);
+    base::decode_from_hex(hex_id, &node_idC_);
     ASSERT_EQ(0, channel_managerC_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
         knodeimpl3_.get(), _1)));
@@ -194,7 +194,7 @@ class NatDetectionTest: public testing::Test {
     // Set up another contact
     hex_id = "22222222222222222222222222222222222222222222222222222222222222222"
              "222222222222222222222222222222222222222222222222222222222222222";
-    base::decode_from_hex(hex_id, remote_node_id_);
+    base::decode_from_hex(hex_id, &remote_node_id_);
     remote_contact_.set_node_id(remote_node_id_);
     remote_contact_.set_ip("127.0.0.5");
     remote_contact_.set_port(5555);
@@ -388,7 +388,7 @@ TEST_F(NatDetectionTest, BEH_KAD_BootstrapNatDetRv) {
   EXPECT_TRUE(routingtableB_->GetContact(node_idA_, &contactback));
 }
 
-TEST_F(NatDetectionTest, BEH_KAD_CompleteBootstrapNatDet) {
+TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   // If NatDetectionResponse is uninitialised, NAT type can't be asserted by
   // node C, as his routing table is empty
   NatDetectionResponse nd_response;

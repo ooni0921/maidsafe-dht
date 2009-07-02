@@ -145,7 +145,7 @@ TEST_F(DataStoreTest, FUNC_KAD_LoadExistingData) {
   ASSERT_EQ(3, value_num);
 }
 
-TEST_F(DataStoreTest, FUNC_KAD_LoadNonExistingData) {
+TEST_F(DataStoreTest, BEH_KAD_LoadNonExistingData) {
   std::string key1 = cry_obj.Hash("11222xc", "", crypto::STRING_STRING,
       false);
   std::vector<std::string> values;
@@ -322,7 +322,7 @@ TEST_F(DataStoreTest, BEH_KAD_ReuseDatabase) {
   remove("testdatastore1.db");
 }
 
-TEST_F(DataStoreTest, FUNC_KAD_StoreMultipleValues) {
+TEST_F(DataStoreTest, BEH_KAD_StoreMultipleValues) {
   std::vector<std::string> keys;
   ASSERT_TRUE(test_ds->Keys(&keys));
   ASSERT_EQ(0, static_cast<int>(keys.size()));

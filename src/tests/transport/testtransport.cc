@@ -705,7 +705,7 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnotherBidirectional) {
   ASSERT_EQ(1, msg_handler[1].msgs_sent_);
 }
 
-TEST_F(TransportTest, FUNC_TRANS_SendMessagesFromManyToOneBidirectional) {
+TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOneBidirectional) {
   boost::uint32_t id;
   transport::Transport node1;
   transport::Transport node2;
@@ -943,7 +943,7 @@ TEST_F(TransportTest, FUNC_TRANS_ReconnectToDifferentServer) {
   rendezvous_node2.Stop();
 }
 
-TEST_F(TransportTest, BEH_TRANS_StartStopTransport) {
+TEST_F(TransportTest, FUNC_TRANS_StartStopTransport) {
   boost::uint32_t id;
   transport::Transport node1;
   transport::Transport node2;
@@ -1022,7 +1022,7 @@ TEST_F(TransportTest, BEH_TRANS_StartStopTransport) {
   node2.Stop();
 }
 
-TEST_F(TransportTest, BEH_TRANS_SendRespond) {
+TEST_F(TransportTest, FUNC_TRANS_SendRespond) {
   transport::Transport node1;
   transport::Transport node2;
   MessageHandlerEchoReq msg_handler1(&node1);

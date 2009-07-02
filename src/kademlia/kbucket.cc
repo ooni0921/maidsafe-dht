@@ -40,8 +40,8 @@ KBucket::~KBucket() {
 }
 
 bool KBucket::KeyInRange(const std::string &key) {
-  std::string key_enc;
-  if (!base::encode_to_hex(key, key_enc))
+  std::string key_enc("");
+  if (!base::encode_to_hex(key, &key_enc))
     return false;
   key_enc = "0x"+key_enc;
   BigInt key_val(key_enc);

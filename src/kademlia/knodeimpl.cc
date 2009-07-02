@@ -360,8 +360,8 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
       }
     }
 
-//    std::string hex_bs_ip;
-//    base::encode_to_hex(bootstrap_node.host_ip(), hex_bs_ip);
+//    std::string hex_bs_ip("");
+//    base::encode_to_hex(bootstrap_node.host_ip(), &hex_bs_ip);
     pchannel_manager_->ptransport()->StartPingRendezvous(
                                          false,
                                          bootstrap_node.host_ip(),
@@ -571,8 +571,8 @@ void KNodeImpl::Join(const std::string &node_id,
     pdata_store_->StoreItem("node_id", node_id_, now, now);
 //    }
   } else {
-    std::string dec_id;
-    if (!base::decode_from_hex(node_id, dec_id))
+    std::string dec_id("");
+    if (!base::decode_from_hex(node_id, &dec_id))
       node_id_ = node_id;
     else
       node_id_ = dec_id;
@@ -681,9 +681,9 @@ void KNodeImpl::SaveBootstrapContacts() {
     std::string node0_id;
     if (!bootstrapping_nodes_.empty()) {
       node0_id = bootstrapping_nodes_[0].node_id();
-      std::string hex_id;
+      std::string hex_id("");
       base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-      base::encode_to_hex(bootstrapping_nodes_[0].node_id(), hex_id);
+      base::encode_to_hex(bootstrapping_nodes_[0].node_id(), &hex_id);
       kad_contact->set_node_id(hex_id);
       std::string dec_ext_ip(base::inet_btoa(
             bootstrapping_nodes_[0].host_ip()));
@@ -701,8 +701,8 @@ void KNodeImpl::SaveBootstrapContacts() {
          it < bs_contacts.end();
          ++it) {
       if (it->node_id() != node0_id) {
-        std::string hex_id;
-        base::encode_to_hex(it->node_id(), hex_id);
+        std::string hex_id("");
+        base::encode_to_hex(it->node_id(), &hex_id);
         base::KadConfig::Contact *kad_contact = kad_config.add_contact();
         kad_contact->set_node_id(hex_id);
         std::string dec_ext_ip(base::inet_btoa(it->host_ip()));
@@ -773,8 +773,8 @@ int KNodeImpl::LoadBootstrapContacts() {
   }
   bootstrapping_nodes_.clear();
   for (int i = 0; i < kad_config.contact_size(); ++i) {
-    std::string dec_id;
-    base::decode_from_hex(kad_config.contact(i).node_id(), dec_id);
+    std::string dec_id("");
+    base::decode_from_hex(kad_config.contact(i).node_id(), &dec_id);
     Contact bootstrap_contact(
         dec_id,
         kad_config.contact(i).ip(),

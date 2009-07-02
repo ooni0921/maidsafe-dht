@@ -51,7 +51,7 @@ class CryptoTest : public testing::Test {
 }  // namespace
 
 // Obfuscation tests
-TEST_F(CryptoTest, FUNC_BASE_ObfuscatDiffSizes) {
+TEST_F(CryptoTest, BEH_BASE_ObfuscatDiffSizes) {
   std::string obfuscated = ct.Obfuscate(base::RandomString(1024),
                            base::RandomString(1234), crypto::XOR);
   // To be checked, empty string means error = operation not performed because

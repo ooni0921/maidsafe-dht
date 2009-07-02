@@ -90,10 +90,10 @@ class KadServicesTest: public testing::Test {
     std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
-    base::decode_from_hex(hex_id, node_id_);
+    base::decode_from_hex(hex_id, &node_id_);
     hex_id = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
              "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
-    base::decode_from_hex(hex_id, remote_node_id_);
+    base::decode_from_hex(hex_id, &remote_node_id_);
     contact_.set_node_id(remote_node_id_);
     contact_.set_ip("127.0.0.1");
     contact_.set_port(1234);
@@ -161,7 +161,7 @@ class KadServicesTest: public testing::Test {
   KadServicesTest &operator=(const KadServicesTest&);
 };
 
-TEST_F(KadServicesTest, BEH_KAD_ValidateSignedRequest) {
+TEST_F(KadServicesTest, BEH_KAD_ServicesValidateSignedRequest) {
   std::string public_key("A"), private_key("B"), key("C");
   std::string signed_public_key(""), signed_request("");
   CreateSignedRequest(public_key, private_key, key, &signed_public_key,
@@ -175,7 +175,7 @@ TEST_F(KadServicesTest, BEH_KAD_ValidateSignedRequest) {
                                               signed_request, key));
 }
 
-TEST_F(KadServicesTest, BEH_KAD_Ping) {
+TEST_F(KadServicesTest, BEH_KAD_ServicesPing) {
   // Check failure with ping set incorrectly.
   rpcprotocol::Controller controller;
   PingRequest ping_request;
@@ -206,7 +206,7 @@ TEST_F(KadServicesTest, BEH_KAD_Ping) {
   EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
 }
 
-TEST_F(KadServicesTest, BEH_KAD_FindValue) {
+TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   // Search in empty routing table and datastore
   rpcprotocol::Controller controller;
   FindRequest find_value_request;
@@ -214,7 +214,7 @@ TEST_F(KadServicesTest, BEH_KAD_FindValue) {
   for (int i = 0; i < 128; ++i)
     hex_key += "a";
   std::string key("");
-  base::decode_from_hex(hex_key, key);
+  base::decode_from_hex(hex_key, &key);
   find_value_request.set_key(key);
   ContactInfo *sender_info = find_value_request.mutable_sender_info();
   *sender_info = contact_;
@@ -245,8 +245,8 @@ TEST_F(KadServicesTest, BEH_KAD_FindValue) {
       hex_id += character;
     hex_id += base::itos(i+10);
 //    printf("%s\n", hex_id.c_str());
-    std::string id = "";
-    base::decode_from_hex(hex_id, id);
+    std::string id("");
+    base::decode_from_hex(hex_id, &id);
     if (i < K)
       ids.push_back(id);
     std::string ip = "127.0.0.6";
@@ -261,7 +261,7 @@ TEST_F(KadServicesTest, BEH_KAD_FindValue) {
   for (int i = 0; i < 128; ++i)
     wrong_hex_key += "b";
   std::string wrong_key("");
-  base::decode_from_hex(wrong_hex_key, wrong_key);
+  base::decode_from_hex(wrong_hex_key, &wrong_key);
   boost::int32_t now = base::get_epoch_time();
   EXPECT_TRUE(datastore_->StoreItem(wrong_key, "X", now, now));
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
@@ -275,9 +275,9 @@ TEST_F(KadServicesTest, BEH_KAD_FindValue) {
 //  for (int i = 0; i < K; ++i) {
 //    Contact contact;
 //    contact.ParseFromString(find_value_response.closest_nodes(i));
-//    std::string pre, post;
-//    base::encode_to_hex(contact.node_id(), post);
-//    base::encode_to_hex(ids[i], pre);
+//    std::string pre(""), post("");
+//    base::encode_to_hex(contact.node_id(), &post);
+//    base::encode_to_hex(ids[i], &pre);
 //    printf("%s\n", pre.c_str());
 //    printf("%s\n", post.c_str());
 //  }
@@ -318,7 +318,7 @@ TEST_F(KadServicesTest, BEH_KAD_FindValue) {
   EXPECT_EQ(node_id_, find_value_response.node_id());
 }
 
-TEST_F(KadServicesTest, BEH_KAD_FindNode) {
+TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   // Search in empty routing table and datastore
   rpcprotocol::Controller controller;
   FindRequest find_node_request;
@@ -326,7 +326,7 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
   for (int i = 0; i < 128; ++i)
     hex_key += "a";
   std::string key("");
-  base::decode_from_hex(hex_key, key);
+  base::decode_from_hex(hex_key, &key);
   find_node_request.set_key(key);
   ContactInfo *sender_info = find_node_request.mutable_sender_info();
   *sender_info = contact_;
@@ -369,8 +369,8 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
       }
       rand_ids.push_back(hex_id);
     }
-    std::string id;
-    base::decode_from_hex(hex_id, id);
+    std::string id("");
+    base::decode_from_hex(hex_id, &id);
     later_key = id;
     std::string ip = "127.0.0.11";
     boost::uint16_t port = 10101+i;
@@ -405,8 +405,8 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
     for (int j = 0; j < 126; ++j)
       hex_id += character;
     hex_id += base::itos(i+10);
-    std::string id = "";
-    base::decode_from_hex(hex_id, id);
+    std::string id("");
+    base::decode_from_hex(hex_id, &id);
     std::string ip = "127.0.0.6";
     boost::uint16_t port = 9000+i;
     Contact contact(id, ip, port + i, ip, port + i);
@@ -477,7 +477,7 @@ TEST_F(KadServicesTest, BEH_KAD_FindNode) {
   EXPECT_EQ(node_id_, find_node_response.node_id());
 }
 
-TEST_F(KadServicesTest, BEH_KAD_Store) {
+TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   // Store value1
   rpcprotocol::Controller controller;
   StoreRequest store_request;
@@ -487,7 +487,7 @@ TEST_F(KadServicesTest, BEH_KAD_Store) {
   std::string key(""), value1("Val1"), value2("Val2"), value3("Val10");
   std::string public_key(""), private_key("");
   std::string signed_public_key(""), signed_request("");
-  base::decode_from_hex(hex_key, key);
+  base::decode_from_hex(hex_key, &key);
   CreateRSAKeys(&public_key, &private_key);
   CreateSignedRequest(public_key, private_key, key, &signed_public_key,
                       &signed_request);
@@ -547,7 +547,7 @@ TEST_F(KadServicesTest, BEH_KAD_Store) {
   EXPECT_EQ(value3, values[2]);
 }
 
-TEST_F(KadServicesTest, BEH_KAD_Downlist) {
+TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   // Set up details of 10 nodes and add 7 of these to the routing table.
   std::vector<Contact> contacts;
   for (int i = 0; i < 10; ++i) {
@@ -555,7 +555,7 @@ TEST_F(KadServicesTest, BEH_KAD_Downlist) {
     std::string hex_id(""), id("");
     for (int j = 0; j < 128; ++j)
       hex_id += character;
-    ASSERT_TRUE(base::decode_from_hex(hex_id, id));
+    ASSERT_TRUE(base::decode_from_hex(hex_id, &id));
     std::string ip = "127.0.0.6";
     boost::uint16_t port = 5432+i;
     Contact contact(id, ip, port, ip, port);
