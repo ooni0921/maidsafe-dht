@@ -72,6 +72,9 @@ FILE(GLOB M_TRANSPORT_H "transport/*.h*")                          #
 FILE(GLOB M_UDT_C "udt/*.h*")                          #
 FILE(GLOB M_UDT_H "udt/*.c*")                          #
 LIST(APPEND M_TRANSPORT_DIR ${M_TRANSPORT_C} ${M_TRANSPORT_H} ${M_UDT_C} ${M_UDT_H})                   #
+FILE(GLOB MAIDSAFE_C "maidsafe/*.c*")                              #
+FILE(GLOB MAIDSAFE_H "maidsafe/*.h*")                              #
+LIST(APPEND MAIDSAFE_DIR ${MAIDSAFE_C} ${MAIDSAFE_H})                                  #
 FILE(GLOB T_BASE_C "tests/base/*.c*")                              #
 FILE(GLOB T_BASE_H "tests/base/*.h*")                              #
 LIST(APPEND T_BASE_DIR ${T_BASE_C} ${T_BASE_H})                                  #
@@ -100,28 +103,27 @@ FILE(GLOB T_FUNC_KADEMLIA_C "tests/functionalkademlia/*.c*")                    
 FILE(GLOB T_FUNC_KADEMLIA_H "tests/functionalkademlia/*.h*")                      #
 LIST(APPEND T_FUNC_KADEMLIA_DIR ${T_FUNC_KADEMLIA_C} ${T_FUNC_KADEMLIA_H})                      #
 LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "tests/kademlia/testknode.cc")                      #
-
 ######################################################################################
 #All Platforms:  Add Test Exes and Create all maidsafe-dht libs                                 #
 #######################################################################################
-add_executable(TESTbase ${T_MAIN} ${T_BASE_DIR})
-add_executable(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR})
+add_executable(TESTbase ${T_MAIN} ${T_BASE_DIR} ${MAIDSAFE_DIR} )
+add_executable(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_DIR})
 #add_executable(TESTfunctionalkademlia ${T_MAIN} ${T_FUNC_KADEMLIA_DIR})
-add_executable(TESTknode "tests/kademlia/testknode.cc")
-add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR})
-add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR})
-add_executable(TESTupnp ${T_UPNP_DIR})
+add_executable(TESTknode "tests/kademlia/testknode.cc" ${MAIDSAFE_DIR})
+add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${MAIDSAFE_DIR})
+add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${MAIDSAFE_DIR})
+add_executable(TESTupnp ${T_UPNP_DIR} ${MAIDSAFE_DIR})
 #######################################################################################
 #Statically compile the pdlibs - then link applications/libraries to it                         #
 #######################################################################################
-add_library(PDbaselib STATIC ${M_BASE_DIR})
-add_library(PDkademlialib STATIC ${M_KADEMLIA_DIR})
-add_library(PDtransportlib STATIC ${M_TRANSPORT_DIR})
-add_library(PDpbmsgslib STATIC  ${M_PROTOBUF_DIR})
-add_library(PDrpcprotocollib STATIC  ${M_RPCPROTO_DIR})
-add_library(PDTESTrpcprotocollib STATIC  ${M_RPCPROTO_DIR})
-add_library(PDupnplib STATIC ${M_UPNP_DIR})
-add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR} ) 
+add_library(PDbaselib STATIC ${M_BASE_DIR} ${MAIDSAFE_DIR})
+add_library(PDkademlialib STATIC ${M_KADEMLIA_DIR} ${MAIDSAFE_DIR})
+add_library(PDtransportlib STATIC ${M_TRANSPORT_DIR} ${MAIDSAFE_DIR})
+add_library(PDpbmsgslib STATIC  ${M_PROTOBUF_DIR} ${MAIDSAFE_DIR})
+add_library(PDrpcprotocollib STATIC  ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR})
+add_library(PDTESTrpcprotocollib STATIC  ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR})
+add_library(PDupnplib STATIC ${M_UPNP_DIR} ${MAIDSAFE_DIR})
+add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ) 
 ##########################################################################################
 #Set up some extra compiler and linker flags for the tests mainly                        #
 ##########################################################################################
