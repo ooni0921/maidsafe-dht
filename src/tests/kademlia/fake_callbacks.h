@@ -25,8 +25,8 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef TESTS_KADEMLIA_FAKE_CALLBACKS_H_
-#define TESTS_KADEMLIA_FAKE_CALLBACKS_H_
+#ifndef KADEMLIA_FAKE_CALLBACKS_H_
+#define KADEMLIA_FAKE_CALLBACKS_H_
 
 #include <list>
 #include <vector>
@@ -128,7 +128,6 @@ class FindNodeCallback : public FakeCallback {
   std::string contact_;
 };
 
-
 class GeneralKadCallback : public FakeCallback {
  public:
   GeneralKadCallback():FakeCallback(), result_msg() {}
@@ -146,104 +145,6 @@ class GeneralKadCallback : public FakeCallback {
   base::GeneralResponse result_msg;
 };
 
-//  class StoreChunkCallback : public FakeCallback {
-//   public:
-//    StoreChunkCallback():FakeCallback(), result_msg() {}
-//    void CallbackFunc(const std::string &res) {
-//      if (!result_msg.ParseFromString(res)) {
-//        result_msg.set_result(kad::kRpcResultFailure);
-//      }
-//      result_ = result_msg.result();
-//    };
-//    void Reset() {
-//      result_msg.Clear();
-//      result_ = "";
-//    };
-//   private:
-//    kad::StoreResponse result_msg;
-//  };
-//
-//  class LoadChunkCallback : public FakeCallback {
-//   public:
-//    LoadChunkCallback():FakeCallback(), result_msg(), content_("") {}
-//    void CallbackFunc(const std::string &res) {
-//      if (!result_msg.ParseFromString(res)) {
-//        result_msg.set_result(kad::kRpcResultFailure);
-//      } else {
-//        if (result_msg.has_content())
-//          content_ = result_msg.content();
-//      }
-//      result_ = result_msg.result();
-//    };
-//    void Reset() {
-//      result_msg.Clear();
-//      result_ = "";
-//      content_ = "";
-//    };
-//    std::string content() const {return content_;}
-//   private:
-//    maidsafe::GetResponse result_msg;
-//    std::string content_;
-//  };
-//
-//  class UpdateChunkCallback : public FakeCallback {
-//   public:
-//    UpdateChunkCallback() : FakeCallback(), result_msg() {}
-//    void CallbackFunc(const std::string &res) {
-//      if (!result_msg.ParseFromString(res)) {
-//        result_msg.set_result(kad::kRpcResultFailure);
-//      }
-//      result_ = result_msg.result();
-//    };
-//    void Reset() {
-//      result_msg.Clear();
-//      result_ = "";
-//    };
-//   private:
-//    maidsafe::UpdateResponse result_msg;
-//  };
-//
-//  class GetMsgsCallback : public FakeCallback {
-//   public:
-//    GetMsgsCallback() : FakeCallback(), messages_(), result_msg() {}
-//    void CallbackFunc(const std::string &res) {
-//      if (!result_msg.ParseFromString(res)) {
-//        result_msg.set_result(kad::kRpcResultFailure);
-//      } else {
-//        for (int i = 0; i < result_msg.messages_size(); i++)
-//          messages_.push_back(result_msg.messages(i));
-//      }
-//      result_ = result_msg.result();
-//    }
-//    void Reset() {
-//      result_ = "";
-//      messages_.clear();
-//      result_msg.Clear();
-//    }
-//    std::list<std::string> messages() const {return messages_;}
-//   private:
-//    std::list<std::string> messages_;
-//    maidsafe::GetMessagesResponse result_msg;
-//  };
-//
-//  class DeleteChunkCallback : public FakeCallback {
-//   public:
-//    DeleteChunkCallback() : FakeCallback(), result_msg() {}
-//    void CallbackFunc(const std::string &res) {
-//      if (!result_msg.ParseFromString(res)) {
-//        result_msg.set_result(kad::kRpcResultFailure);
-//      }
-//      result_ = result_msg.result();
-//    };
-//    void Reset() {
-//      result_msg.Clear();
-//      result_ = "";
-//    };
-//   private:
-//    maidsafe::DeleteResponse result_msg;
-//  };
-//
-
 inline void wait_result(FakeCallback *cb) {
   while (1) {
     {
@@ -254,4 +155,4 @@ inline void wait_result(FakeCallback *cb) {
   }
 }
 
-#endif  // TESTS_KADEMLIA_FAKE_CALLBACKS_H_
+#endif  // KADEMLIA_FAKE_CALLBACKS_H_

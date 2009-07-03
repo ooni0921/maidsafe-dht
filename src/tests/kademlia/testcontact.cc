@@ -30,21 +30,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 
 class TestContact : public testing::Test {
-public:
-TestContact() : cry_obj() {}
-  protected:
-    void SetUp() {
-      cry_obj.set_symm_algorithm("AES_256");
-      cry_obj.set_hash_algorithm("SHA512");
-    }
-    crypto::Crypto cry_obj;
+ public:
+  TestContact() : cry_obj() {}
+ protected:
+  void SetUp() {
+    cry_obj.set_symm_algorithm("AES_256");
+    cry_obj.set_hash_algorithm("SHA512");
+  }
+  crypto::Crypto cry_obj;
 };
 
 TEST_F(TestContact, BEH_KAD_GetIp_Port_NodeId) {
   std::string ip("192.168.1.55");
   std::string local_ip = ip;
-  unsigned short port = 8888;
-  unsigned short local_port = port;
+  uint16_t port = 8888;
+  uint16_t local_port = port;
   std::string node_id = cry_obj.Hash("1238425", "", crypto::STRING_STRING,
       false);
   kad::Contact contact(node_id, ip, port, local_ip, local_port);
@@ -60,8 +60,8 @@ TEST_F(TestContact, BEH_KAD_GetIp_Port_NodeId) {
 TEST_F(TestContact, BEH_KAD_OverloadedOperators) {
   std::string ip = "192.168.1.55";
   std::string local_ip = ip;
-  unsigned short port = 8888;
-  unsigned short local_port = port;
+  uint16_t port = 8888;
+  uint16_t local_port = port;
   std::string node_id = cry_obj.Hash("1238425", "", crypto::STRING_STRING,
       false);
   kad::Contact contact1(node_id, ip, port, local_ip, local_port);
@@ -88,8 +88,8 @@ TEST_F(TestContact, BEH_KAD_OverloadedOperators) {
 TEST_F(TestContact, BEH_KAD_IncreaseGetFailedRPC) {
   std::string ip = "192.168.1.55";
   std::string local_ip = ip;
-  unsigned short port = 8888;
-  unsigned short local_port = port;
+  uint16_t port = 8888;
+  uint16_t local_port = port;
   std::string node_id = cry_obj.Hash("1238425", "", crypto::STRING_STRING,
       false);
   kad::Contact contact(node_id, ip, port, local_ip, local_port);
@@ -105,8 +105,8 @@ TEST_F(TestContact, BEH_KAD_IncreaseGetFailedRPC) {
 TEST_F(TestContact, BEH_KAD_ContactPointer) {
   std::string ip = "192.168.1.55";
   std::string local_ip = ip;
-  unsigned short port = 8888;
-  unsigned short local_port = port;
+  uint16_t port = 8888;
+  uint16_t local_port = port;
   std::string node_id = cry_obj.Hash("1238425", "", crypto::STRING_STRING,
       false);
   kad::Contact *contact = new kad::Contact(node_id, ip, port, local_ip,
@@ -126,8 +126,8 @@ TEST_F(TestContact, BEH_KAD_ContactPointer) {
 TEST_F(TestContact, BEH_KAD_SerialiseToString) {
   std::string ip = "192.168.1.55";
   std::string local_ip = ip;
-  unsigned short port = 8888;
-  unsigned short local_port = port;
+  uint16_t port = 8888;
+  uint16_t local_port = port;
   std::string node_id = cry_obj.Hash("1238425", "", crypto::STRING_STRING,
       false);
   kad::Contact contact(node_id, ip, port, local_ip, local_port);
@@ -158,7 +158,7 @@ TEST_F(TestContact, BEH_KAD_Constructors) {
   ASSERT_EQ("Empty contact.\n", ctc1.ToString());
 
   std::string ip = base::inet_atob("192.168.1.55");
-  unsigned short port = 8888;
+  uint16_t port = 8888;
   std::string node_id = cry_obj.Hash("1238425", "", crypto::STRING_STRING,
       false);
   kad::Contact ctc2(node_id, ip, port);

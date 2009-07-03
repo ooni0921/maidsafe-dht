@@ -85,35 +85,42 @@ class NatDetectionTest: public testing::Test {
                        datastoreC_(),
                        routingtableA_(),
                        routingtableB_(),
-                       routingtableC_() {
+                       routingtableC_(),
+                       test_dir_() {
+    test_dir_ = std::string("NatDetectionTest") +
+                boost::lexical_cast<std::string>(base::random_32bit_uinteger());
+    std::string dirs;
     try {
-      if (fs::exists("NatDetectionTest"))
-        fs::remove_all("NatDetectionTest");
-      fs::create_directories("NatDetectionTest/A");
-      fs::create_directories("NatDetectionTest/B");
-      fs::create_directories("NatDetectionTest/C");
+      if (fs::exists(test_dir_))
+        fs::remove_all(test_dir_);
+      dirs = test_dir_ + std::string("/A");
+      fs::create_directories(dirs);
+      dirs = test_dir_ + std::string("/B");
+      fs::create_directories(dirs);
+      dirs = test_dir_ + std::string("/C");
+      fs::create_directories(dirs);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
     }
+    dirs = test_dir_ + std::string("/A/datastore");
     knodeimpl1_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl("NatDetectionTest/A/datastore",
-                       channel_managerA_, VAULT));
+        (new KNodeImpl(dirs, channel_managerA_, VAULT));
+    dirs = test_dir_ + std::string("/B/datastore");
     knodeimpl2_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl("NatDetectionTest/B/datastore",
-                       channel_managerB_, VAULT));
+        (new KNodeImpl(dirs, channel_managerB_, VAULT));
+    dirs = test_dir_ + std::string("/C/datastore");
     knodeimpl3_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl("NatDetectionTest/C/datastore",
-                       channel_managerC_, VAULT));
+        (new KNodeImpl(dirs, channel_managerC_, VAULT));
   }
 
   virtual ~NatDetectionTest() {
     try {
-      if (fs::exists("NatDetectionTest"))
-        fs::remove_all("NatDetectionTest");
+      if (fs::exists(test_dir_))
+        fs::remove_all(test_dir_);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
     }
   }
 
@@ -235,6 +242,7 @@ class NatDetectionTest: public testing::Test {
     channel_managerC_.reset();
     printf("Finished tear down.\n");
   }
+
   std::string kad_config_fileA_, kad_config_fileB_, kad_config_fileC_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_managerA_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_managerB_;
@@ -248,6 +256,7 @@ class NatDetectionTest: public testing::Test {
   boost::shared_ptr<KadService> serviceA_, serviceB_, serviceC_;
   boost::shared_ptr<DataStore> datastoreA_, datastoreB_, datastoreC_;
   boost::shared_ptr<RoutingTable>routingtableA_, routingtableB_, routingtableC_;
+  std::string test_dir_;
  private:
   NatDetectionTest(const NatDetectionTest&);
   NatDetectionTest &operator=(const NatDetectionTest&);

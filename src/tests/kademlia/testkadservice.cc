@@ -65,7 +65,7 @@ class Callback {
 
 class KadServicesTest: public testing::Test {
  protected:
-  KadServicesTest() : kad_config_file_("KadServicesTest/.kadconfig"),
+  KadServicesTest() : kad_config_file_(""),
                       channel_manager_(new rpcprotocol::ChannelManager),
                       knodeimpl_(),
                       cb_(),
@@ -75,18 +75,24 @@ class KadServicesTest: public testing::Test {
                       remote_node_id_(""),
                       service_(),
                       datastore_(),
-                      routingtable_() {
+                      routingtable_(),
+                      test_dir_("") {
+    test_dir_ = std::string("KadServicesTest") +
+                boost::lexical_cast<std::string>(base::random_32bit_uinteger());
     try {
-      if (fs::exists("KadServicesTest"))
-        fs::remove_all("KadServicesTest");
+      if (fs::exists(test_dir_))
+        fs::remove_all(test_dir_);
+      fs::create_directories(test_dir_);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
     }
     crypto_.set_hash_algorithm("SHA512");
     crypto_.set_symm_algorithm("AES_256");
+    std::string datastore("/datastore");
+    datastore = test_dir_ + datastore;
     knodeimpl_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl("KadServicesTest/datastore", channel_manager_, VAULT));
+        (new KNodeImpl(datastore, channel_manager_, VAULT));
     std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
@@ -105,8 +111,8 @@ class KadServicesTest: public testing::Test {
 
   virtual ~KadServicesTest() {
     try {
-      if (fs::exists("KadServicesTest"))
-        fs::remove_all("KadServicesTest");
+      if (fs::exists(test_dir_))
+        fs::remove_all(test_dir_);
     }
     catch(const std::exception &e_) {
       printf("%s\n", e_.what());
@@ -114,11 +120,11 @@ class KadServicesTest: public testing::Test {
   }
 
   virtual void SetUp() {
-    fs::create_directories("KadServicesTest");
     EXPECT_EQ(0, channel_manager_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
         knodeimpl_.get(), _1)));
     cb_.Reset();
+    kad_config_file_ = test_dir_ + std::string("/.kadconfig");
     knodeimpl_->Join(node_id_, kad_config_file_,
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
                      false);
@@ -156,6 +162,7 @@ class KadServicesTest: public testing::Test {
   boost::shared_ptr<KadService> service_;
   boost::shared_ptr<DataStore> datastore_;
   boost::shared_ptr<RoutingTable> routingtable_;
+  std::string test_dir_;
  private:
   KadServicesTest(const KadServicesTest&);
   KadServicesTest &operator=(const KadServicesTest&);
@@ -272,15 +279,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   EXPECT_TRUE(find_value_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_value_response.result());
   EXPECT_EQ(K, find_value_response.closest_nodes_size());
-//  for (int i = 0; i < K; ++i) {
-//    Contact contact;
-//    contact.ParseFromString(find_value_response.closest_nodes(i));
-//    std::string pre(""), post("");
-//    base::encode_to_hex(contact.node_id(), &post);
-//    base::encode_to_hex(ids[i], &pre);
-//    printf("%s\n", pre.c_str());
-//    printf("%s\n", post.c_str());
-//  }
+
   std::vector<std::string>::iterator itr;
   for (int i = 0; i < K; ++i) {
     Contact contact;
@@ -557,7 +556,7 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
       hex_id += character;
     ASSERT_TRUE(base::decode_from_hex(hex_id, &id));
     std::string ip = "127.0.0.6";
-    boost::uint16_t port = 5432+i;
+    boost::uint16_t port = 9000 + i;
     Contact contact(id, ip, port, ip, port);
     if (i < 7)
       ASSERT_EQ(0, routingtable_->AddContact(contact));
