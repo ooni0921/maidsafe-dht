@@ -52,59 +52,66 @@ IF (WIN32)
 	ENDIF(MSVC)
 ENDIF(WIN32)
 INCLUDE_DIRECTORIES(${maidsafe-dht_SOURCE_DIR} ${INCLUDE_DIR} )
-##################################################################################
-#SET UP ALL FILES AS GLOBS #######################################################
-##################################################################################
-FILE(GLOB M_PROTOBUF_C "protobuf/*.c*")                            #
-FILE(GLOB M_PROTOBUF_H "protobuf/*.h*")                            #
-LIST(APPEND M_PROTOBUF_DIR ${M_PROTOBUF_C} ${M_PROTOBUF_H})                      #
-FILE(GLOB M_BASE_C "base/*.c*")                                    #
-FILE(GLOB M_BASE_H "base/*.h*")                                    #
-LIST(APPEND M_BASE_DIR ${M_BASE_C} ${M_BASE_H})                                  #
-FILE(GLOB M_KADEMLIA_C "kademlia/*.c*")                            #
-FILE(GLOB M_KADEMLIA_H "kademlia/*.h*")                            #
-LIST(APPEND M_KADEMLIA_DIR ${M_KADEMLIA_C} ${M_KADEMLIA_H})                      #
-LIST(APPEND STYLE_KADEMLIA ${M_KADEMLIA_C} ${M_KADEMLIA_H})                      #
-FILE(GLOB PB_KADEMLIA "kademlia/*.pb.*")                           #
-
-FILE(GLOB M_TRANSPORT_C "transport/*.c*")                          #
-FILE(GLOB M_TRANSPORT_H "transport/*.h*")                          #
-FILE(GLOB M_UDT_C "udt/*.h*")                          #
-FILE(GLOB M_UDT_H "udt/*.c*")                          #
-LIST(APPEND M_TRANSPORT_DIR ${M_TRANSPORT_C} ${M_TRANSPORT_H} ${M_UDT_C} ${M_UDT_H})                   #
-FILE(GLOB MAIDSAFE_C "maidsafe/*.c*")                              #
-FILE(GLOB MAIDSAFE_H "maidsafe/*.h*")                              #
-LIST(APPEND MAIDSAFE_DIR ${MAIDSAFE_C} ${MAIDSAFE_H})                                  #
-FILE(GLOB T_BASE_C "tests/base/*.c*")                              #
-FILE(GLOB T_BASE_H "tests/base/*.h*")                              #
-LIST(APPEND T_BASE_DIR ${T_BASE_C} ${T_BASE_H})                                  #
-FILE(GLOB T_KADEMLIA_C "tests/kademlia/*.c*")                      #
-FILE(GLOB T_KADEMLIA_H "tests/kademlia/*.h*")                      #
-LIST(APPEND T_KADEMLIA_DIR ${T_KADEMLIA_C} ${T_KADEMLIA_H})                      #
-LIST(REMOVE_ITEM T_KADEMLIA_DIR  "${maidsafe-dht_SOURCE_DIR}/tests/kademlia/testknode.cc")
-FILE(GLOB T_TRANSPORT_C "tests/transport/*.c*")                    #
-FILE(GLOB T_TRANSPORT_H "tests/transport/*.h*")                    #
-LIST(APPEND T_TRANSPORT_DIR ${T_TRANSPORT_C} ${T_TRANSPORT_H})                   #
-FILE(GLOB T_MAIN  "tests/main.cc")                                 #
-FILE(GLOB M_RPCPROTO_C "rpcprotocol/*.c*")                         #
-FILE(GLOB M_RPCPROTO_H "rpcprotocol/*.h*")                         #
-LIST(APPEND M_RPCPROTO_DIR ${M_RPCPROTO_C} ${M_RPCPROTO_H})                      #
-LIST(APPEND STYLE_RPCPROTO ${M_RPCPROTO_C} ${M_RPCPROTO_H})                      #
-FILE(GLOB T_RPCPROTO_C "tests/rpcprotocol/*.c*")                   #
-FILE(GLOB T_RPCPROTO_H "tests/rpcprotocol/*.h*")                   #
-LIST(APPEND T_RPCPROTO_DIR ${T_RPCPROTO_C} ${T_RPCPROTO_H})                      #
-FILE(GLOB T_UPNP_C "tests/upnp/*.c*")                                    #
-FILE(GLOB T_UPNP_H "tests/upnp/*.h*")                                    #
-LIST(APPEND T_UPNP_DIR ${T_UPNP_C} ${T_UPNP_H})                                  #
-FILE(GLOB M_UPNP_C "upnp/*.c*")                                    #
-FILE(GLOB M_UPNP_H "upnp/*.h*")                                    #
-LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})                                  #
-FILE(GLOB T_FUNC_KADEMLIA_C "tests/functionalkademlia/*.c*")                      #
-FILE(GLOB T_FUNC_KADEMLIA_H "tests/functionalkademlia/*.h*")                      #
-LIST(APPEND T_FUNC_KADEMLIA_DIR ${T_FUNC_KADEMLIA_C} ${T_FUNC_KADEMLIA_H})                      #
-LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "tests/kademlia/testknode.cc")                      #
-######################################################################################
-#All Platforms:  Add Test Exes and Create all maidsafe-dht libs                                 #
+#########################################################################################################
+#SET UP ALL FILES AS GLOBS ##############################################################################
+#########################################################################################################
+#########################################################################################################
+####	CODE	####											#
+FILE(GLOB M_UPNP_C "upnp/*.c*")                                    					#
+FILE(GLOB M_UPNP_H "upnp/*.h*")                                    					#
+LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})                                  			#
+FILE(GLOB M_PROTOBUF_C "protobuf/*.c*")                            		 			#
+FILE(GLOB M_PROTOBUF_H "protobuf/*.h*")                            		 			#
+LIST(APPEND M_PROTOBUF_DIR ${M_PROTOBUF_C} ${M_PROTOBUF_H})                      			#
+FILE(GLOB M_BASE_C "base/*.c*")                                    					#
+FILE(GLOB M_BASE_H "base/*.h*")                                    					#
+LIST(APPEND M_BASE_DIR ${M_BASE_C} ${M_BASE_H})                                  			#
+FILE(GLOB M_KADEMLIA_C "kademlia/*.c*")                            					#
+FILE(GLOB M_KADEMLIA_H "kademlia/*.h*")                            					#
+LIST(APPEND M_KADEMLIA_DIR ${M_KADEMLIA_C} ${M_KADEMLIA_H})                      			#
+LIST(APPEND STYLE_KADEMLIA ${M_KADEMLIA_C} ${M_KADEMLIA_H})                      			#
+FILE(GLOB PB_KADEMLIA "kademlia/*.pb.*")                           					#
+FILE(GLOB M_TRANSPORT_C "transport/*.c*")                          					#
+FILE(GLOB M_TRANSPORT_H "transport/*.h*")                          					#
+FILE(GLOB M_UDT_C "udt/*.h*")                          							#
+FILE(GLOB M_UDT_H "udt/*.c*")                          							#
+LIST(APPEND M_TRANSPORT_DIR ${M_TRANSPORT_C} ${M_TRANSPORT_H} ${M_UDT_C} ${M_UDT_H})            	#
+FILE(GLOB MAIDSAFE_C "maidsafe/*.c*")                              					#
+FILE(GLOB MAIDSAFE_H "maidsafe/*.h*")                              					#
+LIST(APPEND MAIDSAFE_DIR ${MAIDSAFE_C} ${MAIDSAFE_H})                                  			#
+####	TESTS	####											#
+FILE(GLOB T_BASE_C "tests/base/*.c*")                              					#
+FILE(GLOB T_BASE_H "tests/base/*.h*")                              					#
+LIST(APPEND T_BASE_DIR ${T_BASE_C} ${T_BASE_H})                                  			#
+FILE(GLOB T_KADEMLIA_C "tests/kademlia/*.c*")                      					#
+FILE(GLOB T_KADEMLIA_H "tests/kademlia/*.h*")                      					#
+LIST(APPEND T_KADEMLIA_DIR ${T_KADEMLIA_C} ${T_KADEMLIA_H})                      			#
+LIST(REMOVE_ITEM T_KADEMLIA_DIR "${maidsafe-dht_SOURCE_DIR}/tests/kademlia/testknode.cc")		#
+FILE(GLOB T_TRANSPORT_C "tests/transport/*.c*")                    					#
+FILE(GLOB T_TRANSPORT_H "tests/transport/*.h*")                    					#
+LIST(APPEND T_TRANSPORT_DIR ${T_TRANSPORT_C} ${T_TRANSPORT_H})                   			#
+FILE(GLOB T_MAIN  "tests/main.cc")                                 					#
+FILE(GLOB M_RPCPROTO_C "rpcprotocol/*.c*")                         					#
+FILE(GLOB M_RPCPROTO_H "rpcprotocol/*.h*")                         					#
+LIST(APPEND M_RPCPROTO_DIR ${M_RPCPROTO_C} ${M_RPCPROTO_H})                      			#
+LIST(APPEND STYLE_RPCPROTO ${M_RPCPROTO_C} ${M_RPCPROTO_H})                      			#
+FILE(GLOB T_RPCPROTO_C "tests/rpcprotocol/*.c*")                   					#
+FILE(GLOB T_RPCPROTO_H "tests/rpcprotocol/*.h*")                   					#
+LIST(APPEND T_RPCPROTO_DIR ${T_RPCPROTO_C} ${T_RPCPROTO_H})                      			#
+FILE(GLOB STYLE_RPCPROTO_C "tests/rpcprotocol/*.c*")                   					#
+FILE(GLOB STYLE_RPCPROTO_H "tests/rpcprotocol/*.h*")                   					#
+LIST(APPEND STYLE_RPCPROTO_DIR ${STYLE_RPCPROTO_C} ${STYLE_RPCPROTO_H})                    		#
+LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${maidsafe-dht_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.h")	#
+LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${maidsafe-dht_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.cc")	#
+FILE(GLOB T_UPNP_C "tests/upnp/*.c*")                                    				#
+FILE(GLOB T_UPNP_H "tests/upnp/*.h*")                                    				#
+LIST(APPEND T_UPNP_DIR ${T_UPNP_C} ${T_UPNP_H})                                  			#
+FILE(GLOB T_FUNC_KADEMLIA_C "tests/functionalkademlia/*.c*")                      			#
+FILE(GLOB T_FUNC_KADEMLIA_H "tests/functionalkademlia/*.h*")                      			#
+LIST(APPEND T_FUNC_KADEMLIA_DIR ${T_FUNC_KADEMLIA_C} ${T_FUNC_KADEMLIA_H})                      	#
+LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "tests/kademlia/testknode.cc")                      		#
+#########################################################################################################
+#All Platforms:  Add Test Exes and Create all maidsafe-dht libs                       #
 #######################################################################################
 add_executable(TESTbase ${T_MAIN} ${T_BASE_DIR} ${MAIDSAFE_DIR} )
 add_executable(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_DIR})
@@ -114,7 +121,7 @@ add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${MAIDSAFE_DIR})
 add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${MAIDSAFE_DIR})
 add_executable(TESTupnp ${T_UPNP_DIR} ${MAIDSAFE_DIR})
 #######################################################################################
-#Statically compile the pdlibs - then link applications/libraries to it                         #
+#Statically compile the pdlibs - then link applications/libraries to it               #
 #######################################################################################
 add_library(PDbaselib STATIC ${M_BASE_DIR} ${MAIDSAFE_DIR})
 add_library(PDkademlialib STATIC ${M_KADEMLIA_DIR} ${MAIDSAFE_DIR})
@@ -128,7 +135,7 @@ add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DI
 #Set up some extra compiler and linker flags for the tests mainly                        #
 ##########################################################################################
 SET_TARGET_PROPERTIES(PDbaselib PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACROS" )  
-#########################################################################################
+##########################################################################################
 #BUILDS
 IF (APPLE)
 # Maidsafe Standard:  Boost 1_37 Library, xgcc40 compiler
@@ -225,16 +232,16 @@ SET (CTEST_CONTINUOUS_MINIMUM_INTERVAL 10)
 set(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY true)
 ADD_TEST(TESTupnp ${EXECUTABLE_OUTPUT_PATH}/TESTupnp)
 IF(UNIX)
-ADD_TEST(CHK_KAD_ ${maidsafe-dht_SOURCE_DIR}/cpplint.py ${STYLE_KADEMLIA})
-ADD_TEST(CHK_BASE_ ${maidsafe-dht_SOURCE_DIR}/cpplint.py ${M_BASE_DIR})
-ADD_TEST(CHK_RPC_COMPONENT ${maidsafe-dht_SOURCE_DIR}/cpplint.py ${M_RPCPROTO_DIR})
+ADD_TEST(CHK_KAD ${maidsafe-dht_SOURCE_DIR}/cpplint.py ${STYLE_KADEMLIA} ${T_KADEMLIA_DIR} ${T_FUNC_KADEMLIA_DIR})
+ADD_TEST(CHK_BASE ${maidsafe-dht_SOURCE_DIR}/cpplint.py ${M_BASE_DIR} ${T_BASE_DIR})
+ADD_TEST(CHK_RPC ${maidsafe-dht_SOURCE_DIR}/cpplint.py ${M_RPCPROTO_DIR} ${STYLE_RPCPROTO_DIR})
 #ADD_TEST(Knode ${EXECUTABLE_OUTPUT_PATH}/TESTknode)
 ENDIF(UNIX)
 IF(WIN32)
 #ADD_TEST(Knode ${EXECUTABLE_OUTPUT_PATH}/TESTknode.exe)
 ENDIF()
 IF(UNIX)
-	FOREACH(TESTTYPE TESTfs TESTbase TESTknode  TESTkademlia TESTtransport TESTrpcprotocol)
+	FOREACH(TESTTYPE TESTbase TESTknode  TESTkademlia TESTtransport TESTrpcprotocol)
 	#FOREACH(TESTTYPE TESTfs TESTbase TESTknode  TESTkademlia TESTfunctionalkademlia TESTtransport TESTrpcprotocol)
 ELSE(UNIX)
 	FOREACH(TESTTYPE TESTbase.exe TESTknode.exe TESTkademlia.exe TESTtransport.exe  TESTrpcprotocol.exe)

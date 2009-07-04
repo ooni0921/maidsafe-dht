@@ -301,9 +301,8 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOne) {
   sent_msgs.push_back(ser_rpc_msg);
   ASSERT_EQ(0, node3.ConnectToSend("127.0.0.1", lp_node4, "", 0, &id, false));
   ASSERT_EQ(0, node3.Send(rpc_msg, id, true));
-  printf("messages sent correctly\n");
+  printf("Messages sent correctly.\n");
   boost::uint32_t now = base::get_epoch_time();
-  bool msgs_received = false;
   while (msg_handler[3].msgs.size() < 3 &&
          base::get_epoch_time() - now < 15)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -575,7 +574,7 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
 
   for (int k = 0; k < kNumNodes; ++k)
     nodes[k]->Stop();
-  printf("total number of successful connections = %i\n", messages_size);
+  printf("Total number of successful connections = %i.\n", messages_size);
   ASSERT_EQ(messages_size, msg_handler[0].msgs.size());
   while (!msg_handler[0].msgs.empty()) {
     std::string msg = msg_handler[0].msgs.back();
@@ -1239,13 +1238,13 @@ TEST_F(TransportTest, BEH_TRANS_CheckConnection) {
   if (local_ips.size() > 0) {
     std::string server_addr = "127.0.0.1";
     for (boost::uint32_t i = 0; i < local_ips.size(); i++) {
-      printf("checking local address %s connecting to address %s\n",
+      printf("Checking local address %s connecting to address %s.\n",
         local_ips[i].c_str(), server_addr.c_str());
       ASSERT_FALSE(node1.CheckConnection(local_ips[i], server_addr, lp_node2));
     }
     ASSERT_TRUE(node1.CheckConnection(local_ips[0], local_ips[0], lp_node2));
   } else {
-    printf("no local addresses where retrieved\n");
+    printf("No local addresses where retrieved.\n");
   }
   node1.Stop();
   node2.Stop();

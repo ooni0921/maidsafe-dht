@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <exception>
 #include <vector>
 #include <list>
+#include <set>
 
 #include "base/crypto.h"
 #include "base/rsakeypair.h"
@@ -61,13 +62,36 @@ inline void create_rsakeys(std::string *pub_key, std::string *priv_key) {
 }
 
 inline void create_req(const std::string &pub_key, const std::string &priv_key,
-  const std::string &key, std::string *sig_pub_key, std::string *sig_req) {
+    const std::string &key, std::string *sig_pub_key, std::string *sig_req) {
   crypto::Crypto cobj;
   cobj.set_symm_algorithm("AES_256");
   cobj.set_hash_algorithm("SHA512");
   *sig_pub_key = cobj.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
   *sig_req = cobj.AsymSign(cobj.Hash(pub_key + *sig_pub_key + key, "",
       crypto::STRING_STRING, true), "", priv_key, crypto::STRING_STRING);
+}
+
+std::string get_app_directory() {
+  boost::filesystem::path app_path;
+#if defined(MAIDSAFE_POSIX)
+  app_path = boost::filesystem::path("/var/cache/maidsafe/",
+      boost::filesystem::native);
+#elif defined(MAIDSAFE_WIN32)
+  TCHAR szpth[MAX_PATH];
+  if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szpth))) {
+    std::ostringstream stm;
+    const std::ctype<char> &ctfacet =
+        std::use_facet< std::ctype<char> >(stm.getloc());
+    for (size_t i = 0; i < wcslen(szpth); ++i)
+      stm << ctfacet.narrow(szpth[i], 0);
+    app_path = boost::filesystem::path(stm.str(),
+                                       boost::filesystem::native);
+    app_path /= "maidsafe";
+  }
+#elif defined(MAIDSAFE_APPLE)
+  app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
+#endif
+  return app_path.string();
 }
 
 class KNodeTest: public testing::Test {
@@ -79,19 +103,20 @@ class KNodeTest: public testing::Test {
   KNodeTest &operator=(const KNodeTest&);
 };
 
-std::string kad_config_file("");
+std::string kad_config_file_("");
 std::vector< boost::shared_ptr<rpcprotocol::ChannelManager> >
     channel_managers_;
 std::vector< boost::shared_ptr<kad::KNode> > knodes_;
 std::vector<std::string> dbs_;
 crypto::Crypto cry_obj_;
 GeneralKadCallback cb_;
-std::vector<std::string> node_ids;
+std::vector<std::string> node_ids_;
+std::set<boost::uint16_t> ports_;
+std::string test_dir_;
 
 class Env: public testing::Environment {
  public:
   Env() {
-    kad_config_file = "KnodeTest/.kadconfig";
     cry_obj_.set_symm_algorithm("AES_256");
     cry_obj_.set_hash_algorithm("SHA512");
   }
@@ -101,53 +126,25 @@ class Env: public testing::Environment {
   }
 
   virtual void SetUp() {
+    test_dir_ = std::string("KnodeTest") +
+                boost::lexical_cast<std::string>(base::random_32bit_uinteger());
+    kad_config_file_ = test_dir_ + std::string("/.kadconfig");
     try {
-      if (fs::exists("KnodeTest"))
-        fs::remove_all("KnodeTest");
+      if (fs::exists(test_dir_))
+        fs::remove_all(test_dir_);
+      fs::create_directories(test_dir_);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
     }
-    fs::create_directories("KnodeTest");
     // setup the nodes without starting them
     for (int  i = 0; i < kNetworkSize; ++i) {
-      // Deleting the DBs in the app dir
-      boost::filesystem::path app_path("");
-#if defined(MAIDSAFE_POSIX)
-      app_path = boost::filesystem::path("/var/cache/maidsafe/",
-        boost::filesystem::native);
-#elif defined(MAIDSAFE_WIN32)
-      TCHAR szpth[MAX_PATH];
-      if (SUCCEEDED(SHGetFolderPath(NULL,
-                                    CSIDL_COMMON_APPDATA,
-                                    NULL,
-                                    0,
-                                    szpth))) {
-        std::ostringstream stm;
-        const std::ctype<char> &ctfacet =
-            std::use_facet< std::ctype<char> >(stm.getloc());
-        for (size_t i = 0; i < wcslen(szpth); ++i)
-          stm << ctfacet.narrow(szpth[i], 0);
-        app_path = boost::filesystem::path(stm.str(),
-                                           boost::filesystem::native);
-        app_path /= "maidsafe";
-      }
-#elif defined(MAIDSAFE_APPLE)
-      app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
-#endif
-      app_path /= base::itos(62000 + i);
-      try {
-        if (fs::exists(app_path))
-          fs::remove_all(app_path);
-      }
-      catch(const std::exception &e_) {
-        printf("%s\n", e_.what());
-      }
       boost::shared_ptr<rpcprotocol::ChannelManager>
           channel_manager_local_(new rpcprotocol::ChannelManager());
       channel_managers_.push_back(channel_manager_local_);
 
-      std::string db_local_ = "KnodeTest/datastore"+base::itos(62000+i);
+      std::string db_local_ = test_dir_ + std::string("/datastore") +
+                              base::itos(i);
       dbs_.push_back(db_local_);
 
       boost::shared_ptr<kad::KNode>
@@ -157,49 +154,18 @@ class Env: public testing::Environment {
                                       kTestK,
                                       kad::kAlpha,
                                       kad::kBeta));
-      EXPECT_EQ(0, channel_managers_[i]->StartTransport(62000+i,
-        boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_local_.get(),
-                    _1)));
+      EXPECT_EQ(0, channel_managers_[i]->StartTransport(0,
+          boost::bind(&kad::KNode::HandleDeadRendezvousServer,
+          knode_local_.get(), _1)));
       knodes_.push_back(knode_local_);
+      ports_.insert(knodes_[i]->host_port());
       cb_.Reset();
     }
 
-    // Delete the app file for the client node on port 63001
-    boost::filesystem::path app_path("");
-#if defined(MAIDSAFE_POSIX)
-    app_path = boost::filesystem::path("/var/cache/maidsafe/",
-      boost::filesystem::native);
-#elif defined(MAIDSAFE_WIN32)
-    TCHAR szpth[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPath(NULL,
-                                  CSIDL_COMMON_APPDATA,
-                                  NULL,
-                                  0,
-                                  szpth))) {
-      std::ostringstream stm;
-      const std::ctype<char> &ctfacet =
-          std::use_facet< std::ctype<char> >(stm.getloc());
-      for (size_t i = 0; i < wcslen(szpth); ++i)
-        stm << ctfacet.narrow(szpth[i], 0);
-      app_path = boost::filesystem::path(stm.str(), boost::filesystem::native);
-      app_path /= "maidsafe";
-    }
-#elif defined(MAIDSAFE_APPLE)
-    app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
-#endif
-    app_path /= base::itos(63001);
-    try {
-      if (fs::exists(app_path))
-        fs::remove_all(app_path);
-    }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
-    }
-
     // start node 1 and add his details to kad config protobuf
-    kad_config_file = dbs_[1] + "/.kadconfig";
+    kad_config_file_ = dbs_[1] + "/.kadconfig";
     knodes_[1]->Join("",
-                     kad_config_file,
+                     kad_config_file_,
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
                      false);
     wait_result(&cb_);
@@ -216,8 +182,8 @@ class Env: public testing::Environment {
     kad_contact_->set_local_ip(knodes_[1]->local_host_ip());
     kad_contact_->set_local_port(knodes_[1]->local_host_port());
     std::string node1_id = knodes_[1]->node_id();
-    kad_config_file = dbs_[0] + "/.kadconfig";
-    std::fstream output1(kad_config_file.c_str(),
+    kad_config_file_ = dbs_[0] + "/.kadconfig";
+    std::fstream output1(kad_config_file_.c_str(),
       std::ios::out | std::ios::trunc | std::ios::binary);
     EXPECT_TRUE(kad_config.SerializeToOstream(&output1));
     output1.close();
@@ -225,14 +191,14 @@ class Env: public testing::Environment {
     // bootstrap node 0 (off node 1) and reset kad config with his details
     cb_.Reset();
     knodes_[0]->Join("",
-                     kad_config_file,
+                     kad_config_file_,
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
                      false);
     wait_result(&cb_);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
     ASSERT_TRUE(knodes_[0]->is_joined());
     printf("Node 0 joined.\n");
-    node_ids.push_back(knodes_[0]->node_id());
+    node_ids_.push_back(knodes_[0]->node_id());
     kad_config.Clear();
     kad_contact_ = kad_config.add_contact();
     std::string hex_id1("");
@@ -244,8 +210,8 @@ class Env: public testing::Environment {
     kad_contact_->set_local_port(knodes_[0]->local_host_port());
 
     for (int i = 1; i < kNetworkSize; i++) {
-      kad_config_file = dbs_[i] + "/.kadconfig";
-      std::fstream output2(kad_config_file.c_str(),
+      kad_config_file_ = dbs_[i] + "/.kadconfig";
+      std::fstream output2(kad_config_file_.c_str(),
         std::ios::out | std::ios::trunc | std::ios::binary);
       ASSERT_TRUE(kad_config.SerializeToOstream(&output2));
       output2.close();
@@ -264,16 +230,16 @@ class Env: public testing::Environment {
         id = node1_id;
       }
       cb_.Reset();
-      kad_config_file = dbs_[i] + "/.kadconfig";
+      kad_config_file_ = dbs_[i] + "/.kadconfig";
       knodes_[i]->Join(id,
-                       kad_config_file,
+                       kad_config_file_,
                        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
                        false);
       wait_result(&cb_);
       ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
       ASSERT_TRUE(knodes_[i]->is_joined());
       printf("Node %i joined.\n", i);
-      node_ids.push_back(knodes_[i]->node_id());
+      node_ids_.push_back(knodes_[i]->node_id());
     }
     cb_.Reset();
 #ifdef WIN32
@@ -306,67 +272,23 @@ class Env: public testing::Environment {
       channel_managers_[i]->StopTransport();
       knodes_[i].reset();
       channel_managers_[i].reset();
+    }
+    std::set<boost::uint16_t>::iterator it;
+    for (it = ports_.begin(); it != ports_.end(); it++) {
       // Deleting the DBs in the app dir
-      boost::filesystem::path app_path("");
-#if defined(MAIDSAFE_POSIX)
-      app_path = boost::filesystem::path("/var/cache/maidsafe/",
-        boost::filesystem::native);
-#elif defined(MAIDSAFE_WIN32)
-      TCHAR szpth[MAX_PATH];
-      if (SUCCEEDED(SHGetFolderPath(NULL,
-                                    CSIDL_COMMON_APPDATA,
-                                    NULL,
-                                    0,
-                                    szpth))) {
-        std::ostringstream stm;
-        const std::ctype<char> &ctfacet =
-            std::use_facet< std::ctype<char> >(stm.getloc());
-        for (size_t i = 0; i < wcslen(szpth); ++i)
-          stm << ctfacet.narrow(szpth[i], 0);
-        app_path = boost::filesystem::path(stm.str(),
-                                           boost::filesystem::native);
-        app_path /= "maidsafe";
-      }
-#elif defined(MAIDSAFE_APPLE)
-      app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
-#endif
-      app_path /= base::itos(62000 + i);
+      fs::path db_dir(get_app_directory());
+      db_dir /= base::itos(*it);
       try {
-        if (fs::exists(app_path))
-          fs::remove_all(app_path);
+        if (fs::exists(db_dir))
+          fs::remove_all(db_dir);
       }
-      catch(const std::exception &e_) {
-        printf("%s\n", e_.what());
+      catch(const std::exception &e) {
+        printf("%s\n", e.what());
       }
     }
-    boost::filesystem::path app_path("");
-#if defined(MAIDSAFE_POSIX)
-    app_path = boost::filesystem::path("/var/cache/maidsafe/",
-      boost::filesystem::native);
-#elif defined(MAIDSAFE_WIN32)
-    TCHAR szpth[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPath(NULL,
-                                  CSIDL_COMMON_APPDATA,
-                                  NULL,
-                                  0,
-                                  szpth))) {
-      std::ostringstream stm;
-      const std::ctype<char> &ctfacet =
-          std::use_facet< std::ctype<char> >(stm.getloc());
-      for (size_t i = 0; i < wcslen(szpth); ++i)
-        stm << ctfacet.narrow(szpth[i], 0);
-      app_path = boost::filesystem::path(stm.str(), boost::filesystem::native);
-      app_path /= "maidsafe";
-    }
-#elif defined(MAIDSAFE_APPLE)
-    app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
-#endif
-    app_path /= base::itos(63001);
     try {
-      if (fs::exists(app_path))
-        fs::remove_all(app_path);
-      if (fs::exists("KnodeTest"))
-        fs::remove_all("KnodeTest");
+      if (fs::exists(test_dir_))
+        fs::remove_all(test_dir_);
     }
     catch(const std::exception &e_) {
       printf("%s\n", e_.what());
@@ -374,7 +296,8 @@ class Env: public testing::Environment {
     knodes_.clear();
     channel_managers_.clear();
     dbs_.clear();
-    node_ids.clear();
+    node_ids_.clear();
+    ports_.clear();
     printf("Finished tear down.\n");
   }
 
@@ -388,7 +311,8 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
       mutex_local_(new boost::mutex);
   boost::shared_ptr<rpcprotocol::ChannelManager>
       channel_manager_local_(new rpcprotocol::ChannelManager());
-  std::string db_local = "KnodeTest/datastore"+base::itos(63001);
+  std::string db_local = test_dir_ + std::string("/datastore") +
+                         base::itos(kNetworkSize + 1);
   boost::filesystem::create_directories(db_local);
   std::string config_file = db_local + "/.kadconfig";
   base::KadConfig conf;
@@ -411,9 +335,10 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
                                              kTestK,
                                              kad::kAlpha,
                                              kad::kBeta));
-  EXPECT_EQ(0, channel_manager_local_->StartTransport(63001,
-    boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode_local_.get(),
-                _1)));
+  EXPECT_EQ(0, channel_manager_local_->StartTransport(0,
+      boost::bind(&kad::KNode::HandleDeadRendezvousServer,
+      knode_local_.get(), _1)));
+  ports_.insert(knode_local_->host_port());
   knode_local_->Join("",
                      config_file,
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
@@ -423,7 +348,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   // Doing a storevalue
   std::string key = cry_obj_.Hash("dccxxvdeee432cc", "", crypto::STRING_STRING,
       false);
-  std::string value = base::RandomString(1024*10);  // 10KB
+  std::string value = base::RandomString(1024 * 10);  // 10KB
   StoreValueCallback cb_1;
   std::string pub_key(""), priv_key(""), sig_pub_key(""), sig_req("");
   create_rsakeys(&pub_key, &priv_key);
@@ -635,7 +560,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   // prepare big size of values
   std::string key = cry_obj_.Hash("vcdrer434dccdwwt", "", crypto::STRING_STRING,
       false);
-  std::string value = base::RandomString(1024*1024);  // 1MB
+  std::string value = base::RandomString(1024 * 1024);  // 1MB
   // save key/value pair from no.10 node
   StoreValueCallback cb_;
   std::string pub_key, priv_key, sig_pub_key, sig_req;
@@ -762,7 +687,17 @@ TEST_F(KNodeTest, BEH_KAD_Ping) {
   // ping a dead node
   std::string dead_id = cry_obj_.Hash("bb446dx", "", crypto::STRING_STRING,
       false);
-  kad::Contact dead_remote(dead_id, "127.0.0.1", 9999);
+
+  boost::uint16_t port(4242);
+  std::set<boost::uint16_t>::iterator it;
+  it = ports_.find(port);
+
+  while (it != ports_.end()) {
+    ++port;
+    it = ports_.find(port);
+  }
+
+  kad::Contact dead_remote(dead_id, "127.0.0.1", port);
   PingCallback cb_3;
   knodes_[19]->Ping(dead_remote,
       boost::bind(&PingCallback::CallbackFunc, &cb_3, _1));
@@ -817,7 +752,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
   for (int i = 0; i < kTestK - 1; ++i) {
     cb_.Reset();
     std::string conf_file = dbs_[2 + i] + "/.kadconfig";
-    knodes_[2 + i]->Join(node_ids[2 + i], conf_file,
+    knodes_[2 + i]->Join(node_ids_[2 + i], conf_file,
         boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
     wait_result(&cb_);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
@@ -829,6 +764,7 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   // select a random node from node 1 to node 19
   int r_node = 1 + rand() % 19;  // NOLINT (Fraser)
+  boost::uint16_t r_port = knodes_[r_node]->host_port();
   std::string r_node_id = knodes_[r_node]->node_id();
   // Compute the sum of the nodes whose routing table contain r_node
   int sum_0 = 0;
@@ -884,6 +820,8 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   knodes_[r_node]->Leave();
   ASSERT_FALSE(knodes_[r_node]->is_joined());
   channel_managers_[r_node]->StopTransport();
+  ports_.erase(r_port);
+
   // Do a find node
   knodes_[0]->FindCloseNodes(r_node_id,
       boost::bind(&FindNodeCallback::CallbackFunc, &cb_1, _1));
@@ -912,16 +850,17 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   ASSERT_LT(sum_1, sum_0);
 
   // Restart dead node
-  ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(62000+r_node,
+  ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(0,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knodes_[r_node].get(), _1)));
   cb_.Reset();
   std::string conf_file = dbs_[r_node] + "/.kadconfig";
-  knodes_[r_node]->Join(node_ids[r_node], conf_file,
+  knodes_[r_node]->Join(node_ids_[r_node], conf_file,
       boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());
+  ports_.insert(knodes_[r_node]->host_port());
 }
 
 TEST_F(KNodeTest, FUNC_KAD_StoreWithInvalidRequest) {
@@ -988,9 +927,11 @@ TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
   int r_node = 1 + rand() % 19;  // NOLINT (Fraser)
   printf("+++++++++++++++++ r_node = %d \n", r_node);
   std::string r_node_id = knodes_[r_node]->node_id();
+  boost::uint16_t r_port = knodes_[r_node]->host_port();
   knodes_[r_node]->Leave();
   ASSERT_FALSE(knodes_[r_node]->is_joined());
   channel_managers_[r_node]->StopTransport();
+  ports_.erase(r_port);
 //  boost::this_thread::sleep(boost::posix_time::seconds(10));
   // Do a find node
   printf("+++++++++++++++++Node stopped %d \n", r_node);
@@ -1002,21 +943,23 @@ TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   // Restart dead node
   printf("+++++++++++++++++Restarting %d \n", r_node);
-  ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(62000+r_node,
+  ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(0,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knodes_[r_node].get(), _1)));
   cb_.Reset();
   std::string conf_file = dbs_[r_node] + "/.kadconfig";
-  knodes_[r_node]->Join(node_ids[r_node], conf_file,
+  knodes_[r_node]->Join(node_ids_[r_node], conf_file,
       boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());
+  ports_.insert(knodes_[r_node]->host_port());
 }
 
 TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
   cb_.Reset();
-  std::string db_local = "KnodeTest/datastore"+base::itos(65001);
+  std::string db_local = test_dir_ + std::string("/datastore") +
+                         base::itos(kNetworkSize + 2);
   std::string kconf_file = db_local + "/.kadconfig";
   boost::filesystem::create_directories(db_local);
   base::KadConfig kad_config;
@@ -1038,9 +981,9 @@ TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
       new rpcprotocol::ChannelManager());
   boost::scoped_ptr<kad::KNode> node(new kad::KNode(db_local, ch_man,
       kad::VAULT, kTestK, kad::kAlpha, kad::kBeta));
-  EXPECT_EQ(0, ch_man->StartTransport(65001,
-        boost::bind(&kad::KNode::HandleDeadRendezvousServer, node.get(),
-                    _1)));
+  EXPECT_EQ(0, ch_man->StartTransport(0,
+            boost::bind(&kad::KNode::HandleDeadRendezvousServer, node.get(),
+                        _1)));
   cb_.Reset();
   node->Join("", kconf_file,
       boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
@@ -1049,10 +992,11 @@ TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
   ASSERT_TRUE(node->is_joined());
   cb_.Reset();
   std::string ip = knodes_[4]->host_ip();
-//  boost::uint16_t port = knodes_[1]->host_port();
+  boost::uint16_t port4 = knodes_[1]->host_port();
   knodes_[4]->Leave();
   ASSERT_FALSE(knodes_[4]->is_joined());
   channel_managers_[4]->StopTransport();
+  ports_.erase(port4);
   printf("Node 4 killed\n");
   while (node->is_joined()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
@@ -1065,16 +1009,17 @@ TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
   node->Leave();
   ch_man->StopTransport();
   // Restart dead node
-  ASSERT_EQ(0, channel_managers_[4]->StartTransport(62004,
+  ASSERT_EQ(0, channel_managers_[4]->StartTransport(0,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer, knodes_[4].get(),
       _1)));
   cb_.Reset();
   std::string conf_file = dbs_[4] + "/.kadconfig";
-  knodes_[4]->Join(node_ids[4], conf_file,
+  knodes_[4]->Join(node_ids_[4], conf_file,
       boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1), false);
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[4]->is_joined());
+  ports_.insert(knodes_[4]->host_port());
 }
 
 TEST_F(KNodeTest, FUNC_KAD_StartStopNode) {
