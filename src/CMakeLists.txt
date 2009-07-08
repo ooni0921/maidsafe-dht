@@ -140,11 +140,17 @@ SET_TARGET_PROPERTIES(PDbaselib PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACROS"
 IF (APPLE)
 # Maidsafe Standard:  Boost 1_37 Library, xgcc40 compiler
 	SET(SYS_LIB 
-protobuf 
-/usr/lib/libcryptopp.a 
+boost_thread-xgcc40-mt-1_37 
 sqlite3 
+protobuf 
 boost_system-xgcc40-mt-1_37 
-boost_filesystem-xgcc40-mt-1_37 boost_regex-xgcc40-mt-1_37 boost_thread-xgcc40-mt-1_37 boost_date_time-xgcc40-mt-1_37 dl pthread)
+boost_filesystem-xgcc40-mt-1_37 
+/usr/lib/libcryptopp.a 
+boost_regex-xgcc40-mt-1_37 
+boost_date_time-xgcc40-mt-1_37 
+dl 
+pthread
+)
 ELSEIF (UNIX AND NOT APPLE)
 	SET(SYS_LIB
         /usr/lib/libboost_thread-gcc43-mt.a
