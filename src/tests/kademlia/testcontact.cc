@@ -121,6 +121,7 @@ TEST_F(TestContact, BEH_KAD_ContactPointer) {
   ASSERT_EQ(0, contact->failed_rpc());
   contact->IncreaseFailed_RPC();
   ASSERT_EQ(1, contact->failed_rpc());
+  delete contact;
 }
 
 TEST_F(TestContact, BEH_KAD_SerialiseToString) {

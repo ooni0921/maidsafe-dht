@@ -47,9 +47,10 @@ namespace kad {
 
 // some tools which will be used in the implementation of KNode class
 struct ContactAndTargetKey {
-  ContactAndTargetKey() : contact(), target_key() {}
+  ContactAndTargetKey() : contact(), target_key(), contacted(false) {}
   Contact contact;
   std::string target_key;
+  bool contacted;
 };
 
 bool CompareContact(const ContactAndTargetKey &first,
@@ -86,6 +87,34 @@ void SortContactList(std::list<Contact> *contact_list,
   std::list<ContactAndTargetKey>::iterator it1;
   for (it1 = temp_list.begin(); it1 != temp_list.end(); ++it1) {
     contact_list->push_back(it1->contact);
+  }
+}
+
+// sort the contact list according the distance to the target key
+void SortLookupContact(std::list<LookupContact> *contact_list,
+    const std::string &target_key) {
+  if (contact_list->size() == 0) {
+    return;
+  }
+  std::list<ContactAndTargetKey> temp_list;
+  std::list<LookupContact>::iterator it;
+  // clone the contacts into a temporary list together with the target key
+  for (it = contact_list->begin(); it != contact_list->end(); ++it) {
+    ContactAndTargetKey new_ck;
+    new_ck.contact = it->kad_contact;
+    new_ck.target_key = target_key;
+    new_ck.contacted = it->contacted;
+    temp_list.push_back(new_ck);
+  }
+  temp_list.sort(CompareContact);
+  // restore the sorted contacts from the temporary list.
+  contact_list->clear();
+  std::list<ContactAndTargetKey>::iterator it1;
+  for (it1 = temp_list.begin(); it1 != temp_list.end(); ++it1) {
+    struct LookupContact ctc;
+    ctc.kad_contact = it1->contact;
+    ctc.contacted = it1->contacted;
+    contact_list->push_back(ctc);
   }
 }
 
@@ -253,8 +282,7 @@ void KNodeImpl::Join_Bootstrapping_Iteration_Client(
     host_port_ = result_msg.newcomer_ext_port();
     kadrpcs_.set_info(contact_info());
     args->is_callbacked = true;
-    std::vector<Contact> start_up_short_list;
-    IterativeLookUp(node_id_, args->cached_nodes, BOOTSTRAP, args->cb);
+    StartSearchIteration(node_id_, BOOTSTRAP, args->cb);
     // start a schedule to delete expired key/value pairs only once
     if (!refresh_routine_started_) {
       ptimer_->AddCallLater(kRefreshTime*1000, boost::bind(
@@ -374,8 +402,7 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
 
     kadrpcs_.set_info(contact_info());
     args->is_callbacked = true;
-    std::vector<Contact> start_up_short_list;
-    IterativeLookUp(node_id_, start_up_short_list, BOOTSTRAP, args->cb);
+    StartSearchIteration(node_id_, BOOTSTRAP, args->cb);
     // start a schedule to delete expired key/value pairs only once
     if (!refresh_routine_started_) {
       ptimer_->AddCallLater(kRefreshTime*1000,
@@ -563,15 +590,6 @@ void KNodeImpl::Join(const std::string &node_id,
   RegisterKadService();
   // if node_id is equal to "", generate a random kad ID and save it
   if (node_id.size() == 0) {
-//    // check whether there is stored node id
-//    std::vector<std::string> node_ids;
-//    pdata_store_->LoadItem("node_id", node_ids);
-//    if ((!node_ids.empty())&&(node_ids.front().size() != 0)) {
-//      // An old node id is available, let's reuse that
-//      node_id_ = node_ids.front();
-//      node_ids.clear();
-//    } else {
-
     node_id_ = vault_random_id();
     boost::uint32_t now = base::get_epoch_time();
     pdata_store_->StoreItem("node_id", node_id_, now, now);
@@ -620,24 +638,6 @@ void KNodeImpl::Leave() {
 
 void KNodeImpl::SaveBootstrapContacts() {
   try {
-    // If .kadconfig is locked, wait for up to 5 seconds, then start updating it
-//    fs::path lockfile(kad_config_path_.string() + ".lock", fs::native);
-//    int count = 0;
-//    while (fs::exists(lockfile) && count < 500) {
-//      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-//      ++count;
-//    }
-    // Create good copy of .kadconfig named lockfile.  If old lockfile still
-    // exists, assume another thread failed to update .kadconfig, so overwrite
-    // .kadconfig with lockfile.
-//    if (fs::exists(lockfile)) {
-//      fs::remove(kad_config_path_);
-//      fs::copy_file(lockfile, kad_config_path_);
-//    } else if (fs::exists(kad_config_path_)) {
-//      fs::copy_file(kad_config_path_, lockfile);
-//    }
-
-    // Reload bootstrap vector from .kadconfig
 //    LoadBootstrapContacts();
     std::vector<Contact> exclude_contacts;
     std::vector<Contact> bs_contacts;
@@ -780,8 +780,6 @@ int KNodeImpl::LoadBootstrapContacts() {
         static_cast<uint16_t>(kad_config.contact(i).port()),
         kad_config.contact(i).local_ip(),
         kad_config.contact(i).local_port());
-//    printf("\t\tAdded ip %s:%i to list\n", kad_config.contact(i).ip().c_str(),
-//    kad_config.contact(i).port());
     bootstrapping_nodes_.push_back(bootstrap_contact);
   }
   return 0;
@@ -793,680 +791,13 @@ void KNodeImpl::RefreshRoutine() {
 // TODO(Fraser#5#): 2009-06-03 - Add functionality to expire old kad key,values.
 //    pdata_store_->DeleteExpiredValues();
     // Refresh the k-buckets
-    std::vector<Contact> start_up_short_list;
-    IterativeLookUp(node_id_, start_up_short_list, FIND_NODE, &dummy_callback);
+    StartSearchIteration(node_id_, FIND_NODE, &dummy_callback);
     // schedule the next refresh routine
     ptimer_->AddCallLater(kRefreshTime*1000,
                           boost::bind(&KNodeImpl::RefreshRoutine, this));
   } else {
     refresh_routine_started_ = false;
   }
-}
-
-void KNodeImpl::IterativeLookUp_CancelActiveProbe(
-    Contact sender,
-    boost::shared_ptr<IterativeLookUpData> data) {
-#ifdef DEBUG
-  printf("%i -- Beginning -- In KNode::IterativeLookUp_CancelActiveProbe",
-         host_port_);
-  printf(" -- active probes %i\n", data->active_probes.size());
-#endif
-  if (!is_joined_ && data->method != BOOTSTRAP) {
-#ifdef DEBUG
-    printf("%i -- KNodeImpl::IterativeLookUp_CancelActiveProbe -- "
-           " !is_joined_ && data->method != BOOTSTRAP\n", host_port_);
-#endif
-    return;
-  }
-  std::list<Contact>::iterator it;
-
-  activeprobes_mutex_.lock();
-  for (it = data->active_probes.begin(); it != data->active_probes.end();
-      ++it) {
-    if (sender.node_id() == data->key)
-      data->wait_for_key = false;
-    if (sender == *it && data->active_probes.size() > 0) {
-      data->active_probes.erase(it);
-      break;
-    }
-  }
-
-  if (static_cast<int>(data->active_probes.size()) <= beta_ &&
-      !data->wait_for_key && !data->is_callbacked) {
-#ifdef DEBUG
-    printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
-    printf(" calling IterativeLookUp_SearchIteration");
-    printf(" -- active probes %i\n", data->active_probes.size());
-#endif
-    activeprobes_mutex_.unlock();
-    IterativeLookUp_SearchIteration(data);
-  } else {
-#ifdef DEBUG
-    printf("%i -- In KNode::IterativeLookUp_CancelActiveProbe", host_port_);
-    printf(" -- active probes %i\n", data->active_probes.size());
-#endif
-    activeprobes_mutex_.unlock();
-  }
-#ifdef DEBUG
-  printf("%i -- End -- In KNode::IterativeLookUp_CancelActiveProbe",
-        host_port_);
-  printf(" -- active probes %i\n", data->active_probes.size());
-#endif
-}
-
-void KNodeImpl::IterativeLookUp_ExtendShortList(
-    const FindResponse *response,
-    FindCallbackArgs callback_data) {
-#ifdef DEBUG
-  printf("%i -- Start -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-         host_port_);
-#endif
-//  boost::mutex::scoped_lock guard(extendshortlist_mutex_);
-  if (!is_joined_ && callback_data.data->method != BOOTSTRAP) {
-      delete response;
-#ifdef DEBUG
-      printf("%i -- End 1 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-          host_port_);
-#endif
-      return;
-  }
-  bool is_valid = true;
-#ifdef DEBUG
-  if (!response->IsInitialized())
-    printf("%i --- KNodeImpl::IterativeLookUp_ExtendShortList resp not init\n",
-           host_port_);
-#endif
-  if (!response->IsInitialized() && callback_data.data->method != BOOTSTRAP) {
-    RemoveContact(callback_data.sender.node_id());
-    is_valid = false;
-    callback_data.data->dead_ids.push_back(callback_data.sender.node_id());
-#ifdef DEBUG
-      printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList resp invalid\n",
-             host_port_);
-#endif
-  }
-
-  if (is_valid) {
-    // Check id and retry if it was sent
-    if (response->has_node_id() &&
-        response->node_id() != callback_data.sender.node_id()) {
-      if (callback_data.retry) {
-        delete response;
-        FindResponse *resp = new FindResponse();
-        UpdatePDRTContactToRemote(callback_data.sender.node_id());
-        callback_data.retry = false;
-      // send RPC to this contact's remote address because local failed
-        google::protobuf::Closure *done = google::protobuf::NewCallback<
-            KNodeImpl, const FindResponse*, FindCallbackArgs >(
-                this,
-                &KNodeImpl::IterativeLookUp_ExtendShortList,
-                resp,
-                callback_data);
-        if (callback_data.data->method == FIND_NODE ||
-            callback_data.data->method == BOOTSTRAP) {
-          if (callback_data.data->method == BOOTSTRAP) {
-            kad::Contact tmp_contact(node_id(), host_ip_, host_port_,
-                                     local_host_ip_, local_host_port_,
-                                     rv_ip_, rv_port_);
-            std::string contact_str;
-            tmp_contact.SerialiseToString(&contact_str);
-            resp->set_requester_ext_addr(contact_str);
-          }
-          kadrpcs_.FindNode(callback_data.data->key,
-                            callback_data.sender.host_ip(),
-                            callback_data.sender.host_port(),
-                            resp,
-                            done,
-                            false);
-        } else if (callback_data.data->method == FIND_VALUE) {
-          kadrpcs_.FindValue(callback_data.data->key,
-                             callback_data.sender.host_ip(),
-                             callback_data.sender.host_port(),
-                             resp,
-                             done,
-                             false);
-        }
-#ifdef DEBUG
-        printf("%i -- End 2 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-            host_port_);
-#endif
-        return;
-      }
-    }
-  }
-
-  if ((!is_valid || response->result() == kRpcResultFailure) &&
-      callback_data.data->method != BOOTSTRAP) {
-    // callback can only be called once
-#ifdef DEBUG
-    printf("%i -- wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww\n", host_port_);
-#endif
-    if (callback_data.data->is_callbacked) {
-      if (callback_data.data->active_probes_after_callback > 0) {
-        --callback_data.data->active_probes_after_callback;
-      } else {
-        delete response;
-#ifdef DEBUG
-        printf("%i -- End 3 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-            host_port_);
-#endif
-        return;
-      }
-      if (callback_data.data->active_probes_after_callback != 0) {
-        delete response;
-#ifdef DEBUG
-        printf("%i -- End 4 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-            host_port_);
-#endif
-        return;
-      }
-      if (callback_data.data->method != BOOTSTRAP) {
-        IterativeLookUp_SendDownlist(callback_data.data);
-      }
-      delete response;
-#ifdef DEBUG
-      printf("%i -- End 5 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-          host_port_);
-#endif
-      return;
-    }
-    std::list<Contact>::iterator it;
-    for (it = callback_data.data->short_list.begin();
-        it != callback_data.data->short_list.end(); ++it) {
-      if (callback_data.sender == *it) {
-        callback_data.data->short_list.erase(it);
-        break;
-      }
-    }
-//    guard.unlock();
-#ifdef DEBUG
-    printf("%i -- KNodeImpl::IterativeLookUp_ExtendShortList ", host_port_);
-    printf("invalid response cancelling probe\n");
-#endif
-    IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
-    delete response;
-#ifdef DEBUG
-    printf("%i -- End 6 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-        host_port_);
-#endif
-    return;
-  }
-
-  AddContact(callback_data.sender, false);
-  if (!is_joined_ && callback_data.data->method != BOOTSTRAP) {
-    delete response;
-#ifdef DEBUG
-    printf("%i -- End 7 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-        host_port_);
-#endif
-    return;
-  }
-
-  if (callback_data.data->is_callbacked) {
-    if (callback_data.data->active_probes_after_callback > 0) {
-      --callback_data.data->active_probes_after_callback;
-    } else {
-      delete response;
-#ifdef DEBUG
-      printf("%i -- End 8 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-          host_port_);
-#endif
-      return;
-    }
-    if (callback_data.data->active_probes_after_callback != 0) {
-      delete response;
-#ifdef DEBUG
-      printf("%i -- End 9 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-          host_port_);
-#endif
-      return;
-    }
-    if (callback_data.data->method != BOOTSTRAP) {
-      IterativeLookUp_SendDownlist(callback_data.data);
-    }
-    delete response;
-#ifdef DEBUG
-    printf("%i -- End 10 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-        host_port_);
-#endif
-    return;
-  }
-
-  // Make sure the responding node is valid, and abort the operation if it isn't
-  if (callback_data.sender.node_id() == node_id_) {
-//    guard.unlock();
-    IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
-    delete response;
-#ifdef DEBUG
-    printf("%i -- End 11 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-        host_port_);
-#endif
-    return;
-  }
-  std::list<Contact>::iterator it;
-  for (it = callback_data.data->active_contacts.begin();
-       it != callback_data.data->active_contacts.end(); ++it) {
-    if (*it == callback_data.sender) {
-//      guard.unlock();
-      IterativeLookUp_CancelActiveProbe(callback_data.sender,
-                                        callback_data.data);
-      delete response;
-#ifdef DEBUG
-      printf("%i -- End 12 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-          host_port_);
-#endif
-      return;
-    }
-  }
-  // Mark this node as active
-  callback_data.data->active_contacts.push_back(callback_data.sender);
-  // extend the value list if there are any new values found
-  std::list<std::string>::iterator it1;
-  bool is_new;
-  for (int i = 0; i < response->values_size(); ++i) {
-    is_new = true;
-    for (it1 = callback_data.data->find_value_result.begin();
-         it1 != callback_data.data->find_value_result.end(); ++it1) {
-      if (*it1 == response->values(i)) {
-        is_new = false;
-        break;
-      }
-    }
-    if (is_new) {
-      callback_data.data->find_value_result.push_back(response->values(i));
-    }
-  }
-  // Now extend short list with the returned contacts
-  std::list<Contact>::iterator it2;
-  for (int i = 0; i < response->closest_nodes_size(); ++i) {
-    Contact test_contact;
-    if (!test_contact.ParseFromString(response->closest_nodes(i))) {
-      continue;
-    }
-    // AddContact(test_contact, false);
-    is_new = true;
-    for (it2 = callback_data.data->short_list.begin();
-         it2 != callback_data.data->short_list.end(); ++it2) {
-      if (test_contact == *it2) {
-        is_new = false;
-        break;
-      }
-    }
-    if (is_new) {
-      // add to the front
-      Contact self_node(node_id_, host_ip_, host_port_, local_host_ip_,
-                        local_host_port_);
-      if (test_contact != self_node) {
-        callback_data.data->short_list.push_front(test_contact);
-      }
-    }
-    // Implementation of downlist algorithm
-    // Add to the downlist as a candidate with the is_down flag set to false
-    // by default
-    struct DownListCandidate candidate;
-    candidate.node = test_contact;
-    candidate.is_down = false;
-    bool is_appended = false;
-    std::list<struct DownListData>::iterator it5;
-    for (it5 = callback_data.data->downlist.begin();
-         it5 != callback_data.data->downlist.end(); ++it5) {
-      if (it5->giver == callback_data.sender) {
-        it5->candidate_list.push_back(candidate);
-        is_appended = true;
-        break;
-      }
-    }
-    if (!is_appended) {
-      struct DownListData downlist_data;
-      downlist_data.giver = callback_data.sender;
-      downlist_data.candidate_list.push_back(candidate);
-      callback_data.data->downlist.push_back(downlist_data);
-    }
-    // End of implementation downlist algorithm
-  }
-//  guard.unlock();
-  IterativeLookUp_CancelActiveProbe(callback_data.sender, callback_data.data);
-  delete response;
-#ifdef DEBUG
-  printf("%i -- End 13 -- KNodeImpl::IterativeLookUp_ExtendShortList\n",
-      host_port_);
-#endif
-}
-
-void KNodeImpl::IterativeLookUp_Callback(
-    boost::shared_ptr<IterativeLookUpData> data) {
-  std::string ser_result;
-  // If we're bootstrapping, we are only now finished.  In this case the
-  // callback should be of type base::GeneralResponse
-  if (data->method == BOOTSTRAP) {
-    base::GeneralResponse result;
-    if (data->active_contacts.begin() == data->active_contacts.end()) {
-      result.set_result(kRpcResultFailure);
-      is_joined_ = false;
-    } else {
-      result.set_result(kRpcResultSuccess);
-      is_joined_ = true;
-      addcontacts_routine_.reset(new boost::thread(&KNodeImpl::CheckAddContacts,
-          this));
-    }
-    result.SerializeToString(&ser_result);
-  } else {
-    if (!is_joined_)
-      return;
-    // take K closest contacts from active contacts as the closest nodes
-    std::list<Contact>::iterator it1;
-    int count;
-    FindResponse result;
-    for (it1 = data->active_contacts.begin(), count = 0;
-      (it1 != data->active_contacts.end())&&(count < K_); ++it1, ++count) {
-      std::string ser_contact;
-      if (it1->SerialiseToString(&ser_contact))
-        result.add_closest_nodes(ser_contact);
-    }
-    if ((data->method == FIND_VALUE) &&
-        (data->find_value_result.size() == 0)) {
-      result.set_result(kRpcResultFailure);
-    } else if ((data->method != FIND_VALUE) &&
-               (result.closest_nodes_size() == 0)) {
-      result.set_result(kRpcResultFailure);
-    } else {
-      result.set_result(kRpcResultSuccess);
-    }
-    std::list<std::string>::iterator it2;
-    for (it2 = data->find_value_result.begin();
-         it2 != data->find_value_result.end(); ++it2) {
-      result.add_values(*it2);
-    }
-    result.SerializeToString(&ser_result);
-  }
-  data->is_callbacked = true;
-  // fake sender
-//  ContactInfo *sender_info = result.mutable_sender_info();
-//  sender_info->set_node_id("abc");
-//  sender_info->set_ip("ip");
-//  sender_info->set_port(0);
-#ifdef DEBUG
-  printf("%i -- calling back iterative lookup callback\n", host_port_);
-#endif
-  data->cb(ser_result);
-#ifdef DEBUG
-  printf("%i -- calledback iterative lookup callback\n", host_port_);
-#endif
-  activeprobes_mutex_.lock();
-  data->active_probes_after_callback = data->active_probes.size();
-  activeprobes_mutex_.unlock();
-  if (data->active_probes_after_callback != 0) {
-#ifdef DEBUG
-    printf("%i -- iterative lookup callback -- still with active probes\n",
-           host_port_);
-#endif
-    return;
-  }
-  IterativeLookUp_SendDownlist(data);
-}
-
-void KNodeImpl::IterativeLookUp_SendDownlist(
-    boost::shared_ptr<IterativeLookUpData> data) {
-  // Implementation of downlist algorithm
-  // At the end of the search the corresponding entries of the downlist are sent
-  // to all peers which gave those entries to this node during its search
-#ifdef DEBUG
-  printf("%i -- KNodeImple::IterativeLookUp_SendDownlist\n", host_port_);
-#endif
-  if (data->downlist_sent || !is_joined_) return;
-  if (data->dead_ids.empty()) {
-    data->downlist_sent = true;
-    return;
-  }
-  std::list<struct DownListData>::iterator it1;
-
-  for (it1 = data->downlist.begin(); it1 != data->downlist.end(); ++it1) {
-    std::vector<std::string> downlist;
-    std::list<struct DownListCandidate>::iterator it2;
-    for (it2 = it1->candidate_list.begin(); it2 != it1->candidate_list.end();
-         ++it2) {
-      std::list<std::string>::iterator it3;
-      for (it3 = data->dead_ids.begin(); it3 != data->dead_ids.end(); it3++) {
-        if (*it3 == it2->node.node_id()) {
-          it2->is_down = true;
-        }
-      }
-      if (it2->is_down) {
-        std::string dead_node;
-        if (it2->node.SerialiseToString(&dead_node))
-          downlist.push_back(dead_node);
-          // args.add_downlist(dead_node);
-      }
-    }
-    if (downlist.size() != 0) {
-    // if (args.downlist_size() != 0) {
-      // Send the downlist to the giver
-      // TODO(Haiyang): restrict the parallel level to Alpha
-      connect_to_node conn_type = CheckContactLocalAddress(it1->giver.node_id(),
-          it1->giver.local_ip(), it1->giver.local_port(), it1->giver.host_ip());
-      std::string contact_ip;
-      boost::uint16_t contact_port;
-      bool local;
-      if (conn_type == LOCAL) {
-        contact_ip = it1->giver.local_ip();
-        contact_port = it1->giver.local_port();
-        local = true;
-      } else {
-        contact_ip = it1->giver.host_ip();
-        contact_port = it1->giver.host_port();
-        local = false;
-      }
-      DownlistResponse *resp = new DownlistResponse();
-      // rpcprotocol::Controller controller;
-      google::protobuf::Closure *done = google::protobuf::NewCallback<
-          DownlistResponse *> (&dummy_downlist_callback, resp);
-      kadrpcs_.Downlist(downlist, contact_ip, contact_port, resp, done, local);
-    }
-  }
-  data->downlist_sent = true;
-  // End of downlist
-}
-
-void KNodeImpl::IterativeLookUp_SearchIteration(
-    boost::shared_ptr<IterativeLookUpData> data) {
-  // callback can only be called once
-#ifdef DEBUG
-  printf("%i -- Start -- KNodeImpl::IterativeLookUp_SearchIteration\n",
-      host_port_);
-#endif
-  if ((data->is_callbacked)||(!is_joined_ && data->method != BOOTSTRAP)) {
-#ifdef DEBUG
-    printf("%i -- End 1 -- KNodeImpl::IterativeLookUp_SearchIteration\n",
-       host_port_);
-#endif
-    return;
-  }
-  // sort the active contacts
-  SortContactList(&data->active_contacts, data->key);
-  // check whether thare are any closer nodes
-  SortContactList(&data->short_list, data->key);
-  bool no_more_closer_node = true;
-  std::list<Contact>::iterator it;
-  for (it = data->short_list.begin(); it != data->short_list.end(); ++it) {
-    bool is_already_contacted = false;
-    std::list<Contact>::iterator it1;
-    for (it1 = data->already_contacted.begin();
-      it1 != data->already_contacted.end(); ++it1) {
-      if (*it == *it1) {
-        is_already_contacted = true;
-        break;
-      }
-    }
-    if (!is_already_contacted) {
-      no_more_closer_node = false;
-      break;
-    } else if (*it == data->pre_closest_node) {
-      break;
-    }
-  }
-  if (static_cast<int>(data->active_contacts.size()) > 0) {
-    if (no_more_closer_node &&
-        (data->pre_closest_node == data->active_contacts.front())) {
-      // (static_cast<int>(data->active_probes.size()) == 0)
-      // IterativeLookUp is done, prepare the result and call back
-#ifdef DEBUG
-      printf("%i -- End 2 -KNodeImpl::IterativeLookUp_", host_port_);
-      printf("SearchIteration CallingBack\n");
-#endif
-      IterativeLookUp_Callback(data);
-#ifdef DEBUG
-      printf("%i -- End 2 -- KNodeImpl::IterativeLookUp_SearchIteration\n",
-          host_port_);
-#endif
-      return;
-    }
-    data->pre_closest_node = data->active_contacts.front();
-  }
-  // already found a value, stop iteration
-  if ((data->method == FIND_VALUE) && (data->find_value_result.size() > 0)) {
-#ifdef DEBUG
-    printf("%i -- End 3 -KNodeImpl::IterativeLookUp_", host_port_);
-    printf("SearchIteration CallingBack\n");
-#endif
-    IterativeLookUp_Callback(data);
-#ifdef DEBUG
-    printf("%i -- End 3 -- KNodeImpl::IterativeLookUp_SearchIteration\n",
-        host_port_);
-#endif
-    return;
-  }
-  // The search continues...
-  // select alpha contacts for the search
-  int contacted_now = 0;
-  // std::list<Contact>::iterator it;
-  for (it = data->short_list.begin(); it != data->short_list.end(); ++it) {
-    // select contacts which haven't been contacted yet
-    bool is_already_contacted = false;
-    std::list<Contact>::iterator it1;
-    for (it1 = data->already_contacted.begin();
-         it1 != data->already_contacted.end(); ++it1) {
-      if (*it == *it1) {
-        is_already_contacted = true;
-        break;
-      }
-    }
-    if (!is_already_contacted) {
-      Contact remote = *it;
-      activeprobes_mutex_.lock();
-      data->active_probes.push_back(remote);
-      activeprobes_mutex_.unlock();
-      FindResponse *resp = new FindResponse();
-      FindCallbackArgs callback_args(data);
-      callback_args.sender = remote;
-      // check if we send to local or remote address
-      connect_to_node conn_type = CheckContactLocalAddress(remote.node_id(),
-                                                           remote.local_ip(),
-                                                           remote.local_port(),
-                                                           remote.host_ip());
-      std::string contact_ip;
-      boost::uint16_t contact_port;
-      bool local;
-      if (conn_type == LOCAL) {
-        callback_args.retry = true;
-        contact_ip = remote.local_ip();
-        contact_port = remote.local_port();
-        local = true;
-      } else {
-        contact_ip = remote.host_ip();
-        contact_port = remote.host_port();
-        local = false;
-      }
-      // send RPC to this contact
-      google::protobuf::Closure *done = google::protobuf::NewCallback<
-          KNodeImpl, const FindResponse*, FindCallbackArgs >(
-              this,
-              &KNodeImpl::IterativeLookUp_ExtendShortList,
-              resp,
-              callback_args);
-      if (data->method == FIND_NODE || data->method == BOOTSTRAP) {
-        if (data->method == BOOTSTRAP) {
-          kad::Contact tmp_contact(node_id(), host_ip_, host_port_,
-                                   local_host_ip_, local_host_port_, rv_ip_,
-                                   rv_port_);
-          std::string contact_str;
-          tmp_contact.SerialiseToString(&contact_str);
-          resp->set_requester_ext_addr(contact_str);
-        } else if (data->key == remote.node_id()) {
-            data->wait_for_key = true;
-        }
-//        activeprobes_mutex_.unlock();
-        kadrpcs_.FindNode(data->key, contact_ip, contact_port, resp, done,
-                          local);
-      } else if (data->method == FIND_VALUE) {
-//        activeprobes_mutex_.unlock();
-        kadrpcs_.FindValue(data->key, contact_ip, contact_port, resp, done,
-                           local);
-      }
-      // finished sending
-      data->already_contacted.push_back(remote);
-      ++contacted_now;
-      if (contacted_now == alpha_) {
-//        activeprobes_mutex_.unlock();
-        break;
-      }
-    }
-  }
-//  activeprobes_mutex_.unlock();
-  activeprobes_mutex_.lock();
-  int n = data->active_probes.size();
-  activeprobes_mutex_.unlock();
-  if (n == 0) {
-    // No active probes were sent, there will be no any improvement, so we're
-    // done.
-#ifdef DEBUG
-    printf("%i -- KNodeImpl::IterativeLookUp_SearchIteration CallingBack\n",
-        host_port_);
-#endif
-    IterativeLookUp_Callback(data);
-    return;
-//  } else if ((static_cast<int>(data->short_list.size()) < K_)&&
-//      (data->active_contacts.size() < data->short_list.size())) {
-    // Schedule the next iteration if there are any active calls (Kademlia uses
-    // loose parallelism).
-    // Set the RPC request timeout
-    // std::cout << "scheduling next iteration " << std::endl;
-    // ptimer_->AddCallLater(kIterativeLookupDelay,
-    //    boost::bind(&KNodeImpl::IterativeLookUp_SearchIteration, this, data));
-  }
-#ifdef DEBUG
-  printf("%i -- End 4 -KNodeImpl::IterativeLookUp_SearchIteration\n",
-      host_port_);
-#endif
-}
-
-void KNodeImpl::IterativeLookUp(
-    const std::string &key,
-    const std::vector<Contact> &start_up_short_list,
-    const remote_find_method &method,
-    base::callback_func_type cb) {
-  boost::shared_ptr<IterativeLookUpData> data(new IterativeLookUpData(method,
-                                                                      key, cb));
-  if (start_up_short_list.size() == 0) {  // get short list from routing table
-    std::vector<Contact> close_nodes;
-    std::vector<Contact> exclude_contacts;
-    {
-      boost::mutex::scoped_lock gaurd(routingtable_mutex_);
-      prouting_table_->FindCloseNodes(key, alpha_, &close_nodes,
-                                      exclude_contacts);
-    }
-    for (int i = 0; i < static_cast<int>(close_nodes.size()); ++i) {
-      data->short_list.push_back(close_nodes[i]);
-    }
-  } else {  // use the start_up_short_list
-    for (int i = 0; i < static_cast<int>(start_up_short_list.size()); ++i)
-      data->short_list.push_back(start_up_short_list[i]);
-  }
-  // check whether the short_list is empty
-  if (data->short_list.size() == 0) {
-    CallbackWithFailure(cb);
-    return;
-  }
-  IterativeLookUp_SearchIteration(data);
 }
 
 void KNodeImpl::StoreValue_IterativeStoreValue(
@@ -1635,16 +966,21 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(
       printf("KNodeImpl::StoreValue_ExecuteStoreRPCs -- %d\n",
         closest_nodes.size());
 #endif
-      if ((static_cast<int>(closest_nodes.size()) >= K_)&&(type_ != CLIENT)) {
+      if (type_ != CLIENT) {
         // If this node itself is closer to the key than the last (furtherest)
         // node in the returned list, store the value at this node as well.
-        Contact furthest_contact = closest_nodes[closest_nodes.size()-1];
-        if (kademlia_distance(node_id_, key) < (kademlia_distance(
-            furthest_contact.node_id(), key))) {
+        if (static_cast<int>(closest_nodes.size()) < K_) {
+          stored_local = true;
+        } else {
+          Contact furthest_contact = closest_nodes[closest_nodes.size()-1];
+          if (kademlia_distance(node_id_, key) < (kademlia_distance(
+              furthest_contact.node_id(), key)))
+            stored_local = true;
+        }
+        if (stored_local) {
           boost::uint32_t now = base::get_epoch_time();
           pdata_store_->StoreItem(key, value, now, now);
           closest_nodes.pop_back();
-          stored_local = true;
 #ifdef DEBUG
           printf("KNodeImpl::StoreValue_ExecuteStoreRPCs storing locally \n");
 #endif
@@ -1691,28 +1027,9 @@ void KNodeImpl::StoreValue(const std::string &key,
                            const std::string &signed_public_key,
                            const std::string &signed_request,
                            base::callback_func_type cb) {
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::StoreValue(%i), outside mutex.\n", host_port_);
-#endif
-//  boost::mutex::scoped_lock guard(*mutex_[6]);
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::StoreValue(%i), inside mutex.\n", host_port_);
-#endif
-//  if (static_cast<int>(value.size()) > (transport::k_message_max*0.8)) {
-//    TRI_LOG_STR("Value size is greater than what is supported.");
-//    StoreResponse result;
-//    std::string result_str;
-//    result.set_result(kRpcResultFailure);
-//    result.SerializeToString(&result_str);
-//    cb(result_str);
-//    return;
-//  }
   FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs, this,
                                   _1, key, value, public_key, signed_public_key,
                                   signed_request, cb));
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::StoreValue(%i), unlock.\n", host_port_);
-#endif
 }
 
 void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
@@ -1731,8 +1048,9 @@ void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
   }
 
   //  Value not found localy, looking for it in the network
-  std::vector<Contact> start_up_short_list;
-  IterativeLookUp(key, start_up_short_list, FIND_VALUE, cb);
+//  std::vector<Contact> start_up_short_list;
+//  IterativeLookUp(key, start_up_short_list, FIND_VALUE, cb);
+  StartSearchIteration(key, FIND_VALUE, cb);
 }
 
 void KNodeImpl::FindNode_GetNode(const std::string &result,
@@ -1795,18 +1113,8 @@ void KNodeImpl::FindNode(const std::string &node_id,
 
 void KNodeImpl::FindCloseNodes(const std::string &node_id,
                                base::callback_func_type cb) {
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::FindCloseNodes(%i), outside mutex.\n", host_port_);
-#endif
-//  boost::mutex::scoped_lock guard(*mutex_[8]);
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::FindCloseNodes(%i), inside mutex.\n", host_port_);
-#endif
   std::vector<Contact> start_up_short_list;
-  IterativeLookUp(node_id, start_up_short_list, FIND_NODE, cb);
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::FindCloseNodes(%i), unlock.\n", host_port_);
-#endif
+  StartSearchIteration(node_id, FIND_NODE, cb);
 }
 
 void KNodeImpl::FindKClosestNodes(
@@ -1880,18 +1188,8 @@ void KNodeImpl::Ping_SendPing(const std::string &result,
 }
 
 void KNodeImpl::Ping(const std::string &node_id, base::callback_func_type cb) {
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::Ping(%i), outside mutex.\n", host_port_);
-#endif
-//  boost::mutex::scoped_lock guard(*mutex_[9]);
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::Ping(%i), inside mutex.\n", host_port_);
-#endif
   FindNode(node_id, boost::bind(&KNodeImpl::Ping_SendPing, this, _1, cb),
            false);
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::Ping(%i), unlock.\n", host_port_);
-#endif
 }
 
 void KNodeImpl::Ping(const Contact &remote, base::callback_func_type cb) {
@@ -2045,35 +1343,25 @@ void KNodeImpl::GetRandomContacts(
 void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
   if (stopping_)
     return;
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::HandleDeadRendezvousServer(%i), outside mutex.\n",
-         host_port_);
-#endif
-//  boost::mutex::scoped_lock guard(*mutex_[11]);
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::HandleDeadRendezvousServer(%i), inside mutex.\n",
-         host_port_);
-#endif
   if (dead_server) {
     Leave();
+    stopping_ = false;
     Join(node_id_, kad_config_path_.string(),
          boost::bind(&KNodeImpl::ReBootstrapping_Callback, this, _1), false);
   }
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::HandleDeadRendezvousServer(%i), unlock.\n",
-         host_port_);
-#endif
 }
 
 void KNodeImpl::ReBootstrapping_Callback(const std::string &result) {
   base::GeneralResponse local_result;
-  if (stopping_)
+  if (stopping_) {
     return;
+  }
   if (!local_result.ParseFromString(result) ||
       local_result.result() == kRpcResultFailure) {
     // TODO(David): who should we inform if after trying to bootstrap again
     // because the rendezvous server died, the bootstrap operation fails?
     is_joined_ = false;
+    stopping_ = false;
     Join(node_id_, kad_config_path_.string(),
          boost::bind(&KNodeImpl::ReBootstrapping_Callback, this, _1), false);
   } else {
@@ -2329,5 +1617,521 @@ void KNodeImpl::CheckAddContacts() {
     if (add_contact)
       CheckToInsert(new_contact);
   }
+}
+
+void KNodeImpl::StartSearchIteration(const std::string &key,
+      const remote_find_method &method, base::callback_func_type cb) {
+  // Getting the first alpha contacts
+  std::vector<Contact> close_nodes, exclude_contacts;
+  {
+    boost::mutex::scoped_lock gaurd(routingtable_mutex_);
+    prouting_table_->FindCloseNodes(key, alpha_, &close_nodes,
+                                      exclude_contacts);
+  }
+  if (close_nodes.size() == 0) {
+    CallbackWithFailure(cb);
+    return;
+  }
+  boost::shared_ptr<IterativeLookUpData> data(new IterativeLookUpData(method,
+      key, cb));
+  for (unsigned int i = 0; i < close_nodes.size(); ++i) {
+    struct LookupContact ctc;
+    ctc.kad_contact = close_nodes[i];
+    data->short_list.push_back(ctc);
+  }
+  SearchIteration(data);
+}
+
+void KNodeImpl::SendFindRpc(Contact remote,
+    boost::shared_ptr<IterativeLookUpData> data,
+    const connect_to_node &conn_type) {
+  FindResponse *resp = new FindResponse();
+  FindCallbackArgs callback_args(data);
+  callback_args.sender = remote;
+  std::string contact_ip;
+  boost::uint16_t contact_port;
+  bool local;
+  if (conn_type == LOCAL) {
+    callback_args.retry = true;
+    contact_ip = remote.local_ip();
+    contact_port = remote.local_port();
+    local = true;
+  } else {
+    contact_ip = remote.host_ip();
+    contact_port = remote.host_port();
+    local = false;
+  }
+  google::protobuf::Closure *done = google::protobuf::NewCallback< KNodeImpl,
+      const FindResponse*, FindCallbackArgs >(this,
+      &KNodeImpl::SearchIteration_ExtendShortList, resp, callback_args);
+  if (data->method == FIND_NODE || data->method == BOOTSTRAP) {
+    if (data->method == BOOTSTRAP) {
+      kad::Contact tmp_contact(node_id(), host_ip_, host_port_, local_host_ip_,
+          local_host_port_, rv_ip_, rv_port_);
+      std::string contact_str;
+      tmp_contact.SerialiseToString(&contact_str);
+      resp->set_requester_ext_addr(contact_str);
+    }
+    if (data->key == remote.node_id())
+      data->wait_for_key = true;
+    kadrpcs_.FindNode(data->key, contact_ip, contact_port, resp, done, local);
+  } else if (data->method == FIND_VALUE) {
+    kadrpcs_.FindValue(data->key, contact_ip, contact_port, resp, done, local);
+  }
+}
+
+void KNodeImpl::SearchIteration(boost::shared_ptr<IterativeLookUpData> data) {
+  if ((data->is_callbacked)||(!is_joined_ && data->method != BOOTSTRAP))
+    return;
+  // Found the value
+  if ((data->method == FIND_VALUE) && (data->values_found.size() > 0))
+    SearchIteration_Callback(data);
+
+  // sort the active contacts
+  SortContactList(&data->active_contacts, data->key);
+  // sort the short_list
+  SortLookupContact(&data->short_list, data->key);
+  // Wait for beta to start the iteration
+  activeprobes_mutex_.lock();
+  if (data->current_alpha.size() > static_cast<unsigned int>(beta_)
+      || data->wait_for_key) {
+    activeprobes_mutex_.unlock();
+    return;
+  }
+  data->current_alpha.clear();
+  activeprobes_mutex_.unlock();
+
+  // check if there are closer nodes than the ones already seen
+  bool closer_nodes = false;
+  if (data->active_contacts.empty()) {
+    closer_nodes = true;
+  } else {
+    std::list<LookupContact>::iterator it;
+    ContactAndTargetKey last_active;
+    last_active.contact = data->active_contacts.back();
+    last_active.target_key = data->key;
+    for (it = data->short_list.begin(); it != data->short_list.end(); it++)
+      if (!it->contacted) {
+        ContactAndTargetKey notcontated;
+        notcontated.contact = it->kad_contact;
+        notcontated.target_key = data->key;
+        if (CompareContact(notcontated, last_active)) {
+          closer_nodes = true;
+          break;
+        }
+      }
+  }
+  if (!closer_nodes) {
+    SendFinalIteration(data);
+  } else {
+    // send Rpc Find to alpha contacts
+    int contacted_now = 0;
+    std::list<LookupContact>::iterator it;
+    std::vector<Contact> pending_to_contact;
+    for (it = data->short_list.begin(); it != data->short_list.end() &&
+         contacted_now < alpha_; it++) {
+      if (!it->contacted) {
+        Contact remote;
+        remote = it->kad_contact;
+        activeprobes_mutex_.lock();
+        data->current_alpha.push_back(remote);
+        data->active_probes.push_back(remote);
+        activeprobes_mutex_.unlock();
+        it->contacted = true;
+        pending_to_contact.push_back(remote);
+        contacted_now++;
+      }
+    }
+    if (contacted_now == 0) {
+      if (!data->active_probes.empty()) {
+        // wait for the active probes
+        return;
+      } else if (data->active_contacts.empty()) {
+        // try with another alpha contacts just
+        std::vector<Contact> close_nodes, exclude_contacts;
+        {
+          boost::mutex::scoped_lock gaurd(routingtable_mutex_);
+          prouting_table_->FindCloseNodes(data->key, alpha_, &close_nodes,
+              exclude_contacts);
+        }
+        if (close_nodes.size() == 0) {
+          SearchIteration_Callback(data);
+          return;
+        }
+        for (unsigned int i = 0; i < close_nodes.size(); ++i) {
+          struct LookupContact ctc;
+          ctc.kad_contact = close_nodes[i];
+          data->short_list.push_back(ctc);
+        }
+        SearchIteration(data);
+      } else {
+        SearchIteration_Callback(data);
+      }
+    } else {
+      for (unsigned int i = 0; i < pending_to_contact.size(); i++) {
+        connect_to_node conn_type = CheckContactLocalAddress(
+            pending_to_contact[i].node_id(), pending_to_contact[i].local_ip(),
+            pending_to_contact[i].local_port(),
+            pending_to_contact[i].host_ip());
+        SendFindRpc(pending_to_contact[i], data, conn_type);
+      }
+    }
+  }
+}
+
+void KNodeImpl::SearchIteration_ExtendShortList(const FindResponse *response,
+  FindCallbackArgs callback_data) {
+  if (!is_joined_ && callback_data.data->method != BOOTSTRAP) {
+    delete response;
+    return;
+  }
+  bool is_valid = true;
+  if (!response->IsInitialized() && callback_data.data->method != BOOTSTRAP) {
+    RemoveContact(callback_data.sender.node_id());
+    is_valid = false;
+    callback_data.data->dead_ids.push_back(callback_data.sender.node_id());
+  }
+
+  if (is_valid) {
+    // Check id and retry if it was sent
+    if (response->has_node_id() &&
+        response->node_id() != callback_data.sender.node_id()) {
+      if (callback_data.retry) {
+        delete response;
+        UpdatePDRTContactToRemote(callback_data.sender.node_id());
+        SendFindRpc(callback_data.sender, callback_data.data, REMOTE);
+        return;
+      }
+    }
+  }
+
+  if (!is_valid || response->result() == kRpcResultFailure) {
+    SearchIteration_CancelActiveProbe(callback_data.sender, callback_data.data);
+    delete response;
+    if (callback_data.data->is_callbacked) {
+      if (callback_data.data->active_probes.empty() &&
+          callback_data.data->method != BOOTSTRAP) {
+        SendDownlist(callback_data.data);
+      }
+      return;
+    }
+  } else {
+    if (!is_joined_ && callback_data.data->method != BOOTSTRAP) {
+      delete response;
+      return;
+    }
+    AddContact(callback_data.sender, false);
+    if (callback_data.data->is_callbacked) {
+      SearchIteration_CancelActiveProbe(callback_data.sender,
+          callback_data.data);
+      delete response;
+      if (callback_data.data->active_probes.empty() &&
+          callback_data.data->method != BOOTSTRAP) {
+        SendDownlist(callback_data.data);
+      }
+      return;
+    }
+
+    // Mark this node as active
+    callback_data.data->active_contacts.push_back(callback_data.sender);
+
+    // extend the value list if there are any new values found
+    std::list<std::string>::iterator it1;
+    bool is_new;
+    for (int i = 0; i < response->values_size(); ++i) {
+      is_new = true;
+      for (it1 = callback_data.data->values_found.begin();
+           it1 != callback_data.data->values_found.end(); ++it1) {
+        if (*it1 == response->values(i)) {
+          is_new = false;
+          break;
+        }
+      }
+      if (is_new) {
+        callback_data.data->values_found.push_back(response->values(i));
+      }
+    }
+
+    // Now extend short list with the returned contacts
+    std::list<LookupContact>::iterator it2;
+    for (int i = 0; i < response->closest_nodes_size(); ++i) {
+      Contact test_contact;
+      if (!test_contact.ParseFromString(response->closest_nodes(i)))
+        continue;
+      // AddContact(test_contact, false);
+      is_new = true;
+      for (it2 = callback_data.data->short_list.begin();
+           it2 != callback_data.data->short_list.end(); ++it2) {
+        if (test_contact == it2->kad_contact) {
+          is_new = false;
+          break;
+        }
+      }
+      if (is_new) {
+        // add to the front
+        Contact self_node(node_id_, host_ip_, host_port_, local_host_ip_,
+                          local_host_port_);
+        if (test_contact != self_node) {
+          LookupContact ctc;
+          ctc.kad_contact = test_contact;
+          callback_data.data->short_list.push_front(ctc);
+        }
+      }
+      // Implementation of downlist algorithm
+      // Add to the downlist as a candidate with the is_down flag set to false
+      // by default
+      struct DownListCandidate candidate;
+      candidate.node = test_contact;
+      candidate.is_down = false;
+      bool is_appended = false;
+      std::list<struct DownListData>::iterator it5;
+      for (it5 = callback_data.data->downlist.begin();
+           it5 != callback_data.data->downlist.end(); ++it5) {
+        if (it5->giver == callback_data.sender) {
+          it5->candidate_list.push_back(candidate);
+          is_appended = true;
+          break;
+        }
+      }
+      if (!is_appended) {
+        struct DownListData downlist_data;
+        downlist_data.giver = callback_data.sender;
+        downlist_data.candidate_list.push_back(candidate);
+        callback_data.data->downlist.push_back(downlist_data);
+      }
+      // End of implementation downlist algorithm
+    }
+    SearchIteration_CancelActiveProbe(callback_data.sender, callback_data.data);
+    delete response;
+  }
+  if (callback_data.data->in_final_iteration) {
+    FinalIteration(callback_data.data);
+  } else {
+    SearchIteration(callback_data.data);
+  }
+}
+
+void KNodeImpl::SendFinalIteration(
+    boost::shared_ptr<IterativeLookUpData> data) {
+  if (data->active_contacts.size() >= K_) {
+    SearchIteration_Callback(data);
+    return;
+  }
+  if (data->in_final_iteration)
+    return;
+  int rpc_to_send = K_ - data->active_contacts.size();
+  int contacted = 0;
+  std::vector<Contact> pending_to_contact;
+  data->in_final_iteration = true;
+  std::list<LookupContact>::iterator it;
+  for (it = data->short_list.begin(); it != data->short_list.end() &&
+       contacted < rpc_to_send; it++) {
+    if (!it->contacted) {
+      Contact remote;
+      remote = it->kad_contact;
+      data->active_probes.push_back(remote);
+      it->contacted = true;
+      contacted++;
+      pending_to_contact.push_back(remote);
+    }
+  }
+  if (contacted == 0) {
+    SearchIteration_Callback(data);
+  } else {
+    for (unsigned int i = 0; i < pending_to_contact.size(); i++) {
+      connect_to_node conn_type = CheckContactLocalAddress(
+          pending_to_contact[i].node_id(), pending_to_contact[i].local_ip(),
+          pending_to_contact[i].local_port(), pending_to_contact[i].host_ip());
+      SendFindRpc(pending_to_contact[i], data, conn_type);
+    }
+  }
+}
+
+void KNodeImpl::FinalIteration(boost::shared_ptr<IterativeLookUpData> data) {
+  if ((data->is_callbacked)||(!is_joined_ && data->method != BOOTSTRAP))
+    return;
+
+  activeprobes_mutex_.lock();
+  if (!data->active_probes.empty()) {
+    activeprobes_mutex_.unlock();
+    return;
+  }
+  activeprobes_mutex_.unlock();
+
+  // sort the active contacts
+  SortContactList(&data->active_contacts, data->key);
+  // check whether thare are any closer nodes
+  SortLookupContact(&data->short_list, data->key);
+
+  // check if there are closer nodes than the ones already seen and send the rpc
+  int contacted = 0;
+  std::list<LookupContact>::iterator it;
+  ContactAndTargetKey last_active;
+  last_active.contact = data->active_contacts.back();
+  last_active.target_key = data->key;
+  for (it = data->short_list.begin(); it != data->short_list.end(); it++) {
+    if (!it->contacted) {
+      ContactAndTargetKey notcontated;
+      notcontated.contact = it->kad_contact;
+      notcontated.target_key = data->key;
+      if (CompareContact(notcontated, last_active)) {
+        Contact remote;
+        remote = it->kad_contact;
+        data->active_probes.push_back(remote);
+        connect_to_node conn_type = CheckContactLocalAddress(remote.node_id(),
+            remote.local_ip(), remote.local_port(), remote.host_ip());
+        SendFindRpc(remote, data, conn_type);
+        it->contacted = true;
+        contacted++;
+      }
+    }
+  }
+
+  if (contacted == 0) {
+    SearchIteration_Callback(data);
+  }
+}
+
+void KNodeImpl::SearchIteration_CancelActiveProbe(Contact sender,
+      boost::shared_ptr<IterativeLookUpData> data) {
+  if (!is_joined_ && data->method != BOOTSTRAP)
+    return;
+  std::list<Contact>::iterator it;
+
+  activeprobes_mutex_.lock();
+  for (it = data->active_probes.begin(); it != data->active_probes.end();
+      ++it) {
+    if (sender == *it && data->active_probes.size() > 0) {
+      data->active_probes.erase(it);
+      break;
+    }
+  }
+  std::list<Contact>::iterator it1;
+  for (it1 = data->current_alpha.begin(); it1 != data->current_alpha.end();
+      ++it1) {
+    if (sender.node_id() == data->key)
+      data->wait_for_key = false;
+    if (sender == *it1 && data->current_alpha.size() > 0) {
+      data->current_alpha.erase(it1);
+      break;
+    }
+  }
+  activeprobes_mutex_.unlock();
+}
+
+void KNodeImpl::SearchIteration_Callback(
+    boost::shared_ptr<IterativeLookUpData> data) {
+  std::string ser_result;
+  // If we're bootstrapping, we are only now finished.  In this case the
+  // callback should be of type base::GeneralResponse
+  if (data->is_callbacked)
+    return;
+  data->is_callbacked = true;
+  if (data->method == BOOTSTRAP) {
+    base::GeneralResponse result;
+    if (data->active_contacts.empty()) {
+      // no active contacts
+      result.set_result(kRpcResultFailure);
+      is_joined_ = false;
+    } else {
+      result.set_result(kRpcResultSuccess);
+      if (!is_joined_) {
+        is_joined_ = true;
+        addcontacts_routine_.reset(new boost::thread(
+            &KNodeImpl::CheckAddContacts, this));
+      }
+    }
+    result.SerializeToString(&ser_result);
+  } else {
+    if (!is_joined_)
+      return;
+    // take K closest contacts from active contacts as the closest nodes
+    std::list<Contact>::iterator it1;
+    int count;
+    FindResponse result;
+    for (it1 = data->active_contacts.begin(), count = 0;
+      (it1 != data->active_contacts.end())&&(count < K_); ++it1, ++count) {
+      std::string ser_contact;
+      if (it1->SerialiseToString(&ser_contact))
+        result.add_closest_nodes(ser_contact);
+    }
+    if ((data->method == FIND_VALUE) &&
+        (data->values_found.size() == 0)) {
+      result.set_result(kRpcResultFailure);
+    } else if ((data->method != FIND_VALUE) &&
+               (result.closest_nodes_size() == 0)) {
+      result.set_result(kRpcResultFailure);
+    } else {
+      result.set_result(kRpcResultSuccess);
+    }
+    std::list<std::string>::iterator it2;
+    for (it2 = data->values_found.begin();
+         it2 != data->values_found.end(); ++it2) {
+      result.add_values(*it2);
+    }
+    result.SerializeToString(&ser_result);
+  }
+  data->cb(ser_result);
+  activeprobes_mutex_.lock();
+  if (!data->active_probes.empty()) {
+    activeprobes_mutex_.unlock();
+    return;
+  }
+  activeprobes_mutex_.unlock();
+  SendDownlist(data);
+}
+
+void KNodeImpl::SendDownlist(boost::shared_ptr<IterativeLookUpData> data) {
+  // Implementation of downlist algorithm
+  // At the end of the search the corresponding entries of the downlist are sent
+  // to all peers which gave those entries to this node during its search
+  if (data->downlist_sent || !is_joined_) return;
+  if (data->dead_ids.empty()) {
+    data->downlist_sent = true;
+    return;
+  }
+  std::list<struct DownListData>::iterator it1;
+
+  for (it1 = data->downlist.begin(); it1 != data->downlist.end(); ++it1) {
+    std::vector<std::string> downlist;
+    std::list<struct DownListCandidate>::iterator it2;
+    for (it2 = it1->candidate_list.begin(); it2 != it1->candidate_list.end();
+         ++it2) {
+      std::list<std::string>::iterator it3;
+      for (it3 = data->dead_ids.begin(); it3 != data->dead_ids.end(); it3++) {
+        if (*it3 == it2->node.node_id()) {
+          it2->is_down = true;
+        }
+      }
+      if (it2->is_down) {
+        std::string dead_node;
+        if (it2->node.SerialiseToString(&dead_node))
+          downlist.push_back(dead_node);
+      }
+    }
+    if (downlist.size() != 0) {
+      // TODO(Haiyang): restrict the parallel level to Alpha
+      connect_to_node conn_type = CheckContactLocalAddress(it1->giver.node_id(),
+          it1->giver.local_ip(), it1->giver.local_port(), it1->giver.host_ip());
+      std::string contact_ip;
+      boost::uint16_t contact_port;
+      bool local;
+      if (conn_type == LOCAL) {
+        contact_ip = it1->giver.local_ip();
+        contact_port = it1->giver.local_port();
+        local = true;
+      } else {
+        contact_ip = it1->giver.host_ip();
+        contact_port = it1->giver.host_port();
+        local = false;
+      }
+      DownlistResponse *resp = new DownlistResponse();
+      google::protobuf::Closure *done = google::protobuf::NewCallback<
+          DownlistResponse *> (&dummy_downlist_callback, resp);
+      kadrpcs_.Downlist(downlist, contact_ip, contact_port, resp, done, local);
+    }
+  }
+  data->downlist_sent = true;
+  // End of downlist
 }
 }  // namespace kad

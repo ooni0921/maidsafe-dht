@@ -60,8 +60,13 @@ class KadService;
 
 class ContactInfo;
 
+struct LookupContact;
+
 void SortContactList(std::list<Contact> *contact_list,
                      const std::string &target_key);
+
+void SortLookupContact(std::list<LookupContact> *contact_list,
+    const std::string &target_key);
 
 inline void dummy_callback(const std::string&) {}
 
@@ -83,39 +88,27 @@ struct DownListData {
 };
 
 // define data structures for callbacks
+struct LookupContact {
+  LookupContact() : kad_contact(), contacted(false) {}
+  Contact kad_contact;
+  bool contacted;
+};
+
 struct IterativeLookUpData {
   IterativeLookUpData(const remote_find_method &method,
-                      const std::string &key,
-                      base::callback_func_type cb)
-                          : method(method),
-                            short_list(),
-                            key(key),
-                            find_value_result(),
-                            pre_closest_node(),
-                            active_probes(),
-                            already_contacted(),
-                            active_contacts(),
-                            dead_ids(),
-                            downlist(),
-                            active_probes_after_callback(0),
-                            downlist_sent(false),
-                            is_callbacked(false),
-                            wait_for_key(false),
-                            cb(cb) {}
+      const std::string &key, base::callback_func_type cb)
+      : method(method), key(key), short_list(), current_alpha(),
+        active_contacts(), active_probes(),
+        values_found(), dead_ids(), downlist(), downlist_sent(false),
+        in_final_iteration(false), is_callbacked(false), wait_for_key(false),
+        cb(cb) {}
   remote_find_method method;
-  std::list<Contact> short_list;
   std::string key;
-  std::list<std::string> find_value_result;
-  Contact pre_closest_node;
-  std::list<Contact> active_probes;
-  std::list<Contact> already_contacted;
-  std::list<Contact> active_contacts;
-  std::list<std::string> dead_ids;
+  std::list<LookupContact> short_list;
+  std::list<Contact> current_alpha, active_contacts, active_probes;
+  std::list<std::string> values_found, dead_ids;
   std::list<struct DownListData> downlist;
-  int active_probes_after_callback;
-  bool downlist_sent;
-  bool is_callbacked;
-  bool wait_for_key;
+  bool downlist_sent, in_final_iteration, is_callbacked, wait_for_key;
   base::callback_func_type cb;
 };
 
@@ -294,20 +287,19 @@ class KNodeImpl {
   void SaveBootstrapContacts();  // save the routing table into .kadconfig file
   int LoadBootstrapContacts();
   void RefreshRoutine();
-  void IterativeLookUp_CancelActiveProbe(
-      Contact sender,
+  void StartSearchIteration(const std::string &key,
+      const remote_find_method &method, base::callback_func_type cb);
+  void SearchIteration_ExtendShortList(const FindResponse *response,
+      FindCallbackArgs callback_data);
+  void SearchIteration(boost::shared_ptr<IterativeLookUpData> data);
+  void FinalIteration(boost::shared_ptr<IterativeLookUpData> data);
+  void SendDownlist(boost::shared_ptr<IterativeLookUpData> data);
+  void SendFindRpc(Contact remote, boost::shared_ptr<IterativeLookUpData> data,
+      const connect_to_node &conn_type);
+  void SearchIteration_CancelActiveProbe(Contact sender,
       boost::shared_ptr<IterativeLookUpData> data);
-  void IterativeLookUp_ExtendShortList(const FindResponse *response,
-                                       FindCallbackArgs callback_data);
-  void IterativeLookUp_Callback(boost::shared_ptr<IterativeLookUpData> data);
-  void IterativeLookUp_SendDownlist(
-      boost::shared_ptr<IterativeLookUpData> data);
-  void IterativeLookUp_SearchIteration(
-      boost::shared_ptr<IterativeLookUpData> data);
-  void IterativeLookUp(const std::string &key,
-                       const std::vector<Contact> &start_up_short_list,
-                       const remote_find_method &method,
-                       base::callback_func_type cb);
+  void SearchIteration_Callback(boost::shared_ptr<IterativeLookUpData> data);
+  void SendFinalIteration(boost::shared_ptr<IterativeLookUpData> data);
   void StoreValue_IterativeStoreValue(const StoreResponse *response,
                                       StoreCallbackArgs callback_args);
   void StoreValue_ExecuteStoreRPCs(const std::string &result,

@@ -270,8 +270,6 @@ class Env: public testing::Environment {
       knodes_[i]->Leave();
       EXPECT_FALSE(knodes_[i]->is_joined());
       channel_managers_[i]->StopTransport();
-      knodes_[i].reset();
-      channel_managers_[i].reset();
     }
     std::set<boost::uint16_t>::iterator it;
     for (it = ports_.begin(); it != ports_.end(); it++) {
@@ -510,8 +508,8 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
       }
     }
   }
-//  printf(" ***********\n\n");
-  ASSERT_EQ(kTestK, number);
+  double d = kTestK * kad::kMinSuccessfulPecentageStore;
+  ASSERT_LE(static_cast<int>(d), number);
   // load the value from no.18 node
   cb_.Reset();
   FindCallback cb_1;
@@ -585,7 +583,8 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
       }
     }
   }
-  ASSERT_EQ(kTestK, number);
+  double d = kTestK * kad::kMinSuccessfulPecentageStore;
+  ASSERT_LE(static_cast<int>(d), number);
   // load the value from no.10 node
   FindCallback cb_1;
   knodes_[10]->FindValue(key,
@@ -830,7 +829,7 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   // Wait for a RPC timeout interval until the downlist are handled in the
   // network
   boost::this_thread::sleep(boost::posix_time::seconds(
-      4*(rpcprotocol::kRpcTimeout/1000+1)));
+      rpcprotocol::kRpcTimeout/1000));
   // Compute the sum of the nodes whose routing table contain r_node again
   int sum_1 = 0;
   for (int i = 1; i < kNetworkSize; i++) {
@@ -924,7 +923,7 @@ TEST_F(KNodeTest, FUNC_KAD_IncorrectNodeLocalAddrPing) {
 TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
   // find an existing node that has gone down
   // select a random node from node 1 to node 19
-  int r_node = 1 + rand() % 19;  // NOLINT (Fraser)
+  int r_node = 1 + rand() % 18;  // NOLINT (Fraser)
   printf("+++++++++++++++++ r_node = %d \n", r_node);
   std::string r_node_id = knodes_[r_node]->node_id();
   boost::uint16_t r_port = knodes_[r_node]->host_port();
@@ -940,7 +939,8 @@ TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
       boost::bind(&FindNodeCallback::CallbackFunc, &cb_1, _1), false);
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultFailure, cb_1.result());
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  boost::this_thread::sleep(boost::posix_time::seconds(
+      3*(rpcprotocol::kRpcTimeout/1000+1)));
   // Restart dead node
   printf("+++++++++++++++++Restarting %d \n", r_node);
   ASSERT_EQ(0, channel_managers_[r_node]->StartTransport(0,
@@ -998,14 +998,14 @@ TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
   channel_managers_[4]->StopTransport();
   ports_.erase(port4);
   printf("Node 4 killed\n");
-  while (node->is_joined()) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-  }
+  boost::this_thread::sleep(boost::posix_time::seconds(20));
   printf("finished waiting to notice dead node\n");
   while (!node->is_joined()) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+    boost::this_thread::sleep(boost::posix_time::seconds(2));
   }
   ASSERT_TRUE(node->is_joined());
+  // wait case it has to send downlist rpc's for the node that was stopped
+  boost::this_thread::sleep(boost::posix_time::seconds(4));
   node->Leave();
   ch_man->StopTransport();
   // Restart dead node
@@ -1019,6 +1019,8 @@ TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[4]->is_joined());
+  // wait case it has to send downlist rpc's for the node that was stopped
+  boost::this_thread::sleep(boost::posix_time::seconds(4));
   ports_.insert(knodes_[4]->host_port());
 }
 

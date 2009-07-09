@@ -52,6 +52,7 @@ RoutingTable::RoutingTable(const std::string &holder_id)
 
 RoutingTable::~RoutingTable() {
   k_buckets_.clear();
+  bucket_upper_address_.clear();
 }
 
 int RoutingTable::KBucketIndex(const std::string &key) {
@@ -210,7 +211,7 @@ void RoutingTable::FindCloseNodes(
   // Start for loop at 1, as we have already added contacts from closest bucket.
   for (boost::uint32_t index_no = 1; index_no < indices.size(); ++index_no) {
     std::vector<Contact> contacts;
-    k_buckets_[index_no]->GetContacts(K, exclude_contacts, &contacts);
+    k_buckets_[indices[index_no]]->GetContacts(K, exclude_contacts, &contacts);
     if (0 != SortContactsByDistance(key, &contacts))
       continue;
     boost::uint32_t iter(0);
@@ -257,6 +258,15 @@ bool RoutingTable::GetContacts(const int &index,
 
 void RoutingTable::Clear() {
   k_buckets_.clear();
+  bucket_upper_address_.clear();
+  BigInt min_range(0);
+  address_space_upper_address_.pow(kKeySizeBytes*8);
+  address_space_upper_address_--;
+  boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
+                                                 address_space_upper_address_));
+  k_buckets_.push_back(kbucket);
+  bucket_upper_address_.insert(std::pair<BigInt, int>
+                               (address_space_upper_address_, 0));
 }
 
 namespace detail {

@@ -672,10 +672,22 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
     ASSERT_EQ(static_cast<boost::uint64_t>(kad::kKeySizeBytes)*2, id.size());
   }
   ASSERT_EQ(2, routingtable.KbucketSize());
-  std::string id1(kad::kKeySizeBytes, 0x5);
+  std::string id1(kad::kKeySizeBytes*2, 'e');
+  std::string dec_id1;
+  base::decode_from_hex(id1, &dec_id1);
   std::vector<kad::Contact> cts, ex;
-  routingtable.FindCloseNodes(id1, kad::K, &cts, ex);
+  routingtable.FindCloseNodes(dec_id1, kad::K, &cts, ex);
   ASSERT_EQ(kad::K, cts.size());
+
+  // Check for no repeated values
+  for (unsigned int i = 0; i < cts.size(); i++) {
+    for (unsigned int j = i+1; j < cts.size(); j++)
+      if (cts[i] == cts[j]) {
+        printf("Same contact in indices %i and %i\n", i, j);
+        FAIL();
+      }
+  }
+
   // Getting nodes that are not in cts
   for (int i = 0; i < kad::K/2; i++) {
     bool in_cts = false;
@@ -686,7 +698,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
     if (!in_cts)
       ex.push_back(ids1[i]);
   }
-  ASSERT_EQ(static_cast<boost::uint16_t>(0), ex.size());
+  ASSERT_NE(static_cast<boost::uint16_t>(0), ex.size());
   for (int i = 0; i < kad::K-2; i++) {
     bool in_cts = false;
     for (boost::uint32_t j = 0; j < cts.size() && !in_cts; j++) {
@@ -699,10 +711,10 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
   ASSERT_NE(static_cast<boost::uint16_t>(0), ex.size());
   // Checking distances
   for (boost::uint32_t i = 0; i < cts.size(); i++) {
-    kad::BigInt cts_to_id = kad::kademlia_distance(id1, cts[i].node_id());
+    kad::BigInt cts_to_id = kad::kademlia_distance(dec_id1, cts[i].node_id());
     for (boost::uint32_t j = 0; j < ex.size(); j++) {
-      kad::BigInt ex_to_id = kad::kademlia_distance(id1, ex[j].node_id());
-      ASSERT_TRUE(cts_to_id < ex_to_id);
+      kad::BigInt ex_to_id = kad::kademlia_distance(dec_id1, ex[j].node_id());
+       ASSERT_TRUE(cts_to_id < ex_to_id);
     }
   }
 }
