@@ -494,3 +494,19 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
   RpcProtocolTest::client_chann_manager->ClearCallLaters();
 }
+
+TEST(RpcControllerTest, BEH_RPC_RpcController) {
+  rpcprotocol::Controller controller;
+  std::string ip = "127.0.0.1";
+  uint16_t port = 8888;
+  controller.set_remote_ip(ip);
+  controller.set_remote_port(port);
+  ASSERT_EQ(ip, controller.remote_ip());
+  ASSERT_EQ(port, controller.remote_port());
+  controller.SetFailed("FAILED");
+  controller.Reset();
+  ASSERT_FALSE(controller.Failed());
+  ASSERT_EQ(std::string(""), controller.ErrorText());
+  controller.StartCancel();
+  ASSERT_FALSE(controller.IsCanceled());
+}
