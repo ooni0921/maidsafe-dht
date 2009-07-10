@@ -506,6 +506,9 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   }
   EXPECT_EQ(0, response.nat_type());
   EXPECT_FALSE(routingtableB_->GetContact(node_idA_, &contactback));
+  // Need to stop transport here rather than waiting for teardown as calllater
+  // calls back to non-existant object.
+  channel_managerB_->StopTransport();
 }
 
 TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {
