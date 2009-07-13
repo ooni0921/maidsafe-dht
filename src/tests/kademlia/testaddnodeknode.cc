@@ -44,7 +44,7 @@ class MessageHandler {
     msg.SerializeToString(&message);
     msgs.push_back(message);
     ids.push_back(conn_id);
-    printf("message %i arrived\n", msgs.size());
+    printf("message %u arrived\n", static_cast<unsigned int>(msgs.size()));
     if (node_ != NULL)
       node_->CloseConnection(conn_id);
   }

@@ -93,7 +93,7 @@ class MessageHandler {
     msg.SerializeToString(&message);
     msgs.push_back(message);
     ids.push_back(conn_id);
-    printf("message %i arrived\n", msgs.size());
+    printf("message %u arrived\n", static_cast<unsigned int>(msgs.size()));
     if (node_ != NULL)
       node_->CloseConnection(conn_id);
   }
@@ -139,7 +139,7 @@ class MessageHandlerEchoReq {
     std::string peer_ip(inet_ntoa(((struct sockaddr_in *)&addr)->sin_addr));
     boost::uint16_t peer_port = ntohs(((struct sockaddr_in *)&addr)->sin_port);
     printf("sender: %s:%d\n", peer_ip.c_str(), peer_port);
-    printf("message %i arrived\n", msgs.size());
+    printf("message %u arrived\n", static_cast<unsigned int>(msgs.size()));
     // replying same msg
     if (msgs.size() < 10)
       node_->Send(msg, conn_id, false);
@@ -177,7 +177,7 @@ class MessageHandlerEchoResp {
     msg.SerializeToString(&message);
     msgs.push_back(message);
     ids.push_back(conn_id);
-    printf("message %i arrived\n", msgs.size());
+    printf("message %u arrived\n", static_cast<unsigned int>(msgs.size()));
     // replying same msg
     node_->CloseConnection(conn_id);
   }

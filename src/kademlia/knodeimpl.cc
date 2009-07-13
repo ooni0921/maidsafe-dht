@@ -963,8 +963,8 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(
     if (closest_nodes.size() > 0) {
       bool stored_local = false;
 #ifdef DEBUG
-      printf("KNodeImpl::StoreValue_ExecuteStoreRPCs -- %d\n",
-        closest_nodes.size());
+      printf("KNodeImpl::StoreValue_ExecuteStoreRPCs -- %u\n",
+        static_cast<unsigned int>(closest_nodes.size()));
 #endif
       if (type_ != CLIENT) {
         // If this node itself is closer to the key than the last (furtherest)
