@@ -43,7 +43,7 @@ class PDRoutingTableHandlerTest: public testing::Test {
   }
 };
 
-TEST_F(PDRoutingTableHandlerTest, ConnectAndCloseRoutingtable) {
+TEST_F(PDRoutingTableHandlerTest, BEH_BASE_ConnectAndCloseRoutingtable) {
   std::string dbname("routingtable");
   dbname += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
             std::string(".db");

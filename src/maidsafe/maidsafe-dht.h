@@ -41,6 +41,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
 
+#if MAIDSAFE_DHT_VERSION < 1
+#error this API is not compatible with the installed library
+#error Please update the maidsafe-dht library
+#endif
+
+
 //  int StartListening(port);
 //  trans::localport()
 //  internal declerations

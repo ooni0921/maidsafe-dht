@@ -68,12 +68,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include <string>
 #include <vector>
+#define MAIDSAFE_DHT_VERSION 1
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *
  ******************************************************************************/
 namespace kad {
-
 // KADEMLIA CONSTANTS
 
 // The size of DHT keys and node IDs in bytes.
