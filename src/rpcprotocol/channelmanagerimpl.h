@@ -108,7 +108,6 @@ class ChannelManagerImpl {
   ChannelManagerImpl& operator=(const ChannelManagerImpl&);
   boost::uint16_t external_port_;
   std::string external_ip_;
-  std::auto_ptr<base::PDRoutingTableHandler> routingtable_;
   std::map<boost::uint32_t, PendingTimeOut> pending_timeout_;
 };
 }  // namespace rpcprotocol

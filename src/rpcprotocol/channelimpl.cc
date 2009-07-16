@@ -48,8 +48,6 @@ ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager)
           pservice_(0),
           ip_(""),
           port_(0),
-          routingtable_(new base::PDRoutingTableHandler(base::itos(
-              pmanager_->external_port()))),
           local_(false) {}
 
 ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
@@ -61,8 +59,6 @@ ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
           pservice_(0),
           ip_(""),
           port_(port),
-          routingtable_(new base::PDRoutingTableHandler(base::itos(
-              pmanager_->external_port()))),
           local_(local) {
   // To send we need ip in decimal dotted format
   if (ip.size() == 4)
@@ -102,7 +98,9 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
   uint16_t rendezvous_port = 0;
   base::PDRoutingTableTuple tuple;
   if (!local_)
-    if (0 == routingtable_->GetTupleInfo(ip_, port_, &tuple)) {
+    if (0 == base::PDRoutingTable::getInstance()[
+        base::itos(pmanager_->external_port())]->GetTupleInfo(
+        ip_, port_, &tuple)) {
       rendezvous_ip = tuple.rendezvous_ip();
       rendezvous_port = tuple.rendezvous_port();
 //      if (rendezvous_ip != "" && rendezvous_port !=0)

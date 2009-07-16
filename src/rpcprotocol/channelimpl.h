@@ -90,7 +90,6 @@ class ChannelImpl : public google::protobuf::RpcChannel {
   google::protobuf::Service *pservice_;
   std::string ip_;
   boost::uint16_t port_;
-  boost::shared_ptr<base::PDRoutingTableHandler> routingtable_;
   ChannelImpl(const ChannelImpl&);
   ChannelImpl& operator=(const ChannelImpl&);
   bool local_;

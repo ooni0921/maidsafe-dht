@@ -351,7 +351,6 @@ class KNodeImpl {
   int alpha_, beta_;
   bool refresh_routine_started_;
   boost::filesystem::path kad_config_path_;
-  boost::shared_ptr<base::PDRoutingTableHandler> routingtable_;
   std::string local_host_ip_;
   boost::uint16_t local_host_port_;
   bool stopping_;

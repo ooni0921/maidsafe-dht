@@ -132,7 +132,7 @@ KNodeImpl::KNodeImpl(
           node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
           host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(), K_(K),
           alpha_(kAlpha), beta_(kBeta), refresh_routine_started_(false),
-          kad_config_path_(""), routingtable_(), local_host_ip_(""),
+          kad_config_path_(""), local_host_ip_(""),
           local_host_port_(0), stopping_(false), contacts_to_add_(),
           addcontacts_routine_(), add_ctc_cond_(), upnp_started_(false),
           upnp_ios_(), upnp_(), upnp_half_open_(NULL),
@@ -168,7 +168,7 @@ KNodeImpl::KNodeImpl(
           node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
           host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(),
           K_(k), alpha_(alpha), beta_(beta), refresh_routine_started_(false),
-          kad_config_path_(""), routingtable_(), local_host_ip_(""),
+          kad_config_path_(""), local_host_ip_(""),
           local_host_port_(0), stopping_(false), contacts_to_add_(),
           addcontacts_routine_(), add_ctc_cond_(), upnp_started_(false),
           upnp_ios_(), upnp_(), upnp_half_open_(NULL),
@@ -585,7 +585,6 @@ void KNodeImpl::Join(const std::string &node_id,
   if (host_port_ == 0)
     host_port_ = pchannel_manager_->ptransport()->listening_port();
   local_host_port_ = pchannel_manager_->ptransport()->listening_port();
-  routingtable_.reset(new base::PDRoutingTableHandler(base::itos(host_port_)));
   // Adding the services
   RegisterKadService();
   // if node_id is equal to "", generate a random kad ID and save it
@@ -630,7 +629,7 @@ void KNodeImpl::Leave() {
       upnp_mapped_port_ = 0;
       SaveBootstrapContacts();
       prouting_table_->Clear();
-      routingtable_->Clear();
+      base::PDRoutingTable::getInstance()[base::itos(host_port_)]->Clear();
     }
     stopping_ = false;
   }
@@ -1266,7 +1265,8 @@ int KNodeImpl::AddContact(Contact new_contact, bool only_db) {
                                     0,
                                     0,
                                     0);
-    routingtable_->AddTuple(tuple);
+    base::PDRoutingTable::getInstance()[base::itos(
+        host_port_)]->AddTuple(tuple);
     if (result == 2) {
       {
         boost::mutex::scoped_lock gaurd(pendingcts_mutex_);
@@ -1394,7 +1394,8 @@ connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
                                                     const std::string &ext_ip) {
   if (ip == "" || port == 0)
     return REMOTE;
-  int result = routingtable_->ContactLocal(id);
+  int result = base::PDRoutingTable::getInstance()[
+      base::itos(host_port_)]->ContactLocal(id);
   connect_to_node conn_type;
   std::string ext_ip_dec;
   switch (result) {
@@ -1410,8 +1411,9 @@ connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
                   } else {
                     conn_type = REMOTE;
                   }
-                  routingtable_->UpdateContactLocal(id,
-                    static_cast<int>(conn_type));
+                  base::PDRoutingTable::getInstance()[
+                      base::itos(host_port_)]->UpdateContactLocal(id,
+                      static_cast<int>(conn_type));
                   break;
   }
   return conn_type;
@@ -1539,7 +1541,8 @@ void KNodeImpl::UnMapUPnP() {
 }
 
 void KNodeImpl::UpdatePDRTContactToRemote(const std::string &node_id) {
-  routingtable_->UpdateContactLocal(node_id, static_cast<int>(REMOTE));
+  base::PDRoutingTable::getInstance()[base::itos(
+      host_port_)]->UpdateContactLocal(node_id, static_cast<int>(REMOTE));
 }
 
 ContactInfo KNodeImpl::contact_info() const {

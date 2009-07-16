@@ -30,708 +30,188 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace base {
 
-int PDRoutingTableHandler::Connect(const std::string &db_name_) {
-  try {
-    db_ = new CppSQLite3DB();
-    if (!boost::filesystem::exists(boost::filesystem::path(db_name_))) {
-      // create a new one
-      db_->open(db_name_.c_str());
-      // create table structure
-      if (CreateRoutingTableDb())
-        return 1;
-    } else {  // open it
-      db_->open(db_name_.c_str());
-    }
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("%s - Connect Error %d : %s\n", db_name_.c_str(),
-        e.errorCode(), e.errorMessage());
-#endif
-    delete db_;
-    db_ = NULL;
-    return 1;
-  }
-  return 0;
-}
-
-int PDRoutingTableHandler::Close() {
-  try {
-    db_->close();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("Close Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    delete db_;
-    db_ = NULL;
-    return 1;
-  }
-  delete db_;
-  db_ = NULL;
-  return 0;
-}
-
-int PDRoutingTableHandler::CreateRoutingTableDb() {
-  // This is the DB structure that is needed.
-  /****************************************
-  create table pdroutingtable(
-    kad_id char(64) primary key,
-    rendezvous_ip int,
-    rendezvous_port int,
-    public_key char(512) not null,
-    int rtt not null,
-    int rank not null,
-    int space not null
-  );
-  ****************************************/
-  try {
-    // create table structure
-    db_->execDML("create table routingtable(kad_id blob, "
-      "host_ip char(15), host_port integer, "
-      "rendezvous_ip char(15), rendezvous_port integer, "
-      "public_key blob not null, rtt integer not null, rank integer not null, "
-      "space integer not null, contact_local integer not null, "
-      "primary key(kad_id));");
-  } catch(CppSQLite3Exception &e) { // NOLINT
-#ifdef DEBUG
-      printf("Create Error %d : %s. DB: %s\n", e.errorCode(),
-        e.errorMessage(), db_name_.c_str());
-#endif
-    return 1;
-  }
-  return 0;
-}
-
 int PDRoutingTableHandler::GetTupleInfo(const std::string &kademlia_id,
   PDRoutingTableTuple *tuple) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    stmt = db_->compileStatement("select host_ip, host_port, "
-      "rendezvous_ip, rendezvous_port,"
-      "public_key, rtt, rank, space from routingtable where kad_id=?;");
-    stmt.bind(1, (const char*)blob_id.getEncoded());
-    CppSQLite3Query qcpp = stmt.execQuery();
-    if (!qcpp.eof()) {
-      std::string host_ip = qcpp.fieldValue(static_cast<unsigned int>(0));
-      boost::uint16_t host_port =
-        static_cast<boost::uint16_t>(qcpp.getIntField(1));
-      std::string rendezvous_ip = qcpp.fieldValue(static_cast<unsigned int>(2));
-      boost::uint16_t rendezvous_port =
-        static_cast<boost::uint16_t>(qcpp.getIntField(3));
-      CppSQLite3Binary blob_public_key;
-      blob_public_key.setEncoded((unsigned char*)
-        qcpp.fieldValue(static_cast<unsigned int>(4)));
-      std::string public_key =
-        std::string((const char*)blob_public_key.getBinary(),
-                     blob_public_key.getBinaryLength());
-      boost::uint32_t rtt =
-        static_cast<boost::uint32_t>(qcpp.getIntField(5));
-      boost::uint16_t rank =
-        static_cast<boost::uint16_t>(qcpp.getIntField(6));
-      boost::uint32_t space =
-        static_cast<boost::uint32_t>(qcpp.getIntField(7));
-      if (tuple == NULL) {
-        Close();
-        return 1;
-      }
-      *tuple = PDRoutingTableTuple(kademlia_id,
-                                   host_ip,
-                                   host_port,
-                                   rendezvous_ip,
-                                   rendezvous_port,
-                                   public_key,
-                                   rtt,
-                                   rank,
-                                   space);
-      stmt.reset();
-      stmt.finalize();
-    } else {
-      stmt.reset();
-      stmt.finalize();
-      Close();
-      return 1;
-    }
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-      printf("Select Error %d : %s. DB: %s\n", e.errorCode(),
-        e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  *tuple = *it;
   return 0;
 }
 
 int PDRoutingTableHandler::GetTupleInfo(const std::string &host_ip,
     const boost::uint16_t &host_port, PDRoutingTableTuple *tuple) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1) {
+  routingtable::index<t_ip>::type& ip_indx = routingtable_.get<t_ip>();
+  routingtable::index<t_ip>::type::iterator it = ip_indx.find(host_ip);
+  if (it == ip_indx.end())
     return 1;
-  }
-  CppSQLite3Statement stmt;
-  try {
-    stmt = db_->compileStatement("select kad_id, "
-      "rendezvous_ip, rendezvous_port,"
-      "public_key, rtt, rank, space from routingtable "
-      "where host_ip=? and host_port=?;");
-    stmt.bind(1, host_ip.c_str());
-    stmt.bind(2, host_port);
-    CppSQLite3Query qcpp = stmt.execQuery();
-    if (!qcpp.eof()) {
-      CppSQLite3Binary blob_id;
-      blob_id.setEncoded((unsigned char*)
-        qcpp.fieldValue(static_cast<unsigned int>(0)));
-      std::string kademlia_id =
-        std::string((const char*)blob_id.getBinary(),
-                     blob_id.getBinaryLength());
-      std::string rendezvous_ip = qcpp.fieldValue(static_cast<unsigned int>(1));
-      boost::uint16_t rendezvous_port =
-        static_cast<boost::uint16_t>(qcpp.getIntField(2));
-      CppSQLite3Binary blob_public_key;
-      blob_public_key.setEncoded((unsigned char*)
-        qcpp.fieldValue(static_cast<unsigned int>(3)));
-      std::string public_key =
-        std::string((const char*)blob_public_key.getBinary(),
-                     blob_public_key.getBinaryLength());
-      boost::uint32_t rtt =
-        static_cast<boost::uint32_t>(qcpp.getIntField(4));
-      boost::uint16_t rank =
-        static_cast<boost::uint16_t>(qcpp.getIntField(5));
-      boost::uint32_t space =
-        static_cast<boost::uint32_t>(qcpp.getIntField(6));
-      if (tuple == NULL) {
-        Close();
-        return 1;
-      }
-      *tuple = PDRoutingTableTuple(kademlia_id,
-                                   host_ip,
-                                   host_port,
-                                   rendezvous_ip,
-                                   rendezvous_port,
-                                   public_key,
-                                   rtt,
-                                   rank,
-                                   space);
-      stmt.reset();
-      stmt.finalize();
-    } else {
-      stmt.reset();
-      stmt.finalize();
-      Close();
-      return 1;
+  bool found = false;
+  while (it != ip_indx.end() && !found) {
+    if (it->host_port_ == host_port) {
+      *tuple = *it;
+      found = true;
     }
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("Select Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
+    it++;
   }
-  Close();
+  if (!found)
+    return 1;
   return 0;
 }
 
-int PDRoutingTableHandler::AddTuple(const base::PDRoutingTableTuple &tuple) {
+int PDRoutingTableHandler::AddTuple(base::PDRoutingTableTuple tuple) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
-    return 1;
-
-  bool insert = false;
-  bool update = false;
-
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)tuple.kademlia_id().c_str(),
-        tuple.kademlia_id().size());
-    stmt = db_->compileStatement("select host_ip, host_port, "
-      "rendezvous_ip, rendezvous_port,"
-      "public_key, rtt, rank, space from routingtable where kad_id=?;");
-    stmt.bind(1, (const char*)blob_id.getEncoded());
-    CppSQLite3Query qcpp = stmt.execQuery();
-    if (!qcpp.eof()) {
-      std::string host_ip = qcpp.fieldValue(static_cast<unsigned int>(0));
-      boost::uint16_t host_port =
-        static_cast<boost::uint16_t>(qcpp.getIntField(1));
-      std::string rendezvous_ip = qcpp.fieldValue(static_cast<unsigned int>(2));
-      boost::uint16_t rendezvous_port =
-        static_cast<boost::uint16_t>(qcpp.getIntField(3));
-      CppSQLite3Binary blob_public_key;
-      blob_public_key.setEncoded((unsigned char*)
-        qcpp.fieldValue(static_cast<unsigned int>(4)));
-      std::string public_key =
-        std::string((const char*)blob_public_key.getBinary(),
-                     blob_public_key.getBinaryLength());
-      boost::uint32_t rtt =
-        static_cast<boost::uint32_t>(qcpp.getIntField(5));
-      boost::uint16_t rank =
-        static_cast<boost::uint16_t>(qcpp.getIntField(6));
-      boost::uint32_t space =
-        static_cast<boost::uint32_t>(qcpp.getIntField(7));
-      if (tuple.host_ip() == host_ip && tuple.host_port() == host_port &&
-          tuple.rendezvous_ip() == rendezvous_ip &&
-          tuple.rendezvous_port() == rendezvous_port &&
-          tuple.rtt() == rtt && tuple.rank() == rank &&
-          tuple.space() == space && tuple.public_key() == public_key) {
-        update = false;
-      } else {
-        update = true;
-      }
-    } else {
-      insert = true;
-    }
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-      printf("Select Error %d : %s. DB: %s\n", e.errorCode(),
-        e.errorMessage(), db_name_.c_str());
-#endif
-      stmt.reset();
-      stmt.finalize();
-      Close();
-      return 1;
+  routingtable::iterator it = routingtable_.find(tuple.kademlia_id());
+  if (it == routingtable_.end()) {
+    routingtable_.insert(tuple);
+  } else {
+    tuple.ctc_local_ = it->ctc_local_;
+    routingtable_.replace(it, tuple);
   }
-
-  if (insert) {
-    CppSQLite3Statement stmt;
-    try {
-      CppSQLite3Binary blob_id;
-      blob_id.setBinary((const unsigned char*)tuple.kademlia_id().c_str(),
-          tuple.kademlia_id().size());
-      CppSQLite3Binary blob_public_key;
-      blob_public_key.setBinary((
-          const unsigned char*)tuple.public_key().c_str(),
-          tuple.public_key().size());
-      CppSQLite3Statement stmt;
-      stmt = db_->compileStatement(
-          "insert into routingtable values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
-      stmt.bind(1, (const char*)blob_id.getEncoded());
-      stmt.bind(2, tuple.host_ip().c_str());
-      stmt.bind(3, tuple.host_port());
-      stmt.bind(4, tuple.rendezvous_ip().c_str());
-      stmt.bind(5, tuple.rendezvous_port());
-      stmt.bind(6, (const char*)blob_public_key.getEncoded());
-      stmt.bind(7, static_cast<boost::int32_t>(tuple.rtt()));
-      stmt.bind(8, static_cast<boost::int32_t>(tuple.rank()));
-      stmt.bind(9, static_cast<boost::int32_t>(tuple.space()));
-      stmt.bind(10, static_cast<boost::int32_t>(2));
-      stmt.execDML();
-      stmt.reset();
-      stmt.finalize();
-      Close();
-      return 0;
-    } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-      printf("Add Error %d : %s. DB: %s\n", e.errorCode(),
-        e.errorMessage(), db_name_.c_str());
-#endif
-      stmt.reset();
-      stmt.finalize();
-      Close();
-      return 1;
-    }
-  }
-  // Do an update
-  if (update) {
-    CppSQLite3Statement stmt;
-    try {
-      CppSQLite3Binary blob_id;
-      blob_id.setBinary((const unsigned char*)tuple.kademlia_id().c_str(),
-          tuple.kademlia_id().size());
-      CppSQLite3Binary blob_public_key;
-      blob_public_key.setBinary(
-          (const unsigned char*)tuple.public_key().c_str(),
-          tuple.public_key().size());
-      stmt = db_->compileStatement(
-          "update routingtable set host_ip=?, host_port=?, rendezvous_ip=?, "
-          "rendezvous_port=?, public_key=?, rtt=?, rank=?, space=? where "
-          "kad_id=?;");
-      stmt.bind(1, tuple.host_ip().c_str());
-      stmt.bind(2, tuple.host_port());
-      stmt.bind(3, tuple.rendezvous_ip().c_str());
-      stmt.bind(4, tuple.rendezvous_port());
-      stmt.bind(5, (const char*)blob_public_key.getEncoded());
-      stmt.bind(6, static_cast<boost::int32_t>(tuple.rtt()));
-      stmt.bind(7, static_cast<boost::int32_t>(tuple.rank()));
-      stmt.bind(8, static_cast<boost::int32_t>(tuple.space()));
-      stmt.bind(9, (const char*)blob_id.getEncoded());
-      stmt.execDML();
-      stmt.reset();
-      stmt.finalize();
-    } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-      printf("Update Error %d : %s. DB: %s\n", e.errorCode(),
-        e.errorMessage(), db_name_.c_str());
-#endif
-      stmt.reset();
-      stmt.finalize();
-      Close();
-      return 1;
-    }
-  }
-  Close();
   return 0;
 }
 
 int PDRoutingTableHandler::DeleteTupleByKadId(const std::string &kademlia_id) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    CppSQLite3Statement stmt;
-    stmt = db_->compileStatement(
-        "delete from routingtable where kad_id=?;");
-    stmt.bind(1, (const char*)blob_id.getEncoded());
-    int del_rows = stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-    if (del_rows == 0) {
-      Close();
-      return 1;
-    }
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("Delete Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  routingtable_.erase(it);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateHostIp(const std::string &kademlia_id,
   const std::string &new_host_ip) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    stmt = db_->compileStatement(
-        "update routingtable set host_ip=? where kad_id=?;");
-    stmt.bind(1, new_host_ip.c_str());
-    stmt.bind(2, (const char*)blob_id.getEncoded());
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("UpdateHostIp Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  PDRoutingTableTuple new_tuple = *it;
+  new_tuple.host_ip_ = new_host_ip;
+  routingtable_.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateHostPort(const std::string &kademlia_id,
   const boost::uint16_t &new_host_port) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    stmt = db_->compileStatement(
-        "update routingtable set host_port=? where kad_id=?;");
-    stmt.bind(1, new_host_port);
-    stmt.bind(2, (const char*)blob_id.getEncoded());
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("UpdateHostPort Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  PDRoutingTableTuple new_tuple = *it;
+  new_tuple.host_port_ = new_host_port;
+  routingtable_.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateRendezvousIp(const std::string &kademlia_id,
   const std::string &new_rv_ip) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    stmt = db_->compileStatement(
-        "update routingtable set rendezvous_ip=? where kad_id=?;");
-    stmt.bind(1, new_rv_ip.c_str());
-    stmt.bind(2, (const char*)blob_id.getEncoded());
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("UpdateRzIp Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  PDRoutingTableTuple new_tuple = *it;
+  new_tuple.rendezvous_ip_ = new_rv_ip;
+  routingtable_.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateRendezvousPort(const std::string &kademlia_id,
   const boost::uint16_t &new_rv_port) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    stmt = db_->compileStatement(
-        "update routingtable set rendezvous_port=? where kad_id=?;");
-    stmt.bind(1, new_rv_port);
-    stmt.bind(2, (const char*)blob_id.getEncoded());
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("UpdateRzPort Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  PDRoutingTableTuple new_tuple = *it;
+  new_tuple.rendezvous_port_ = new_rv_port;
+  routingtable_.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdatePublicKey(const std::string &kademlia_id,
   const std::string &new_public_key) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    CppSQLite3Binary blob_public_key;
-    blob_public_key.setBinary((const unsigned char*)new_public_key.c_str(),
-        new_public_key.size());
-    stmt = db_->compileStatement(
-        "update routingtable set public_key=? where kad_id=?;");
-    stmt.bind(1, (const char*)blob_public_key.getEncoded());
-    stmt.bind(2, (const char*)blob_id.getEncoded());
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("UpdatePublicKey Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  PDRoutingTableTuple new_tuple = *it;
+  new_tuple.public_key_ = new_public_key;
+  routingtable_.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateRtt(const std::string &kademlia_id,
   const boost::uint32_t &new_rtt) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    stmt = db_->compileStatement(
-        "update routingtable set rtt=? where kad_id=?;");
-    stmt.bind(1, static_cast<boost::int32_t>(new_rtt));
-    stmt.bind(2, (const char*)blob_id.getEncoded());
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("UpdateRtt Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  PDRoutingTableTuple new_tuple = *it;
+  new_tuple.rtt_ = new_rtt;
+  routingtable_.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateRank(const std::string &kademlia_id,
   const boost::uint16_t &new_rank) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    stmt = db_->compileStatement(
-        "update routingtable set rank=? where kad_id=?;");
-    stmt.bind(1, new_rank);
-    stmt.bind(2, (const char*)blob_id.getEncoded());
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("UpdateRank Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  PDRoutingTableTuple new_tuple = *it;
+  new_tuple.rank_ = new_rank;
+  routingtable_.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateSpace(const std::string &kademlia_id,
   const boost::uint32_t &new_space) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    stmt = db_->compileStatement(
-        "update routingtable set space=? where kad_id=?;");
-    stmt.bind(1, static_cast<boost::int32_t>(new_space));
-    stmt.bind(2, (const char*)blob_id.getEncoded());
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("UpdateSpace Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  PDRoutingTableTuple new_tuple = *it;
+  new_tuple.space_ = new_space;
+  routingtable_.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::ContactLocal(const std::string &kademlia_id) {
   boost::mutex::scoped_lock guard(mutex_);
-  int contact_local = 2;
-  if (Connect(db_name_) == 1)
-    return contact_local;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    stmt = db_->compileStatement("select contact_local "
-      "from routingtable where kad_id=?;");
-    stmt.bind(1, (const char*)blob_id.getEncoded());
-    CppSQLite3Query qcpp = stmt.execQuery();
-    if (!qcpp.eof())
-      contact_local = qcpp.getIntField(0);
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return contact_local;
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("Select Error %d : %s. DB: %s\n", e.errorCode(), e.errorMessage(),
-      db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return contact_local;
-  }
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
+    return 2;
+  return it->ctc_local();
 }
 
 int PDRoutingTableHandler::UpdateContactLocal(const std::string &kademlia_id,
   const int &new_contact_local) {
   boost::mutex::scoped_lock guard(mutex_);
-  if (Connect(db_name_) == 1)
+  routingtable::iterator it = routingtable_.find(kademlia_id);
+  if (it == routingtable_.end())
     return 1;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_id;
-    blob_id.setBinary((const unsigned char*)kademlia_id.c_str(),
-        kademlia_id.size());
-    stmt = db_->compileStatement(
-        "update routingtable set contact_local=? where kad_id=?;");
-    stmt.bind(1, static_cast<boost::int32_t>(new_contact_local));
-    stmt.bind(2, (const char*)blob_id.getEncoded());
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("UpdateContactLocal Error %d : %s. DB: %s\n", e.errorCode(),
-      e.errorMessage(), db_name_.c_str());
-#endif
-    stmt.reset();
-    stmt.finalize();
-    Close();
-    return 1;
-  }
-  Close();
+  PDRoutingTableTuple new_tuple = *it;
+  new_tuple.ctc_local_ = new_contact_local;
+  routingtable_.replace(it, new_tuple);
   return 0;
 }
 
+PDRoutingTable& PDRoutingTable::getInstance() {
+  static PDRoutingTable instance;
+  return instance;
+}
+
+boost::shared_ptr<PDRoutingTableHandler> PDRoutingTable::operator[] (
+    const std::string &name) {
+  std::map<std::string, boost::shared_ptr<PDRoutingTableHandler> >::iterator it;
+  it = pdroutingtablehdls_.find(name);
+  if (it == pdroutingtablehdls_.end()) {
+    pdroutingtablehdls_.insert(std::pair<std::string,
+        boost::shared_ptr<PDRoutingTableHandler> >(name,
+        boost::shared_ptr<PDRoutingTableHandler>(new PDRoutingTableHandler)));
+    return pdroutingtablehdls_[name];
+  }
+  return it->second;
+}
 }  // namespace base

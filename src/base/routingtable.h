@@ -28,20 +28,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef BASE_ROUTINGTABLE_H_
 #define BASE_ROUTINGTABLE_H_
 #include <boost/cstdint.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/convenience.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/identity.hpp>
+#include <boost/multi_index/member.hpp>
+
 #ifdef WIN32
 #include <shlobj.h>
 #endif
 #include <string>
-#include "base/cppsqlite3.h"
-#include "base/singleton.h"
+#include <map>
+#include <functional>
+
 
 namespace base {
 
-class PDRoutingTableTuple {
- private:
+struct PDRoutingTableTuple {
   std::string kademlia_id_;
   std::string host_ip_;
   boost::uint16_t host_port_;
@@ -51,8 +54,8 @@ class PDRoutingTableTuple {
   boost::uint32_t rtt_;
   boost::uint16_t rank_;
   boost::uint32_t space_;
+  int ctc_local_;
 
- public:
   // Fill the constructor as needed
   PDRoutingTableTuple()
     :kademlia_id_(),
@@ -63,7 +66,8 @@ class PDRoutingTableTuple {
      public_key_(),
      rtt_(0),
      rank_(0),
-     space_(0) {}
+     space_(0),
+     ctc_local_(2) {}
   PDRoutingTableTuple(const std::string &kademlia_id,
                       const std::string &host_ip,
                       const boost::uint16_t &host_port,
@@ -81,7 +85,8 @@ class PDRoutingTableTuple {
      public_key_(public_key),
      rtt_(rtt),
      rank_(rank),
-     space_(space) {}
+     space_(space),
+     ctc_local_(2) {}
   PDRoutingTableTuple(const PDRoutingTableTuple &tuple)
     :kademlia_id_(tuple.kademlia_id()),
       host_ip_(tuple.host_ip()),
@@ -91,7 +96,8 @@ class PDRoutingTableTuple {
      public_key_(tuple.public_key()),
      rtt_(tuple.rtt()),
      rank_(tuple.rank()),
-     space_(tuple.space()) {}
+     space_(tuple.space()),
+     ctc_local_(tuple.ctc_local_) {}
   PDRoutingTableTuple& operator=(const PDRoutingTableTuple &tuple) {
     kademlia_id_ = tuple.kademlia_id();
     host_ip_ = tuple.host_ip();
@@ -102,6 +108,7 @@ class PDRoutingTableTuple {
     rtt_ = tuple.rtt();
     rank_ = tuple.rank();
     space_ = tuple.space();
+    ctc_local_ = tuple.ctc_local();
     return *this; }
   const std::string kademlia_id() const { return kademlia_id_; }
   const std::string host_ip() const { return host_ip_; }
@@ -112,59 +119,55 @@ class PDRoutingTableTuple {
   boost::uint32_t rtt() const { return rtt_; }
   boost::uint16_t rank() const { return rank_; }
   boost::uint32_t space() const { return space_; }
+  int ctc_local() const { return ctc_local_; }
 };
+
+/* Tags */
+struct t_key {};
+struct t_ip {};
+struct t_port {};
+struct t_rtt {};
+struct t_rank {};
+
+typedef boost::multi_index::multi_index_container<
+  PDRoutingTableTuple,
+  boost::multi_index::indexed_by<
+    boost::multi_index::ordered_unique<
+      boost::multi_index::tag<t_key>,
+      BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, std::string, kademlia_id_)
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<t_ip>,
+      BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, std::string, host_ip_)
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<t_port>,
+      BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, boost::uint16_t, host_port_)
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<t_rtt>,
+      BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, boost::uint32_t, rtt_)
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<t_rank>,
+      BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, boost::uint16_t, rank_),
+      std::greater<boost::uint16_t>
+    >
+  >
+> routingtable;
 
 class PDRoutingTableHandler {
  public:
-  explicit PDRoutingTableHandler(const std::string& db_name = "")
-  : db_(NULL), db_name_(db_name), mutex_() {
-    // TODO(Fraser#5#): 2009-04-24 - This is repeated code - move to base?
-    boost::filesystem::path app_path("");
-#if defined(MAIDSAFE_POSIX)
-    app_path = boost::filesystem::path("/var/cache/maidsafe/",
-      boost::filesystem::native);
-#elif defined(MAIDSAFE_WIN32)
-    TCHAR szpth[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPath(NULL,
-                                  CSIDL_COMMON_APPDATA,
-                                  NULL,
-                                  0,
-                                  szpth))) {
-      std::ostringstream stm;
-      const std::ctype<char> &ctfacet =
-          std::use_facet< std::ctype<char> >(stm.getloc());
-      for (size_t i = 0; i < wcslen(szpth); ++i)
-        stm << ctfacet.narrow(szpth[i], 0);
-      app_path = boost::filesystem::path(stm.str(), boost::filesystem::native);
-      app_path /= "maidsafe";
-    }
-#elif defined(MAIDSAFE_APPLE)
-    app_path = boost::filesystem::path("/Library/maidsafe/", fs::native);
-#endif
-    boost::filesystem::path db_path = app_path;
-    if (db_name_.size())
-      db_path /= db_name_;
-    else
-      db_path /= "RoutingTable.db";
-    db_name_ = db_path.string();
-    // Connect(db_name_);
-  }
-  ~PDRoutingTableHandler() {
-      // Close();
-  }
+  PDRoutingTableHandler() : routingtable_(), mutex_() {}
   void Clear() {
     boost::mutex::scoped_lock guard(mutex_);
-    try {
-      if (boost::filesystem::exists(boost::filesystem::path(db_name_))) {
-        boost::filesystem::remove(db_name_);
-      }
-    } catch(std::exception &) {}
+    routingtable_.clear();
   }
   int GetTupleInfo(const std::string &kademlia_id, PDRoutingTableTuple *tuple);
   int GetTupleInfo(const std::string &host_ip,
                    const boost::uint16_t &host_port,
                    PDRoutingTableTuple *tuple);
-  int AddTuple(const base::PDRoutingTableTuple &tuple);
+  int AddTuple(base::PDRoutingTableTuple tuple);
   int DeleteTupleByKadId(const std::string &kademlia_id);
   int UpdateHostIp(const std::string &kademlia_id,
     const std::string &new_host_ip);
@@ -186,26 +189,22 @@ class PDRoutingTableHandler {
   int UpdateContactLocal(const std::string &kademlia_id,
     const int &new_contact_local);
  private:
-  PDRoutingTableHandler(const PDRoutingTableHandler&);
+//  PDRoutingTableHandler(const PDRoutingTableHandler&);
   PDRoutingTableHandler &operator=(const PDRoutingTableHandler &);
-  int Connect(const std::string &db_name_);
-  int Close();
-  // This is the DB structure that is needed.
-  /****************************************
-  create table pdroutingtable(
-    kad_id char(64) primary key,
-    rendezvous_ip int,
-    rendezvous_port int,
-    public_key char(512) not null,
-    int rtt not null,
-    int rank not null,
-    int space not null
-  );
-  ****************************************/
-  int CreateRoutingTableDb();
-  CppSQLite3DB *db_;
-  std::string db_name_;
+  routingtable routingtable_;
   boost::mutex mutex_;
+};
+
+class PDRoutingTable {
+ public:
+  static PDRoutingTable& getInstance();
+  boost::shared_ptr<PDRoutingTableHandler> operator[] (const std::string &name);
+ private:
+  PDRoutingTable() : pdroutingtablehdls_() {}
+  explicit PDRoutingTable(PDRoutingTable const&);
+  void operator=(PDRoutingTable const&);
+  std::map< std::string, boost::shared_ptr<PDRoutingTableHandler> >
+      pdroutingtablehdls_;
 };
 
 // typedef Singleton<PDRoutingTableHandler> PDRoutingTable;

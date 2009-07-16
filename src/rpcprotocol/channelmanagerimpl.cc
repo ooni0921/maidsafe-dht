@@ -45,7 +45,6 @@ ChannelManagerImpl::ChannelManagerImpl()
       pending_req_(),
       external_port_(0),
       external_ip_(""),
-      routingtable_(),
       pending_timeout_() {}
 
 ChannelManagerImpl::~ChannelManagerImpl() {
@@ -123,8 +122,6 @@ int ChannelManagerImpl::StartTransport(boost::uint16_t port,
     try_port_ = ((port + count_) % (kMaxPort - kMinPort + 1)) + kMinPort;
   }
   external_port_ = try_port_;
-  routingtable_ = std::auto_ptr<base::PDRoutingTableHandler>(
-    new base::PDRoutingTableHandler(base::itos(external_port_)));
   return start_res_;
 }
 
@@ -143,7 +140,7 @@ int ChannelManagerImpl::StopTransport() {
 #ifdef VERBOSE_DEBUG
   printf("\tIn ChannelManager::StopTransport(), after ptransport_->Stop().\n");
 #endif
-  routingtable_->Clear();
+  base::PDRoutingTable::getInstance()[base::itos(external_port_)]->Clear();
   return 1;
 }
 
@@ -275,8 +272,8 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
 #ifdef DEBUG
       printf("(%d) Reseting timeout for RPC ID: %d.  Connection ID: %d\n",
         ptransport_->listening_port(), req_id, connection_id);
-      AddReqToTimer(req_id, timeout);
 #endif
+      AddReqToTimer(req_id, timeout);
     } else {
 #ifdef DEBUG
       printf("transport %d Request times out. RPC ID: %d. Connection ID: %d.\n",
