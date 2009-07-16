@@ -164,7 +164,7 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_UpdateTuple) {
   rt_handler.Clear();
 }
 
-TEST(PDRoutingTableTest, MultipleHandlers) {
+TEST(PDRoutingTableTest, BEH_BASE_MultipleHandlers) {
   std::string dbname1("routingtable");
   dbname1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
             std::string(".db");
