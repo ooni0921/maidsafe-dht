@@ -60,7 +60,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/shared_ptr.hpp>
-#include <cryptopp/hex.h>
+// not here #include <cryptopp/hex.h>
 #include <stdint.h>
 #include <google/protobuf/service.h>
 #include <google/protobuf/message.h>
@@ -68,7 +68,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include <string>
 #include <vector>
-#define MAIDSAFE_DHT_VERSION 1
+#define MAIDSAFE_DHT_VERSION 2
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *

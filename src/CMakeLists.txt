@@ -110,6 +110,9 @@ FILE(GLOB T_FUNC_KADEMLIA_C "tests/functionalkademlia/*.c*")                    
 FILE(GLOB T_FUNC_KADEMLIA_H "tests/functionalkademlia/*.h*")                      			#
 LIST(APPEND T_FUNC_KADEMLIA_DIR ${T_FUNC_KADEMLIA_C} ${T_FUNC_KADEMLIA_H})                      	#
 LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "tests/kademlia/testknode.cc")                      		#
+FILE(GLOB CRYPTOPP_C "cryptopp/*.c*")                      			#
+FILE(GLOB CRYPTOPP_H "cryptopp/*.h*")                      			#
+LIST(APPEND CRYPTOPP ${CRYPTOPP_C} ${CRYPTOPP_H})                      	#
 #########################################################################################################
 #All Platforms:  Add Test Exes and Create all maidsafe-dht libs                       #
 #######################################################################################
@@ -123,18 +126,18 @@ add_executable(TESTupnp ${T_UPNP_DIR} ${MAIDSAFE_DIR})
 #######################################################################################
 #Statically compile the pdlibs - then link applications/libraries to it               #
 #######################################################################################
-add_library(PDbaselib STATIC ${M_BASE_DIR} ${MAIDSAFE_DIR})
-add_library(PDkademlialib STATIC ${M_KADEMLIA_DIR} ${MAIDSAFE_DIR})
-add_library(PDtransportlib STATIC ${M_TRANSPORT_DIR} ${MAIDSAFE_DIR})
-add_library(PDpbmsgslib STATIC  ${M_PROTOBUF_DIR} ${MAIDSAFE_DIR})
-add_library(PDrpcprotocollib STATIC  ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR})
-add_library(PDTESTrpcprotocollib STATIC  ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR})
-add_library(PDupnplib STATIC ${M_UPNP_DIR} ${MAIDSAFE_DIR})
-add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ) 
+#add_library(PDbaselib STATIC ${M_BASE_DIR} ${MAIDSAFE_DIR})
+#add_library(PDkademlialib STATIC ${M_KADEMLIA_DIR} ${MAIDSAFE_DIR})
+#add_library(PDtransportlib STATIC ${M_TRANSPORT_DIR} ${MAIDSAFE_DIR})
+#add_library(PDpbmsgslib STATIC  ${M_PROTOBUF_DIR} ${MAIDSAFE_DIR})
+#add_library(PDrpcprotocollib STATIC  ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR})
+#add_library(PDTESTrpcprotocollib STATIC  ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR})
+#add_library(PDupnplib STATIC ${M_UPNP_DIR} ${MAIDSAFE_DIR})
+add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP} ) 
 ##########################################################################################
 #Set up some extra compiler and linker flags for the tests mainly                        #
 ##########################################################################################
-SET_TARGET_PROPERTIES(PDbaselib PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACROS" )  
+####SET_TARGET_PROPERTIES(PDbaselib PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACROS" )  
 ##########################################################################################
 #BUILDS
 IF (APPLE)
@@ -145,7 +148,6 @@ sqlite3
 protobuf 
 boost_system-xgcc40-mt-1_37 
 boost_filesystem-xgcc40-mt-1_37 
-/usr/lib/libcryptopp.a 
 boost_regex-xgcc40-mt-1_37 
 boost_date_time-xgcc40-mt-1_37 
 dl 
@@ -158,7 +160,6 @@ ELSEIF (UNIX AND NOT APPLE)
         /usr/lib/libprotobuf.a
         /usr/lib/libboost_system-gcc43-mt.a
         /usr/lib/libboost_filesystem-gcc43-mt.a
-        /usr/lib/libcryptopp.a
         /usr/lib/libboost_regex-gcc43-mt.a
         /usr/lib/libboost_date_time-gcc43-mt.a
         rt
@@ -169,7 +170,7 @@ ELSEIF (UNIX AND NOT APPLE)
 		)
 ELSEIF (WIN32)
 	IF(MSVC)
-		set(SYS_LIB c:/lib/libprotobuf.lib c:/lib/cryptlib.lib c:/lib/SQLite_Static_Library.lib  c:/lib/libboost_system-vc90-mt-1_36.lib c:/lib/libboost_filesystem-vc90-mt-1_36.lib  c:/lib/libboost_regex-vc90-mt-1_36.lib  c:/lib/libboost_thread-vc90-mt-1_36.lib c:/lib/libboost_date_time-vc90-mt-1_36.lib c:/lib/WSock32.lib c:/lib/IPHlpApi.lib)
+		set(SYS_LIB c:/lib/libprotobuf.lib c:/lib/SQLite_Static_Library.lib  c:/lib/libboost_system-vc90-mt-1_36.lib c:/lib/libboost_filesystem-vc90-mt-1_36.lib  c:/lib/libboost_regex-vc90-mt-1_36.lib  c:/lib/libboost_thread-vc90-mt-1_36.lib c:/lib/libboost_date_time-vc90-mt-1_36.lib c:/lib/WSock32.lib c:/lib/IPHlpApi.lib)
 	ELSE(MSVC)
 		SET(SYS_LIB
 		 -ladvapi32 
@@ -183,21 +184,23 @@ ELSEIF (WIN32)
 		c:/usr/lib/libboost_thread-mgw43-mt-1_37.lib
 		c:/usr/lib/libboost_date_time-mgw43-mt-1_37.lib
 		c:/usr/lib/dokan.lib
-		c:/usr/lib/libcryptopp.a
 		c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
 		)
 	ENDIF(MSVC)
 ENDIF(APPLE)
-
-TARGET_LINK_LIBRARIES(TESTbase  PDbaselib sqlite3 protobuf  gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTtransport PDtransportlib  PDbaselib PDpbmsgslib gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTrpcprotocol PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib  ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTkademlia PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
-#TARGET_LINK_LIBRARIES(TESTfunctionalkademlia PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
-TARGET_LINK_LIBRARIES(TESTknode PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib gtest PDupnplib ${SYS_LIB} )
-TARGET_LINK_LIBRARIES(TESTupnp PDbaselib gtest PDupnplib ${SYS_LIB} )
-TARGET_LINK_LIBRARIES(maidsafe-dht PDkademlialib PDrpcprotocollib PDtransportlib  PDbaselib PDpbmsgslib PDupnplib ${SYS_LIB} )
+#add_library(maidsafe-dht STATIC  ${MAIDSAFE_DIR}) 
+#SET_TARGET_PROPERTIES(maidsafe-dht PROPERTIES LINKER_LANGUAGE CXX)
+#SET(CMAKE_C++_CREATE_STATIC_LIBRARY 1)
+TARGET_LINK_LIBRARIES(TESTbase  maidsafe-dht sqlite3 protobuf  gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTtransport maidsafe-dht gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe-dht gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTkademlia maidsafe-dht gtest  ${SYS_LIB} )
+#TARGET_LINK_LIBRARIES(TESTfunctionalkademlia maidsafe-dht gtest  ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(TESTknode maidsafe-dht gtest ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(TESTupnp maidsafe-dht gtest ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(maidsafe-dht  ${SYS_LIB} )
 #TARGET_LINK_LIBRARIES(PDupnplib ${SYS_LIB})
+
 
 ##################################################################################
 # COMPILER FLAGS  - here after all targets declared                                                                #
@@ -215,7 +218,8 @@ ELSEIF (UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_RELEASE} -O2 ")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wall  -Wextra -Wfloat-equal -Wlong-long  -Wredundant-decls -Wstrict-overflow=5   -Wredundant-decls -Wunused-function  -Wunused-label  -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -Wall -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
-  SET_TARGET_PROPERTIES(PDpbmsgslib PDupnplib PDtransportlib maidsafe-dht  PROPERTIES COMPILE_FLAGS -w )
+  #SET_TARGET_PROPERTIES(PDpbmsgslib PDupnplib PDtransportlib maidsafe-dht  PROPERTIES COMPILE_FLAGS -w )
+  SET_TARGET_PROPERTIES( maidsafe-dht  PROPERTIES COMPILE_FLAGS -w )
 ELSEIF (WIN32)
 IF(MSVC)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DUNICODE /D_UNICODE /D_WIN32_WINDOWS /D_CONSOLE /D__MSVC__")
@@ -228,11 +232,12 @@ ELSE(MSVC)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -D_FORTIFY_SOURCE=2 -fno-stack-protector  -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static  -DWIN32_LEAN_AND_MEAN  -D__MINGW__  -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static   -mthreads -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501  -mthreads ")
-  SET_TARGET_PROPERTIES(PDpbmsgslib PDupnplib PDtransportlib maidsafe-dht  PROPERTIES COMPILE_FLAGS -w )
+  #SET_TARGET_PROPERTIES(PDpbmsgslib PDupnplib PDtransportlib maidsafe-dht  PROPERTIES COMPILE_FLAGS -w )
+  SET_TARGET_PROPERTIES( maidsafe-dht  PROPERTIES COMPILE_FLAGS -w )
 ENDIF(MSVC)
 ENDIF(APPLE)
 ##temporarily suppress compilation warnings before warnings are taken out from upnp code
-SET_TARGET_PROPERTIES(TESTupnp PDupnplib PROPERTIES COMPILE_FLAGS -w )
+#SET_TARGET_PROPERTIES(TESTupnp PDupnplib PROPERTIES COMPILE_FLAGS -w )
 #SET_TARGET_PROPERTIES(PDtransportlib PROPERTIES COMPILE_FLAGS -finline-functions)
 
 ################################################################

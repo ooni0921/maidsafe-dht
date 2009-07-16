@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ctype.h>
 #include <cryptopp/integer.h>
 #include <cryptopp/osrng.h>
+#include <cryptopp/hex.h>
 #include <string>
 #include <limits>
 #include "base/config.h"
