@@ -13,7 +13,6 @@
 #include "ccm.h"
 #include "cmac.h"
 #include "channels.h"
-#include "des.h"
 #include "dh.h"
 #include "dsa.h"
 #include "ec2n.h"
