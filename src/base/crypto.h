@@ -27,9 +27,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef BASE_CRYPTO_H_
 #define BASE_CRYPTO_H_
+#include <cryptopp/hex.h>
 #include <string>
 #include "base/rsakeypair.h"
-#include <cryptopp/hex.h>
 namespace crypto {
 
 const int AES256_KeySize = 32;  // size in bytes
