@@ -137,7 +137,7 @@ add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DI
 ##########################################################################################
 #Set up some extra compiler and linker flags for the tests mainly                        #
 ##########################################################################################
-####SET_TARGET_PROPERTIES(PDbaselib PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACROS" )  
+SET_TARGET_PROPERTIES(maidsafe-dht PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACROS" )  
 ##########################################################################################
 #BUILDS
 IF (APPLE)
