@@ -26,7 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
-#include "base/crypto.h"
+#include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 
 class TestContact : public testing::Test {
@@ -34,8 +34,8 @@ class TestContact : public testing::Test {
   TestContact() : cry_obj() {}
  protected:
   void SetUp() {
-    cry_obj.set_symm_algorithm("AES_256");
-    cry_obj.set_hash_algorithm("SHA512");
+    cry_obj.set_symm_algorithm(crypto::AES_256);
+    cry_obj.set_hash_algorithm(crypto::SHA_512);
   }
   crypto::Crypto cry_obj;
 };

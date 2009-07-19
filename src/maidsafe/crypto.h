@@ -27,126 +27,113 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef BASE_CRYPTO_H_
 #define BASE_CRYPTO_H_
-#include <cryptopp/hex.h>
 #include <string>
-#include "base/rsakeypair.h"
+
 namespace crypto {
 
 const int AES256_KeySize = 32;  // size in bytes
 const int AES256_IVSize = 16;   // in bytes
 
-enum operationtype {
-  FILE_FILE,
-  STRING_FILE,
-  FILE_STRING,
-  STRING_STRING
-};
-
-enum obfuscationtype {
-  XOR
-};
+enum operationtype {FILE_FILE, STRING_FILE, FILE_STRING, STRING_STRING };
+enum hashtype {SHA_512, SHA_1, SHA_224, SHA_256, SHA_384};
+enum symmtype {AES_256};
+enum obfuscationtype {XOR};
 
 class Crypto {
  public:
-  explicit Crypto()
-    : hash_algorithm_(""), symm_algorithm_("") {}
-  Crypto(const Crypto&);
-  Crypto& operator=(const Crypto&);
+  Crypto() : hash_algorithm_(SHA_512), symm_algorithm_(AES_256) {}
   std::string Obfuscate(const std::string &first,
                         const std::string &second,
-                        const obfuscationtype &obt);
+                        obfuscationtype obt);
   std::string SecurePassword(const std::string &password, int pin);
-
-  //  HASH Funtion
-  //  Hash Algorithms
-  //   -SHA1 = sha 128
-  //   -SHA224 = sha 224
-  //   -SHA256 = sha 256
-  //   -SHA384 = sha 284
-  //   -SHA512 = sha 512
-  //
+  inline void set_hash_algorithm(hashtype type) {hash_algorithm_ = type;}
+  inline hashtype hash_algorithm() const {return hash_algorithm_;}
   //   The Hash function returns an empty string if the input from a file
   //   could not be read or cannot write the output to a file
-
-  void set_hash_algorithm(const std::string &algorithmtype);
-  std::string hash_algorithm() const {return hash_algorithm_;}
   std::string Hash(const std::string &input,
                    const std::string &output,
-                   const operationtype &ot,
+                   operationtype ot,
                    bool hex);
-
-  //  SYMMETRIC ENCRYPTION
-  //  Symmetric Encryption Algorithms
-  //    -AES_256
   //  Encryption and Decryption return an empty string if the input from
   //  a file could not be read or cannot write the output to a file
-  bool set_symm_algorithm(const std::string &algorithmtype);
-  std::string symm_algorithm() const { return symm_algorithm_; }
-
+  inline void set_symm_algorithm(symmtype type) {symm_algorithm_ = type;}
+  inline symmtype symm_algorithm() const {return symm_algorithm_;}
   std::string SymmEncrypt(const std::string &input,
                           const std::string &output,
-                          const operationtype &ot,
+                          operationtype ot,
                           const std::string &key);
   std::string SymmDecrypt(const std::string &input,
                           const std::string &output,
-                          const operationtype &ot,
+                          operationtype ot,
                           const std::string &key);
-
   //  ASYMMETRIC ENCRYPTION (RSA)
-  //  Encryption, Decryption and Sign return an empty string if
-  //  the string passed for key is not a valid key or the type
-  //  (public/private) is incorrect for the operation
-  //  It also returns an empty string if the input from
-  //  a file could not be read or cannot write the
-  //  output to a file
-  //  AsymmEncrypt -- key is a public key
+  //  Encryption, Decryption and Sign return an empty string if the string
+  //  passed for key is not a valid key or the type (public/private) is
+  //  incorrect for the operation.  It also returns an empty string if the input
+  //  from a file could not be read or cannot write the output to a file.
+  //  AsymmEncrypt -- key is a public key.
   std::string AsymEncrypt(const std::string &input,
                           const std::string &output,
                           const std::string &key,
-                          const operationtype &ot);
-
+                          operationtype ot);
   // AsymDecrypt -- key is a private key
   std::string AsymDecrypt(const std::string &input,
                           const std::string &output,
                           const std::string &key,
-                          const operationtype &ot);
-
+                          operationtype ot);
   // AsymSign -- key is a private key
   std::string AsymSign(const std::string &input,
                        const std::string &output,
                        const std::string &key,
-                       const operationtype &ot);
-
+                       operationtype ot);
   // AsymCheckSig -- key is a public key
-  // The operations only take into consideration the INPUT, where
-  // both input_data and input_signature
-  // must be of the same type (STRING / FILE)
+  // The operations only take into consideration the INPUT, where both
+  // input_data and input_signature must be of the same type (STRING / FILE).
   bool AsymCheckSig(const std::string &input_data,
                     const std::string &input_signature,
                     const std::string &key,
-                    const operationtype &ot);
-
+                    operationtype ot);
+  // String or file compression using gzip.  Compression level must be between 0
+  // and 9 inclusive or function returns "".  It also returns an empty string if
+  // input from a file could not be read or cannot write the output to a file.
+  std::string Compress(const std::string &input,
+                       const std::string &output,
+                       int compression_level,
+                       operationtype ot);
+  std::string Uncompress(const std::string &input,
+                         const std::string &output,
+                         operationtype ot);
  private:
   std::string XOROperation(const std::string &first,
                            const std::string &second);
-  std::string SHA1Hash(const std::string &input,
+	template <class T>
+  std::string HashFunc(const std::string &input,
                        const std::string &output,
-                       const operationtype &ot);
-  std::string SHA224Hash(const std::string &input,
-                         const std::string &output,
-                         const operationtype &ot);
-  std::string SHA256Hash(const std::string &input,
-                         const std::string &output,
-                         const operationtype &ot);
-  std::string SHA384Hash(const std::string &input,
-                         const std::string &output,
-                         const operationtype &ot);
-  std::string SHA512Hash(const std::string &input,
-                         const std::string &output,
-                         const operationtype &ot);
-  std::string hash_algorithm_;
-  std::string symm_algorithm_;
+                       operationtype ot,
+                       bool hex,
+                       T hash);
+  hashtype hash_algorithm_;
+  symmtype symm_algorithm_;
 };
+
+class RsaKeyPair {
+ public:
+  RsaKeyPair() : public_key_(""), private_key_("") {}
+  inline std::string public_key() {return public_key_;}
+  inline std::string private_key() {return private_key_;}
+  inline void set_public_key(std::string publickey) {
+    public_key_ = publickey;
+  }
+  inline void set_private_key(std::string privatekey) {
+    private_key_ = privatekey;
+  }
+  inline void ClearKeys() {private_key_ = public_key_ = "";}
+  void GenerateKeys(unsigned int keySize);  // keySize in bits
+ private:
+  std::string public_key_;
+  std::string private_key_;
+};
+
 }   // namespace crypto
 #endif  // BASE_CRYPTO_H_
 

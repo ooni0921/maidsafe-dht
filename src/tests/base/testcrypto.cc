@@ -30,8 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
 #include <cstdlib>
-#include "base/crypto.h"
-#include "base/rsakeypair.h"
+#include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 
 namespace {
@@ -78,16 +77,17 @@ TEST_F(CryptoTest, BEH_BASE_SecurePasswordGeneration) {
 }
 
 //  Hashing
-TEST_F(CryptoTest, BEH_BASE_SetAlgorithm) {
-  ct.set_hash_algorithm("SHA512");
-  ASSERT_EQ("SHA512", ct.hash_algorithm()) << "Set Failed";
-  ct.set_hash_algorithm("SHA1");
-  ASSERT_EQ("SHA1", ct.hash_algorithm()) << "Set Failed";
-}
-
-TEST_F(CryptoTest, BEH_BASE_GetAlgorithm) {
-  ct.set_hash_algorithm("SHA512");
-  ASSERT_NE(ct.hash_algorithm(), "") << "Hash algorithm empty";
+TEST_F(CryptoTest, BEH_BASE_SetGetAlgorithm) {
+  ct.set_hash_algorithm(crypto::SHA_1);
+  ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_1) << "Hash algorithm wrong";
+  ct.set_hash_algorithm(crypto::SHA_224);
+  ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_224) << "Hash algorithm wrong";
+  ct.set_hash_algorithm(crypto::SHA_256);
+  ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_256) << "Hash algorithm wrong";
+  ct.set_hash_algorithm(crypto::SHA_384);
+  ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_384) << "Hash algorithm wrong";
+  ct.set_hash_algorithm(crypto::SHA_512);
+  ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_512) << "Hash algorithm wrong";
 }
 
 TEST_F(CryptoTest, FUNC_BASE_Hash) {
@@ -119,9 +119,9 @@ TEST_F(CryptoTest, FUNC_BASE_Hash) {
   boost::filesystem::ifstream resfile;
   std::string res;
   std::string random_string(base::RandomString(10*1024*1024));
-  ASSERT_EQ(ct.Hash(random_string, "",
-            crypto::STRING_STRING, true), "");
-  ct.set_hash_algorithm("SHA512");
+//  ASSERT_EQ(ct.Hash(random_string, "",
+//            crypto::STRING_STRING, true), "");
+  ct.set_hash_algorithm(crypto::SHA_512);
   ASSERT_NE(ct.Hash(random_string, "",
             crypto::STRING_STRING, true), "") << "Output data empty";
   ASSERT_NE(ct.Hash(input1, "", crypto::FILE_STRING, true), "") <<
@@ -175,7 +175,7 @@ TEST_F(CryptoTest, FUNC_BASE_Hash) {
             , res);
   boost::filesystem::remove(result);
 
-  ct.set_hash_algorithm("SHA1");
+  ct.set_hash_algorithm(crypto::SHA_1);
   ASSERT_EQ(ct.Hash("abc", "", crypto::STRING_STRING, true),
       "a9993e364706816aba3e25717850c26c9cd0d89d");
   ASSERT_EQ(ct.Hash(input1.c_str(), "", crypto::FILE_STRING, true),
@@ -202,7 +202,7 @@ TEST_F(CryptoTest, FUNC_BASE_Hash) {
   ASSERT_EQ("a9993e364706816aba3e25717850c26c9cd0d89d", res);
   boost::filesystem::remove(result);
 
-  ct.set_hash_algorithm("SHA256");
+  ct.set_hash_algorithm(crypto::SHA_256);
   ASSERT_EQ(ct.Hash("abc", "", crypto::STRING_STRING, true),
       "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
   ASSERT_EQ(ct.Hash(input1, "", crypto::FILE_STRING, true),
@@ -232,7 +232,7 @@ TEST_F(CryptoTest, FUNC_BASE_Hash) {
             "00361a396177a9cb410ff61f20015ad", res);
   boost::filesystem::remove(result);
 
-  ct.set_hash_algorithm("SHA384");
+  ct.set_hash_algorithm(crypto::SHA_384);
   ASSERT_EQ(ct.Hash("abc", "", crypto::STRING_STRING, true),
             "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded163"
             "1a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7");
@@ -272,9 +272,8 @@ TEST_F(CryptoTest, FUNC_BASE_Hash) {
 
 //  Symmetric Encryption
 TEST_F(CryptoTest, BEH_BASE_SetSymmAlgorithm) {
-  ASSERT_FALSE(ct.set_symm_algorithm("Wrong name"));
-  ASSERT_TRUE(ct.set_symm_algorithm("AES_256")) << "SetSymmAlgorithm Failed";
-  ASSERT_EQ(ct.symm_algorithm(), "AES_256") << "GetSymmAlgorithm Failed";
+  ct.set_symm_algorithm(crypto::AES_256);
+  ASSERT_EQ(ct.symm_algorithm(), crypto::AES_256) << "GetSymmAlgorithm Failed";
 }
 
 TEST_F(CryptoTest, FUNC_BASE_SymmEncrypt) {
@@ -303,11 +302,12 @@ TEST_F(CryptoTest, FUNC_BASE_SymmEncrypt) {
   result4 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
             std::string(".txt");
 
-  ASSERT_EQ(ct.SymmEncrypt(data, "", crypto::STRING_STRING, key), "") <<
-              "Output data empty";
-  ASSERT_EQ(ct.SymmDecrypt(data, "", crypto::STRING_STRING, key), "") <<
-              "Output data empty";
-  EXPECT_TRUE(ct.set_symm_algorithm("AES_256"));
+//  ASSERT_EQ(ct.SymmEncrypt(data, "", crypto::STRING_STRING, key), "") <<
+//              "Output data empty";
+//  ASSERT_EQ(ct.SymmDecrypt(data, "", crypto::STRING_STRING, key), "") <<
+//              "Output data empty";
+  ct.set_symm_algorithm(crypto::AES_256);
+  EXPECT_EQ(ct.symm_algorithm(), crypto::AES_256);
   std::string cipher_data = ct.SymmEncrypt(data, "",
                                            crypto::STRING_STRING, key);
   ASSERT_EQ(result1,
@@ -462,6 +462,91 @@ TEST_F(CryptoTest, BEH_BASE_AsymSign) {
                rsakp.public_key(), crypto::STRING_STRING));
 
   boost::filesystem::remove(input1);
+}
+
+//  Compression
+TEST_F(CryptoTest, BEH_BASE_Compress) {
+  std::string data = "Deep in the mists of time in a previous millennium, when "
+      "life was simpler and people had time, compassion and warmth for each "
+      "other; when courage, fortitude and strength were the watchwords of the "
+      "day; a society was born in order to preserve these noble attributes; a "
+      "society of virtue and valour... a society of Silly Buggers.";
+  // input file
+  std::string input1("input1");
+  input1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".txt");
+  std::string result1("result1");
+  result1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".txt");
+  std::string result2("result2");
+  result2 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".txt");
+  std::string result3("result3");
+  result3 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".txt");
+  std::string result4("result4");
+  result4 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+            std::string(".txt");
+  boost::filesystem::fstream inputfile(input1.c_str(),
+                         std::ios::out | std::ios::trunc | std::ios::binary);
+  inputfile << data;
+  inputfile.close();
+  boost::filesystem::ifstream result_file;
+  ASSERT_EQ("", ct.Compress(data, "", 10, crypto::STRING_STRING));
+  ASSERT_EQ("", ct.Compress(data, "", -1, crypto::STRING_STRING));
+  std::string compressedtext = ct.Compress(data, "", 9, crypto::STRING_STRING);
+  std::string compressedtext1 = ct.Compress(input1, "", 9, crypto::FILE_STRING);
+  ASSERT_NE("", compressedtext);
+  ASSERT_NE("", compressedtext1);
+  ASSERT_EQ(result1, ct.Compress(data, result1, 9, crypto::STRING_FILE));
+  ASSERT_EQ(result2, ct.Compress(input1, result2, 9, crypto::FILE_FILE));
+  std::string level[10];
+  for (int i = 0; i <10; ++i) {
+    level[i] = ct.Compress(data, "", i, crypto::STRING_STRING);
+    if (i)
+      ASSERT_LE(level[i].size(), level[i-1].size());
+  }
+  ASSERT_LT(level[9].size(), data.size());
+  // trying to uncompress
+  ASSERT_EQ(data, ct.Uncompress(compressedtext, "", crypto::STRING_STRING));
+  ASSERT_EQ(data, ct.Uncompress(compressedtext1, "", crypto::STRING_STRING));
+  ASSERT_EQ(result3, ct.Uncompress(result1, result3, crypto::FILE_FILE));
+
+
+//      std::string this_chunklet_;
+//      std::ostringstream this_chunklet_oss_(std::ostringstream::binary);
+//      fin_.read(bufferlet_.get(), this_chunklet_size_);
+//      this_chunklet_oss_.write(bufferlet_.get(), this_chunklet_size_);
+
+
+  std::string str_from_file;
+  boost::scoped_ptr<char> buffer1(new char[data.size()]);
+  result_file.open(result3.c_str(), std::ios::in | std::ios::binary);
+  std::ostringstream oss1(std::ostringstream::binary);
+  result_file.read(buffer1.get(), data.size());
+  oss1.write(buffer1.get(), data.size());
+  str_from_file = oss1.str();
+  result_file.close();
+  ASSERT_EQ(data, str_from_file);
+  ASSERT_EQ(result4, ct.Uncompress(compressedtext, result4,
+            crypto::STRING_FILE));
+  str_from_file = "";
+  boost::scoped_ptr<char> buffer2(new char[data.size()]);
+  result_file.open(result3.c_str(), std::ios::in | std::ios::binary);
+  std::ostringstream oss2(std::ostringstream::binary);
+  result_file.read(buffer2.get(), data.size());
+  oss2.write(buffer2.get(), data.size());
+  str_from_file = oss2.str();
+  result_file.close();
+  ASSERT_EQ(data, str_from_file);
+  // trying to uncompress uncompressed data
+  ASSERT_EQ("", ct.Uncompress(data, "", crypto::STRING_STRING));
+
+  boost::filesystem::remove(input1);
+  boost::filesystem::remove(result1);
+  boost::filesystem::remove(result2);
+  boost::filesystem::remove(result3);
+  boost::filesystem::remove(result4);
 }
 
 //  RSA Key Pairs

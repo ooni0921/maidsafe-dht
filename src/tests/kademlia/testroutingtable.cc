@@ -26,10 +26,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
-#include "base/crypto.h"
 #include "kademlia/kbucket.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/routingtable.h"
+#include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 
 bool TestInRange(const std::string &key, const kad::BigInt &min_range,
@@ -55,8 +55,8 @@ class TestRoutingTable : public testing::Test {
   TestRoutingTable() : cry_obj() {}
  protected:
     void SetUp() {
-      cry_obj.set_symm_algorithm("AES_256");
-      cry_obj.set_hash_algorithm("SHA512");
+      cry_obj.set_symm_algorithm(crypto::AES_256);
+      cry_obj.set_hash_algorithm(crypto::SHA_512);
     }
     crypto::Crypto cry_obj;
 };

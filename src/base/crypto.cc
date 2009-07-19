@@ -25,19 +25,21 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "base/crypto.h"
+#include "maidsafe/crypto.h"
 
 #include <cryptopp/integer.h>
 #include <cryptopp/pwdbased.h>
 #include <cryptopp/sha.h>
 #include <cryptopp/filters.h>
 #include <cryptopp/files.h>
+#include <cryptopp/gzip.h>
 #include <cryptopp/hex.h>
 #include <cryptopp/aes.h>
 #include <cryptopp/modes.h>
 #include <cryptopp/rsa.h>
 #include <cryptopp/osrng.h>
 
+#include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/utils.h"
 
 namespace crypto {
@@ -58,7 +60,7 @@ std::string Crypto::XOROperation(const std::string &first,
 
 std::string Crypto::Obfuscate(const std::string &first,
                               const std::string &second,
-                              const obfuscationtype &obt) {
+                              obfuscationtype obt) {
   std::string result("");
   if ((first.length() != second.length()) || (first.length() == 0))
     return result;
@@ -74,7 +76,7 @@ std::string Crypto::Obfuscate(const std::string &first,
 
 std::string Crypto::SecurePassword(const std::string &password, int pin) {
   if ((password == "") || (pin == 0))
-      return "";
+    return "";
   byte purpose = 0;
   std::string derived_password;
   std::string salt = "maidsafe_salt";
@@ -82,387 +84,183 @@ std::string Crypto::SecurePassword(const std::string &password, int pin) {
   CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA512> pbkdf;
   CryptoPP::SecByteBlock derived(32);
   pbkdf.DeriveKey(derived, derived.size(), purpose,
-    reinterpret_cast<const byte *>(password.data()),
-    password.size(), reinterpret_cast<const byte *>(salt.data()),
-    salt.size(), iter);
+      reinterpret_cast<const byte *>(password.data()),
+      password.size(), reinterpret_cast<const byte *>(salt.data()),
+      salt.size(), iter);
   CryptoPP::HexEncoder enc(new CryptoPP::StringSink(derived_password), false);
   enc.Put(derived, derived.size());
   return derived_password;
 }
 
-//  HASH
-void Crypto::set_hash_algorithm(const std::string &algorithmtype) {
-  if ( (algorithmtype == "SHA1") || (algorithmtype == "SHA256") || \
-    (algorithmtype == "SHA224") || (algorithmtype == "SHA512") || \
-    (algorithmtype == "SHA384") )
-      hash_algorithm_ = algorithmtype;
-}
-
-std::string Crypto::SHA1Hash(const std::string &input,
+template <class T>
+std::string Crypto::HashFunc(const std::string &input,
                              const std::string &output,
-                             const operationtype &ot) {
-  std::string buffer;
-  CryptoPP::SHA1 hash;
-  CryptoPP::StringSource *s_source = new CryptoPP::StringSource;
-  CryptoPP::FileSource *f_source = new CryptoPP::FileSource;
+                             operationtype ot,
+                             bool hex,
+                             T hash) {
+  std::string result("");
   switch (ot) {
     case STRING_STRING:
-      s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-        (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      delete s_source;
-      break;
-    case STRING_FILE:
-      buffer = output;
-      try {
-        s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-          (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(
-          new CryptoPP::FileSink(output.c_str()), false)));
+      if (hex) {
+        CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(hash,
+            new CryptoPP::HexEncoder(new CryptoPP::StringSink(result), false)));
+      } else {
+        CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(hash,
+            new CryptoPP::StringSink(result)));
       }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete s_source;
-      break;
-    case FILE_STRING:
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-    case FILE_FILE:
-      buffer = output;
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-          false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-  }
-  return buffer;
-}
-
-std::string Crypto::SHA224Hash(const std::string &input,
-                               const std::string &output,
-                               const operationtype &ot) {
-  std::string buffer;
-  CryptoPP::StringSource *s_source = new CryptoPP::StringSource;
-  CryptoPP::FileSource *f_source = new CryptoPP::FileSource;
-  CryptoPP::SHA224 hash;
-  switch (ot) {
-    case STRING_STRING:
-      s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-        (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      delete s_source;
-      break;
-    case STRING_FILE:
-      buffer = output;
-      try {
-        s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-          (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-          false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete s_source;
-      break;
-    case FILE_STRING:
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-    case FILE_FILE:
-      buffer = output;
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-            new CryptoPP::HashFilter(hash,
-            new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-            false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-  }
-  return buffer;
-}
-
-std::string Crypto::SHA256Hash(const std::string &input,
-                               const std::string &output,
-                               const operationtype &ot) {
-  std::string buffer;
-  CryptoPP::SHA256 hash;
-  CryptoPP::StringSource *s_source = new CryptoPP::StringSource;
-  CryptoPP::FileSource *f_source = new CryptoPP::FileSource;
-  switch (ot) {
-    case STRING_STRING:
-      s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-        (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      delete s_source;
-      break;
-    case STRING_FILE:
-      buffer = output;
-      try {
-        s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-          (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-          false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete s_source;
-      break;
-    case FILE_STRING:
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-    case FILE_FILE:
-      buffer = output;
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-            new CryptoPP::HashFilter(hash,
-            new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-            false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-  }
-  return buffer;
-}
-
-std::string Crypto::SHA384Hash(const std::string &input,
-                               const std::string &output,
-                               const operationtype &ot) {
-  std::string buffer;
-  CryptoPP::SHA384 hash;
-  CryptoPP::StringSource *s_source = new CryptoPP::StringSource;
-  CryptoPP::FileSource *f_source = new CryptoPP::FileSource;
-  switch (ot) {
-    case STRING_STRING:
-      s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-          (input.c_str()), input.length(), true,
-          new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      delete s_source;
-      break;
-    case STRING_FILE:
-      buffer = output;
-      try {
-        s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-          (input.c_str()), input.length(), true,
-          new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-          false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete s_source;
-      break;
-    case FILE_STRING:
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-            new CryptoPP::HashFilter(hash,
-            new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-    case FILE_FILE:
-      buffer = output;
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-          false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-  }
-  return buffer;
-}
-
-std::string Crypto::SHA512Hash(const std::string &input,
-                               const std::string &output,
-                               const operationtype &ot) {
-  std::string buffer;
-  CryptoPP::SHA512 hash;  // hash transformation
-  CryptoPP::StringSource *s_source = new CryptoPP::StringSource;
-  CryptoPP::FileSource *f_source = new CryptoPP::FileSource;
-  switch (ot) {
-    case STRING_STRING:
-      s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-        (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer), false)));
-      delete s_source;
-      break;
-    case STRING_FILE:
-      buffer = output;
-      try {
-        s_source = new CryptoPP::StringSource(reinterpret_cast<const byte *>
-          (input.c_str()), input.length(), true, new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-          false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete s_source;
-      break;
-    case FILE_STRING:
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-            new CryptoPP::HashFilter(hash,
-            new CryptoPP::HexEncoder(new CryptoPP::StringSink(buffer),
-            false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-    case FILE_FILE:
-      buffer = output;
-      try {
-        f_source = new CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::HashFilter(hash,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-          false)));
-      }
-      catch(const CryptoPP::Exception &e) {
-        buffer = "";
-      }
-      delete f_source;
-      break;
-  }
-  return buffer;
-}
-
-std::string Crypto::Hash(const std::string &input,
-                         const std::string &output,
-                         const operationtype &ot,
-                         bool hex) {
-  std::string result;
-  if (hash_algorithm_ == "SHA512")
-    result = SHA512Hash(input, output, ot);
-  else if (hash_algorithm_ == "SHA1")
-    result = SHA1Hash(input, output, ot);
-  else if (hash_algorithm_ == "SHA256")
-    result = SHA256Hash(input, output, ot);
-  else if (hash_algorithm_ == "SHA224")
-    result = SHA224Hash(input, output, ot);
-  else if (hash_algorithm_ == "SHA384")
-    result = SHA384Hash(input, output, ot);
-  else
-    return result;
-  if (!hex) {
-    std::string dec_result;
-    CryptoPP::StringSource(result, true,
-      new CryptoPP::HexDecoder(new CryptoPP::StringSink(dec_result)));
-    return dec_result;
-  }
-  return result;
-}
-
-// SYMMETRIC ENCRYPTION
-bool Crypto::set_symm_algorithm(const std::string &algorithmtype) {
-  if ( algorithmtype == "AES_256")
-    symm_algorithm_ = algorithmtype;
-  else
-    return false;
-  return true;
-}
-
-std::string Crypto::SymmEncrypt(const std::string &input,
-                                const std::string &output,
-                                const operationtype &ot,
-                                const std::string &key) {
-  if (symm_algorithm_ != "AES_256")
-      return "";
-  std::string hashkey = SHA512Hash(key, "", STRING_STRING);
-  byte byte_key[AES256_KeySize], byte_iv[AES256_IVSize];
-  CryptoPP::StringSource(hashkey.substr(0, AES256_KeySize), true,
-    new CryptoPP::ArraySink(byte_key, sizeof(byte_key)));
-  CryptoPP::StringSource(hashkey.substr(AES256_KeySize, AES256_IVSize), \
-    true, new CryptoPP::ArraySink(byte_iv, sizeof(byte_iv)));
-  std::string result;
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(byte_key,
-    sizeof(byte_key), byte_iv);
-  switch (ot) {
-    case STRING_STRING:
-      CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
-        input.length(), true, \
-        new CryptoPP::StreamTransformationFilter(encryptor, \
-        new CryptoPP::StringSink(result)));
       break;
     case STRING_FILE:
       result = output;
       try {
-        CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()), \
-          input.length(), true, \
-          new CryptoPP::StreamTransformationFilter(encryptor, \
-          new CryptoPP::FileSink(output.c_str())));
+        if (hex) {
+          CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(hash,
+              new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
+              false)));
+        } else {
+          CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(hash,
+              new CryptoPP::FileSink(output.c_str())));
+        }
+      }
+      catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+        printf("%s\n", e.what());
+#endif
+        result = "";
+      }
+      break;
+    case FILE_STRING:
+      try {
+        if (hex) {
+          CryptoPP::FileSource(input.c_str(), true,
+              new CryptoPP::HashFilter(hash,
+              new CryptoPP::HexEncoder(new CryptoPP::StringSink(result),
+              false)));
+        } else {
+          CryptoPP::FileSource(input.c_str(), true,
+              new CryptoPP::HashFilter(hash, new CryptoPP::StringSink(result)));
+        }
+      }
+      catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+        printf("%s\n", e.what());
+#endif
+        result = "";
+      }
+      break;
+    case FILE_FILE:
+      result = output;
+      try {
+        if (hex) {
+          CryptoPP::FileSource(input.c_str(), true,
+              new CryptoPP::HashFilter(hash,
+              new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
+              false)));
+        } else {
+          CryptoPP::FileSource(input.c_str(), true,
+              new CryptoPP::HashFilter(hash,
+              new CryptoPP::FileSink(output.c_str())));
+        }
       }
       catch(const CryptoPP::Exception &e) {
         result = "";
       }
       break;
+  }
+  return result;
+}
+
+std::string Crypto::Hash(const std::string &input,
+                         const std::string &output,
+                         operationtype ot,
+                         bool hex) {
+  switch (hash_algorithm_) {
+    case SHA_512: {
+      CryptoPP::SHA512 hash;
+      return HashFunc(input, output, ot, hex, hash);
+    }
+    case SHA_1: {
+      CryptoPP::SHA1 hash;
+      return HashFunc(input, output, ot, hex, hash);
+    }
+    case SHA_224: {
+      CryptoPP::SHA224 hash;
+      return HashFunc(input, output, ot, hex, hash);
+    }
+    case SHA_256: {
+      CryptoPP::SHA256 hash;
+      return HashFunc(input, output, ot, hex, hash);
+    }
+    case SHA_384: {
+      CryptoPP::SHA384 hash;
+      return HashFunc(input, output, ot, hex, hash);
+    }
+    default: {
+      CryptoPP::SHA512 hash;
+      return HashFunc(input, output, ot, hex, hash);
+    }
+  }
+}
+
+std::string Crypto::SymmEncrypt(const std::string &input,
+                                const std::string &output,
+                                operationtype ot,
+                                const std::string &key) {
+  if (symm_algorithm_ != AES_256)
+    return "";
+  CryptoPP::SHA512 hash;
+  std::string hashkey = HashFunc(key, "", STRING_STRING, true, hash);
+  byte byte_key[AES256_KeySize], byte_iv[AES256_IVSize];
+  CryptoPP::StringSource(hashkey.substr(0, AES256_KeySize), true,
+      new CryptoPP::ArraySink(byte_key, sizeof(byte_key)));
+  CryptoPP::StringSource(hashkey.substr(AES256_KeySize, AES256_IVSize),
+      true, new CryptoPP::ArraySink(byte_iv, sizeof(byte_iv)));
+  std::string result;
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(byte_key,
+      sizeof(byte_key), byte_iv);
+  switch (ot) {
+    case STRING_STRING:
+      CryptoPP::StringSource(input, true,
+          new CryptoPP::StreamTransformationFilter(encryptor,
+          new CryptoPP::StringSink(result)));
+      break;
+    case STRING_FILE:
+      result = output;
+      try {
+        CryptoPP::StringSource(input, true,
+            new CryptoPP::StreamTransformationFilter(encryptor,
+            new CryptoPP::FileSink(output.c_str())));
+      }
+      catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+        printf("%s\n", e.what());
+#endif
+        result = "";
+      }
+      break;
       case FILE_STRING:
         try {
-          CryptoPP::FileSource(input.c_str(), true, \
-            new CryptoPP::StreamTransformationFilter(encryptor, \
-            new CryptoPP::StringSink(result)));
+          CryptoPP::FileSource(input.c_str(), true,
+              new CryptoPP::StreamTransformationFilter(encryptor,
+              new CryptoPP::StringSink(result)));
         }
         catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+          printf("%s\n", e.what());
+#endif
           result = "";
         }
         break;
       case FILE_FILE:
         result = output;
         try {
-          CryptoPP::FileSource(input.c_str(), true, \
-            new CryptoPP::StreamTransformationFilter(encryptor, \
-            new CryptoPP::FileSink(output.c_str())));
+          CryptoPP::FileSource(input.c_str(), true,
+              new CryptoPP::StreamTransformationFilter(encryptor,
+              new CryptoPP::FileSink(output.c_str())));
         }
         catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+          printf("%s\n", e.what());
+#endif
           result = "";
         }
         break;
@@ -472,56 +270,65 @@ std::string Crypto::SymmEncrypt(const std::string &input,
 
 std::string Crypto::SymmDecrypt(const std::string &input,
                                 const std::string &output,
-                                const operationtype &ot,
+                                operationtype ot,
                                 const std::string &key) {
-  if (symm_algorithm_ != "AES_256")
-      return "";
-  std::string hashkey = SHA512Hash(key, "", STRING_STRING);
+  if (symm_algorithm_ != AES_256)
+    return "";
+  CryptoPP::SHA512 hash;
+  std::string hashkey = HashFunc(key, "", STRING_STRING, true, hash);
   byte byte_key[ AES256_KeySize ], byte_iv[ AES256_IVSize ];
-  CryptoPP::StringSource(hashkey.substr(0, AES256_KeySize), true, \
-    new CryptoPP::ArraySink(byte_key, sizeof(byte_key)));
+  CryptoPP::StringSource(hashkey.substr(0, AES256_KeySize), true,
+      new CryptoPP::ArraySink(byte_key, sizeof(byte_key)));
   CryptoPP::StringSource(hashkey.substr(AES256_KeySize, AES256_IVSize),
-    true, new CryptoPP::ArraySink(byte_iv, sizeof(byte_iv)));
+      true, new CryptoPP::ArraySink(byte_iv, sizeof(byte_iv)));
   std::string result;
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(byte_key, \
-    sizeof(byte_key), byte_iv);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(byte_key,
+      sizeof(byte_key), byte_iv);
   switch (ot) {
     case STRING_STRING:
-      CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
-        input.length(), true, \
-        new CryptoPP::StreamTransformationFilter(decryptor, \
-        new CryptoPP::StringSink(result)));
+      CryptoPP::StringSource(input, true,
+          new CryptoPP::StreamTransformationFilter(decryptor,
+          new CryptoPP::StringSink(result)));
       break;
     case STRING_FILE:
       result = output;
       try {
         CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
-          input.length(), true, \
-          new CryptoPP::StreamTransformationFilter(decryptor, \
+          input.length(), true,
+          new CryptoPP::StreamTransformationFilter(decryptor,
           new CryptoPP::FileSink(output.c_str())));
       }
       catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+        printf("%s\n", e.what());
+#endif
         result = "";
       }
       break;
     case FILE_STRING:
       try {
-        CryptoPP::FileSource(input.c_str(), true, \
-          new CryptoPP::StreamTransformationFilter(decryptor, \
+        CryptoPP::FileSource(input.c_str(), true,
+          new CryptoPP::StreamTransformationFilter(decryptor,
           new CryptoPP::StringSink(result)));
       }
       catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+        printf("%s\n", e.what());
+#endif
         result = "";
       }
       break;
     case FILE_FILE:
       result = output;
       try {
-        CryptoPP::FileSource(input.c_str(), true, \
-          new CryptoPP::StreamTransformationFilter(decryptor, \
-          new CryptoPP::FileSink(output.c_str())));
+        CryptoPP::FileSource(input.c_str(), true,
+            new CryptoPP::StreamTransformationFilter(decryptor,
+            new CryptoPP::FileSink(output.c_str())));
       }
       catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+        printf("%s\n", e.what());
+#endif
         result = "";
       }
       break;
@@ -532,152 +339,145 @@ std::string Crypto::SymmDecrypt(const std::string &input,
 std::string Crypto::AsymEncrypt(const std::string &input,
                                 const std::string &output,
                                 const std::string &key,
-                                const operationtype &ot) {
+                                operationtype ot) {
   try {
-    CryptoPP::StringSource pubkey(key, true, new CryptoPP::HexDecoder);
-
+    CryptoPP::StringSource pubkey(key, true);
     CryptoPP::RSAES_OAEP_SHA_Encryptor pub(pubkey);
     CryptoPP::AutoSeededRandomPool rand_pool;
     std::string result;
 
     switch (ot) {
       case STRING_STRING:
-        CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
-          input.length(), true,
-          new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
-          new CryptoPP::HexEncoder(new CryptoPP::StringSink(result), false)));
+        CryptoPP::StringSource(input, true,
+            new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
+            new CryptoPP::StringSink(result)));
         break;
       case STRING_FILE:
         result = output;
-        CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
-          input.length(), true,
-          new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-                                   false)));
+        CryptoPP::StringSource(input, true,
+            new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
+            new CryptoPP::FileSink(output.c_str())));
         break;
       case FILE_STRING:
         CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
-          new CryptoPP::HexEncoder(new CryptoPP::StringSink(result), false)));
+            new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
+            new CryptoPP::StringSink(result)));
         break;
       case FILE_FILE:
         result = output;
         CryptoPP::FileSource(input.c_str(), true,
-         new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
-         new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-                                  false)));
+           new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
+           new CryptoPP::FileSink(output.c_str())));
         break;
     }
     return result;
   }
   catch(const CryptoPP::Exception &e) {
-      return "";
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return "";
   }
 }
 
 std::string Crypto::AsymDecrypt(const std::string &input,
                                 const std::string &output,
                                 const std::string &key,
-                                const operationtype &ot) {
+                                operationtype ot) {
   try {
-    CryptoPP::StringSource privkey(key, true, new CryptoPP::HexDecoder);
+    CryptoPP::StringSource privkey(key, true);
     CryptoPP::RSAES_OAEP_SHA_Decryptor priv(privkey);
     std::string result;
     switch (ot) {
       case STRING_STRING:
-        CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
-          input.length(), true,
-          new CryptoPP::HexDecoder(new CryptoPP::PK_DecryptorFilter(GlobalRNG(),
-          priv, new CryptoPP::StringSink(result))));
+        CryptoPP::StringSource(input, true,
+            new CryptoPP::PK_DecryptorFilter(GlobalRNG(), priv,
+            new CryptoPP::StringSink(result)));
         break;
       case STRING_FILE:
         result = output;
-        CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
-          input.length(), true,
-          new CryptoPP::HexDecoder(new CryptoPP::PK_DecryptorFilter(GlobalRNG(),
-          priv, new CryptoPP::FileSink(output.c_str()))));
+        CryptoPP::StringSource(input, true,
+            new CryptoPP::PK_DecryptorFilter(GlobalRNG(), priv,
+            new CryptoPP::FileSink(output.c_str())));
         break;
       case FILE_STRING:
         CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::HexDecoder(new CryptoPP::PK_DecryptorFilter(GlobalRNG(),
-          priv, new CryptoPP::StringSink(result))));
+            new CryptoPP::PK_DecryptorFilter(GlobalRNG(), priv,
+            new CryptoPP::StringSink(result)));
         break;
       case FILE_FILE:
         result = output;
         CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::HexDecoder(new CryptoPP::PK_DecryptorFilter(GlobalRNG(),
-          priv, new CryptoPP::FileSink(output.c_str()))));
+            new CryptoPP::PK_DecryptorFilter(GlobalRNG(), priv,
+            new CryptoPP::FileSink(output.c_str())));
         break;
     }
     return result;
   }
   catch(const CryptoPP::Exception &e) {
-      return "";
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return "";
   }
 }
 
 std::string Crypto::AsymSign(const std::string &input,
                              const std::string &output,
                              const std::string &key,
-                             const operationtype &ot) {
+                             operationtype ot) {
   try {
-    CryptoPP::StringSource privkey(key, true, new CryptoPP::HexDecoder);
-
-    CryptoPP::RSASS<CryptoPP::PKCS1v15, CryptoPP::SHA>::Signer priv(privkey);
-    std::string result;
-
+    CryptoPP::StringSource privkey(key, true);
+    CryptoPP::RSASSA_PKCS1v15_SHA_Signer priv(privkey);
+    std::string result("");
     switch (ot) {
       case STRING_STRING:
-        CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
-          input.length(), true,
-          new CryptoPP::SignerFilter(GlobalRNG(),
-          priv, new CryptoPP::HexEncoder(new CryptoPP::StringSink(result),
-                                         false)));
+        CryptoPP::StringSource(input, true,
+            new CryptoPP::SignerFilter(GlobalRNG(), priv,
+            new CryptoPP::StringSink(result)));
         break;
       case STRING_FILE:
         result = output;
-        CryptoPP::StringSource(reinterpret_cast<const byte *>(input.c_str()),
-          input.length(), true,
-          new CryptoPP::SignerFilter(GlobalRNG(), priv,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-                                   false)));
+        CryptoPP::StringSource(input , true,
+            new CryptoPP::SignerFilter(GlobalRNG(), priv,
+            new CryptoPP::FileSink(output.c_str())));
         break;
       case FILE_STRING:
         CryptoPP::FileSource(input.c_str(), true,
-        new CryptoPP::SignerFilter(GlobalRNG(), priv,
-        new CryptoPP::HexEncoder(new CryptoPP::StringSink(result),
-                                 false)));
+            new CryptoPP::SignerFilter(GlobalRNG(), priv,
+            new CryptoPP::StringSink(result)));
         break;
       case FILE_FILE:
         result = output;
         CryptoPP::FileSource(input.c_str(), true,
-          new CryptoPP::SignerFilter(GlobalRNG(), priv,
-          new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
-                                   false)));
+            new CryptoPP::SignerFilter(GlobalRNG(), priv,
+            new CryptoPP::FileSink(output.c_str())));
         break;
     }
     return result;
   }
   catch(const CryptoPP::Exception &e) {
-      return "";
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return "";
   }
 }
 
 bool Crypto::AsymCheckSig(const std::string &input_data,
                           const std::string &input_signature,
                           const std::string &key,
-                          const operationtype &ot) {
+                          operationtype ot) {
   try {
-    CryptoPP::StringSource pubkey(key, true, new CryptoPP::HexDecoder);
+    CryptoPP::StringSource pubkey(key, true);
 
-    CryptoPP::RSASS<CryptoPP::PKCS1v15, CryptoPP::SHA>::Verifier pub(pubkey);
+    CryptoPP::RSASSA_PKCS1v15_SHA_Verifier pub(pubkey);
     bool result = false;
     CryptoPP::SecByteBlock *signature;
     CryptoPP::VerifierFilter *verifierFilter;
 
     if ((ot == STRING_STRING) || (ot == STRING_FILE)) {
-      CryptoPP::StringSource signatureString(input_signature,
-        true, new CryptoPP::HexDecoder);
+      CryptoPP::StringSource signatureString(input_signature, true);
       if (signatureString.MaxRetrievable() != pub.SignatureLength())
         return result;
       signature = new CryptoPP::SecByteBlock(pub.SignatureLength());
@@ -690,8 +490,7 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
       delete signature;
       return result;
     } else if ((ot == FILE_FILE) || (ot == FILE_STRING)) {
-      CryptoPP::FileSource signatureFile(input_signature.c_str(),
-        true, new CryptoPP::HexDecoder);
+      CryptoPP::FileSource signatureFile(input_signature.c_str(), true);
       if (signatureFile.MaxRetrievable() != pub.SignatureLength())
         return false;
       signature = new CryptoPP::SecByteBlock(pub.SignatureLength());
@@ -708,8 +507,104 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
     }
   }
   catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
     return false;
   }
+}
+
+std::string Crypto::Compress(const std::string &input,
+                             const std::string &output,
+                             int compression_level,
+                             operationtype ot) {
+  if (compression_level < 0 || compression_level > 9)
+    return "";
+  try {
+    std::string result("");
+    switch (ot) {
+      case STRING_STRING:
+        CryptoPP::StringSource(input, true, new CryptoPP::Gzip(
+            new CryptoPP::StringSink(result), compression_level));
+        break;
+      case STRING_FILE:
+        result = output;
+        CryptoPP::StringSource(input, true, new CryptoPP::Gzip(
+            new CryptoPP::FileSink(output.c_str()), compression_level));
+        break;
+      case FILE_STRING:
+        CryptoPP::FileSource(input.c_str(), true, new CryptoPP::Gzip(
+            new CryptoPP::StringSink(result), compression_level));
+        break;
+      case FILE_FILE:
+        result = output;
+        CryptoPP::FileSource(input.c_str(), true, new CryptoPP::Gzip(
+            new CryptoPP::FileSink(output.c_str()), compression_level));
+        break;
+    }
+    return result;
+  }
+  catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+    printf("Failed to compress: %s\n", e.what());
+#endif
+    return "";
+  }
+}
+
+std::string Crypto::Uncompress(const std::string &input,
+                               const std::string &output,
+                               operationtype ot) {
+  try {
+    std::string result("");
+    switch (ot) {
+      case STRING_STRING:
+        CryptoPP::StringSource(input, true, new CryptoPP::Gunzip(
+            new CryptoPP::StringSink(result)));
+        break;
+      case STRING_FILE:
+        result = output;
+        CryptoPP::StringSource(input, true, new CryptoPP::Gunzip(
+            new CryptoPP::FileSink(output.c_str())));
+        break;
+      case FILE_STRING:
+        CryptoPP::FileSource(input.c_str(), true, new CryptoPP::Gunzip(
+            new CryptoPP::StringSink(result)));
+        break;
+      case FILE_FILE:
+        result = output;
+        CryptoPP::FileSource(input.c_str(), true, new CryptoPP::Gunzip(
+            new CryptoPP::FileSink(output.c_str())));
+        break;
+    }
+    return result;
+  }
+  catch(const CryptoPP::Exception &e) {
+#ifdef DEBUG
+    printf("%s\n", e.what());
+#endif
+    return "";
+  }
+}
+
+void RsaKeyPair::GenerateKeys(unsigned int keySize) {
+  // CryptoPP::AutoSeededRandomPool rand_pool;
+  CryptoPP::RandomPool rand_pool;
+  std::string seed = base::RandomString(keySize);
+  rand_pool.IncorporateEntropy(reinterpret_cast<const byte *>(seed.c_str()),
+                                                              seed.size());
+
+  CryptoPP::RSAES_OAEP_SHA_Decryptor priv(rand_pool, keySize);  // 256 bytes
+//  CryptoPP::HexEncoder privKey(new CryptoPP::StringSink(private_key_), false);
+  CryptoPP::StringSink privKey(private_key_);
+  priv.DEREncode(privKey);
+  privKey.MessageEnd();
+
+  CryptoPP::RSAES_OAEP_SHA_Encryptor pub(priv);
+//  CryptoPP::HexEncoder pubKey(new CryptoPP::StringSink(public_key_), false);
+  CryptoPP::StringSink pubKey(public_key_);
+  pub.DEREncode(pubKey);
+  pubKey.MessageEnd();
 }
 
 }  // namespace crypto

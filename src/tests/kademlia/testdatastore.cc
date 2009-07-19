@@ -30,15 +30,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
-#include "base/crypto.h"
 #include "kademlia/datastore.h"
+#include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 
 class DataStoreTest: public testing::Test {
  protected:
   DataStoreTest() : test_ds_(), cry_obj_(), db_name_("") {
-    cry_obj_.set_symm_algorithm("AES_256");
-    cry_obj_.set_hash_algorithm("SHA512");
+    cry_obj_.set_symm_algorithm(crypto::AES_256);
+    cry_obj_.set_hash_algorithm(crypto::SHA_512);
   }
 
   virtual ~DataStoreTest() {

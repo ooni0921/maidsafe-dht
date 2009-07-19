@@ -177,15 +177,13 @@ std::string RandomString(int length) {
 }
 
 bool encode_to_hex(const std::string &non_hex_in, std::string *hex_out) {
-  CryptoPP::StringSource(reinterpret_cast<const byte*>(non_hex_in.c_str()),
-      non_hex_in.size(), true,
+  CryptoPP::StringSource(non_hex_in, true,
       new CryptoPP::HexEncoder(new CryptoPP::StringSink(*hex_out), false));
   return (hex_out->size() == non_hex_in.size()*2);
 }
 
 bool decode_from_hex(const std::string &hex_in, std::string *non_hex_out) {
-  CryptoPP::StringSource(reinterpret_cast<const byte*>(hex_in.c_str()),
-      hex_in.size(), true,
+  CryptoPP::StringSource(hex_in, true,
       new CryptoPP::HexDecoder(new CryptoPP::StringSink(*non_hex_out)));
   return (static_cast<int>(non_hex_out->size() * 2) ==
       static_cast<int>(hex_in.size()));

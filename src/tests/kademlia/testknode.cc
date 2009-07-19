@@ -41,10 +41,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <list>
 #include <set>
 
-#include "base/crypto.h"
-#include "base/rsakeypair.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
+#include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
 #include "transport/transportapi.h"
@@ -64,8 +63,8 @@ inline void create_rsakeys(std::string *pub_key, std::string *priv_key) {
 inline void create_req(const std::string &pub_key, const std::string &priv_key,
     const std::string &key, std::string *sig_pub_key, std::string *sig_req) {
   crypto::Crypto cobj;
-  cobj.set_symm_algorithm("AES_256");
-  cobj.set_hash_algorithm("SHA512");
+  cobj.set_symm_algorithm(crypto::AES_256);
+  cobj.set_hash_algorithm(crypto::SHA_512);
   *sig_pub_key = cobj.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
   *sig_req = cobj.AsymSign(cobj.Hash(pub_key + *sig_pub_key + key, "",
       crypto::STRING_STRING, true), "", priv_key, crypto::STRING_STRING);
@@ -117,8 +116,8 @@ std::string test_dir_;
 class Env: public testing::Environment {
  public:
   Env() {
-    cry_obj_.set_symm_algorithm("AES_256");
-    cry_obj_.set_hash_algorithm("SHA512");
+    cry_obj_.set_symm_algorithm(crypto::AES_256);
+    cry_obj_.set_hash_algorithm(crypto::SHA_512);
   }
 
   virtual ~Env() {
@@ -630,7 +629,7 @@ TEST_F(KNodeTest, FUNC_KAD_LoadNonExistingValue) {
   ASSERT_EQ(kad::kRpcResultFailure, cb_1.result());
 }
 
-TEST_F(KNodeTest, BEH_KAD_FindNode) {
+TEST_F(KNodeTest, FUNC_KAD_FindNode) {
   // find an existing node
   std::string node_id1 = knodes_[5]->node_id();
   FindNodeCallback cb_1;
@@ -653,7 +652,7 @@ TEST_F(KNodeTest, BEH_KAD_FindNode) {
   ASSERT_EQ(kad::kRpcResultFailure, cb_2.result());
 }
 
-TEST_F(KNodeTest, BEH_KAD_Ping) {
+TEST_F(KNodeTest, FUNC_KAD_Ping) {
   // ping by contact
   kad::Contact remote(knodes_[8]->node_id(), knodes_[8]->host_ip(),
       knodes_[8]->host_port(), knodes_[8]->local_host_ip(),

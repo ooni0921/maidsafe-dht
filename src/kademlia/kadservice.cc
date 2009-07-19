@@ -26,13 +26,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "kademlia/kadservice.h"
-#include "base/crypto.h"
 #include "base/routingtable.h"
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
 #include "kademlia/kadrpc.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
+#include "maidsafe/crypto.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/utils.h"
 #include "rpcprotocol/channelimpl.h"
 
 namespace kad {
@@ -274,10 +274,10 @@ bool KadService::ValidateSignedRequest(const std::string &public_key,
   if (signed_request == kAnonymousSignedRequest)
     return true;
   crypto::Crypto checker;
-  checker.set_symm_algorithm("AES_256");
+  checker.set_symm_algorithm(crypto::AES_256);
   if (checker.AsymCheckSig(public_key, signed_public_key, public_key,
                            crypto::STRING_STRING)) {
-    checker.set_hash_algorithm("SHA512");
+    checker.set_hash_algorithm(crypto::SHA_512);
 //    std::string encoded_key("");
 //    base::encode_to_hex(key, &encoded_key);
     return checker.AsymCheckSig(checker.Hash(public_key + signed_public_key +
