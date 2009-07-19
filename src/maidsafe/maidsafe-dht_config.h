@@ -68,7 +68,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include <string>
 #include <vector>
-#define MAIDSAFE_DHT_VERSION 2
+#include "maidsafe/utils.h"
+#include "maidsafe/crypto.h"
+#define MAIDSAFE_DHT_VERSION 3
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *
