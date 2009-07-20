@@ -87,17 +87,18 @@ void KadRpcs::Ping(const std::string &ip,
   service.Ping(&controller, &args, resp, cb);
 }
 
-void KadRpcs::Store(const std::string &key, const std::string &value,
-      const std::string &public_key, const std::string &signed_public_key,
-      const std::string &signed_request, const std::string &ip,
-      const boost::uint16_t &port, StoreResponse *resp,
-      google::protobuf::Closure *cb, const bool &local) {
+void KadRpcs::Store(const std::string &key,
+      const std::string &value, const std::string &public_key,
+      const std::string &signed_public_key, const std::string &signed_request,
+      const std::string &ip, const boost::uint16_t &port, StoreResponse *resp,
+      google::protobuf::Closure *cb, const bool &local, const bool &publish) {
   StoreRequest args;
   args.set_key(key);
   args.set_value(value);
   args.set_public_key(public_key);
   args.set_signed_public_key(signed_public_key);
   args.set_signed_request(signed_request);
+  args.set_publish(publish);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   rpcprotocol::Controller controller;

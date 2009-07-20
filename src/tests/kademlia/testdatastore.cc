@@ -26,7 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <boost/cstdint.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/shared_ptr.hpp>
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
@@ -36,40 +36,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class DataStoreTest: public testing::Test {
  protected:
-  DataStoreTest() : test_ds_(), cry_obj_(), db_name_("") {
+  DataStoreTest() : test_ds_(), cry_obj_() {
     cry_obj_.set_symm_algorithm(crypto::AES_256);
     cry_obj_.set_hash_algorithm(crypto::SHA_512);
   }
 
-  virtual ~DataStoreTest() {
-  }
-
   virtual void SetUp() {
-    db_name_ = std::string("testdatastore") + boost::lexical_cast<std::string>(
-                base::random_32bit_uinteger()) + std::string(".db");
-    test_ds_ = new kad::DataStore();
-    boost::filesystem::path db_file(db_name_);
-    ASSERT_TRUE(test_ds_->Init(db_file.string()));
+    test_ds_.reset(new kad::DataStore(kad::kRefreshTime));
   }
 
-  virtual void TearDown() {
-    test_ds_->Close();
-    delete test_ds_;
-    try {
-      boost::filesystem::remove(boost::filesystem::path(db_name_));
-    } catch(std::exception &) {
-      printf("Couldn't remove database.\n");
-    }
-  }
-  kad::DataStore *test_ds_;
+  boost::shared_ptr<kad::DataStore> test_ds_;
   crypto::Crypto cry_obj_;
-  std::string db_name_;
   DataStoreTest(const DataStoreTest&);
   DataStoreTest &operator=(const DataStoreTest&);
 };
 
 TEST_F(DataStoreTest, FUNC_KAD_StoreValidData) {
-  std::vector<std::string> keys;
+  std::set<std::string> keys;
   ASSERT_TRUE(test_ds_->Keys(&keys));
   ASSERT_EQ(0, static_cast<int>(keys.size()));
   std::string key1 = cry_obj_.Hash("abc123vvd32sfdf", "", crypto::STRING_STRING,
@@ -79,33 +62,33 @@ TEST_F(DataStoreTest, FUNC_KAD_StoreValidData) {
   std::string value1 = cry_obj_.Hash("vfdsfdasfdasfdsaferrfd", "",
       crypto::STRING_STRING, false);
   std::string value2 = base::RandomString(5 * 1024 * 1024);  // big value 5MB
-  boost::int32_t now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, now, now));
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value2, now, now));
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2, 3600*24, true));
   ASSERT_TRUE(test_ds_->Keys(&keys));
   ASSERT_EQ(2, static_cast<int>(keys.size()));
   int key_num = 0;
-  for (int i = 0; i < static_cast<int>(keys.size()); i++) {
-    if (keys[i] == key1)
+  for (std::set<std::string>::iterator it = keys.begin();
+       it != keys.end(); it++) {
+    if (*it == key1)
       key_num++;
-    else if (keys[i] == key2)
+    else if (*it == key2)
       key_num++;
   }
   ASSERT_EQ(2, key_num);
 }
 
 TEST_F(DataStoreTest, BEH_KAD_StoreInvalidData) {
-  boost::int32_t now = base::get_epoch_time();
   // invalid key
   std::string value1 = cry_obj_.Hash("bb33", "",
       crypto::STRING_STRING, false);
-  ASSERT_FALSE(test_ds_->StoreItem("", value1, now, now));
+  ASSERT_FALSE(test_ds_->StoreItem("", value1, 3600*24, true));
   // invalid value
-  std::string key1 = cry_obj_.Hash("xxe22", "", crypto::STRING_STRING,
+  std::string key1 = cry_obj_.Hash("xxe22", value1, crypto::STRING_STRING,
         false);
-  ASSERT_FALSE(test_ds_->StoreItem(key1, "", now, now));
   // invalid key&value
-  ASSERT_FALSE(test_ds_->StoreItem("", "", now, now));
+  ASSERT_FALSE(test_ds_->StoreItem("", "", 3600*24, true));
+  // invalid time to live
+  ASSERT_FALSE(test_ds_->StoreItem("", value1, 0, true));
 }
 
 TEST_F(DataStoreTest, FUNC_KAD_LoadExistingData) {
@@ -115,7 +98,7 @@ TEST_F(DataStoreTest, FUNC_KAD_LoadExistingData) {
   std::string value1 = cry_obj_.Hash("oybbggjhhtytyerterter", "",
       crypto::STRING_STRING, false);
   boost::int32_t now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, now, now));
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
   std::vector<std::string> values;
   ASSERT_TRUE(test_ds_->LoadItem(key1, values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
@@ -128,11 +111,9 @@ TEST_F(DataStoreTest, FUNC_KAD_LoadExistingData) {
   std::string value2_3 = cry_obj_.Hash("vvvx12xxxzzzz3322", "",
       crypto::STRING_STRING, false);
   now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_1, now, now));
-  now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_2, now, now));
-  now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_3, now, now));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_1, 3600*24, true));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_2, 3600*24, true));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_3, 3600*24, true));
   ASSERT_TRUE(test_ds_->LoadItem(key2, values));
   ASSERT_EQ(3, static_cast<int>(values.size()));
   int value_num = 0;
@@ -151,31 +132,31 @@ TEST_F(DataStoreTest, BEH_KAD_LoadNonExistingData) {
   std::string key1 = cry_obj_.Hash("11222xc", "", crypto::STRING_STRING,
       false);
   std::vector<std::string> values;
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
-  ASSERT_EQ(0, static_cast<int>(values.size()));
+  ASSERT_FALSE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(values.empty());
 }
 
 TEST_F(DataStoreTest, BEH_KAD_UpdateData) {
   std::string key1 = cry_obj_.Hash("663efsxx33d", "", crypto::STRING_STRING,
       false);
   std::string value1 = base::RandomString(500);
-  boost::int32_t now1 = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, now1, now1));
-  ASSERT_EQ(static_cast<boost::uint32_t>(now1),
-            test_ds_->LastPublishedTime(key1, value1));
-  ASSERT_EQ(static_cast<boost::uint32_t>(now1),
-            test_ds_->OriginalPublishedTime(key1, value1));
+  boost::int32_t t_refresh1, t_refresh2, t_expire1, t_expire2;
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
+  t_refresh1 = test_ds_->LastRefreshTime(key1, value1);
+  t_expire1 = test_ds_->ExpireTime(key1, value1);
+  ASSERT_NE(0, t_refresh1);
+  ASSERT_NE(0, t_expire1);
   std::vector<std::string> values;
   ASSERT_TRUE(test_ds_->LoadItem(key1, values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  boost::int32_t now2 = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, now2, now2));
-  ASSERT_EQ(static_cast<boost::uint32_t>(now2),
-            test_ds_->LastPublishedTime(key1, value1));
-  ASSERT_EQ(static_cast<boost::uint32_t>(now1),
-            test_ds_->OriginalPublishedTime(key1, value1));
+
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
+  t_refresh2 = test_ds_->LastRefreshTime(key1, value1);
+  t_expire2 = test_ds_->ExpireTime(key1, value1);
+  ASSERT_LT(t_refresh1, t_refresh2);
+  ASSERT_LT(t_expire1, t_expire2);
   values.clear();
   ASSERT_TRUE(test_ds_->LoadItem(key1, values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
@@ -187,8 +168,7 @@ TEST_F(DataStoreTest, BEH_KAD_DeleteKey) {
   std::string key1 = cry_obj_.Hash("hdvahyr54345t456d", "",
       crypto::STRING_STRING, false);
   std::string value1 = base::RandomString(100);
-  boost::int32_t now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, now, now));
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
   // store another key with 3 values
   std::string key2 = cry_obj_.Hash("hrerc4334cr", "", crypto::STRING_STRING,
       false);
@@ -196,14 +176,11 @@ TEST_F(DataStoreTest, BEH_KAD_DeleteKey) {
   std::string value2_2 = base::RandomString(500);
   std::string value2_3 = cry_obj_.Hash("hneffddcx33xxx", "",
       crypto::STRING_STRING, false);
-  now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_1, now, now));
-  now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_2, now, now));
-  now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_3, now, now));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_1, 3600*24, true));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_2, 3600*24, true));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_3, 3600*24, true));
   // there should be 2 keys
-  std::vector<std::string> keys;
+  std::set<std::string> keys;
   ASSERT_TRUE(test_ds_->Keys(&keys));
   ASSERT_EQ(2, static_cast<int>(keys.size()));
   // delete one key
@@ -211,7 +188,7 @@ TEST_F(DataStoreTest, BEH_KAD_DeleteKey) {
   // there should be only one key left
   ASSERT_TRUE(test_ds_->Keys(&keys));
   ASSERT_EQ(1, static_cast<int>(keys.size()));
-  ASSERT_EQ(key1, keys[0]);
+  ASSERT_TRUE(keys.end() != keys.find(key1));
   // delete another key
   ASSERT_TRUE(test_ds_->DeleteKey(key1));
   ASSERT_TRUE(test_ds_->Keys(&keys));
@@ -225,8 +202,7 @@ TEST_F(DataStoreTest, BEH_KAD_DeleteItem) {
   std::string key1 = cry_obj_.Hash("vxxsdasde", "", crypto::STRING_STRING,
       false);
   std::string value1 = base::RandomString(200);
-  boost::int32_t now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, now, now));
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
   std::vector<std::string> values;
   ASSERT_TRUE(test_ds_->LoadItem(key1, values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
@@ -237,12 +213,10 @@ TEST_F(DataStoreTest, BEH_KAD_DeleteItem) {
   std::string value2_2 = base::RandomString(2);
   std::string value2_3 = cry_obj_.Hash("jjrtfccvvdsss", "",
       crypto::STRING_STRING, false);
-  now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_1, now, now));
-  now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_2, now, now));
-  now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_3, now, now));
+
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_1, 3600*24, true));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_2, 3600*24, true));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2_3, 3600*24, true));
   ASSERT_TRUE(test_ds_->LoadItem(key2, values));
   ASSERT_EQ(3, static_cast<int>(values.size()));
   // delete an item with key2 and value2_1
@@ -259,91 +233,200 @@ TEST_F(DataStoreTest, BEH_KAD_DeleteItem) {
   ASSERT_FALSE(test_ds_->DeleteItem(key2, value2_1));
   // delete an item with key1 and value1
   ASSERT_TRUE(test_ds_->DeleteItem(key1, value1));
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
-  ASSERT_EQ(0, static_cast<int>(values.size()));
+  ASSERT_FALSE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(values.empty());
   ASSERT_FALSE(test_ds_->DeleteItem(key1, value1));
 }
 
-TEST_F(DataStoreTest, BEH_KAD_DeleteValue) {
-  // store 2 records with the same value
-  std::string key1 = cry_obj_.Hash("ccc333", "", crypto::STRING_STRING,
-      false);
-  std::string value1 = base::RandomString(300);
-  boost::int32_t now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, now, now));
-  std::string key2 = cry_obj_.Hash("vvvvxsss", "", crypto::STRING_STRING,
-      false);
-  ASSERT_TRUE(test_ds_->StoreItem(key2, value1, now, now));
-  std::vector<std::string> keys;
-  ASSERT_TRUE(test_ds_->Keys(&keys));
-  ASSERT_EQ(2, static_cast<int>(keys.size()));
-  ASSERT_TRUE(test_ds_->DeleteValue(value1));
-  ASSERT_TRUE(test_ds_->Keys(&keys));
-  ASSERT_EQ(0, static_cast<int>(keys.size()));
-  ASSERT_FALSE(test_ds_->DeleteValue(value1));
-}
-
-TEST_F(DataStoreTest, BEH_KAD_ReuseDatabase) {
-  // prepare the data
-  std::string key1 = cry_obj_.Hash("vvcccss", "", crypto::STRING_STRING,
-      false);
-  std::string value1 = base::RandomString(500);
-  boost::int32_t now = base::get_epoch_time();
-  std::vector<std::string> keys;
-  // create a new data store with reuse disabled
-  {
-  kad::DataStore test_ds_1;
-  boost::filesystem::path db_file(db_name_);
-  ASSERT_TRUE(test_ds_1.Init(db_file.string()));
-  ASSERT_TRUE(test_ds_1.StoreItem(key1, value1, now, now));
-  ASSERT_TRUE(test_ds_1.Keys(&keys));
-  ASSERT_EQ(1, static_cast<int>(keys.size()));
-  ASSERT_TRUE(test_ds_1.Close());
-  }
-  // create another data store with reuse disabled
-  {
-  kad::DataStore test_ds_2;
-  boost::filesystem::path db_file(db_name_);
-  ASSERT_TRUE(test_ds_2.Init(db_file.string()));
-  ASSERT_TRUE(test_ds_2.Keys(&keys));
-  ASSERT_EQ(0, static_cast<int>(keys.size()));
-  // store something
-  ASSERT_TRUE(test_ds_2.StoreItem(key1, value1, now, now));
-  ASSERT_TRUE(test_ds_2.Close());
-  }
-  // create 3rd data store with reuse enabled
-  {
-  kad::DataStore test_ds_3;
-  boost::filesystem::path db_file(db_name_);
-  ASSERT_TRUE(test_ds_3.Init(db_file.string(), true));
-  ASSERT_TRUE(test_ds_3.Keys(&keys));
-  ASSERT_EQ(1, static_cast<int>(keys.size()));
-  ASSERT_EQ(key1, keys[0]);
-  ASSERT_TRUE(test_ds_3.Close());
-  }
-}
-
 TEST_F(DataStoreTest, BEH_KAD_StoreMultipleValues) {
-  std::vector<std::string> keys;
+  std::set<std::string> keys;
   ASSERT_TRUE(test_ds_->Keys(&keys));
-  ASSERT_EQ(0, static_cast<int>(keys.size()));
+  ASSERT_TRUE(keys.empty());
   std::string key1 = cry_obj_.Hash("abc123vvd32sfdf", "", crypto::STRING_STRING,
       false);
-  std::string value1 = cry_obj_.Hash("vfdsfdasfdasfdsaferrfd", "",
-      crypto::STRING_STRING, false);
-  std::string value2 = base::RandomString(1024 * 1024);  // big value 1MB
-  boost::int32_t now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, now, now));
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
-  now = base::get_epoch_time();
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value2, now, now));
+  std::vector<std::string> values1;
+  values1.push_back(cry_obj_.Hash("vfdsfdasfdasfdsaferrfd", "",
+      crypto::STRING_STRING, false));
+  values1.push_back(base::RandomString(1024 * 1024));  // big value 1MB
+  for (unsigned int i = 0; i < values1.size(); i++)
+    ASSERT_TRUE(test_ds_->StoreItem(key1, values1[i], 3600*24, true));
   std::vector<std::string> values;
   ASSERT_TRUE(test_ds_->LoadItem(key1, values));
   ASSERT_EQ(static_cast<unsigned int>(2), values.size());
   int i = 0;
   for (unsigned int j = 0; j < values.size(); j++) {
-    if (values[j] == value1 || values[j] == value2)
+    if (values[j] == values1[0] || values[j] == values1[1])
       i++;
   }
   ASSERT_EQ(2, i);
+}
+
+TEST_F(DataStoreTest, BEH_KAD_RefreshKeyValue) {
+  std::string key1 = cry_obj_.Hash("663efsxx33d", "", crypto::STRING_STRING,
+      false);
+  std::string value1 = base::RandomString(500);
+  ASSERT_EQ(boost::uint32_t(0),  test_ds_->LastRefreshTime(key1, value1));
+  ASSERT_EQ(boost::uint32_t(0),  test_ds_->ExpireTime(key1, value1));
+  boost::int32_t t_refresh1, t_refresh2, t_expire1, t_expire2;
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
+  t_refresh1 = test_ds_->LastRefreshTime(key1, value1);
+  t_expire1 = test_ds_->ExpireTime(key1, value1);
+  ASSERT_NE(0, t_refresh1);
+  ASSERT_NE(0, t_expire1);
+  std::vector<std::string> values;
+  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_EQ(1, static_cast<int>(values.size()));
+  ASSERT_EQ(value1, values[0]);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
+  // refreshing the value
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, false));
+  t_refresh2 = test_ds_->LastRefreshTime(key1, value1);
+  t_expire2 = test_ds_->ExpireTime(key1, value1);
+  ASSERT_LT(t_refresh1, t_refresh2);
+  ASSERT_EQ(t_expire1, t_expire2);
+  values.clear();
+  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_EQ(1, static_cast<int>(values.size()));
+  ASSERT_EQ(value1, values[0]);
+}
+
+TEST_F(DataStoreTest, BEH_KAD_RepublishKeyValue) {
+  std::string key1 = cry_obj_.Hash("663efsxx33d", "", crypto::STRING_STRING,
+      false);
+  std::string value1 = base::RandomString(500);
+  ASSERT_EQ(boost::uint32_t(0),  test_ds_->LastRefreshTime(key1, value1));
+  ASSERT_EQ(boost::uint32_t(0),  test_ds_->ExpireTime(key1, value1));
+  boost::int32_t t_refresh1, t_refresh2, t_expire1, t_expire2;
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
+  t_refresh1 = test_ds_->LastRefreshTime(key1, value1);
+  t_expire1 = test_ds_->ExpireTime(key1, value1);
+  ASSERT_NE(0, t_refresh1);
+  ASSERT_NE(0, t_expire1);
+  std::vector<std::string> values;
+  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_EQ(1, static_cast<int>(values.size()));
+  ASSERT_EQ(value1, values[0]);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
+  // republishing the value
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
+  t_refresh2 = test_ds_->LastRefreshTime(key1, value1);
+  t_expire2 = test_ds_->ExpireTime(key1, value1);
+  ASSERT_LT(t_refresh1, t_refresh2);
+  ASSERT_LT(t_expire1, t_expire2);
+  values.clear();
+  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_EQ(1, static_cast<int>(values.size()));
+  ASSERT_EQ(value1, values[0]);
+}
+
+TEST_F(DataStoreTest, FUNC_KAD_GetValuesToRefresh) {
+  // data store with refresh time set to 3 seconds for test
+  kad::DataStore ds(3);
+  std::vector< std::pair<std::string, std::string> > refvalues;
+  std::vector<std::string> keys, values;
+  for (unsigned int i = 0; i < 6; i++) {
+    keys.push_back(cry_obj_.Hash(base::itos(i), "", crypto::STRING_STRING,
+      false));
+    values.push_back(base::RandomString(500));
+  }
+
+  for (unsigned int i = 0; i < 4; i++) {
+    if (i == 2) {
+      ASSERT_TRUE(ds.StoreItem(keys[i], values[i]+"EXTRA", 3600*24, true));
+    }
+    ASSERT_TRUE(ds.StoreItem(keys[i], values[i], 3600*24, true));
+  }
+
+  boost::this_thread::sleep(boost::posix_time::seconds(4));
+
+  for (unsigned int i = 4; i < keys.size(); i++) {
+    ASSERT_TRUE(ds.StoreItem(keys[i], values[i], 3600*24, true));
+  }
+  // refreshing key[0] so it does not apperat in keys to refresh
+  ASSERT_TRUE(ds.StoreItem(keys[0], values[0], 3600*24, false));
+  refvalues = ds.ValuesToRefresh();
+  for (unsigned int i = 0; i < refvalues.size(); i++) {
+    ASSERT_NE(keys[0], refvalues[i].first);
+    ASSERT_NE(values[0], refvalues[i].second);
+  }
+  for (unsigned int i = 4; i < keys.size(); i++) {
+    bool found = false;
+    for (unsigned int j = 0; j < refvalues.size(); j++) {
+      if (keys[i] == refvalues[j].first && values[i] == refvalues[j].second) {
+        found = true;
+        break;
+      }
+      ASSERT_FALSE(found);
+    }
+  }
+  for (unsigned int i = 1; i < 4; i++) {
+    bool found = false;
+    for (unsigned int j = 0; j < refvalues.size(); j++) {
+      if (keys[i] == refvalues[j].first && values[i] == refvalues[j].second) {
+        found = true;
+        break;
+      }
+    }
+    ASSERT_TRUE(found);
+  }
+}
+
+TEST_F(DataStoreTest, FUNC_KAD_DeleteExpiredValues) {
+  std::vector<std::string> keys, values;
+  std::vector<boost::uint32_t> ttl;
+  // creating 10 key/values
+  for (int i = 0; i < 10; i++) {
+    keys.push_back(base::itos(i));
+    values.push_back(base::RandomString(100));
+    ttl.push_back(i+5);  // TTL = i + 5 seconds
+  }
+  for (unsigned int i = 0; i < keys.size(); i++)
+    test_ds_->StoreItem(keys[i], values[i], ttl[i], true);
+  // waiting 9 seconds  values 0, 1, and 3 are expired and should be deleted
+  boost::this_thread::sleep(boost::posix_time::seconds(4));
+  // republishing value 2 with TTL 7
+  test_ds_->StoreItem(keys[2], values[2], ttl[2], true);
+  // refreshing value 3 with TTL 8
+  test_ds_->StoreItem(keys[3], values[3], ttl[3], false);
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  test_ds_->DeleteExpiredValues();
+  boost::uint32_t now = base::get_epoch_time();
+  std::set<std::string> rec_keys;
+  ASSERT_TRUE(test_ds_->Keys(&rec_keys));
+  ASSERT_EQ(keys.size()-3, rec_keys.size());
+  for (std::set<std::string>::iterator it = rec_keys.begin();
+       it != rec_keys.end(); it++) {
+    std::string value;
+    for (unsigned int j = 0; j < keys.size(); j++) {
+      if (*it == keys[j]) {
+        value = values[j];
+        break;
+      }
+    }
+    ASSERT_LE(now, test_ds_->ExpireTime(*it, value));
+  }
+  // checking correct keys have been deleted
+  std::vector<std::string> del_keys;
+  del_keys.push_back(keys[0]);
+  del_keys.push_back(keys[1]);
+  del_keys.push_back(keys[3]);
+  for (unsigned int j = 0; j < del_keys.size(); j++) {
+    ASSERT_TRUE(rec_keys.end() == rec_keys.find(del_keys[j]));
+  }
+}
+
+TEST_F(DataStoreTest, BEH_KAD_ClearDataStore) {
+  std::set<std::string> keys;
+  // creating 10 key/values
+  for (int i = 0; i < 10; i++) {
+    std::string key = cry_obj_.Hash(base::itos(i), "", crypto::STRING_STRING,
+      false);
+    test_ds_->StoreItem(key, base::RandomString(100), 3600*24, true);
+  }
+  test_ds_->Keys(&keys);
+  ASSERT_EQ(10, keys.size());
+  test_ds_->Clear();
+  keys.clear();
+  test_ds_->Keys(&keys);
+  ASSERT_EQ(0, keys.size());
 }

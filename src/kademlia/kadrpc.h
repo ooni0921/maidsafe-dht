@@ -58,7 +58,7 @@ class KadRpcs {
       const std::string &public_key, const std::string &signed_public_key,
       const std::string &signed_request, const std::string &ip,
       const boost::uint16_t &port, StoreResponse *resp,
-      google::protobuf::Closure *cb, const bool &local);
+      google::protobuf::Closure *cb, const bool &local, const bool &publish);
   void Downlist(const std::vector<std::string> downlist,
       const std::string &ip, const boost::uint16_t &port,
       DownlistResponse *resp, google::protobuf::Closure *cb, const bool &local);

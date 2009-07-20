@@ -30,19 +30,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 
-KNode::KNode(const std::string &datastore_dir,
-             boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-             node_type type) : pimpl_(new KNodeImpl(datastore_dir,
-                                                    channel_manager,
+KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+             node_type type) : pimpl_(new KNodeImpl(channel_manager,
                                                     type)) {}
 
-KNode::KNode(const std::string &datastore_dir,
-             boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
              node_type type,
              const boost::uint16_t k,
              const int &alpha,
-             const int &beta) : pimpl_(new KNodeImpl(datastore_dir,
-                                                     channel_manager,
+             const int &beta) : pimpl_(new KNodeImpl(channel_manager,
                                                      type,
                                                      k,
                                                      alpha,
@@ -117,10 +113,11 @@ void KNode::FindValueLocal(const std::string &key,
   pimpl_->FindValueLocal(key, values);
 }
 
-void KNode::StoreValueLocal(const std::string &key,
-                            const std::string &value) {
-  pimpl_->StoreValueLocal(key, value);
+bool KNode::StoreValueLocal(const std::string &key,
+      const std::string &value, const bool &publish) {
+  return pimpl_->StoreValueLocal(key, value, publish);
 }
+
 
 void KNode::GetRandomContacts(const int &count,
                               const std::vector<Contact> &exclude_contacts,

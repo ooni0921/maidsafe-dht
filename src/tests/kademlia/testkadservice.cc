@@ -92,7 +92,7 @@ class KadServicesTest: public testing::Test {
     std::string datastore("/datastore");
     datastore = test_dir_ + datastore;
     knodeimpl_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl(datastore, channel_manager_, VAULT));
+        (new KNodeImpl(channel_manager_, VAULT));
     std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
@@ -217,10 +217,10 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   // Search in empty routing table and datastore
   rpcprotocol::Controller controller;
   FindRequest find_value_request;
-  std::string hex_key("");
+  std::string hex_key;
   for (int i = 0; i < 128; ++i)
     hex_key += "a";
-  std::string key("");
+  std::string key;
   base::decode_from_hex(hex_key, &key);
   find_value_request.set_key(key);
   ContactInfo *sender_info = find_value_request.mutable_sender_info();
@@ -251,7 +251,6 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
     for (int j = 0; j < 126; ++j)
       hex_id += character;
     hex_id += base::itos(i+10);
-//    printf("%s\n", hex_id.c_str());
     std::string id("");
     base::decode_from_hex(hex_id, &id);
     if (i < K)
@@ -264,13 +263,12 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
     EXPECT_GE(routingtable_->AddContact(contact), 0);
   }
   EXPECT_GE(routingtable_->Size(), 2*K);
-  std::string wrong_hex_key("");
+  std::string wrong_hex_key;
   for (int i = 0; i < 128; ++i)
     wrong_hex_key += "b";
-  std::string wrong_key("");
+  std::string wrong_key;
   base::decode_from_hex(wrong_hex_key, &wrong_key);
-  boost::int32_t now = base::get_epoch_time();
-  EXPECT_TRUE(datastore_->StoreItem(wrong_key, "X", now, now));
+  EXPECT_TRUE(datastore_->StoreItem(wrong_key, "X", 24*3600, true));
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   find_value_response.Clear();
@@ -300,7 +298,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   std::vector<std::string> values;
   for (int i = 0; i < 100; ++i) {
     values.push_back("Value"+base::itos(i));
-    EXPECT_TRUE(datastore_->StoreItem(key, values[i], now+i, now));
+    EXPECT_TRUE(datastore_->StoreItem(key, values[i], 24*3600, true));
   }
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -310,8 +308,17 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   EXPECT_TRUE(find_value_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_value_response.result());
   EXPECT_EQ(0, find_value_response.closest_nodes_size());
-  for (int i = 0; i < 100; ++i) {
-    EXPECT_EQ(values[i], find_value_response.values(i));
+  EXPECT_EQ(100, find_value_response.values_size());
+  for (int i = 0; i < 100; i++) {
+    bool found = false;
+    for (int j = 0; j < 100; j++) {
+      if (values[i] == find_value_response.values(j)) {
+        found = true;
+        break;
+      }
+    }
+    if (!found)
+      FAIL() << "value " << values[i] << " not in response";
   }
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_, find_value_response.node_id());
@@ -321,7 +328,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   // Search in empty routing table and datastore
   rpcprotocol::Controller controller;
   FindRequest find_node_request;
-  std::string hex_key("");
+  std::string hex_key;
   for (int i = 0; i < 128; ++i)
     hex_key += "a";
   std::string key("");
@@ -414,9 +421,10 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
     EXPECT_GE(routingtable_->AddContact(contact), 0);
   }
   EXPECT_GE(routingtable_->Size(), 2*K);
-  boost::int32_t now = base::get_epoch_time();
+//  boost::int32_t now = base::get_epoch_time();
   std::string value("Value");
-  ASSERT_TRUE(datastore_->StoreItem(key, value, now, now));
+//  ASSERT_TRUE(datastore_->StoreItem(key, value, now, now));
+  ASSERT_TRUE(datastore_->StoreItem(key, value, 24*3600, true));
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   find_node_response.Clear();
@@ -480,12 +488,11 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   // Store value1
   rpcprotocol::Controller controller;
   StoreRequest store_request;
-  std::string hex_key("");
+  std::string hex_key;
   for (int i = 0; i < 128; ++i)
     hex_key += "a";
-  std::string key(""), value1("Val1"), value2("Val2"), value3("Val10");
-  std::string public_key(""), private_key("");
-  std::string signed_public_key(""), signed_request("");
+  std::string key, value1("Val1"), value2("Val2"), value3("Val10");
+  std::string public_key, private_key, signed_public_key, signed_request;
   base::decode_from_hex(hex_key, &key);
   CreateRSAKeys(&public_key, &private_key);
   CreateSignedRequest(public_key, private_key, key, &signed_public_key,
@@ -495,6 +502,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   store_request.set_public_key(public_key);
   store_request.set_signed_public_key(signed_public_key);
   store_request.set_signed_request(signed_request);
+  store_request.set_publish(true);
   ContactInfo *sender_info = store_request.mutable_sender_info();
   *sender_info = contact_;
   StoreResponse store_response;
@@ -506,7 +514,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   EXPECT_EQ(kRpcResultSuccess, store_response.result());
   EXPECT_EQ(node_id_, store_response.node_id());
   std::vector<std::string> values;
-  EXPECT_TRUE(datastore_->LoadItem(key, values));
+  ASSERT_TRUE(datastore_->LoadItem(key, values));
   EXPECT_EQ(value1, values[0]);
   Contact contactback;
   EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
@@ -515,6 +523,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   // Allow thread to sleep so that second value has a different last published
   // time to first value.
   boost::this_thread::sleep(boost::posix_time::seconds(1));
+  store_request.clear_value();
   store_request.set_value(value2);
   store_response.Clear();
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
@@ -531,6 +540,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   // Store value3
   // Allow thread to sleep for same reason as above.
   boost::this_thread::sleep(boost::posix_time::seconds(1));
+  store_request.clear_value();
   store_request.set_value(value3);
   store_response.Clear();
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
@@ -542,8 +552,8 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key, values));
   EXPECT_EQ(value1, values[0]);
-  EXPECT_EQ(value2, values[1]);
-  EXPECT_EQ(value3, values[2]);
+  EXPECT_EQ(value2, values[2]);
+  EXPECT_EQ(value3, values[1]);
 }
 
 TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {

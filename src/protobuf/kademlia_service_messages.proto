@@ -44,6 +44,7 @@ message StoreRequest {
   required bytes signed_public_key = 4;
   required bytes signed_request = 5;
   required ContactInfo sender_info = 6;
+  required bool publish = 7;
 };
 
 message StoreResponse {

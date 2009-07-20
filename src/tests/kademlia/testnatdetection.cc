@@ -105,13 +105,13 @@ class NatDetectionTest: public testing::Test {
     }
     dirs = test_dir_ + std::string("/A/datastore");
     knodeimpl1_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl(dirs, channel_managerA_, VAULT));
+        (new KNodeImpl(channel_managerA_, VAULT));
     dirs = test_dir_ + std::string("/B/datastore");
     knodeimpl2_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl(dirs, channel_managerB_, VAULT));
+        (new KNodeImpl(channel_managerB_, VAULT));
     dirs = test_dir_ + std::string("/C/datastore");
     knodeimpl3_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl(dirs, channel_managerC_, VAULT));
+        (new KNodeImpl(channel_managerC_, VAULT));
   }
 
   virtual ~NatDetectionTest() {

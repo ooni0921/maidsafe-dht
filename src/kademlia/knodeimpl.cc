@@ -33,7 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>  // NOLINT Fraser - required for handling .kadconfig file
 #include <vector>
 #include "base/config.h"
-#include "kademlia/datastore.h"
 #include "kademlia/kadservice.h"
 #include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -119,7 +118,6 @@ void SortLookupContact(std::list<LookupContact> *contact_list,
 }
 
 KNodeImpl::KNodeImpl(
-    const std::string &datastore_dir,
     boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
     node_type type)
         : routingtable_mutex_(), kadconfig_mutex_(),
@@ -127,7 +125,7 @@ KNodeImpl::KNodeImpl(
           activeprobes_mutex_(), pendingcts_mutex_(),
           ptimer_(new base::CallLaterTimer()),
           pchannel_manager_(channel_manager), pservice_channel_(),
-          pdata_store_(new DataStore()), premote_service_(),
+          pdata_store_(new DataStore(kRefreshTime)), premote_service_(),
           kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
           node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
           host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(), K_(K),
@@ -137,33 +135,20 @@ KNodeImpl::KNodeImpl(
           addcontacts_routine_(), add_ctc_cond_(), upnp_started_(false),
           upnp_ios_(), upnp_(), upnp_half_open_(NULL),
           upnp_user_agent_("maidsafe"), upnp_mapped_port_(0), upnp_udp_map_(0) {
-  try {
-    if (!fs::exists(datastore_dir))
-      fs::create_directories(datastore_dir);
-  }
-  catch(const std::exception &ex_) {
-#ifdef DEBUG
-    printf("%s\n", ex_.what());
-#endif
-  }
-  fs::path db_(datastore_dir, fs::native);
-  db_ /= "datastore.db";
-  pdata_store_->Init(db_.string(), kReuseDatabase);
 }
 
 KNodeImpl::KNodeImpl(
-    const std::string &datastore_dir,
     boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
     node_type type,
     const boost::uint16_t k,
     const int &alpha,
-    const int &beta)
+    const int &beta, const int &refresh_time)
         : routingtable_mutex_(), kadconfig_mutex_(),
           extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
           activeprobes_mutex_(), pendingcts_mutex_(),
           ptimer_(new base::CallLaterTimer()),
           pchannel_manager_(channel_manager), pservice_channel_(),
-          pdata_store_(new DataStore()), premote_service_(),
+          pdata_store_(new DataStore(refresh_time)), premote_service_(),
           kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
           node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
           host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(),
@@ -173,18 +158,6 @@ KNodeImpl::KNodeImpl(
           addcontacts_routine_(), add_ctc_cond_(), upnp_started_(false),
           upnp_ios_(), upnp_(), upnp_half_open_(NULL),
           upnp_user_agent_("maidsafe"), upnp_mapped_port_(0), upnp_udp_map_(0) {
-  try {
-    if (!fs::exists(datastore_dir))
-      fs::create_directories(datastore_dir);
-  }
-  catch(const std::exception &ex_) {
-#ifdef DEBUG
-    printf("%s\n", ex_.what());
-#endif
-  }
-  fs::path db_(datastore_dir, fs::native);
-  db_ /= "datastore.db";
-  pdata_store_->Init(db_.string(), kReuseDatabase);
 }
 
 KNodeImpl::~KNodeImpl() {
@@ -197,28 +170,13 @@ KNodeImpl::~KNodeImpl() {
 #endif
     UnRegisterKadService();
     is_joined_ = false;
-    pdata_store_->Close();
+    pdata_store_->Clear();
   }
-//  printf("\t\tIn KNode (on port %i) destructor.\n", host_port_);
   if (upnp_started_ && upnp_mapped_port_ > 0) {
     UnMapUPnP();
   }
-//  printf("\t\tIn KNode (on port %i) destructor.\n", host_port_);
   upnp_started_ = false;
   upnp_mapped_port_ = 0;
-//  activeprobes_mutex_.unlock();
-//  if(routingtable_mutex_.try_lock())
-//    printf("routingtable_mutex_.try_lock(): %d\n", 1);
-//  printf("kadconfig_mutex_.try_lock(): %d\n", kadconfig_mutex_.try_lock());
-//  printf("extendshortlist_mutex_.try_lock(): %d\n",
-//         extendshortlist_mutex_.try_lock());
-//  printf("joinbootstrapping_mutex_.try_lock(): %d\n",
-//         joinbootstrapping_mutex_.try_lock());
-//  printf("leave_mutex_.try_lock(): %d\n", leave_mutex_.try_lock());
-//  printf("activeprobes_mutex_.try_lock(): %d\n",
-//         activeprobes_mutex_.try_lock());
-//
-//  ptimer_->CancelAll();
 }
 
 inline void KNodeImpl::CallbackWithFailure(base::callback_func_type cb) {
@@ -329,7 +287,6 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
       (result_msg.result() == kRpcResultSuccess)) {
     kad::Contact bootstrap_node(result_msg.bootstrap_id(), bootstrap_ip,
                                 bootstrap_port, local_bs_ip, local_bs_port);
-//    printf("adding contact\n");
     AddContact(bootstrap_node, false);
     bool directlyconnected = false;
     if (host_ip_ == result_msg.newcomer_ext_ip() &&
@@ -353,10 +310,6 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
 #ifdef DEBUG
       printf("type of NAT = 1\n");
 #endif
-//      pchannel_manager_->ptransport()->StartPingRendezvous(
-//                                           directlyconnected,
-//                                           bootstrap_node.host_ip(),
-//                                           bootstrap_node.host_port());
       rv_ip_ = "";
       rv_port_ = 0;
     } else if (result_msg.nat_type() == 2) {
@@ -392,12 +345,9 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
       }
     }
 
-//    std::string hex_bs_ip("");
-//    base::encode_to_hex(bootstrap_node.host_ip(), &hex_bs_ip);
     pchannel_manager_->ptransport()->StartPingRendezvous(
                                          false,
                                          bootstrap_node.host_ip(),
-//                                         hex_bs_ip,
                                          bootstrap_node.host_port());
 
     kadrpcs_.set_info(contact_info());
@@ -432,7 +382,6 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
     args->is_callbacked = true;
     rv_ip_ = "";
     rv_port_ = 0;
-//    is_joined_ = true;
     args->cb(local_result_str);
   }
 }
@@ -453,7 +402,6 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
     if (type_ != CLIENT) {
       local_result.set_result(kRpcResultSuccess);
       is_joined_ = true;
-      // host_ip_ = "81.149.64.82";
       // since it is a 1 network node, so it has no rendezvous server to ping
       pchannel_manager_->ptransport()->StartPingRendezvous(true, rv_ip_,
                                                            rv_port_);
@@ -487,7 +435,6 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
 //  }
 
   boost::shared_ptr<struct BootstrapArgs> args(new struct BootstrapArgs);
-  // args->cached_nodes = cached_nodes;
   args->cb = cb;
   args->active_process = 0;
   args->is_callbacked = false;
@@ -590,9 +537,6 @@ void KNodeImpl::Join(const std::string &node_id,
   // if node_id is equal to "", generate a random kad ID and save it
   if (node_id.size() == 0) {
     node_id_ = vault_random_id();
-    boost::uint32_t now = base::get_epoch_time();
-    pdata_store_->StoreItem("node_id", node_id_, now, now);
-//    }
   } else {
     std::string dec_id("");
     if (!base::decode_from_hex(node_id, &dec_id))
@@ -637,7 +581,6 @@ void KNodeImpl::Leave() {
 
 void KNodeImpl::SaveBootstrapContacts() {
   try {
-//    LoadBootstrapContacts();
     std::vector<Contact> exclude_contacts;
     std::vector<Contact> bs_contacts;
     bool reached_max = false;
@@ -728,8 +671,6 @@ void KNodeImpl::SaveBootstrapContacts() {
       kad_config.SerializeToOstream(&output);
       output.close();
     }
-    // Delete lockfile
-//    fs::remove(lockfile);
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
@@ -833,7 +774,8 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
                        callback_data.sender.host_port(),
                        resp,
                        done1,
-                       false);
+                       false,
+                       callback_data.data->publish);
         return;
       }
     }
@@ -930,7 +872,8 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
                    contact_port,
                    resp,
                    done,
-                   local);
+                   local,
+                   callback_data.data->publish);
   }
 }
 
@@ -977,16 +920,12 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(
             stored_local = true;
         }
         if (stored_local) {
-          boost::uint32_t now = base::get_epoch_time();
-          pdata_store_->StoreItem(key, value, now, now);
+          pdata_store_->StoreItem(key, value, 3600*24, true);
           closest_nodes.pop_back();
 #ifdef DEBUG
           printf("KNodeImpl::StoreValue_ExecuteStoreRPCs storing locally \n");
 #endif
         }
-      } else if (type_ != CLIENT) {
-        boost::uint32_t now = base::get_epoch_time();
-        pdata_store_->StoreItem(key, value, now, now);
       }
       boost::shared_ptr<IterativeStoreValueData>
           data(new struct IterativeStoreValueData(closest_nodes,
@@ -995,7 +934,7 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(
                                                   cb,
                                                   public_key,
                                                   signed_public_key,
-                                                  signed_request));
+                                                  signed_request, true));
       if (stored_local)
         data->save_nodes++;
       // decide the parallel level
@@ -1047,8 +986,6 @@ void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
   }
 
   //  Value not found localy, looking for it in the network
-//  std::vector<Contact> start_up_short_list;
-//  IterativeLookUp(key, start_up_short_list, FIND_VALUE, cb);
   StartSearchIteration(key, FIND_VALUE, cb);
 }
 
@@ -1200,13 +1137,6 @@ void KNodeImpl::Ping(const Contact &remote, base::callback_func_type cb) {
     cb(ser_resp);
     return;
   } else {
-#ifdef SHOW_MUTEX
-    printf("\t\tIn KNode::Ping2(%i), outside mutex.\n", host_port_);
-#endif
-//    boost::mutex::scoped_lock guard(*mutex_[10]);
-#ifdef SHOW_MUTEX
-    printf("\t\tIn KNode::Ping2(%i), inside mutex.\n", host_port_);
-#endif
     PingResponse *resp = new PingResponse();
     PingCallbackArgs  callback_args(cb);
     callback_args.sender = remote;
@@ -1305,17 +1235,15 @@ void KNodeImpl::FindValueLocal(const std::string &key,
   pdata_store_->LoadItem(key, values);
 }
 
-void KNodeImpl::StoreValueLocal(const std::string &key,
-                                const std::string &value) {
-  boost::uint32_t now = base::get_epoch_time();
-  pdata_store_->StoreItem(key, value, now, now);
+bool KNodeImpl::StoreValueLocal(const std::string &key,
+      const std::string &value, const bool &publish) {
+  return pdata_store_->StoreItem(key, value, 3600*24, publish);
 }
 
 void KNodeImpl::GetRandomContacts(
     const int &count,
     const std::vector<Contact> &exclude_contacts,
     std::vector<Contact> *contacts) {
-  // TODO(Jose): get the ones of same rank
   contacts->clear();
   std::vector<Contact> all_contacts;
   {
@@ -1333,7 +1261,6 @@ void KNodeImpl::GetRandomContacts(
     return;
   }
   std::vector<Contact> temp_vector(count);
-  // srand(rand() ^ static_cast<int>(base::get_epoch_time()));
   base::random_sample_n(all_contacts.begin(), all_contacts.end(),
     temp_vector.begin(), count);
   *contacts = temp_vector;
@@ -1423,13 +1350,6 @@ void KNodeImpl::OnUPnPPortMapping(int,
                                   int port,
                                   std::string const& errmsg,
                                   int) {
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::OnUPnPPortMapping(%i), outside mutex.\n", host_port_);
-#endif
-//  boost::mutex::scoped_lock guard(*mutex_[12]);
-#ifdef SHOW_MUTEX
-  printf("\t\tIn KNode::OnUPnPPortMapping(%i), inside mutex.\n", host_port_);
-#endif
   if (errmsg == "") {
 #ifdef DEBUG
     printf("UPnP port mapped: %d\n", port);
@@ -2136,5 +2056,15 @@ void KNodeImpl::SendDownlist(boost::shared_ptr<IterativeLookUpData> data) {
   }
   data->downlist_sent = true;
   // End of downlist
+}
+
+boost::uint32_t KNodeImpl::KeyLastRefreshTime(const std::string &key,
+    const std::string &value) {
+  return pdata_store_->LastRefreshTime(key, value);
+}
+
+boost::uint32_t KNodeImpl::KeyExpireTime(const std::string &key,
+    const std::string &value) {
+  return pdata_store_->ExpireTime(key, value);
 }
 }  // namespace kad

@@ -144,11 +144,11 @@ class Env: public testing::Environment {
 
       std::string db_local_ = test_dir_ + std::string("/datastore") +
                               base::itos(i);
+      boost::filesystem::create_directories(db_local_);
       dbs_.push_back(db_local_);
 
       boost::shared_ptr<kad::KNode>
-          knode_local_(new kad::KNode(dbs_[i],
-                                      channel_managers_[i],
+          knode_local_(new kad::KNode(channel_managers_[i],
                                       kad::VAULT,
                                       kTestK,
                                       kad::kAlpha,
@@ -325,8 +325,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     std::ios::out | std::ios::trunc | std::ios::binary);
   ASSERT_TRUE(conf.SerializeToOstream(&output2));
   output2.close();
-
-  boost::scoped_ptr<kad::KNode> knode_local_(new kad::KNode(db_local,
+  boost::scoped_ptr<kad::KNode> knode_local_(new kad::KNode(
                                              channel_manager_local_,
                                              kad::CLIENT,
                                              kTestK,
@@ -978,8 +977,8 @@ TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
 
   boost::shared_ptr<rpcprotocol::ChannelManager> ch_man(
       new rpcprotocol::ChannelManager());
-  boost::scoped_ptr<kad::KNode> node(new kad::KNode(db_local, ch_man,
-      kad::VAULT, kTestK, kad::kAlpha, kad::kBeta));
+  boost::scoped_ptr<kad::KNode> node(new kad::KNode(ch_man, kad::VAULT, kTestK,
+      kad::kAlpha, kad::kBeta));
   EXPECT_EQ(0, ch_man->StartTransport(0,
             boost::bind(&kad::KNode::HandleDeadRendezvousServer, node.get(),
                         _1)));

@@ -213,7 +213,11 @@ void KadService::Store(google::protobuf::RpcController *,
                        StoreResponse *response,
                        google::protobuf::Closure *done) {
   Contact sender;
-  if (!request->IsInitialized()) {
+  if (!request->IsInitialized() || !request->has_value()) {
+    if (!request->IsInitialized())
+    printf("not initialize\n");
+    else
+    printf("not has value\n");
     response->set_result(kRpcResultFailure);
   } else if (GetSender(request->sender_info(), &sender)) {
       if (!ValidateSignedRequest(request->public_key(),
@@ -224,12 +228,16 @@ void KadService::Store(google::protobuf::RpcController *,
 #endif
         response->set_result(kRpcResultFailure);
       } else {
-        knode_->StoreValueLocal(request->key(), request->value());
-        response->set_result(kRpcResultSuccess);
+        if (knode_->StoreValueLocal(request->key(), request->value(),
+            request->publish())) {
+          response->set_result(kRpcResultSuccess);
 #ifdef DEBUG
-        printf("KadService::Store: StoreValueLocal\n");
+          printf("KadService::Store: StoreValueLocal\n");
 #endif
-        knode_->AddContact(sender, false);
+          knode_->AddContact(sender, false);
+        } else {
+          response->set_result(kRpcResultFailure);
+        }
       }
   } else {
     response->set_result(kRpcResultFailure);

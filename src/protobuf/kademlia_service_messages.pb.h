@@ -764,6 +764,13 @@ class StoreRequest : public ::google::protobuf::Message {
   inline const ::kad::ContactInfo& sender_info() const;
   inline ::kad::ContactInfo* mutable_sender_info();
   
+  // required bool publish = 7;
+  inline bool has_publish() const;
+  inline void clear_publish();
+  static const int kPublishFieldNumber = 7;
+  inline bool publish() const;
+  inline void set_publish(bool value);
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -779,10 +786,11 @@ class StoreRequest : public ::google::protobuf::Message {
   ::std::string* signed_request_;
   static const ::std::string _default_signed_request_;
   ::kad::ContactInfo* sender_info_;
+  bool publish_;
   friend void  protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2711,6 +2719,22 @@ inline ::kad::ContactInfo* StoreRequest::mutable_sender_info() {
   _set_bit(5);
   if (sender_info_ == NULL) sender_info_ = new ::kad::ContactInfo;
   return sender_info_;
+}
+
+// required bool publish = 7;
+inline bool StoreRequest::has_publish() const {
+  return _has_bit(6);
+}
+inline void StoreRequest::clear_publish() {
+  publish_ = false;
+  _clear_bit(6);
+}
+inline bool StoreRequest::publish() const {
+  return publish_;
+}
+inline void StoreRequest::set_publish(bool value) {
+  _set_bit(6);
+  publish_ = value;
 }
 
 // -------------------------------------------------------------------

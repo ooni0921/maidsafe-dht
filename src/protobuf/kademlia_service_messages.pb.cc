@@ -155,13 +155,14 @@ void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(FindNodeResult));
   StoreRequest_descriptor_ = file->message_type(5);
-  static const int StoreRequest_offsets_[6] = {
+  static const int StoreRequest_offsets_[7] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, value_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, public_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, signed_public_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, signed_request_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, sender_info_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, publish_),
   };
   StoreRequest_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -425,30 +426,30 @@ void protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto() {
     "\n\rclosest_nodes\030\002 \003(\014\022\016\n\006values\030\003 \003(\014\022\032\n"
     "\022requester_ext_addr\030\004 \001(\014\022\017\n\007node_id\030\005 \001"
     "(\014\"B\n\016FindNodeResult\022\016\n\006result\030\001 \002(\014\022\017\n\007"
-    "contact\030\002 \001(\014\022\017\n\007node_id\030\003 \001(\014\"\230\001\n\014Store"
+    "contact\030\002 \001(\014\022\017\n\007node_id\030\003 \001(\014\"\251\001\n\014Store"
     "Request\022\013\n\003key\030\001 \002(\014\022\r\n\005value\030\002 \002(\014\022\022\n\np"
     "ublic_key\030\003 \002(\014\022\031\n\021signed_public_key\030\004 \002"
     "(\014\022\026\n\016signed_request\030\005 \002(\014\022%\n\013sender_inf"
-    "o\030\006 \002(\0132\020.kad.ContactInfo\"0\n\rStoreRespon"
-    "se\022\016\n\006result\030\001 \002(\014\022\017\n\007node_id\030\002 \001(\014\"J\n\017D"
-    "ownlistRequest\022\020\n\010downlist\030\001 \003(\014\022%\n\013send"
-    "er_info\030\002 \002(\0132\020.kad.ContactInfo\"3\n\020Downl"
-    "istResponse\022\016\n\006result\030\001 \002(\014\022\017\n\007node_id\030\002"
-    " \001(\014\"\223\001\n\020BootstrapRequest\022\023\n\013newcomer_id"
-    "\030\001 \002(\014\022\031\n\021newcomer_local_ip\030\002 \002(\014\022\033\n\023new"
-    "comer_local_port\030\003 \002(\005\022\027\n\017newcomer_ext_i"
-    "p\030\004 \001(\014\022\031\n\021newcomer_ext_port\030\005 \001(\005\"\177\n\021Bo"
-    "otstrapResponse\022\016\n\006result\030\001 \002(\014\022\024\n\014boots"
-    "trap_id\030\002 \001(\014\022\027\n\017newcomer_ext_ip\030\003 \001(\014\022\031"
-    "\n\021newcomer_ext_port\030\004 \001(\005\022\020\n\010nat_type\030\005 "
-    "\001(\005\"`\n\023NatDetectionRequest\022\020\n\010newcomer\030\001"
-    " \002(\014\022\026\n\016bootstrap_node\030\002 \002(\014\022\014\n\004type\030\003 \002"
-    "(\005\022\021\n\tsender_id\030\004 \002(\014\"&\n\024NatDetectionRes"
-    "ponse\022\016\n\006result\030\001 \002(\014\"N\n\027NatDetectionPin"
-    "gRequest\022\014\n\004ping\030\001 \002(\014\022%\n\013sender_info\030\002 "
-    "\002(\0132\020.kad.ContactInfo\"I\n\030NatDetectionPin"
-    "gResponse\022\016\n\006result\030\001 \002(\014\022\014\n\004echo\030\002 \001(\014\022"
-    "\017\n\007node_id\030\003 \001(\014", 1416);
+    "o\030\006 \002(\0132\020.kad.ContactInfo\022\017\n\007publish\030\007 \002"
+    "(\010\"0\n\rStoreResponse\022\016\n\006result\030\001 \002(\014\022\017\n\007n"
+    "ode_id\030\002 \001(\014\"J\n\017DownlistRequest\022\020\n\010downl"
+    "ist\030\001 \003(\014\022%\n\013sender_info\030\002 \002(\0132\020.kad.Con"
+    "tactInfo\"3\n\020DownlistResponse\022\016\n\006result\030\001"
+    " \002(\014\022\017\n\007node_id\030\002 \001(\014\"\223\001\n\020BootstrapReque"
+    "st\022\023\n\013newcomer_id\030\001 \002(\014\022\031\n\021newcomer_loca"
+    "l_ip\030\002 \002(\014\022\033\n\023newcomer_local_port\030\003 \002(\005\022"
+    "\027\n\017newcomer_ext_ip\030\004 \001(\014\022\031\n\021newcomer_ext"
+    "_port\030\005 \001(\005\"\177\n\021BootstrapResponse\022\016\n\006resu"
+    "lt\030\001 \002(\014\022\024\n\014bootstrap_id\030\002 \001(\014\022\027\n\017newcom"
+    "er_ext_ip\030\003 \001(\014\022\031\n\021newcomer_ext_port\030\004 \001"
+    "(\005\022\020\n\010nat_type\030\005 \001(\005\"`\n\023NatDetectionRequ"
+    "est\022\020\n\010newcomer\030\001 \002(\014\022\026\n\016bootstrap_node\030"
+    "\002 \002(\014\022\014\n\004type\030\003 \002(\005\022\021\n\tsender_id\030\004 \002(\014\"&"
+    "\n\024NatDetectionResponse\022\016\n\006result\030\001 \002(\014\"N"
+    "\n\027NatDetectionPingRequest\022\014\n\004ping\030\001 \002(\014\022"
+    "%\n\013sender_info\030\002 \002(\0132\020.kad.ContactInfo\"I"
+    "\n\030NatDetectionPingResponse\022\016\n\006result\030\001 \002"
+    "(\014\022\014\n\004echo\030\002 \001(\014\022\017\n\007node_id\030\003 \001(\014", 1433);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "kademlia_service_messages.proto", &protobuf_RegisterTypes);
   PingRequest::default_instance_ = new PingRequest();
@@ -2140,6 +2141,7 @@ const int StoreRequest::kPublicKeyFieldNumber;
 const int StoreRequest::kSignedPublicKeyFieldNumber;
 const int StoreRequest::kSignedRequestFieldNumber;
 const int StoreRequest::kSenderInfoFieldNumber;
+const int StoreRequest::kPublishFieldNumber;
 #endif  // !_MSC_VER
 
 StoreRequest::StoreRequest()
@@ -2151,7 +2153,8 @@ StoreRequest::StoreRequest()
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
     signed_public_key_(const_cast< ::std::string*>(&_default_signed_public_key_)),
     signed_request_(const_cast< ::std::string*>(&_default_signed_request_)),
-    sender_info_(NULL) {
+    sender_info_(NULL),
+    publish_(false) {
   SharedCtor();
 }
 
@@ -2167,7 +2170,8 @@ StoreRequest::StoreRequest(const StoreRequest& from)
     public_key_(const_cast< ::std::string*>(&_default_public_key_)),
     signed_public_key_(const_cast< ::std::string*>(&_default_signed_public_key_)),
     signed_request_(const_cast< ::std::string*>(&_default_signed_request_)),
-    sender_info_(NULL) {
+    sender_info_(NULL),
+    publish_(false) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -2180,6 +2184,7 @@ void StoreRequest::SharedCtor() {
   signed_public_key_ = const_cast< ::std::string*>(&_default_signed_public_key_);
   signed_request_ = const_cast< ::std::string*>(&_default_signed_request_);
   sender_info_ = NULL;
+  publish_ = false;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -2253,6 +2258,7 @@ void StoreRequest::Clear() {
     if (_has_bit(5)) {
       if (sender_info_ != NULL) sender_info_->::kad::ContactInfo::Clear();
     }
+    publish_ = false;
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
@@ -2332,6 +2338,20 @@ bool StoreRequest::MergePartialFromCodedStream(
        parse_sender_info:
         DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
              input, mutable_sender_info()));
+        if (input->ExpectTag(56)) goto parse_publish;
+        break;
+      }
+      
+      // required bool publish = 7;
+      case 7: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
+          goto handle_uninterpreted;
+        }
+       parse_publish:
+        DO_(::google::protobuf::internal::WireFormat::ReadBool(
+              input, &publish_));
+        _set_bit(6);
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -2390,6 +2410,11 @@ void StoreRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(6, this->sender_info(), output);
   }
   
+  // required bool publish = 7;
+  if (_has_bit(6)) {
+    ::google::protobuf::internal::WireFormat::WriteBool(7, this->publish(), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -2426,6 +2451,11 @@ void StoreRequest::SerializeWithCachedSizes(
   // required .kad.ContactInfo sender_info = 6;
   if (_has_bit(5)) {
     target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(6, this->sender_info(), target);
+  }
+  
+  // required bool publish = 7;
+  if (_has_bit(6)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBoolToArray(7, this->publish(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -2476,6 +2506,11 @@ int StoreRequest::ByteSize() const {
           this->sender_info());
     }
     
+    // required bool publish = 7;
+    if (has_publish()) {
+      total_size += 1 + 1;
+    }
+    
   }
   if (!unknown_fields().empty()) {
     total_size +=
@@ -2519,6 +2554,9 @@ void StoreRequest::MergeFrom(const StoreRequest& from) {
     if (from._has_bit(5)) {
       mutable_sender_info()->::kad::ContactInfo::MergeFrom(from.sender_info());
     }
+    if (from._has_bit(6)) {
+      set_publish(from.publish());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -2543,6 +2581,7 @@ void StoreRequest::Swap(StoreRequest* other) {
     std::swap(signed_public_key_, other->signed_public_key_);
     std::swap(signed_request_, other->signed_request_);
     std::swap(sender_info_, other->sender_info_);
+    std::swap(publish_, other->publish_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -2550,7 +2589,7 @@ void StoreRequest::Swap(StoreRequest* other) {
 }
 
 bool StoreRequest::IsInitialized() const {
-  if ((_has_bits_[0] & 0x0000003f) != 0x0000003f) return false;
+  if ((_has_bits_[0] & 0x0000007f) != 0x0000007f) return false;
   
   if (has_sender_info()) {
     if (!this->sender_info().IsInitialized()) return false;

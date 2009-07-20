@@ -70,12 +70,10 @@ namespace kad {
 
 class KNode {
  public:
-  KNode(const std::string &datastore_dir,
-        boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+  KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
         node_type type);
   // constructor used to set up parameters K, alpha, and beta for kademlia
-  KNode(const std::string &datastore_dir,
-        boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+  KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
         node_type type,
         const boost::uint16_t k,
         const int &alpha,
@@ -109,8 +107,8 @@ class KNode {
   bool GetContact(const std::string &id, Contact *contact);
   void FindValueLocal(const std::string &key,
                       std::vector<std::string> &values);
-  void StoreValueLocal(const std::string &key,
-                       const std::string &value);
+  bool StoreValueLocal(const std::string &key,
+      const std::string &value, const bool &publish);
   void GetRandomContacts(const int &count,
                          const std::vector<Contact> &exclude_contacts,
                          std::vector<Contact> *contacts);

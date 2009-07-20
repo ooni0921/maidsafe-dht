@@ -119,7 +119,7 @@ struct IterativeStoreValueData {
                             base::callback_func_type cb,
                             const std::string &pubkey,
                             const std::string &sigpubkey,
-                            const std::string &sigreq)
+                            const std::string &sigreq, const bool&publish_val)
                                 : closest_nodes(close_nodes),
                                   key(key),
                                   value(value),
@@ -131,7 +131,7 @@ struct IterativeStoreValueData {
                                   data_type(0),
                                   pub_key(pubkey),
                                   sig_pub_key(sigpubkey),
-                                  sig_req(sigreq) {}
+                                  sig_req(sigreq), publish(publish_val) {}
   std::vector<Contact> closest_nodes;
   std::string key;
   std::string value;
@@ -144,6 +144,7 @@ struct IterativeStoreValueData {
   std::string pub_key;
   std::string sig_pub_key;
   std::string sig_req;
+  bool publish;
 };
 
 struct FindCallbackArgs {
@@ -190,16 +191,15 @@ struct BootstrapArgs {
 
 class KNodeImpl {
  public:
-  KNodeImpl(const std::string &datastore_dir,
-            boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+  KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
             node_type type);
   // constructor used to set up parameters k, alpha, and beta for kademlia
-  KNodeImpl(const std::string &datastore_dir,
-            boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+  KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
             node_type type,
             const boost::uint16_t k,
             const int &alpha,
-            const int &beta);
+            const int &beta,
+            const int &refresh_time = kRefreshTime);
   ~KNodeImpl();
   // if node_id is "", it will be randomly generated
   void Join(const std::string &node_id,
@@ -229,8 +229,8 @@ class KNodeImpl {
   bool GetContact(const std::string &id, Contact *contact);
   void FindValueLocal(const std::string &key,
                       std::vector<std::string> &values);
-  void StoreValueLocal(const std::string &key,
-                       const std::string &value);
+  bool StoreValueLocal(const std::string &key,
+      const std::string &value, const bool &publish);
   void GetRandomContacts(const int &count,
                          const std::vector<Contact> &exclude_contacts,
                          std::vector<Contact> *contacts);
@@ -245,6 +245,10 @@ class KNodeImpl {
   inline std::string node_id() const {
     return (type_ == CLIENT) ? fake_client_node_id_ : node_id_;
   }
+  boost::uint32_t KeyLastRefreshTime(const std::string &key,
+      const std::string &value);
+  boost::uint32_t KeyExpireTime(const std::string &key,
+      const std::string &value);
   inline std::string host_ip() const { return host_ip_; }
   inline boost::uint16_t host_port() const { return host_port_; }
   inline std::string local_host_ip() const { return local_host_ip_; }

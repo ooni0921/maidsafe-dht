@@ -33,221 +33,41 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 
-DataStore::DataStore():db_(), is_open_(false) {
+DataStore::DataStore(const boost::uint32_t &t_refresh): datastore_(),
+    t_refresh_(t_refresh), mutex_() {
 }
 
 DataStore::~DataStore() {
-  if (is_open_)
-    Close();
+  datastore_.clear();
 }
 
-bool DataStore::Init(const std::string &file_name,
-    bool reuse_database) {
-  try {
-    // remove the old database file if it exists
-//     if ((!reuse_database)&&(boost::filesystem::exists(file_name))){
-//       remove(file_name_str.c_str());
-//     }
-    if (!boost::filesystem::exists(file_name)) {
-      // create a new one
-      db_.open(file_name.c_str());
-      // create table structure
-      db_.execDML("create table data(key blob, value blob, "
-        "last_published_time integer, original_published_time integer, "
-        "primary key(key, value));");
-    } else {  // open it
-      db_.open(file_name.c_str());
-      if (!reuse_database) {
-        // remove all data but status
-        CppSQLite3Statement stmt;
-        try {
-          std::string key1("status");
-          std::string key2("node_id");
-          CppSQLite3Binary blob_key1;
-          blob_key1.setBinary((const unsigned char*)key1.c_str(), key1.size());
-          CppSQLite3Binary blob_key2;
-          blob_key2.setBinary((const unsigned char*)key2.c_str(), key2.size());
-          stmt = db_.compileStatement(
-              "delete from data where key not in (?, ?);");
-          stmt.bind(1, (const char*)blob_key1.getEncoded());
-          stmt.bind(2, (const char*)blob_key2.getEncoded());
-          stmt.execDML();
-          stmt.reset();
-          stmt.finalize();
-        } catch(CppSQLite3Exception& e) {  // NOLINT
-          stmt.reset();
-          stmt.finalize();
-      #ifdef DEBUG
-          printf("%d : %s",  e.errorCode(), e.errorMessage());
-      #endif
-        }  // try statement
-      }  // reuse database
-    }
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-    return false;
-  }
-  is_open_ = true;
-  return true;
-}
-
-bool DataStore::Close() {
-  bool result = true;
-  try {
-    db_.close();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-    result = false;
-  }
-  is_open_ = false;
-  return result;
-}
-
-bool DataStore::Keys(std::vector<std::string> *keys) {
+bool DataStore::Keys(std::set<std::string> *keys) {
   keys->clear();
-  CppSQLite3Query qcpp;
-  try {
-    std::string s = "select distinct key from data;";
-    qcpp = db_.execQuery(s.c_str());
-    while (!qcpp.eof()) {
-      CppSQLite3Binary blob_key;
-      try {
-        blob_key.setEncoded((unsigned char*)
-          qcpp.fieldValue(static_cast<unsigned int>(0)));
-        keys->push_back(std::string((const char*)blob_key.getBinary(),
-            blob_key.getBinaryLength()));
-      } catch(const std::exception& e) {
-#ifdef DEBUG
-        printf("%s", e.what());
-#endif
-        qcpp.nextRow();
-        continue;
-      }
-      qcpp.nextRow();
-    }
-    qcpp.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-    qcpp.finalize();
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-    return false;
-  }
+  boost::mutex::scoped_lock guard(mutex_);
+  for (datastore::iterator it = datastore_.begin();
+       it !=  datastore_.end(); it++)
+    keys->insert(it->key_);
   return true;
-}
-
-inline bool DataStore::KeyValueExists(const std::string &key,
-    const std::string &value) {
-  bool result = false;
-  CppSQLite3Statement stmt;
-  CppSQLite3Query qcpp;
-  try {
-    CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(),
-        key.size());
-    CppSQLite3Binary blob_value;
-    blob_value.setBinary((const unsigned char*)value.c_str(),
-        value.size());
-    CppSQLite3Statement stmt = db_.compileStatement(
-        "select count(*) from data where key=? and value=?;");
-    stmt.bind(1, (const char*)blob_key.getEncoded());
-    stmt.bind(2, (const char*)blob_value.getEncoded());
-    qcpp = stmt.execQuery();
-    if (1 <= qcpp.getIntField(0))
-      result = true;
-    qcpp.finalize();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-    qcpp.finalize();
-    stmt.reset();
-    stmt.finalize();
-#ifdef DEBUG
-      printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-  }
-  return result;
-}
-
-inline bool DataStore::KeyExists(const std::string &key) {
-  bool result = false;
-  CppSQLite3Statement stmt;
-  CppSQLite3Query qcpp;
-  try {
-    CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(),
-        key.size());
-    stmt = db_.compileStatement(
-        "select * from data where key=?;");
-    stmt.bind(1, (const char*)blob_key.getEncoded());
-    qcpp = stmt.execQuery();
-    if (!qcpp.eof())
-      result = true;
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-      printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-  }
-  qcpp.finalize();
-  stmt.reset();
-  stmt.finalize();
-  return result;
 }
 
 bool DataStore::StoreItem(const std::string &key,
-    const std::string &value,
-    boost::uint32_t last_published_time,
-    boost::uint32_t original_published_time) {
-#ifdef DEBUG
-//  std::string hex_key("");
-//  base::encode_to_hex(key, &hex_key);
-//  printf("**************************************************\n");
-//  printf("Value to insert in vault db: %s\n", hex_key.c_str());
-//  printf("**************************************************\n");
-//  std::string s;
-//  std::cin >> s;
-#endif
-  // verify key&value
-  if ((key.size() == 0) || (value.size() == 0) || (last_published_time <= 0)
-      || (last_published_time <= 0)) {
+      const std::string &value, const boost::uint32_t &time_to_live,
+      const bool &publish) {
+  if (key == "" || value == "" || time_to_live <= 0)
     return false;
-  }
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(),
-        key.size());
-    CppSQLite3Binary blob_value;
-    blob_value.setBinary((const unsigned char*)value.c_str(),
-        value.size());
-    if (KeyValueExists(key, value)) {  // update last published time
-      stmt = db_.compileStatement(
-          "update data set last_published_time=? where key=? and value=?;");
-      stmt.bind(1, static_cast<boost::int32_t>(last_published_time));
-      stmt.bind(2, (const char*)blob_key.getEncoded());
-      stmt.bind(3, (const char*)blob_value.getEncoded());
-    } else {  // insert this key/value pair
-      stmt = db_.compileStatement(
-          "insert into data values(?, ?, ?, ?);");
-      stmt.bind(1, (const char*)blob_key.getEncoded());
-      stmt.bind(2, (const char*)blob_value.getEncoded());
-      stmt.bind(3, static_cast<boost::int32_t>(last_published_time));
-      stmt.bind(4, static_cast<boost::int32_t>(original_published_time));
+
+  boost::uint32_t time_stamp = base::get_epoch_time();
+  key_value_tuple tuple(key, value, time_stamp,
+      time_to_live+time_stamp);
+  boost::mutex::scoped_lock guard(mutex_);
+  std::pair<datastore::iterator, bool> p = datastore_.insert(tuple);
+
+  if (!p.second) {
+    if (!publish) {
+      // It is a refresh, do not update the expire time
+      tuple.expire_time_ = p.first->expire_time_;
     }
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-    stmt.reset();
-    stmt.finalize();
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-      return false;
+    datastore_.replace(p.first, tuple);
   }
   return true;
 }
@@ -255,194 +75,84 @@ bool DataStore::StoreItem(const std::string &key,
 bool DataStore::LoadItem(const std::string &key,
     std::vector<std::string> &values) {
   values.clear();
-  CppSQLite3Statement stmt;
-  CppSQLite3Query qcpp;
-  try {
-    CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(), key.size());
-    stmt = db_.compileStatement("select value, last_published_time from data "
-      "where key=? order by last_published_time;");
-    stmt.bind(1, (const char*)blob_key.getEncoded());
-    qcpp = stmt.execQuery();
-    while (!qcpp.eof()) {
-      try {
-        CppSQLite3Binary blob_value;
-        blob_value.setEncoded((unsigned char*)
-          qcpp.fieldValue(static_cast<unsigned int>(0)));
-        values.push_back(std::string((const char*)blob_value.getBinary(),
-            blob_value.getBinaryLength()));
-      } catch(const std::exception& e) {
-        qcpp.nextRow();
-        continue;
-      }
-      qcpp.nextRow();
-    }
-    qcpp.finalize();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-    qcpp.finalize();
-    stmt.reset();
-    stmt.finalize();
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-      return false;
-  }
-  return true;
-}
-
-bool DataStore::DeleteKey(const std::string &key) {
-  if (!KeyExists(key))
+  boost::mutex::scoped_lock guard(mutex_);
+  std::pair<datastore::iterator, datastore::iterator> p =
+      datastore_.equal_range(boost::make_tuple(key));
+  if (p.first == p.second)
     return false;
-  CppSQLite3Statement stmt;
-  try {
-    CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(), key.size());
-    stmt = db_.compileStatement("delete from data where key=?;");
-    stmt.bind(1, (const char*)blob_key.getEncoded());
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-    stmt.reset();
-    stmt.finalize();
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-    return false;
+  while (p.first != p.second) {
+    values.push_back(p.first->value_);
+    p.first++;
   }
   return true;
 }
 
 bool DataStore::DeleteItem(const std::string &key,
     const std::string &value) {
-  bool result = false;
-  try {
-    CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(),
-        key.size());
-    CppSQLite3Binary blob_value;
-    blob_value.setBinary((const unsigned char*)value.c_str(),
-        value.size());
-    CppSQLite3Statement stmt;
-    stmt = db_.compileStatement(
-        "delete from data where key=? and value=?;");
-    stmt.bind(1, (const char*)blob_key.getEncoded());
-    stmt.bind(2, (const char*)blob_value.getEncoded());
-    int n = stmt.execDML();
-    if (n > 0)
-      result = true;
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-    return result;
-  }
-  return result;
-}
-
-bool DataStore::DeleteValue(const std::string &value) {
-  bool result = false;
-  try {
-    CppSQLite3Binary blob_value;
-    blob_value.setBinary((const unsigned char*)value.c_str(),
-        value.size());
-    CppSQLite3Statement stmt;
-    stmt = db_.compileStatement(\
-        "delete from data where value=?;");
-    stmt.bind(1, (const char*)blob_value.getEncoded());
-    int n = stmt.execDML();
-    if (n > 0)
-      result = true;
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-    return result;
-  }
-  return result;
-}
-
-boost::uint32_t DataStore::DeleteExpiredValues() {
-  CppSQLite3Statement stmt;
-  try {
-    boost::uint32_t now = base::get_epoch_time();
-    stmt =
-      db_.compileStatement("delete from data where last_published_time < ?;");
-    stmt.bind(1, static_cast<boost::int32_t>(now -kExpireTime));
-    stmt.execDML();
-    stmt.reset();
-    stmt.finalize();
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-    stmt.reset();
-    stmt.finalize();
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
+  datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
+  boost::mutex::scoped_lock guard(mutex_);
+  if (it == datastore_.end())
     return false;
-  }
+  datastore_.erase(it);
   return true;
 }
 
-boost::uint32_t DataStore::LastPublishedTime(const std::string &key,
-    const std::string &value) {
-  boost::uint32_t result = -1;
-  CppSQLite3Statement stmt;
-  CppSQLite3Query qcpp;
-  try {
-    CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(), key.size());
-    CppSQLite3Binary blob_value;
-    blob_value.setBinary((const unsigned char*)value.c_str(), value.size());
-    stmt = db_.compileStatement(
-        "select last_published_time from data where key=? and value=?;");
-    stmt.bind(1, (const char*)blob_key.getEncoded());
-    stmt.bind(2, (const char*)blob_value.getEncoded());
-    qcpp = stmt.execQuery();
-    if (!qcpp.eof())
-      result = static_cast<boost::uint32_t>(qcpp.getIntField(0));
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-  }
-  qcpp.finalize();
-  stmt.reset();
-  stmt.finalize();
-  return result;
+bool DataStore::DeleteKey(const std::string &key) {
+  boost::mutex::scoped_lock guard(mutex_);
+  std::pair<datastore::iterator, datastore::iterator> p =
+      datastore_.equal_range(boost::make_tuple(key));
+  if (p.first == p.second)
+    return false;
+  datastore_.erase(p.first, p.second);
+  return true;
 }
 
-boost::uint32_t DataStore::OriginalPublishedTime(const std::string &key,
-    const std::string &value) {
-  boost::uint32_t result = -1;
-  CppSQLite3Statement stmt;
-  CppSQLite3Query qcpp;
-  try {
-    CppSQLite3Binary blob_key;
-    blob_key.setBinary((const unsigned char*)key.c_str(), key.size());
-    CppSQLite3Binary blob_value;
-    blob_value.setBinary((const unsigned char*)value.c_str(), value.size());
-    stmt = db_.compileStatement(
-        "select original_published_time from data where key=? and value=?;");
-    stmt.bind(1, (const char*)blob_key.getEncoded());
-    stmt.bind(2, (const char*)blob_value.getEncoded());
-    qcpp = stmt.execQuery();
-    if (!qcpp.eof())
-      result = static_cast<boost::uint32_t>(qcpp.getIntField(0));
-  } catch(CppSQLite3Exception& e) {  // NOLINT
-#ifdef DEBUG
-    printf("%d : %s", e.errorCode(), e.errorMessage());
-#endif
-  }
-  qcpp.finalize();
-  stmt.reset();
-  stmt.finalize();
-  return result;
+boost::uint32_t DataStore::LastRefreshTime(const std::string &key,
+      const std::string &value) {
+  boost::mutex::scoped_lock guard(mutex_);
+  datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
+  if (it == datastore_.end())
+    return 0;
+  return it->last_refresh_time_;
 }
 
+boost::uint32_t DataStore::ExpireTime(const std::string &key,
+      const std::string &value) {
+  boost::mutex::scoped_lock guard(mutex_);
+  datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
+  if (it == datastore_.end())
+    return 0;
+  return it->expire_time_;
+}
+
+std::vector< std::pair<std::string, std::string> >
+    DataStore::ValuesToRefresh() {
+  std::vector< std::pair<std::string, std::string> > values;
+  datastore::index<kad::t_last_refresh_time>::type::iterator it, up_limit;
+  boost::mutex::scoped_lock guard(mutex_);
+  datastore::index<kad::t_last_refresh_time>::type& indx =
+      datastore_.get<kad::t_last_refresh_time>();
+  boost::uint32_t time_limit = base::get_epoch_time() - t_refresh_;
+  up_limit = indx.upper_bound(time_limit);
+  for (it = indx.begin();
+       it != up_limit; it++) {
+    values.push_back(std::pair<std::string, std::string>(it->key_, it->value_));
+  }
+  return values;
+}
+
+void DataStore::DeleteExpiredValues() {
+  datastore::index<kad::t_expire_time>::type::iterator up_limit, it;
+  boost::mutex::scoped_lock guard(mutex_);
+  datastore::index<kad::t_expire_time>::type& indx =
+      datastore_.get<kad::t_expire_time>();
+  boost::uint32_t now = base::get_epoch_time();
+  up_limit = indx.lower_bound(now);
+  indx.erase(indx.begin(), up_limit);
+}
+
+void DataStore::Clear() {
+  boost::mutex::scoped_lock guard(mutex_);
+  datastore_.clear();
+}
 }  // namespace kad
