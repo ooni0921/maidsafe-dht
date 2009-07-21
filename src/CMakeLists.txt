@@ -145,7 +145,7 @@ SET_TARGET_PROPERTIES(maidsafe-dht PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACR
 IF (APPLE)
 	SET(SYS_LIB 
 boost_thread-xgcc40-mt-${BOOST_VERSION} 
-protobuf 
+/usr/lib/libprotobuf.a 
 boost_system-xgcc40-mt-${BOOST_VERSION}
 boost_filesystem-xgcc40-mt-${BOOST_VERSION}
 boost_regex-xgcc40-mt-${BOOST_VERSION}
