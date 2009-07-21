@@ -1,10 +1,20 @@
 cmake_minimum_required(VERSION 2.6)
 #this needs to be at the top of the file
-
 message ("#############################################")
 IF(NOT CMAKE_BUILD_TYPE)
    SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
+IF(NOT BOOST_INCLUDES)
+	IF(WIN32)
+   SET(BOOST_INCLUDES "c:/usr/include/boost/boost-1_37" CACHE STRING "Set location of BOOST headers ie /usr/include/boost-1_37/" FORCE)
+	ELSE()
+   SET(BOOST_INCLUDES "/usr/include/boost/boost-1_37" CACHE STRING "Set location of BOOST headers ie /usr/include/boost_1.37/" FORCE)
+	ENDIF()
+ENDIF(NOT BOOST_INCLUDES)
+
+IF(NOT BOOST_VERSION)
+   SET(BOOST_VERSION "1_37" CACHE STRING "Set boost version i.e. 1_37 (use an underscore)" FORCE)
+ENDIF(NOT BOOST_VERSION)
 
 project (maidsafe-dht)
 
@@ -51,7 +61,7 @@ IF (WIN32)
 	link_directories(c:/MinGW/lib/ c:/MinGW/mingw32/lib/ c:/usr/lib/ ${PROJECT_BINARY_DIR}/Debug/lib)
 	ENDIF(MSVC)
 ENDIF(WIN32)
-INCLUDE_DIRECTORIES(${maidsafe-dht_SOURCE_DIR} ${INCLUDE_DIR} )
+INCLUDE_DIRECTORIES(${maidsafe-dht_SOURCE_DIR} ${INCLUDE_DIR} ${BOOST_INCLUDES})
 #########################################################################################################
 #SET UP ALL FILES AS GLOBS ##############################################################################
 #########################################################################################################
@@ -124,22 +134,7 @@ add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${MAIDSAFE_DIR})
 add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${MAIDSAFE_DIR})
 add_executable(TESTupnp ${T_UPNP_DIR} ${MAIDSAFE_DIR})
 #######################################################################################
-#Statically compile the pdlibs - then link applications/libraries to it               #
 #######################################################################################
-#add_library(PDbaselib STATIC ${M_BASE_DIR} ${MAIDSAFE_DIR})
-#add_library(PDkademlialib STATIC ${M_KADEMLIA_DIR} ${MAIDSAFE_DIR})
-#add_library(PDtransportlib STATIC ${M_TRANSPORT_DIR} ${MAIDSAFE_DIR})
-#add_library(PDpbmsgslib STATIC  ${M_PROTOBUF_DIR} ${MAIDSAFE_DIR})
-#add_library(PDrpcprotocollib STATIC  ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR})
-#add_library(PDTESTrpcprotocollib STATIC  ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR})
-#add_library(PDupnplib STATIC ${M_UPNP_DIR} ${MAIDSAFE_DIR})
-##add_library(CRYPTOPP STATIC ${CRYPTOPP})
-##IF(WIN32)
-##SET_TARGET_PROPERTIES(CRYPTOPP  PROPERTIES COMPILE_FLAGS "-w -DNDEBUG" )
-# windows cant handle this library in debug mode :-( 
-##ELSE()
-##SET_TARGET_PROPERTIES(CRYPTOPP  PROPERTIES COMPILE_FLAGS "-w " )
-##ENDIF()
 add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP} ) 
 ##########################################################################################
 #Set up some extra compiler and linker flags for the tests mainly                        #
@@ -148,27 +143,24 @@ SET_TARGET_PROPERTIES(maidsafe-dht PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACR
 ##########################################################################################
 #BUILDS
 IF (APPLE)
-# Maidsafe Standard:  Boost 1_37 Library, xgcc40 compiler
 	SET(SYS_LIB 
-boost_thread-xgcc40-mt-1_37 
-sqlite3 
+boost_thread-xgcc40-mt-${BOOST_VERSION} 
 protobuf 
-boost_system-xgcc40-mt-1_37 
-boost_filesystem-xgcc40-mt-1_37 
-boost_regex-xgcc40-mt-1_37 
-boost_date_time-xgcc40-mt-1_37 
+boost_system-xgcc40-mt-${BOOST_VERSION}
+boost_filesystem-xgcc40-mt-${BOOST_VERSION}
+boost_regex-xgcc40-mt-${BOOST_VERSION}
+boost_date_time-xgcc40-mt-${BOOST_VERSION}
 dl 
 pthread
 )
 ELSEIF (UNIX AND NOT APPLE)
 	SET(SYS_LIB
-        /usr/lib/libboost_thread-gcc43-mt.a
-        /usr/lib/libsqlite3.a
+        /usr/lib/libboost_thread-gcc43-mt-${BOOST_VERSION}.a
         /usr/lib/libprotobuf.a
-        /usr/lib/libboost_system-gcc43-mt.a
-        /usr/lib/libboost_filesystem-gcc43-mt.a
-        /usr/lib/libboost_regex-gcc43-mt.a
-        /usr/lib/libboost_date_time-gcc43-mt.a
+        /usr/lib/libboost_system-gcc43-mt-${BOOST_VERSION}.a
+        /usr/lib/libboost_filesystem-gcc43-mt-${BOOST_VERSION}.a
+        /usr/lib/libboost_regex-gcc43-mt-${BOOST_VERSION}.a
+        /usr/lib/libboost_date_time-gcc43-mt-${BOOST_VERSION}.a
         rt
         c
         m
@@ -177,7 +169,7 @@ ELSEIF (UNIX AND NOT APPLE)
 		)
 ELSEIF (WIN32)
 	IF(MSVC)
-		set(SYS_LIB c:/lib/libprotobuf.lib c:/lib/SQLite_Static_Library.lib  c:/lib/libboost_system-vc90-mt-1_36.lib c:/lib/libboost_filesystem-vc90-mt-1_36.lib  c:/lib/libboost_regex-vc90-mt-1_36.lib  c:/lib/libboost_thread-vc90-mt-1_36.lib c:/lib/libboost_date_time-vc90-mt-1_36.lib c:/lib/WSock32.lib c:/lib/IPHlpApi.lib)
+		set(SYS_LIB c:/lib/libprotobuf.lib c:/lib/libboost_system-vc90-mt-1_36.lib c:/lib/libboost_filesystem-vc90-mt-1_36.lib  c:/lib/libboost_regex-vc90-mt-1_36.lib  c:/lib/libboost_thread-vc90-mt-1_36.lib c:/lib/libboost_date_time-vc90-mt-1_36.lib c:/lib/WSock32.lib c:/lib/IPHlpApi.lib)
 	ELSE(MSVC)
 		SET(SYS_LIB
 		 -ladvapi32 
@@ -185,28 +177,23 @@ ELSEIF (WIN32)
 		 -mi386pe
 		-lstdc++
 		-lws2_32
-		c:/usr/lib/libboost_system-mgw43-mt-1_37.lib
-		c:/usr/lib/libboost_filesystem-mgw43-mt-1_37.lib
-		c:/usr/lib/libboost_regex-mgw43-mt-1_37.lib
-		c:/usr/lib/libboost_thread-mgw43-mt-1_37.lib
-		c:/usr/lib/libboost_date_time-mgw43-mt-1_37.lib
+		c:/usr/lib/libboost_system-mgw43-mt-${BOOST_VERSION}.lib
+		c:/usr/lib/libboost_filesystem-mgw43-mt-${BOOST_VERSION}.lib
+		c:/usr/lib/libboost_regex-mgw43-mt-${BOOST_VERSION}.lib
+		c:/usr/lib/libboost_thread-mgw43-mt-${BOOST_VERSION}.lib
+		c:/usr/lib/libboost_date_time-mgw43-mt-${BOOST_VERSION}.lib
 		c:/usr/lib/dokan.lib
-		c:/usr/lib/libprotobuf.a c:/usr/lib/libsqlite3.a -liphlpapi
+		c:/usr/lib/libprotobuf.a  -liphlpapi
 		)
 	ENDIF(MSVC)
 ENDIF(APPLE)
-#add_library(maidsafe-dht STATIC  ${MAIDSAFE_DIR}) 
-#SET_TARGET_PROPERTIES(maidsafe-dht PROPERTIES LINKER_LANGUAGE CXX)
-#SET(CMAKE_C++_CREATE_STATIC_LIBRARY 1)
-TARGET_LINK_LIBRARIES(TESTbase  maidsafe-dht sqlite3 protobuf  gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTbase  maidsafe-dht  protobuf  gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTtransport maidsafe-dht gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe-dht gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTkademlia maidsafe-dht gtest  ${SYS_LIB} )
-#TARGET_LINK_LIBRARIES(TESTfunctionalkademlia maidsafe-dht gtest  ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTknode maidsafe-dht  gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp maidsafe-dht gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(maidsafe-dht  ${SYS_LIB} )
-#TARGET_LINK_LIBRARIES(PDupnplib ${SYS_LIB})
 
 
 ##################################################################################
