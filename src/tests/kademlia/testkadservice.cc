@@ -91,8 +91,10 @@ class KadServicesTest: public testing::Test {
     crypto_.set_symm_algorithm(crypto::AES_256);
     std::string datastore("/datastore");
     datastore = test_dir_ + datastore;
+    std::string priv_key, pub_key;
+    CreateRSAKeys(&pub_key, &priv_key);
     knodeimpl_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl(channel_manager_, VAULT));
+        (new KNodeImpl(channel_manager_, VAULT, priv_key, pub_key));
     std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
@@ -503,6 +505,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   store_request.set_signed_public_key(signed_public_key);
   store_request.set_signed_request(signed_request);
   store_request.set_publish(true);
+  store_request.set_ttl(3600*24);
   ContactInfo *sender_info = store_request.mutable_sender_info();
   *sender_info = contact_;
   StoreResponse store_response;
@@ -554,6 +557,61 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   EXPECT_EQ(value1, values[0]);
   EXPECT_EQ(value2, values[2]);
   EXPECT_EQ(value3, values[1]);
+}
+
+TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
+  std::string value("value4");
+  std::string key = crypto_.Hash(value, "", crypto::STRING_STRING, false);
+  rpcprotocol::Controller controller;
+  StoreRequest store_request;
+  StoreResponse store_response;
+  store_request.set_key(key);
+  store_request.set_value(value);
+  store_request.set_ttl(24*3600);
+  store_request.set_publish(true);
+  ContactInfo *sender_info = store_request.mutable_sender_info();
+  *sender_info = contact_;
+  Callback cb_obj;
+  google::protobuf::Closure *done1 = google::protobuf::NewCallback<Callback>
+      (&cb_obj, &Callback::CallbackFunction);
+  service_->Store(&controller, &store_request, &store_response, done1);
+  EXPECT_TRUE(store_response.IsInitialized());
+  EXPECT_EQ(kRpcResultFailure, store_response.result());
+  EXPECT_EQ(node_id_, store_response.node_id());
+  store_response.Clear();
+  std::vector<std::string> values;
+  EXPECT_FALSE(datastore_->LoadItem(key, values));
+
+  std::string public_key, private_key, signed_public_key, signed_request;
+  CreateRSAKeys(&public_key, &private_key);
+  CreateSignedRequest(public_key, private_key, key, &signed_public_key,
+      &signed_request);
+  store_request.set_public_key(public_key);
+  store_request.set_signed_public_key(signed_public_key);
+  store_request.set_signed_request(signed_request);
+  google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
+      (&cb_obj, &Callback::CallbackFunction);
+  service_->Store(&controller, &store_request, &store_response, done2);
+  EXPECT_TRUE(store_response.IsInitialized());
+  EXPECT_EQ(kRpcResultSuccess, store_response.result());
+  EXPECT_EQ(node_id_, store_response.node_id());
+  values.clear();
+  EXPECT_TRUE(datastore_->LoadItem(key, values));
+  ASSERT_EQ(1, values.size());
+  EXPECT_EQ(value, values[0]);
+
+  store_request.clear_value();
+  store_request.set_value("other value");
+  google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
+      (&cb_obj, &Callback::CallbackFunction);
+  service_->Store(&controller, &store_request, &store_response, done3);
+  EXPECT_TRUE(store_response.IsInitialized());
+  EXPECT_EQ(kRpcResultFailure, store_response.result());
+  EXPECT_EQ(node_id_, store_response.node_id());
+  values.clear();
+  EXPECT_TRUE(datastore_->LoadItem(key, values));
+  ASSERT_EQ(1, values.size());
+  ASSERT_EQ(value, values[0]);
 }
 
 TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {

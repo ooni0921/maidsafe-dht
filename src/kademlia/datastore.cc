@@ -34,7 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 
 DataStore::DataStore(const boost::uint32_t &t_refresh): datastore_(),
-    t_refresh_(t_refresh), mutex_() {
+    t_refresh_(0), mutex_() {
+  t_refresh_ = t_refresh + (base::random_32bit_uinteger() % 5);
 }
 
 DataStore::~DataStore() {
@@ -58,7 +59,7 @@ bool DataStore::StoreItem(const std::string &key,
 
   boost::uint32_t time_stamp = base::get_epoch_time();
   key_value_tuple tuple(key, value, time_stamp,
-      time_to_live+time_stamp);
+      time_to_live+time_stamp, time_to_live);
   boost::mutex::scoped_lock guard(mutex_);
   std::pair<datastore::iterator, bool> p = datastore_.insert(tuple);
 
@@ -66,6 +67,7 @@ bool DataStore::StoreItem(const std::string &key,
     if (!publish) {
       // It is a refresh, do not update the expire time
       tuple.expire_time_ = p.first->expire_time_;
+      tuple.ttl_ = p.first->ttl_;
     }
     datastore_.replace(p.first, tuple);
   }
@@ -125,9 +127,8 @@ boost::uint32_t DataStore::ExpireTime(const std::string &key,
   return it->expire_time_;
 }
 
-std::vector< std::pair<std::string, std::string> >
-    DataStore::ValuesToRefresh() {
-  std::vector< std::pair<std::string, std::string> > values;
+std::vector<refresh_value> DataStore::ValuesToRefresh() {
+  std::vector<refresh_value> values;
   datastore::index<kad::t_last_refresh_time>::type::iterator it, up_limit;
   boost::mutex::scoped_lock guard(mutex_);
   datastore::index<kad::t_last_refresh_time>::type& indx =
@@ -136,7 +137,7 @@ std::vector< std::pair<std::string, std::string> >
   up_limit = indx.upper_bound(time_limit);
   for (it = indx.begin();
        it != up_limit; it++) {
-    values.push_back(std::pair<std::string, std::string>(it->key_, it->value_));
+    values.push_back(refresh_value(it->key_, it->value_, it->ttl_));
   }
   return values;
 }
@@ -154,5 +155,18 @@ void DataStore::DeleteExpiredValues() {
 void DataStore::Clear() {
   boost::mutex::scoped_lock guard(mutex_);
   datastore_.clear();
+}
+
+boost::uint32_t DataStore::TimeToLive(const std::string &key,
+      const std::string &value) {
+  boost::mutex::scoped_lock guard(mutex_);
+  datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
+  if (it == datastore_.end())
+    return 0;
+  return it->ttl_;
+}
+
+boost::uint32_t DataStore::t_refresh() const {
+  return t_refresh_;
 }
 }  // namespace kad

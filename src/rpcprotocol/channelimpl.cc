@@ -43,31 +43,26 @@ struct RpcInfo {
 };
 
 ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager)
-        : ptransport_(channelmanager->ptransport()),
-          pmanager_(channelmanager),
-          pservice_(0),
-          ip_(""),
-          port_(0),
-          local_(false) {}
+        : ptransport_(channelmanager->ptransport()), pmanager_(channelmanager),
+          pservice_(0), ip_(""), port_(0), local_(false), id_(0) {
+  pmanager_->AddChannelId(&id_);
+}
 
 ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
-    const std::string &ip,
-    const boost::uint16_t &port,
-    const bool &local)
-        : ptransport_(channelmanager->ptransport()),
-          pmanager_(channelmanager),
-          pservice_(0),
-          ip_(""),
-          port_(port),
-          local_(local) {
+    const std::string &ip, const boost::uint16_t &port, const bool &local)
+    : ptransport_(channelmanager->ptransport()), pmanager_(channelmanager),
+      pservice_(0), ip_(""), port_(port), local_(local), id_(0) {
   // To send we need ip in decimal dotted format
   if (ip.size() == 4)
     ip_ = base::inet_btoa(ip);
   else
     ip_ = ip;
+  pmanager_->AddChannelId(&id_);
 }
 
-ChannelImpl::~ChannelImpl() {}
+ChannelImpl::~ChannelImpl() {
+  pmanager_->RemoveChannelId(id_);
+}
 
 void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
                              google::protobuf::RpcController *controller,

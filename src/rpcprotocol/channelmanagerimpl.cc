@@ -33,19 +33,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rpcprotocol {
 
 ChannelManagerImpl::ChannelManagerImpl()
-    : ptransport_(new transport::Transport()),
-      is_started(false),
-      ptimer_(new base::CallLaterTimer()),
-      req_mutex_(),
-      channels_mutex_(),
-      id_mutex_(),
-      pend_timeout_mutex_(),
-      current_request_id_(0),
-      channels_(),
-      pending_req_(),
-      external_port_(0),
-      external_ip_(""),
-      pending_timeout_() {}
+    : ptransport_(new transport::Transport()), is_started(false),
+      ptimer_(new base::CallLaterTimer()), req_mutex_(), channels_mutex_(),
+      id_mutex_(), pend_timeout_mutex_(), channels_ids_mutex_(),
+      current_request_id_(0), current_channel_id_(0), channels_(),
+      pending_req_(), external_port_(0), external_ip_(""), pending_timeout_(),
+      channels_ids_(), delete_channels_cond_() {}
 
 ChannelManagerImpl::~ChannelManagerImpl() {
   if (is_started) {
@@ -54,6 +47,24 @@ ChannelManagerImpl::~ChannelManagerImpl() {
   channels_.clear();
   pending_req_.clear();
   pending_timeout_.clear();
+  {
+    boost::mutex::scoped_lock lock(channels_ids_mutex_);
+    while (!channels_ids_.empty()) {
+      delete_channels_cond_.wait(lock);
+    }
+  }
+}
+
+void ChannelManagerImpl::AddChannelId(boost::uint32_t *id) {
+  boost::mutex::scoped_lock guard(channels_ids_mutex_);
+  current_channel_id_ = base::generate_next_transaction_id(current_channel_id_);
+  channels_ids_.insert(current_channel_id_);
+  *id = current_channel_id_;
+}
+void ChannelManagerImpl::RemoveChannelId(const boost::uint32_t &id) {
+  boost::mutex::scoped_lock guard(channels_ids_mutex_);
+  channels_ids_.erase(id);
+  delete_channels_cond_.notify_all();
 }
 
 void ChannelManagerImpl::AddPendingRequest(const boost::uint32_t &req_id,
@@ -132,14 +143,7 @@ int ChannelManagerImpl::StopTransport() {
   is_started = false;
   pending_timeout_.clear();
   ClearCallLaters();
-#ifdef VERBOSE_DEBUG
-  printf("\tIn ChannelManager::StopTransport() on port ");
-  printf("%i, before ptransport_->Stop().\n", external_port_);
-#endif
   ptransport_->Stop();
-#ifdef VERBOSE_DEBUG
-  printf("\tIn ChannelManager::StopTransport(), after ptransport_->Stop().\n");
-#endif
   base::PDRoutingTable::getInstance()[base::itos(external_port_)]->Clear();
   return 1;
 }

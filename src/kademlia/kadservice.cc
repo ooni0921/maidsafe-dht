@@ -190,8 +190,7 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
 //    printf("**************************************************\n");
 #endif
     std::vector<std::string> values_str;
-    knode_->FindValueLocal(key, values_str);
-    if (values_str.size()>0) {
+    if (knode_->FindValueLocal(key, values_str)) {
       for (int i = 0; i < static_cast<int>(values_str.size()); i++) {
         response->add_values(values_str[i]);
       }
@@ -213,34 +212,38 @@ void KadService::Store(google::protobuf::RpcController *,
                        StoreResponse *response,
                        google::protobuf::Closure *done) {
   Contact sender;
-  if (!request->IsInitialized() || !request->has_value()) {
-    if (!request->IsInitialized())
-    printf("not initialize\n");
-    else
-    printf("not has value\n");
+  if (!CheckStoreRequest(request, &sender)) {
     response->set_result(kRpcResultFailure);
-  } else if (GetSender(request->sender_info(), &sender)) {
-      if (!ValidateSignedRequest(request->public_key(),
-          request->signed_public_key(),
-          request->signed_request(), request->key())) {
+  } else if (knode_->HasRSAKeys()) {
+    if (!ValidateSignedRequest(request->public_key(),
+                               request->signed_public_key(),
+                               request->signed_request(), request->key())) {
 #ifdef DEBUG
-        printf("failed to validate request for kad value\n");
+      printf("failed to validate request for kad value\n");
 #endif
-        response->set_result(kRpcResultFailure);
+      response->set_result(kRpcResultFailure);
+    } else {
+      std::vector<std::string> curr_values;
+      knode_->FindValueLocal(request->key(), curr_values);
+      if (curr_values.size() != 1) {
+        StoreValueLocal(request, sender, response);
       } else {
-        if (knode_->StoreValueLocal(request->key(), request->value(),
-            request->publish())) {
-          response->set_result(kRpcResultSuccess);
-#ifdef DEBUG
-          printf("KadService::Store: StoreValueLocal\n");
-#endif
-          knode_->AddContact(sender, false);
+        crypto::Crypto checker;
+        checker.set_hash_algorithm(crypto::SHA_512);
+        std::string hash_currvalue = checker.Hash(curr_values[0], "",
+            crypto::STRING_STRING, false);
+        if (hash_currvalue == request->key() &&
+            hash_currvalue == request->value()) {
+          StoreValueLocal(request, sender, response);
+        } else if (hash_currvalue != request->key()) {
+          StoreValueLocal(request, sender, response);
         } else {
           response->set_result(kRpcResultFailure);
         }
       }
+    }
   } else {
-    response->set_result(kRpcResultFailure);
+    StoreValueLocal(request, sender, response);
   }
   response->set_node_id(knode_->node_id());
   done->Run();
@@ -531,4 +534,27 @@ void KadService::SendNatDetection(struct NatDetectionData data) {
                                     done);
   }
 }
+
+bool KadService::CheckStoreRequest(const StoreRequest *request,
+      Contact *sender) {
+  if (!request->IsInitialized())
+    return false;
+  if (knode_->HasRSAKeys())
+    if (!request->has_public_key() || !request->has_signed_public_key() ||
+        !request->has_signed_request())
+      return false;
+  return GetSender(request->sender_info(), sender);
+}
+
+void KadService::StoreValueLocal(const StoreRequest *request, Contact sender,
+      StoreResponse *response) {
+  if (knode_->StoreValueLocal(request->key(), request->value(),
+      request->publish(), request->ttl())) {
+    response->set_result(kRpcResultSuccess);
+    knode_->AddContact(sender, false);
+  } else {
+    response->set_result(kRpcResultFailure);
+  }
+}
+
 }  // namespace kad

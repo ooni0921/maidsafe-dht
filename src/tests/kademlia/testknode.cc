@@ -137,6 +137,8 @@ class Env: public testing::Environment {
       printf("%s\n", e.what());
     }
     // setup the nodes without starting them
+    std::string priv_key, pub_key;
+    create_rsakeys(&pub_key, &priv_key);
     for (int  i = 0; i < kNetworkSize; ++i) {
       boost::shared_ptr<rpcprotocol::ChannelManager>
           channel_manager_local_(new rpcprotocol::ChannelManager());
@@ -152,7 +154,8 @@ class Env: public testing::Environment {
                                       kad::VAULT,
                                       kTestK,
                                       kad::kAlpha,
-                                      kad::kBeta));
+                                      kad::kBeta, kad::kRefreshTime,
+                                      priv_key, pub_key));
       EXPECT_EQ(0, channel_managers_[i]->StartTransport(0,
           boost::bind(&kad::KNode::HandleDeadRendezvousServer,
           knode_local_.get(), _1)));
@@ -325,12 +328,15 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     std::ios::out | std::ios::trunc | std::ios::binary);
   ASSERT_TRUE(conf.SerializeToOstream(&output2));
   output2.close();
+  std::string privkey, pubkey;
+  create_rsakeys(&pubkey, &privkey);
   boost::scoped_ptr<kad::KNode> knode_local_(new kad::KNode(
                                              channel_manager_local_,
                                              kad::CLIENT,
                                              kTestK,
                                              kad::kAlpha,
-                                             kad::kBeta));
+                                             kad::kBeta, kad::kRefreshTime,
+                                             privkey, pubkey));
   EXPECT_EQ(0, channel_manager_local_->StartTransport(0,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knode_local_.get(), _1)));
@@ -349,7 +355,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   std::string pub_key(""), priv_key(""), sig_pub_key(""), sig_req("");
   create_rsakeys(&pub_key, &priv_key);
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
-  knode_local_->StoreValue(key, value, pub_key, sig_pub_key, sig_req,
+  knode_local_->StoreValue(key, value, pub_key, sig_pub_key, sig_req, 24*3600,
       boost::bind(&StoreValueCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
@@ -486,7 +492,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
   std::string pub_key(""), priv_key(""), sig_pub_key(""), sig_req("");
   create_rsakeys(&pub_key, &priv_key);
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
-  knodes_[7]->StoreValue(key, value, pub_key, sig_pub_key, sig_req,
+  knodes_[7]->StoreValue(key, value, pub_key, sig_pub_key, sig_req, 24*3600,
       boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
@@ -562,7 +568,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   std::string pub_key, priv_key, sig_pub_key, sig_req;
   create_rsakeys(&pub_key, &priv_key);
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
-  knodes_[10]->StoreValue(key, value, pub_key, sig_pub_key, sig_req,
+  knodes_[10]->StoreValue(key, value, pub_key, sig_pub_key, sig_req, 24*3600,
       boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
@@ -718,7 +724,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
   std::string pub_key(""), priv_key(""), sig_pub_key(""), sig_req("");
   create_rsakeys(&pub_key, &priv_key);
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
-  knodes_[8]->StoreValue(key, value, pub_key, sig_pub_key, sig_req,
+  knodes_[8]->StoreValue(key, value, pub_key, sig_pub_key, sig_req, 24*3600,
       boost::bind(&FakeCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
@@ -870,14 +876,14 @@ TEST_F(KNodeTest, FUNC_KAD_StoreWithInvalidRequest) {
   create_rsakeys(&pub_key, &priv_key);
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
   knodes_[7]->StoreValue(key, value, pub_key, sig_pub_key, "bad request",
-      boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+      24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultFailure, cb_.result());
   std::string new_pub_key(""), new_priv_key("");
   create_rsakeys(&new_pub_key, &new_priv_key);
   ASSERT_NE(pub_key, new_pub_key);
   cb_.Reset();
-  knodes_[7]->StoreValue(key, value, new_pub_key, sig_pub_key, sig_req,
+  knodes_[7]->StoreValue(key, value, new_pub_key, sig_pub_key, sig_req, 24*3600,
       boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultFailure, cb_.result());
@@ -977,8 +983,10 @@ TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
 
   boost::shared_ptr<rpcprotocol::ChannelManager> ch_man(
       new rpcprotocol::ChannelManager());
+  std::string privkey, pubkey;
+  create_rsakeys(&pubkey, &privkey);
   boost::scoped_ptr<kad::KNode> node(new kad::KNode(ch_man, kad::VAULT, kTestK,
-      kad::kAlpha, kad::kBeta));
+      kad::kAlpha, kad::kBeta, kad::kRefreshTime, privkey, pubkey));
   EXPECT_EQ(0, ch_man->StartTransport(0,
             boost::bind(&kad::KNode::HandleDeadRendezvousServer, node.get(),
                         _1)));

@@ -140,8 +140,10 @@ TEST_F(DataStoreTest, BEH_KAD_UpdateData) {
   std::string key1 = cry_obj_.Hash("663efsxx33d", "", crypto::STRING_STRING,
       false);
   std::string value1 = base::RandomString(500);
-  boost::int32_t t_refresh1, t_refresh2, t_expire1, t_expire2;
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
+  boost::int32_t t_refresh1, t_refresh2, t_expire1, t_expire2, ttl1, ttl2;
+  ttl1 = 3600*24;
+  ttl2 = 3600*25;
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, ttl1, true));
   t_refresh1 = test_ds_->LastRefreshTime(key1, value1);
   t_expire1 = test_ds_->ExpireTime(key1, value1);
   ASSERT_NE(0, t_refresh1);
@@ -150,9 +152,10 @@ TEST_F(DataStoreTest, BEH_KAD_UpdateData) {
   ASSERT_TRUE(test_ds_->LoadItem(key1, values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
+  ASSERT_EQ(ttl1, test_ds_->TimeToLive(key1, value1));
   boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, ttl2, true));
   t_refresh2 = test_ds_->LastRefreshTime(key1, value1);
   t_expire2 = test_ds_->ExpireTime(key1, value1);
   ASSERT_LT(t_refresh1, t_refresh2);
@@ -161,6 +164,7 @@ TEST_F(DataStoreTest, BEH_KAD_UpdateData) {
   ASSERT_TRUE(test_ds_->LoadItem(key1, values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
+  ASSERT_EQ(ttl2, test_ds_->TimeToLive(key1, value1));
 }
 
 TEST_F(DataStoreTest, BEH_KAD_DeleteKey) {
@@ -296,6 +300,7 @@ TEST_F(DataStoreTest, BEH_KAD_RepublishKeyValue) {
   std::string value1 = base::RandomString(500);
   ASSERT_EQ(boost::uint32_t(0),  test_ds_->LastRefreshTime(key1, value1));
   ASSERT_EQ(boost::uint32_t(0),  test_ds_->ExpireTime(key1, value1));
+  ASSERT_EQ(boost::uint32_t(0),  test_ds_->TimeToLive(key1, value1));
   boost::int32_t t_refresh1, t_refresh2, t_expire1, t_expire2;
   ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
   t_refresh1 = test_ds_->LastRefreshTime(key1, value1);
@@ -322,7 +327,7 @@ TEST_F(DataStoreTest, BEH_KAD_RepublishKeyValue) {
 TEST_F(DataStoreTest, FUNC_KAD_GetValuesToRefresh) {
   // data store with refresh time set to 3 seconds for test
   kad::DataStore ds(3);
-  std::vector< std::pair<std::string, std::string> > refvalues;
+  std::vector<kad::refresh_value> refvalues;
   std::vector<std::string> keys, values;
   for (unsigned int i = 0; i < 6; i++) {
     keys.push_back(cry_obj_.Hash(base::itos(i), "", crypto::STRING_STRING,
@@ -337,7 +342,7 @@ TEST_F(DataStoreTest, FUNC_KAD_GetValuesToRefresh) {
     ASSERT_TRUE(ds.StoreItem(keys[i], values[i], 3600*24, true));
   }
 
-  boost::this_thread::sleep(boost::posix_time::seconds(4));
+  boost::this_thread::sleep(boost::posix_time::seconds(ds.t_refresh()+1));
 
   for (unsigned int i = 4; i < keys.size(); i++) {
     ASSERT_TRUE(ds.StoreItem(keys[i], values[i], 3600*24, true));
@@ -346,13 +351,13 @@ TEST_F(DataStoreTest, FUNC_KAD_GetValuesToRefresh) {
   ASSERT_TRUE(ds.StoreItem(keys[0], values[0], 3600*24, false));
   refvalues = ds.ValuesToRefresh();
   for (unsigned int i = 0; i < refvalues.size(); i++) {
-    ASSERT_NE(keys[0], refvalues[i].first);
-    ASSERT_NE(values[0], refvalues[i].second);
+    ASSERT_NE(keys[0], refvalues[i].key_);
+    ASSERT_NE(values[0], refvalues[i].value_);
   }
   for (unsigned int i = 4; i < keys.size(); i++) {
     bool found = false;
     for (unsigned int j = 0; j < refvalues.size(); j++) {
-      if (keys[i] == refvalues[j].first && values[i] == refvalues[j].second) {
+      if (keys[i] == refvalues[j].key_ && values[i] == refvalues[j].value_) {
         found = true;
         break;
       }
@@ -362,7 +367,7 @@ TEST_F(DataStoreTest, FUNC_KAD_GetValuesToRefresh) {
   for (unsigned int i = 1; i < 4; i++) {
     bool found = false;
     for (unsigned int j = 0; j < refvalues.size(); j++) {
-      if (keys[i] == refvalues[j].first && values[i] == refvalues[j].second) {
+      if (keys[i] == refvalues[j].key_ && values[i] == refvalues[j].value_) {
         found = true;
         break;
       }

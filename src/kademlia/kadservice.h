@@ -106,6 +106,9 @@ class KadService : public KademliaService {
       const NatDetectionPingResponse *response,
       struct NatDetectionPingData data);
   void SendNatDetection(struct NatDetectionData data);
+  bool CheckStoreRequest(const StoreRequest *request, Contact *sender);
+  void StoreValueLocal(const StoreRequest *request, Contact sender,
+      StoreResponse *response);
   KNodeImpl *knode_;
   // boost::shared_ptr<base::PDRoutingTableHandler> routingtable_;
   KadService(const KadService&);

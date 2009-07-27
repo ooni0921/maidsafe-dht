@@ -88,8 +88,6 @@ class Transport {
  public:
   Transport();
 //  ~Transport() {UDT::cleanup();}
-  ~Transport() { }
-
   enum DataType { STRING, FILE };
   int ConnectToSend(const std::string &remote_ip, const uint16_t &remote_port,
       const std::string &rendezvous_ip, const uint16_t &rendezvous_port,

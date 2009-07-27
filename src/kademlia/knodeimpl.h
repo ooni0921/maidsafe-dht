@@ -113,38 +113,31 @@ struct IterativeLookUpData {
 };
 
 struct IterativeStoreValueData {
-    IterativeStoreValueData(const std::vector<Contact> &close_nodes,
-                            const std::string &key,
-                            const std::string &value,
-                            base::callback_func_type cb,
-                            const std::string &pubkey,
-                            const std::string &sigpubkey,
-                            const std::string &sigreq, const bool&publish_val)
-                                : closest_nodes(close_nodes),
-                                  key(key),
-                                  value(value),
-                                  save_nodes(0),
-                                  contacted_nodes(0),
-                                  index(-1),
-                                  cb(cb),
-                                  is_callbacked(false),
-                                  data_type(0),
-                                  pub_key(pubkey),
-                                  sig_pub_key(sigpubkey),
-                                  sig_req(sigreq), publish(publish_val) {}
+  IterativeStoreValueData(const std::vector<Contact> &close_nodes,
+      const std::string &key, const std::string &value,
+      base::callback_func_type cb, const std::string &pubkey,
+      const std::string &sigpubkey, const std::string &sigreq,
+      const bool &publish_val, const boost::uint32_t &timetolive)
+      : closest_nodes(close_nodes), key(key), value(value), save_nodes(0),
+        contacted_nodes(0), index(-1), cb(cb), is_callbacked(false),
+        data_type(0), pub_key(pubkey), sig_pub_key(sigpubkey), sig_req(sigreq),
+        publish(publish_val), ttl(timetolive) {}
+  IterativeStoreValueData(const std::vector<Contact> &close_nodes,
+      const std::string &key, const std::string &value,
+      base::callback_func_type cb, const bool &publish_val,
+      const boost::uint32_t &timetolive) : closest_nodes(close_nodes), key(key),
+        value(value), save_nodes(0), contacted_nodes(0), index(-1), cb(cb),
+        is_callbacked(false), data_type(0), pub_key(""), sig_pub_key(""),
+        sig_req(""), publish(publish_val), ttl(timetolive) {}
   std::vector<Contact> closest_nodes;
-  std::string key;
-  std::string value;
-  int save_nodes;
-  int contacted_nodes;
-  int index;
+  std::string key, value;
+  int save_nodes, contacted_nodes, index;
   base::callback_func_type cb;
   bool is_callbacked;
   int data_type;
-  std::string pub_key;
-  std::string sig_pub_key;
-  std::string sig_req;
+  std::string pub_key, sig_pub_key, sig_req;
   bool publish;
+  boost::uint32_t ttl;
 };
 
 struct FindCallbackArgs {
@@ -189,17 +182,29 @@ struct BootstrapArgs {
   bool is_callbacked, port_fw;
 };
 
+struct StoreRequestSignature {
+  StoreRequestSignature() : public_key(""), signed_public_key(""),
+    signed_request("") {}
+  StoreRequestSignature(const std::string &p_key, const std::string &sig_p_key,
+    const std::string &s_req) : public_key(p_key), signed_public_key(sig_p_key),
+    signed_request(s_req) {}
+  std::string public_key, signed_public_key, signed_request;
+};
+
 class KNodeImpl {
  public:
   KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-            node_type type);
+            node_type type, const std::string &private_key = "",
+            const std::string &public_key = "");
   // constructor used to set up parameters k, alpha, and beta for kademlia
   KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
             node_type type,
             const boost::uint16_t k,
             const int &alpha,
             const int &beta,
-            const int &refresh_time = kRefreshTime);
+            const int &refresh_time,
+            const std::string &private_key = "",
+            const std::string &public_key = "");
   ~KNodeImpl();
   // if node_id is "", it will be randomly generated
   void Join(const std::string &node_id,
@@ -212,6 +217,10 @@ class KNodeImpl {
                   const std::string &public_key,
                   const std::string &signed_public_key,
                   const std::string &signed_request,
+                  const boost::uint32_t &ttl,
+                  base::callback_func_type cb);
+  void StoreValue(const std::string &key,
+                  const std::string &value, const boost::uint32_t &ttl,
                   base::callback_func_type cb);
   void FindValue(const std::string &key, base::callback_func_type cb);
   void FindNode(const std::string &node_id,
@@ -227,10 +236,11 @@ class KNodeImpl {
   int AddContact(Contact new_contact, bool only_db);
   void RemoveContact(const std::string &node_id);
   bool GetContact(const std::string &id, Contact *contact);
-  void FindValueLocal(const std::string &key,
+  bool FindValueLocal(const std::string &key,
                       std::vector<std::string> &values);
   bool StoreValueLocal(const std::string &key,
-      const std::string &value, const bool &publish);
+      const std::string &value, const bool &publish,
+      const boost::uint32_t &ttl);
   void GetRandomContacts(const int &count,
                          const std::vector<Contact> &exclude_contacts,
                          std::vector<Contact> *contacts);
@@ -257,6 +267,9 @@ class KNodeImpl {
   inline boost::uint16_t rv_port() const { return rv_port_; }
   inline bool is_joined() const { return is_joined_; }
   inline KadRpcs* kadrpcs() { return &kadrpcs_; }
+  bool HasRSAKeys();
+  boost::uint32_t KeyValueTTL(const std::string &key,
+      const std::string &value) const;
   friend class KadServicesTest;
   friend class NatDetectionTest;
  private:
@@ -309,9 +322,9 @@ class KNodeImpl {
   void StoreValue_ExecuteStoreRPCs(const std::string &result,
                                    const std::string &key,
                                    const std::string &value,
-                                   const std::string &public_key,
-                                   const std::string &signed_public_key,
-                                   const std::string &signed_request,
+                                   const StoreRequestSignature &sig_req,
+                                   const bool &publish,
+                                   const boost::uint32_t &ttl,
                                    base::callback_func_type cb);
   void FindNode_GetNode(const std::string &result,
                         const std::string &node_id,
@@ -332,6 +345,13 @@ class KNodeImpl {
   void CheckToInsert_Callback(const std::string &result, std::string id,
       Contact new_contact);
   void CheckAddContacts();
+  void RefreshValuesRoutine();
+  void RefreshValue(const std::string &key,
+                    const std::string &value, const boost::uint32_t &ttl,
+                    base::callback_func_type cb);
+  void RefreshValueCallback(const std::string &result, const std::string &key,
+      const std::string &value, const boost::uint32_t &ttl,
+      boost::shared_ptr<int> refreshes_done, const int &total_refreshes);
   boost::mutex routingtable_mutex_, kadconfig_mutex_, extendshortlist_mutex_,
       joinbootstrapping_mutex_, leave_mutex_, activeprobes_mutex_,
       pendingcts_mutex_;
@@ -343,9 +363,7 @@ class KNodeImpl {
   KadRpcs kadrpcs_;
   volatile bool is_joined_;
   boost::shared_ptr<RoutingTable> prouting_table_;
-  std::string node_id_;
-  std::string host_ip_;
-  std::string fake_client_node_id_;
+  std::string node_id_, host_ip_, fake_client_node_id_;
   node_type type_;
   boost::uint16_t host_port_;
   std::string rv_ip_;
@@ -361,14 +379,14 @@ class KNodeImpl {
   std::list<Contact> contacts_to_add_;
   boost::shared_ptr<boost::thread> addcontacts_routine_;
   boost::condition_variable add_ctc_cond_;
+  std::string private_key_, public_key_;
   // for UPnP
   bool upnp_started_;
   libtorrent::io_service upnp_ios_;
   boost::intrusive_ptr<libtorrent::upnp> upnp_;
   libtorrent::connection_queue *upnp_half_open_;
   std::string upnp_user_agent_;
-  int upnp_mapped_port_;
-  int upnp_udp_map_;
+  int upnp_mapped_port_, upnp_udp_map_;
 };
 }  // namespace kad
 #endif  // KADEMLIA_KNODEIMPL_H_

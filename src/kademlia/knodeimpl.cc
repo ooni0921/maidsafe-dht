@@ -119,7 +119,8 @@ void SortLookupContact(std::list<LookupContact> *contact_list,
 
 KNodeImpl::KNodeImpl(
     boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-    node_type type)
+    node_type type, const std::string &private_key,
+    const std::string &public_key)
         : routingtable_mutex_(), kadconfig_mutex_(),
           extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
           activeprobes_mutex_(), pendingcts_mutex_(),
@@ -132,9 +133,10 @@ KNodeImpl::KNodeImpl(
           alpha_(kAlpha), beta_(kBeta), refresh_routine_started_(false),
           kad_config_path_(""), local_host_ip_(""),
           local_host_port_(0), stopping_(false), contacts_to_add_(),
-          addcontacts_routine_(), add_ctc_cond_(), upnp_started_(false),
-          upnp_ios_(), upnp_(), upnp_half_open_(NULL),
-          upnp_user_agent_("maidsafe"), upnp_mapped_port_(0), upnp_udp_map_(0) {
+          addcontacts_routine_(), add_ctc_cond_(), private_key_(private_key),
+          public_key_(public_key), upnp_started_(false), upnp_ios_(), upnp_(),
+          upnp_half_open_(NULL), upnp_user_agent_("maidsafe"),
+          upnp_mapped_port_(0), upnp_udp_map_(0) {
 }
 
 KNodeImpl::KNodeImpl(
@@ -142,7 +144,8 @@ KNodeImpl::KNodeImpl(
     node_type type,
     const boost::uint16_t k,
     const int &alpha,
-    const int &beta, const int &refresh_time)
+    const int &beta, const int &refresh_time, const std::string &private_key,
+    const std::string &public_key)
         : routingtable_mutex_(), kadconfig_mutex_(),
           extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
           activeprobes_mutex_(), pendingcts_mutex_(),
@@ -155,19 +158,14 @@ KNodeImpl::KNodeImpl(
           K_(k), alpha_(alpha), beta_(beta), refresh_routine_started_(false),
           kad_config_path_(""), local_host_ip_(""),
           local_host_port_(0), stopping_(false), contacts_to_add_(),
-          addcontacts_routine_(), add_ctc_cond_(), upnp_started_(false),
-          upnp_ios_(), upnp_(), upnp_half_open_(NULL),
-          upnp_user_agent_("maidsafe"), upnp_mapped_port_(0), upnp_udp_map_(0) {
+          addcontacts_routine_(), add_ctc_cond_(), private_key_(private_key),
+          public_key_(public_key), upnp_started_(false), upnp_ios_(), upnp_(),
+          upnp_half_open_(NULL), upnp_user_agent_("maidsafe"),
+          upnp_mapped_port_(0), upnp_udp_map_(0) {
 }
 
 KNodeImpl::~KNodeImpl() {
-#ifdef VERBOSE_DEBUG
-  printf("\t\tIn KNode (on port %i) destructor.\n", host_port_);
-#endif
   if (is_joined_) {
-#ifdef VERBOSE_DEBUG
-    printf("\t\tIn KNode destructor(%i), outside mutex.\n", host_port_);
-#endif
     UnRegisterKadService();
     is_joined_ = false;
     pdata_store_->Clear();
@@ -357,6 +355,8 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
     if (!refresh_routine_started_) {
       ptimer_->AddCallLater(kRefreshTime*1000,
                             boost::bind(&KNodeImpl::RefreshRoutine, this));
+      ptimer_->AddCallLater(2000, boost::bind(&KNodeImpl::RefreshValuesRoutine,
+        this));
       refresh_routine_started_ = true;
     }
   } else if (!args->cached_nodes.empty()) {
@@ -410,6 +410,8 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
       if (!refresh_routine_started_) {
         ptimer_->AddCallLater(kRefreshTime*1000,
                               boost::bind(&KNodeImpl::RefreshRoutine, this));
+        ptimer_->AddCallLater(2000, boost::bind(
+            &KNodeImpl::RefreshValuesRoutine, this));
         refresh_routine_started_ = true;
       }
     } else {
@@ -563,10 +565,11 @@ void KNodeImpl::Leave() {
     stopping_ = true;
     {
       boost::mutex::scoped_lock gaurd(leave_mutex_);
-      pchannel_manager_->ptransport()->StopPingRendezvous();
-      ptimer_->CancelAll();
-      UnRegisterKadService();
       is_joined_ = false;
+      ptimer_->CancelAll();
+      pchannel_manager_->ClearCallLaters();
+      pchannel_manager_->ptransport()->StopPingRendezvous();
+      UnRegisterKadService();
       add_ctc_cond_.notify_one();
       addcontacts_routine_->join();
       upnp_started_ = false;
@@ -765,17 +768,11 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
                 &KNodeImpl::StoreValue_IterativeStoreValue,
                 resp,
                 callback_data);
-        kadrpcs_.Store(callback_data.data->key,
-                       callback_data.data->value,
-                       callback_data.data->pub_key,
-                       callback_data.data->sig_pub_key,
-                       callback_data.data->sig_req,
-                       callback_data.sender.host_ip(),
-                       callback_data.sender.host_port(),
-                       resp,
-                       done1,
-                       false,
-                       callback_data.data->publish);
+        kadrpcs_.Store(callback_data.data->key, callback_data.data->value,
+            callback_data.data->pub_key, callback_data.data->sig_pub_key,
+            callback_data.data->sig_req, callback_data.sender.host_ip(),
+            callback_data.sender.host_port(), resp, done1, false,
+            callback_data.data->ttl, callback_data.data->publish);
         return;
       }
     }
@@ -863,28 +860,17 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
         KNodeImpl, const StoreResponse*, StoreCallbackArgs > (
             this, &KNodeImpl::StoreValue_IterativeStoreValue, resp,
             callback_args);
-    kadrpcs_.Store(callback_data.data->key,
-                   callback_data.data->value,
-                   callback_data.data->pub_key,
-                   callback_data.data->sig_pub_key,
-                   callback_data.data->sig_req,
-                   contact_ip,
-                   contact_port,
-                   resp,
-                   done,
-                   local,
-                   callback_data.data->publish);
+    kadrpcs_.Store(callback_data.data->key, callback_data.data->value,
+        callback_data.data->pub_key, callback_data.data->sig_pub_key,
+        callback_data.data->sig_req, contact_ip, contact_port, resp, done,
+        local, callback_data.data->ttl, callback_data.data->publish);
   }
 }
 
-void KNodeImpl::StoreValue_ExecuteStoreRPCs(
-    const std::string &result,
-    const std::string &key,
-    const std::string &value,
-    const std::string &public_key,
-    const std::string &signed_public_key,
-    const std::string &signed_request,
-    base::callback_func_type cb) {
+void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
+    const std::string &key, const std::string &value,
+    const StoreRequestSignature &sig_req, const bool &publish,
+    const boost::uint32_t &ttl, base::callback_func_type cb) {
   if (!is_joined_)
     return;
   // validate the result
@@ -920,21 +906,19 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(
             stored_local = true;
         }
         if (stored_local) {
-          pdata_store_->StoreItem(key, value, 3600*24, true);
-          closest_nodes.pop_back();
+          if (pdata_store_->StoreItem(key, value, 24*3600, publish) &&
+              static_cast<int>(closest_nodes.size()) >= K_) {
+            closest_nodes.pop_back();
 #ifdef DEBUG
-          printf("KNodeImpl::StoreValue_ExecuteStoreRPCs storing locally \n");
+            printf("KNodeImpl::StoreValue_ExecuteStoreRPCs storing locally \n");
 #endif
+          }
         }
       }
       boost::shared_ptr<IterativeStoreValueData>
-          data(new struct IterativeStoreValueData(closest_nodes,
-                                                  key,
-                                                  value,
-                                                  cb,
-                                                  public_key,
-                                                  signed_public_key,
-                                                  signed_request, true));
+          data(new struct IterativeStoreValueData(closest_nodes, key, value, cb,
+               sig_req.public_key, sig_req.signed_public_key,
+               sig_req.signed_request, publish, ttl));
       if (stored_local)
         data->save_nodes++;
       // decide the parallel level
@@ -964,17 +948,26 @@ void KNodeImpl::StoreValue(const std::string &key,
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            const std::string &signed_request,
+                           const boost::uint32_t &ttl,
                            base::callback_func_type cb) {
+  StoreRequestSignature sig(public_key, signed_public_key, signed_request);
   FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs, this,
-                                  _1, key, value, public_key, signed_public_key,
-                                  signed_request, cb));
+                                  _1, key, value, sig, true, ttl, cb));
+}
+
+void KNodeImpl::StoreValue(const std::string &key,
+                           const std::string &value,
+                           const boost::uint32_t &ttl,
+                           base::callback_func_type cb) {
+  StoreRequestSignature sig;
+  FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs, this,
+                                  _1, key, value, sig, true, ttl, cb));
 }
 
 void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
   std::vector<std::string> values;
   //  Searching for value in local DataStore first
-  FindValueLocal(key, values);
-  if (values.size() !=  0) {
+  if (FindValueLocal(key, values)) {
     kad::FindResponse result_msg;
     result_msg.set_result(kad::kRpcResultSuccess);
     for (boost::uint64_t n = 0; n < values.size(); ++n)
@@ -1230,14 +1223,15 @@ bool KNodeImpl::GetContact(const std::string &id, Contact *contact) {
   return prouting_table_->GetContact(id, contact);
 }
 
-void KNodeImpl::FindValueLocal(const std::string &key,
+bool KNodeImpl::FindValueLocal(const std::string &key,
                                std::vector<std::string> &values) {
-  pdata_store_->LoadItem(key, values);
+  return pdata_store_->LoadItem(key, values);
 }
 
 bool KNodeImpl::StoreValueLocal(const std::string &key,
-      const std::string &value, const bool &publish) {
-  return pdata_store_->StoreItem(key, value, 3600*24, publish);
+      const std::string &value, const bool &publish,
+      const boost::uint32_t &ttl) {
+  return pdata_store_->StoreItem(key, value, ttl, publish);
 }
 
 void KNodeImpl::GetRandomContacts(
@@ -1568,6 +1562,8 @@ void KNodeImpl::StartSearchIteration(const std::string &key,
 void KNodeImpl::SendFindRpc(Contact remote,
     boost::shared_ptr<IterativeLookUpData> data,
     const connect_to_node &conn_type) {
+  if (!is_joined_ && data->method != BOOTSTRAP)
+    return;
   FindResponse *resp = new FindResponse();
   FindCallbackArgs callback_args(data);
   callback_args.sender = remote;
@@ -1837,6 +1833,28 @@ void KNodeImpl::SearchIteration_ExtendShortList(const FindResponse *response,
 void KNodeImpl::SendFinalIteration(
     boost::shared_ptr<IterativeLookUpData> data) {
   if (data->active_contacts.size() >= K_) {
+    if (!data->active_contacts.empty()) {
+      // checking if the active probes are closer than the Kth closest node
+      std::list<Contact>::iterator it1;
+      std::list<Contact>::iterator it2 = data->active_contacts.begin();
+      for (int i = 1; i < K_; i++)
+        it2++;
+      ContactAndTargetKey kth_contact;
+      kth_contact.contact = *it2;
+      kth_contact.target_key = data->key;
+      activeprobes_mutex_.lock();
+      for (it1 = data->active_probes.begin(); it1 != data->active_probes.end();
+          it1++) {
+        ContactAndTargetKey active_ctc;
+        active_ctc.contact = *it1;
+        active_ctc.target_key = data->key;
+        if (CompareContact(active_ctc, kth_contact)) {
+          activeprobes_mutex_.unlock();
+          return;
+        }
+      }
+      activeprobes_mutex_.unlock();
+    }
     SearchIteration_Callback(data);
     return;
   }
@@ -2066,5 +2084,69 @@ boost::uint32_t KNodeImpl::KeyLastRefreshTime(const std::string &key,
 boost::uint32_t KNodeImpl::KeyExpireTime(const std::string &key,
     const std::string &value) {
   return pdata_store_->ExpireTime(key, value);
+}
+
+bool KNodeImpl::HasRSAKeys() {
+  if (private_key_ == "" || public_key_ == "")
+    return false;
+  return true;
+}
+
+boost::uint32_t KNodeImpl::KeyValueTTL(const std::string &key,
+      const std::string &value) const {
+  pdata_store_->TimeToLive(key, value);
+}
+
+void KNodeImpl::RefreshValue(const std::string &key,
+      const std::string &value, const boost::uint32_t &ttl,
+      base::callback_func_type cb) {
+  if (!is_joined_ || !refresh_routine_started_  || stopping_)
+    return;
+  StoreRequestSignature sig;
+  if (HasRSAKeys()) {
+    crypto::Crypto cobj;
+    cobj.set_hash_algorithm(crypto::SHA_512);
+    sig.public_key = public_key_;
+    sig.signed_public_key = cobj.AsymSign(public_key_, "", private_key_,
+        crypto::STRING_STRING);
+    sig.signed_request = cobj.AsymSign(cobj.Hash(public_key_ +
+        sig.signed_public_key + key, "", crypto::STRING_STRING, true), "",
+        private_key_, crypto::STRING_STRING);
+  }
+  FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs, this,
+                                  _1, key, value, sig, false, ttl, cb));
+}
+
+void KNodeImpl::RefreshValueCallback(const std::string &result,
+      const std::string &key, const std::string &value,
+      const boost::uint32_t &ttl, boost::shared_ptr<int> refreshes_done,
+      const int &total_refreshes) {
+  if (!is_joined_ || !refresh_routine_started_  || stopping_)
+    return;
+  StoreValueLocal(key, value, false, ttl);
+  ++*refreshes_done;
+  if (total_refreshes == *refreshes_done) {
+    ptimer_->AddCallLater(2000, boost::bind(&KNodeImpl::RefreshValuesRoutine,
+        this));
+  }
+}
+
+void KNodeImpl::RefreshValuesRoutine() {
+  if (is_joined_ && refresh_routine_started_  && !stopping_) {
+    std::vector<refresh_value> values = pdata_store_->ValuesToRefresh();
+    if (values.empty()) {
+      ptimer_->AddCallLater(2000, boost::bind(&KNodeImpl::RefreshValuesRoutine,
+        this));
+    } else  {
+      boost::shared_ptr<int> refreshes_done(new int);
+      *refreshes_done = 0;
+      for (unsigned int i = 0; i < values.size(); i++) {
+        RefreshValue(values[i].key_, values[i].value_, values[i].ttl_,
+          boost::bind(&KNodeImpl::RefreshValueCallback, this, _1,
+              values[i].key_, values[i].value_, values[i].ttl_,
+              refreshes_done, values.size()));
+      }
+    }
+  }
 }
 }  // namespace kad

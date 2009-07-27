@@ -31,18 +31,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 
 KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-             node_type type) : pimpl_(new KNodeImpl(channel_manager,
-                                                    type)) {}
+             node_type type, const std::string &private_key,
+             const std::string &public_key)
+             : pimpl_(new KNodeImpl(channel_manager, type)) {}
 
 KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-             node_type type,
-             const boost::uint16_t k,
-             const int &alpha,
-             const int &beta) : pimpl_(new KNodeImpl(channel_manager,
-                                                     type,
-                                                     k,
-                                                     alpha,
-                                                     beta)) {}
+             node_type type, const boost::uint16_t k, const int &alpha,
+             const int &beta, const int &refresh_time,
+             const std::string &private_key, const std::string &public_key)
+             : pimpl_(new KNodeImpl(channel_manager, type, k, alpha, beta,
+                      refresh_time, private_key, public_key)) {}
 
 KNode::~KNode() {}
 
@@ -62,9 +60,17 @@ void KNode::StoreValue(const std::string &key,
                        const std::string &public_key,
                        const std::string &signed_public_key,
                        const std::string &signed_request,
+                       const boost::uint32_t &ttl,
                        base::callback_func_type cb) {
   pimpl_->StoreValue(key, value, public_key, signed_public_key, signed_request,
-                     cb);
+                     ttl, cb);
+}
+
+void KNode::StoreValue(const std::string &key,
+                       const std::string &value,
+                       const boost::uint32_t &ttl,
+                       base::callback_func_type cb) {
+  pimpl_->StoreValue(key, value, ttl, cb);
 }
 
 void KNode::FindValue(const std::string &key, base::callback_func_type cb) {
@@ -108,14 +114,15 @@ bool KNode::GetContact(const std::string &id, Contact *contact) {
   return pimpl_->GetContact(id, contact);
 }
 
-void KNode::FindValueLocal(const std::string &key,
+bool KNode::FindValueLocal(const std::string &key,
                            std::vector<std::string> &values) {
-  pimpl_->FindValueLocal(key, values);
+  return pimpl_->FindValueLocal(key, values);
 }
 
 bool KNode::StoreValueLocal(const std::string &key,
-      const std::string &value, const bool &publish) {
-  return pimpl_->StoreValueLocal(key, value, publish);
+      const std::string &value, const bool &publish,
+      const boost::uint32_t &ttl) {
+  return pimpl_->StoreValueLocal(key, value, publish, ttl);
 }
 
 
@@ -182,5 +189,23 @@ KadRpcs* KNode::kadrpcs() {
 
 void KNode::StopRvPing() {
   pimpl_->StopRvPing();
+}
+
+boost::uint32_t KNode::KeyLastRefreshTime(const std::string &key,
+      const std::string &value) {
+  return pimpl_->KeyLastRefreshTime(key, value);
+}
+boost::uint32_t KNode::KeyExpireTime(const std::string &key,
+      const std::string &value) {
+  return pimpl_->KeyExpireTime(key, value);
+}
+
+bool KNode::HasRSAKeys() {
+  return pimpl_->HasRSAKeys();
+}
+
+boost::uint32_t KNode::KeyValueTTL(const std::string &key,
+      const std::string &value) const {
+  return pimpl_->KeyValueTTL(key, value);
 }
 }  // namespace kad

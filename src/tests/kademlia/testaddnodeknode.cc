@@ -27,8 +27,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem.hpp>
 #include "maidsafe/maidsafe-dht.h"
-#include "kademlia/knodeimpl.h"
 #include "tests/kademlia/fake_callbacks.h"
 #include "transport/transportapi.h"
 
@@ -101,7 +101,7 @@ class TestKnodes : public testing::Test {
                          base::itos(ch_managers_[i]->external_port());
       boost::filesystem::create_directories(
           boost::filesystem::path(datastore_dir_[i]));
-      nodes_[i].reset(new KNodeImpl(ch_managers_[i], VAULT));
+      nodes_[i].reset(new KNode(ch_managers_[i], VAULT));
     }
   }
   void TearDown() {
@@ -121,7 +121,7 @@ class TestKnodes : public testing::Test {
     ch_managers_.clear();
     datastore_dir_.clear();
   }
-  std::vector< boost::shared_ptr<KNodeImpl> > nodes_;
+  std::vector< boost::shared_ptr<KNode> > nodes_;
   std::vector< boost::shared_ptr<rpcprotocol::ChannelManager> > ch_managers_;
   std::vector< boost::shared_ptr<MessageHandler> > msg_handlers_;
   std::vector<std::string> datastore_dir_;
@@ -329,5 +329,4 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   ASSERT_FALSE(nodes_[0]->is_joined());
   ASSERT_FALSE(nodes_[1]->is_joined());
 }
-
 }  // namespace kad

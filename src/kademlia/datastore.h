@@ -44,15 +44,23 @@ namespace kad {
 // This class implements physical storage (for data published and fetched via
 // the RPCs) for the Kademlia DHT. Boost::multiindex are used
 
+struct refresh_value {
+  std::string key_, value_;
+  boost::uint32_t ttl_;
+  refresh_value(const std::string &key, const std::string &value, const
+      boost::uint32_t &ttl) : key_(key), value_(value), ttl_(ttl) {}
+};
+
 struct key_value_tuple {
   std::string key_, value_;
-  boost::uint32_t last_refresh_time_, expire_time_;
+  boost::uint32_t last_refresh_time_, expire_time_, ttl_;
 
   key_value_tuple(const std::string &key,
       const std::string &value,
       const boost::uint32_t &last_refresh_time,
-      const boost::uint32_t &expire_time) : key_(key), value_(value),
-          last_refresh_time_(last_refresh_time), expire_time_(expire_time) {}
+      const boost::uint32_t &expire_time, const boost::uint32_t &ttl)
+      : key_(key), value_(value), last_refresh_time_(last_refresh_time),
+        expire_time_(expire_time), ttl_(ttl) {}
 };
 
 /* Tags */
@@ -103,8 +111,10 @@ class DataStore {
   boost::uint32_t LastRefreshTime(const std::string &key,
       const std::string &value);
   boost::uint32_t ExpireTime(const std::string &key, const std::string &value);
-  std::vector< std::pair<std::string, std::string> > ValuesToRefresh();
+  std::vector<refresh_value> ValuesToRefresh();
+  boost::uint32_t TimeToLive(const std::string &key, const std::string &value);
   void Clear();
+  boost::uint32_t t_refresh() const;
  private:
   datastore datastore_;
   // refresh time in seconds

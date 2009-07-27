@@ -28,10 +28,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef RPCPROTOCOL_CHANNELMANAGERIMPL_H_
 #define RPCPROTOCOL_CHANNELMANAGERIMPL_H_
 
-//  #define VERBOSE_DEBUG
-//  #define SHOW_MUTEX
-
 #include <map>
+#include <set>
 #include <string>
 #include <memory>
 #include "boost/shared_ptr.hpp"
@@ -68,6 +66,8 @@ class ChannelManagerImpl {
   ~ChannelManagerImpl();
   void RegisterChannel(const std::string &service_name, Channel* channel);
   void UnRegisterChannel(const std::string &service_name);
+  void AddChannelId(boost::uint32_t *id);
+  void RemoveChannelId(const boost::uint32_t &id);
   void ClearChannels();
   void ClearCallLaters();
   int StartTransport(
@@ -100,8 +100,9 @@ class ChannelManagerImpl {
   boost::shared_ptr<transport::Transport> ptransport_;
   bool is_started;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
-  boost::mutex req_mutex_, channels_mutex_, id_mutex_, pend_timeout_mutex_;
-  boost::uint32_t current_request_id_;
+  boost::mutex req_mutex_, channels_mutex_, id_mutex_, pend_timeout_mutex_,
+      channels_ids_mutex_;
+  boost::uint32_t current_request_id_, current_channel_id_;
   std::map<std::string, Channel*> channels_;
   std::map<boost::uint32_t, PendingReq> pending_req_;
   ChannelManagerImpl(const ChannelManagerImpl&);
@@ -109,6 +110,8 @@ class ChannelManagerImpl {
   boost::uint16_t external_port_;
   std::string external_ip_;
   std::map<boost::uint32_t, PendingTimeOut> pending_timeout_;
+  std::set<boost::uint32_t> channels_ids_;
+  boost::condition_variable delete_channels_cond_;
 };
 }  // namespace rpcprotocol
 #endif  // RPCPROTOCOL_CHANNELMANAGERIMPL_H_

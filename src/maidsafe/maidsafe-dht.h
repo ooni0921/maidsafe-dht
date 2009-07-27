@@ -71,25 +71,29 @@ namespace kad {
 class KNode {
  public:
   KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-        node_type type);
+        node_type type, const std::string &private_key = "",
+        const std::string &public_key = "");
   // constructor used to set up parameters K, alpha, and beta for kademlia
   KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-        node_type type,
-        const boost::uint16_t k,
-        const int &alpha,
-        const int &beta);
+        node_type type, const boost::uint16_t k, const int &alpha,
+        const int &beta, const int &refresh_time,
+        const std::string &private_key = "",
+        const std::string &public_key = "");
   ~KNode();
   // if node_id is "", it will be randomly generated
-  void Join(const std::string &node_id,
-            const std::string &kad_config_file,
-            base::callback_func_type cb,
-            const bool &port_forwarded);
+  void Join(const std::string &node_id, const std::string &kad_config_file,
+            base::callback_func_type cb, const bool &port_forwarded);
   void Leave();
   void StoreValue(const std::string &key,
                   const std::string &value,
                   const std::string &public_key,
                   const std::string &signed_public_key,
                   const std::string &signed_request,
+                  const boost::uint32_t &ttl,
+                  base::callback_func_type cb);
+  void StoreValue(const std::string &key,
+                  const std::string &value,
+                  const boost::uint32_t &ttl,
                   base::callback_func_type cb);
   void FindValue(const std::string &key, base::callback_func_type cb);
   void FindNode(const std::string &node_id,
@@ -105,10 +109,11 @@ class KNode {
   int AddContact(Contact new_contact, bool only_db);
   void RemoveContact(const std::string &node_id);
   bool GetContact(const std::string &id, Contact *contact);
-  void FindValueLocal(const std::string &key,
+  bool FindValueLocal(const std::string &key,
                       std::vector<std::string> &values);
   bool StoreValueLocal(const std::string &key,
-      const std::string &value, const bool &publish);
+      const std::string &value, const bool &publish,
+      const boost::uint32_t &ttl);
   void GetRandomContacts(const int &count,
                          const std::vector<Contact> &exclude_contacts,
                          std::vector<Contact> *contacts);
@@ -129,6 +134,13 @@ class KNode {
   boost::uint16_t rv_port() const;
   bool is_joined() const;
   KadRpcs* kadrpcs();
+  boost::uint32_t KeyLastRefreshTime(const std::string &key,
+      const std::string &value);
+  boost::uint32_t KeyExpireTime(const std::string &key,
+      const std::string &value);
+  bool HasRSAKeys();
+  boost::uint32_t KeyValueTTL(const std::string &key,
+      const std::string &value) const;
  private:
   boost::shared_ptr<KNodeImpl> pimpl_;
 };
@@ -170,6 +182,8 @@ class ChannelManager {
       const std::string &remote_ip, const uint16_t &remote_port);
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout);
+  void AddChannelId(boost::uint32_t *id);
+  void RemoveChannelId(const boost::uint32_t &id);
  private:
   boost::shared_ptr<ChannelManagerImpl> pimpl_;
 };

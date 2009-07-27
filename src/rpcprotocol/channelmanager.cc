@@ -109,4 +109,11 @@ void ChannelManager::AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout) {
   return pimpl_->AddTimeOutRequest(connection_id, req_id, timeout);
 }
+
+void ChannelManager::AddChannelId(boost::uint32_t *id) {
+  pimpl_->AddChannelId(id);
+}
+void ChannelManager::RemoveChannelId(const boost::uint32_t &id) {
+  pimpl_->RemoveChannelId(id);
+}
 }  // namespace rpcprotocol

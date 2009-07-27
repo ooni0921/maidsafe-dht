@@ -93,6 +93,7 @@ class ChannelImpl : public google::protobuf::RpcChannel {
   ChannelImpl(const ChannelImpl&);
   ChannelImpl& operator=(const ChannelImpl&);
   bool local_;
+  boost::uint32_t id_;
 };
 }  // namespace
 #endif  // RPCPROTOCOL_CHANNELIMPL_H_

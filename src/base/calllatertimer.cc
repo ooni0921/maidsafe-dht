@@ -51,9 +51,9 @@ CallLaterTimer::CallLaterTimer()
 }
 
 CallLaterTimer::~CallLaterTimer() {
-  is_started_ = false;
   {
     boost::mutex::scoped_lock guard(mutex_);
+    is_started_ = false;
     calllaters_.clear();
   }
   cond_.notify_one();

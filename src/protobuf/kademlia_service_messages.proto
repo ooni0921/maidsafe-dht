@@ -40,11 +40,12 @@ message FindNodeResult {
 message StoreRequest {
   required bytes key = 1;
   required bytes value = 2;
-  required bytes public_key = 3;
-  required bytes signed_public_key = 4;
-  required bytes signed_request = 5;
-  required ContactInfo sender_info = 6;
-  required bool publish = 7;
+  required int32 ttl = 3;
+  required ContactInfo sender_info = 4;
+  required bool publish = 5;
+  optional bytes public_key = 6;
+  optional bytes signed_public_key = 7;
+  optional bytes signed_request = 8;
 };
 
 message StoreResponse {
