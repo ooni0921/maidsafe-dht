@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem.hpp>
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
+#include "transport/transportapi.h"
 
 namespace kad {
 
@@ -38,6 +39,9 @@ class TestRefresh : public testing::Test {
   TestRefresh() : ch_managers(), nodes(), datadirs(), test_dir("TestKnodes"),
       testK(4), testRefresh(10), testNetworkSize(10) {
     test_dir += boost::lexical_cast<std::string>(base::random_32bit_uinteger());
+  }
+  ~TestRefresh() {
+    UDT::cleanup();
   }
  protected:
   void SetUp() {

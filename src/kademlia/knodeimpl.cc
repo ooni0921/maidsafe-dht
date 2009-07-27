@@ -351,14 +351,6 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
     kadrpcs_.set_info(contact_info());
     args->is_callbacked = true;
     StartSearchIteration(node_id_, BOOTSTRAP, args->cb);
-    // start a schedule to delete expired key/value pairs only once
-    if (!refresh_routine_started_) {
-      ptimer_->AddCallLater(kRefreshTime*1000,
-                            boost::bind(&KNodeImpl::RefreshRoutine, this));
-      ptimer_->AddCallLater(2000, boost::bind(&KNodeImpl::RefreshValuesRoutine,
-        this));
-      refresh_routine_started_ = true;
-    }
   } else if (!args->cached_nodes.empty()) {
     Contact bootstrap_candidate = args->cached_nodes.back();
     args->cached_nodes.pop_back();  // inefficient!!!!
@@ -1980,6 +1972,14 @@ void KNodeImpl::SearchIteration_Callback(
         is_joined_ = true;
         addcontacts_routine_.reset(new boost::thread(
             &KNodeImpl::CheckAddContacts, this));
+        // start a schedule to delete expired key/value pairs only once
+        if (!refresh_routine_started_) {
+          ptimer_->AddCallLater(kRefreshTime*1000,
+                                boost::bind(&KNodeImpl::RefreshRoutine, this));
+          ptimer_->AddCallLater(2000, boost::bind(&KNodeImpl::RefreshValuesRoutine,
+            this));
+          refresh_routine_started_ = true;
+        }
       }
     }
     result.SerializeToString(&ser_result);
