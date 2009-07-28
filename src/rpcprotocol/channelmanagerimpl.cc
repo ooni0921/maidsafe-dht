@@ -47,12 +47,6 @@ ChannelManagerImpl::~ChannelManagerImpl() {
   channels_.clear();
   pending_req_.clear();
   pending_timeout_.clear();
-  {
-    boost::mutex::scoped_lock lock(channels_ids_mutex_);
-    while (!channels_ids_.empty()) {
-      delete_channels_cond_.wait(lock);
-    }
-  }
 }
 
 void ChannelManagerImpl::AddChannelId(boost::uint32_t *id) {
@@ -145,6 +139,15 @@ int ChannelManagerImpl::StopTransport() {
   ClearCallLaters();
   ptransport_->Stop();
   base::PDRoutingTable::getInstance()[base::itos(external_port_)]->Clear();
+  {
+    boost::mutex::scoped_lock lock(channels_ids_mutex_);
+    while (!channels_ids_.empty()) {
+      bool wait_result = delete_channels_cond_.timed_wait(lock,
+          boost::posix_time::seconds(10));
+      if (!wait_result)
+        channels_ids_.clear();
+    }
+  }
   return 1;
 }
 

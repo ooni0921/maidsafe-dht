@@ -584,6 +584,8 @@ void Transport::SendHandle() {
 
 int Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
       const uint16_t &peer_port, bool) {
+  if (stop_)
+    return -1;
   bool blocking = false;
   bool reuse_addr = true;
   UDT::setsockopt(*skt, 0, UDT_RCVSYN, &blocking, sizeof(blocking));

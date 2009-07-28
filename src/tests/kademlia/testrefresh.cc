@@ -111,6 +111,8 @@ class TestRefresh : public testing::Test {
     catch(const std::exception &e_) {
       printf("%s\n", e_.what());
     }
+    nodes.clear();
+    ch_managers.clear();
   }
 
   std::vector< boost::shared_ptr<rpcprotocol::ChannelManager> > ch_managers;

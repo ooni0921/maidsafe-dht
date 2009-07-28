@@ -1976,8 +1976,8 @@ void KNodeImpl::SearchIteration_Callback(
         if (!refresh_routine_started_) {
           ptimer_->AddCallLater(kRefreshTime*1000,
                                 boost::bind(&KNodeImpl::RefreshRoutine, this));
-          ptimer_->AddCallLater(2000, boost::bind(&KNodeImpl::RefreshValuesRoutine,
-            this));
+          ptimer_->AddCallLater(2000, boost::bind(
+              &KNodeImpl::RefreshValuesRoutine, this));
           refresh_routine_started_ = true;
         }
       }
