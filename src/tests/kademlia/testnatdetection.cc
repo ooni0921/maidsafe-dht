@@ -506,6 +506,7 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   }
   EXPECT_EQ(0, response.nat_type());
   EXPECT_FALSE(routingtableB_->GetContact(node_idA_, &contactback));
+  channel_managerB_->StopTransport();
 }
 
 TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {
