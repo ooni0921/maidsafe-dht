@@ -120,11 +120,14 @@ bool KNode::FindValueLocal(const std::string &key,
 }
 
 bool KNode::StoreValueLocal(const std::string &key,
-      const std::string &value, const bool &publish,
-      const boost::uint32_t &ttl) {
-  return pimpl_->StoreValueLocal(key, value, publish, ttl);
+      const std::string &value, const boost::uint32_t &ttl) {
+  return pimpl_->StoreValueLocal(key, value, ttl);
 }
 
+bool KNode::RefreshValueLocal(const std::string &key,
+      const std::string &value, const boost::uint32_t &ttl) {
+  return pimpl_->RefreshValueLocal(key, value, ttl);
+}
 
 void KNode::GetRandomContacts(const int &count,
                               const std::vector<Contact> &exclude_contacts,

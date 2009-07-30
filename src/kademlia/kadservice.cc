@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/utils.h"
 #include "rpcprotocol/channelimpl.h"
+#include "protobuf/signed_kadvalue.pb.h"
 
 namespace kad {
 KadService::KadService(KNodeImpl *knode) : knode_(knode) {}
@@ -191,8 +192,15 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
 #endif
     std::vector<std::string> values_str;
     if (knode_->FindValueLocal(key, values_str)) {
-      for (int i = 0; i < static_cast<int>(values_str.size()); i++) {
-        response->add_values(values_str[i]);
+      if (knode_->HasRSAKeys()) {
+        for (int i = 0; i < static_cast<int>(values_str.size()); i++) {
+          SignedValue signed_value;
+          if (signed_value.ParseFromString(values_str[i]))
+            response->add_values(signed_value.value());
+        }
+      } else {
+        for (int i = 0; i < static_cast<int>(values_str.size()); i++)
+          response->add_values(values_str[i]);
       }
       response->set_result(kRpcResultSuccess);
       knode_->AddContact(sender, false);
@@ -539,17 +547,28 @@ bool KadService::CheckStoreRequest(const StoreRequest *request,
       Contact *sender) {
   if (!request->IsInitialized())
     return false;
-  if (knode_->HasRSAKeys())
+  if (knode_->HasRSAKeys()) {
     if (!request->has_public_key() || !request->has_signed_public_key() ||
         !request->has_signed_request())
       return false;
+    SignedValue value;
+    if (!value.ParseFromString(request->value()))
+      return false;
+  }
   return GetSender(request->sender_info(), sender);
 }
 
 void KadService::StoreValueLocal(const StoreRequest *request, Contact sender,
       StoreResponse *response) {
-  if (knode_->StoreValueLocal(request->key(), request->value(),
-      request->publish(), request->ttl())) {
+  bool result;
+  if (request->publish()) {
+    result = knode_->StoreValueLocal(request->key(), request->value(),
+        request->ttl());
+  } else {
+    result = knode_->RefreshValueLocal(request->key(), request->value(),
+        request->ttl());
+  }
+  if (result) {
     response->set_result(kRpcResultSuccess);
     knode_->AddContact(sender, false);
   } else {

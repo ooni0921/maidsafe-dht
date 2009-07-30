@@ -53,22 +53,17 @@ bool DataStore::Keys(std::set<std::string> *keys) {
 
 bool DataStore::StoreItem(const std::string &key,
       const std::string &value, const boost::uint32_t &time_to_live,
-      const bool &publish) {
+      const bool &hashable) {
   if (key == "" || value == "" || time_to_live <= 0)
     return false;
 
   boost::uint32_t time_stamp = base::get_epoch_time();
   key_value_tuple tuple(key, value, time_stamp,
-      time_to_live+time_stamp, time_to_live);
+      time_to_live+time_stamp, time_to_live, hashable);
   boost::mutex::scoped_lock guard(mutex_);
   std::pair<datastore::iterator, bool> p = datastore_.insert(tuple);
 
   if (!p.second) {
-    if (!publish) {
-      // It is a refresh, do not update the expire time
-      tuple.expire_time_ = p.first->expire_time_;
-      tuple.ttl_ = p.first->ttl_;
-    }
     datastore_.replace(p.first, tuple);
   }
   return true;
@@ -168,5 +163,33 @@ boost::uint32_t DataStore::TimeToLive(const std::string &key,
 
 boost::uint32_t DataStore::t_refresh() const {
   return t_refresh_;
+}
+
+std::vector< std::pair<std::string, bool> > DataStore::LoadKeyAppendableAttr(
+    const std::string &key) {
+  std::vector< std::pair<std::string, bool> > result;
+  boost::mutex::scoped_lock guard(mutex_);
+  std::pair<datastore::iterator, datastore::iterator> p =
+      datastore_.equal_range(boost::make_tuple(key));
+  while (p.first != p.second) {
+    result.push_back(std::pair<std::string, bool>(p.first->value_,
+        p.first->appendable_key_));
+    p.first++;
+  }
+  return result;
+}
+
+bool DataStore::RefreshItem(const std::string &key, const std::string &value) {
+  boost::mutex::scoped_lock guard(mutex_);
+  datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
+  if (it == datastore_.end())
+    return false;
+  boost::uint32_t time_stamp = base::get_epoch_time();
+  key_value_tuple tuple(key, value, time_stamp);
+  tuple.ttl_ = it->ttl_;
+  tuple.expire_time_ = it->expire_time_;
+  tuple.appendable_key_ = it->appendable_key_;
+  datastore_.replace(it, tuple);
+  return true;
 }
 }  // namespace kad

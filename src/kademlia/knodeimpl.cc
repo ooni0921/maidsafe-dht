@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/utils.h"
 #include "protobuf/contact_info.pb.h"
 #include "transport/transportapi.h"
+#include "protobuf/signed_kadvalue.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -898,7 +899,13 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
             stored_local = true;
         }
         if (stored_local) {
-          if (pdata_store_->StoreItem(key, value, 24*3600, publish) &&
+          bool local_result;
+          if (publish) {
+            local_result = StoreValueLocal(key, value, ttl);
+          } else {
+            local_result = RefreshValueLocal(key, value, ttl);
+          }
+          if (local_result &&
               static_cast<int>(closest_nodes.size()) >= K_) {
             closest_nodes.pop_back();
 #ifdef DEBUG
@@ -962,8 +969,16 @@ void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
   if (FindValueLocal(key, values)) {
     kad::FindResponse result_msg;
     result_msg.set_result(kad::kRpcResultSuccess);
-    for (boost::uint64_t n = 0; n < values.size(); ++n)
-      result_msg.add_values(values[n]);
+    if (HasRSAKeys()) {
+      for (boost::uint64_t n = 0; n < values.size(); ++n) {
+        SignedValue sig_value;
+        if (sig_value.ParseFromString(values[n]))
+          result_msg.add_values(sig_value.value());
+      }
+    } else {
+      for (boost::uint64_t n = 0; n < values.size(); ++n)
+        result_msg.add_values(values[n]);
+    }
     std::string ser_find_result;
     result_msg.SerializeToString(&ser_find_result);
     cb(ser_find_result);
@@ -1221,15 +1236,35 @@ bool KNodeImpl::FindValueLocal(const std::string &key,
 }
 
 bool KNodeImpl::StoreValueLocal(const std::string &key,
-      const std::string &value, const bool &publish,
-      const boost::uint32_t &ttl) {
-  return pdata_store_->StoreItem(key, value, ttl, publish);
+      const std::string &value, const boost::uint32_t &ttl) {
+  bool hashable = false;
+  if (HasRSAKeys()) {
+    std::vector< std::pair<std::string, bool> > attr;
+    attr = pdata_store_->LoadKeyAppendableAttr(key);
+    if (attr.empty()) {
+      crypto::Crypto cobj;
+      cobj.set_hash_algorithm(crypto::SHA_512);
+      if (key == cobj.Hash(value, "", crypto::STRING_STRING, false))
+        hashable = true;
+    } else if (attr.size() == 1) {
+      hashable = attr[0].second;
+      if (hashable && value != attr[0].first)
+        return false;
+    }
+  }
+  return pdata_store_->StoreItem(key, value, ttl, hashable);
 }
 
-void KNodeImpl::GetRandomContacts(
-    const int &count,
-    const std::vector<Contact> &exclude_contacts,
-    std::vector<Contact> *contacts) {
+bool KNodeImpl::RefreshValueLocal(const std::string &key,
+      const std::string &value, const boost::uint32_t &ttl) {
+  if (pdata_store_->RefreshItem(key, value))
+    return true;
+  return StoreValueLocal(key, value, ttl);
+}
+
+void KNodeImpl::GetRandomContacts(const int &count,
+      const std::vector<Contact> &exclude_contacts,
+      std::vector<Contact> *contacts) {
   contacts->clear();
   std::vector<Contact> all_contacts;
   {
@@ -2123,7 +2158,7 @@ void KNodeImpl::RefreshValueCallback(const std::string &result,
       const int &total_refreshes) {
   if (!is_joined_ || !refresh_routine_started_  || stopping_)
     return;
-  StoreValueLocal(key, value, false, ttl);
+  RefreshValueLocal(key, value, ttl);
   ++*refreshes_done;
   if (total_refreshes == *refreshes_done) {
     ptimer_->AddCallLater(2000, boost::bind(&KNodeImpl::RefreshValuesRoutine,

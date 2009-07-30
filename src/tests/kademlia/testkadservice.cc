@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
+#include "protobuf/signed_kadvalue.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -219,7 +220,8 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   // Search in empty routing table and datastore
   rpcprotocol::Controller controller;
   FindRequest find_value_request;
-  std::string hex_key;
+  std::string hex_key, public_key, private_key;
+  CreateRSAKeys(&public_key, &private_key);
   for (int i = 0; i < 128; ++i)
     hex_key += "a";
   std::string key;
@@ -270,7 +272,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
     wrong_hex_key += "b";
   std::string wrong_key;
   base::decode_from_hex(wrong_hex_key, &wrong_key);
-  EXPECT_TRUE(datastore_->StoreItem(wrong_key, "X", 24*3600, true));
+  EXPECT_TRUE(datastore_->StoreItem(wrong_key, "X", 24*3600, false));
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   find_value_response.Clear();
@@ -300,7 +302,12 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   std::vector<std::string> values;
   for (int i = 0; i < 100; ++i) {
     values.push_back("Value"+base::itos(i));
-    EXPECT_TRUE(datastore_->StoreItem(key, values[i], 24*3600, true));
+    SignedValue sig_value;
+    sig_value.set_value(values[i]);
+    sig_value.set_value_signature(crypto_.AsymSign(values[i], "", private_key,
+        crypto::STRING_STRING));
+    std::string ser_sig_value = sig_value.SerializeAsString();
+    EXPECT_TRUE(datastore_->StoreItem(key, ser_sig_value, 24*3600, false));
   }
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -514,11 +521,24 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
       (&cb_obj, &Callback::CallbackFunction);
   service_->Store(&controller, &store_request, &store_response, done1);
   EXPECT_TRUE(store_response.IsInitialized());
+  EXPECT_EQ(kRpcResultFailure, store_response.result());
+
+  store_request.clear_value();
+  SignedValue sig_value;
+  sig_value.set_value(value1);
+  sig_value.set_value_signature(crypto_.AsymSign(value1, "", private_key,
+      crypto::STRING_STRING));
+  std::string ser_sig_value1 = sig_value.SerializeAsString();
+  store_request.set_value(ser_sig_value1);
+  google::protobuf::Closure *done4 = google::protobuf::NewCallback<Callback>
+      (&cb_obj, &Callback::CallbackFunction);
+  service_->Store(&controller, &store_request, &store_response, done4);
+  EXPECT_TRUE(store_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, store_response.result());
   EXPECT_EQ(node_id_, store_response.node_id());
   std::vector<std::string> values;
   ASSERT_TRUE(datastore_->LoadItem(key, values));
-  EXPECT_EQ(value1, values[0]);
+  EXPECT_EQ(ser_sig_value1, values[0]);
   Contact contactback;
   EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
 
@@ -527,7 +547,12 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   // time to first value.
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   store_request.clear_value();
-  store_request.set_value(value2);
+  sig_value.Clear();
+  sig_value.set_value(value2);
+  sig_value.set_value_signature(crypto_.AsymSign(value2, "", private_key,
+      crypto::STRING_STRING));
+  std::string ser_sig_value2 = sig_value.SerializeAsString();
+  store_request.set_value(ser_sig_value2);
   store_response.Clear();
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -537,14 +562,19 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   EXPECT_EQ(node_id_, store_response.node_id());
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key, values));
-  EXPECT_EQ(value1, values[0]);
-  EXPECT_EQ(value2, values[1]);
+  EXPECT_EQ(ser_sig_value1, values[0]);
+  EXPECT_EQ(ser_sig_value2, values[1]);
 
   // Store value3
   // Allow thread to sleep for same reason as above.
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   store_request.clear_value();
-  store_request.set_value(value3);
+  sig_value.Clear();
+  sig_value.set_value(value3);
+  sig_value.set_value_signature(crypto_.AsymSign(value3, "", private_key,
+      crypto::STRING_STRING));
+  std::string ser_sig_value3 = sig_value.SerializeAsString();
+  store_request.set_value(ser_sig_value3);
   store_response.Clear();
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -554,13 +584,31 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   EXPECT_EQ(node_id_, store_response.node_id());
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key, values));
-  EXPECT_EQ(value1, values[0]);
-  EXPECT_EQ(value2, values[2]);
-  EXPECT_EQ(value3, values[1]);
+  ASSERT_EQ(3, values.size());
+  int valuesfound = 0;
+  for (unsigned int i = 0; i < values.size(); i++) {
+    if (ser_sig_value1 == values[i]) {
+      valuesfound++;
+      break;
+    }
+  }
+  for (unsigned int i = 0; i < values.size(); i++) {
+    if (ser_sig_value2 == values[i]) {
+      valuesfound++;
+      break;
+    }
+  }
+  for (unsigned int i = 0; i < values.size(); i++) {
+    if (ser_sig_value3 == values[i]) {
+      valuesfound++;
+      break;
+    }
+  }
+  ASSERT_EQ(3, valuesfound);
 }
 
 TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
-  std::string value("value4");
+  std::string value("value4"), value1("value5");
   std::string key = crypto_.Hash(value, "", crypto::STRING_STRING, false);
   rpcprotocol::Controller controller;
   StoreRequest store_request;
@@ -586,6 +634,14 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   CreateRSAKeys(&public_key, &private_key);
   CreateSignedRequest(public_key, private_key, key, &signed_public_key,
       &signed_request);
+  store_request.clear_value();
+  SignedValue sig_value;
+  sig_value.set_value(value);
+  sig_value.set_value_signature(crypto_.AsymSign(value, "", private_key,
+      crypto::STRING_STRING));
+  std::string ser_sig_value = sig_value.SerializeAsString();
+  store_request.set_value(ser_sig_value);
+
   store_request.set_public_key(public_key);
   store_request.set_signed_public_key(signed_public_key);
   store_request.set_signed_request(signed_request);
@@ -598,7 +654,7 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key, values));
   ASSERT_EQ(1, values.size());
-  EXPECT_EQ(value, values[0]);
+  EXPECT_EQ(ser_sig_value, values[0]);
 
   store_request.clear_value();
   store_request.set_value("other value");
@@ -611,7 +667,59 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key, values));
   ASSERT_EQ(1, values.size());
-  ASSERT_EQ(value, values[0]);
+  ASSERT_EQ(ser_sig_value, values[0]);
+
+  // storing a hashable value
+  store_request.Clear();
+  store_response.Clear();
+  sig_value.Clear();
+  sig_value.set_value(value1);
+  sig_value.set_value_signature(crypto_.AsymSign(value1, "", private_key,
+      crypto::STRING_STRING));
+  std::string ser_sig_value1 = sig_value.SerializeAsString();
+  store_request.set_value(ser_sig_value1);
+  std::string key1 = crypto_.Hash(ser_sig_value1, "", crypto::STRING_STRING,
+      false);
+  ContactInfo *sender_info1 = store_request.mutable_sender_info();
+  *sender_info1 = contact_;
+  store_request.set_key(key1);
+  store_request.set_publish(true);
+  store_request.set_ttl(24*3600);
+  signed_public_key = "";
+  signed_request = "";
+  CreateSignedRequest(public_key, private_key, key1, &signed_public_key,
+      &signed_request);
+  store_request.set_public_key(public_key);
+  store_request.set_signed_public_key(signed_public_key);
+  store_request.set_signed_request(signed_request);
+  google::protobuf::Closure *done4 = google::protobuf::NewCallback<Callback>
+      (&cb_obj, &Callback::CallbackFunction);
+  service_->Store(&controller, &store_request, &store_response, done4);
+  EXPECT_TRUE(store_response.IsInitialized());
+  EXPECT_EQ(kRpcResultSuccess, store_response.result());
+  EXPECT_EQ(node_id_, store_response.node_id());
+  values.clear();
+  EXPECT_TRUE(datastore_->LoadItem(key1, values));
+  ASSERT_EQ(1, values.size());
+  EXPECT_EQ(ser_sig_value1, values[0]);
+  store_request.clear_value();
+
+  sig_value.Clear();
+  sig_value.set_value("other value");
+  sig_value.set_value_signature(crypto_.AsymSign("other value", "", private_key,
+      crypto::STRING_STRING));
+  std::string ser_sig_value2 = sig_value.SerializeAsString();
+  store_request.set_value(ser_sig_value2);
+  google::protobuf::Closure *done5 = google::protobuf::NewCallback<Callback>
+      (&cb_obj, &Callback::CallbackFunction);
+  service_->Store(&controller, &store_request, &store_response, done5);
+  EXPECT_TRUE(store_response.IsInitialized());
+  EXPECT_EQ(kRpcResultFailure, store_response.result());
+  EXPECT_EQ(node_id_, store_response.node_id());
+  values.clear();
+  EXPECT_TRUE(datastore_->LoadItem(key1, values));
+  ASSERT_EQ(1, values.size());
+  ASSERT_EQ(ser_sig_value1, values[0]);
 }
 
 TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {

@@ -54,13 +54,18 @@ struct refresh_value {
 struct key_value_tuple {
   std::string key_, value_;
   boost::uint32_t last_refresh_time_, expire_time_, ttl_;
+  bool appendable_key_;
 
-  key_value_tuple(const std::string &key,
-      const std::string &value,
+  key_value_tuple(const std::string &key, const std::string &value,
       const boost::uint32_t &last_refresh_time,
-      const boost::uint32_t &expire_time, const boost::uint32_t &ttl)
-      : key_(key), value_(value), last_refresh_time_(last_refresh_time),
-        expire_time_(expire_time), ttl_(ttl) {}
+      const boost::uint32_t &expire_time, const boost::uint32_t &ttl,
+      const bool &appendable_key) : key_(key), value_(value),
+        last_refresh_time_(last_refresh_time), expire_time_(expire_time),
+        ttl_(ttl), appendable_key_(appendable_key) {}
+  key_value_tuple(const std::string &key, const std::string &value,
+      const boost::uint32_t &last_refresh_time) : key_(key), value_(value),
+        last_refresh_time_(last_refresh_time), expire_time_(0), ttl_(0),
+        appendable_key_(false) {}
 };
 
 /* Tags */
@@ -100,9 +105,8 @@ class DataStore {
   // time_to_live is in seconds,
   // publish = true => reset expire_time & last_published_time
   // publish = false => reset only last_publish_time
-  bool StoreItem(const std::string &key,
-      const std::string &value, const boost::uint32_t &time_to_live,
-      const bool &publish);
+  bool StoreItem(const std::string &key, const std::string &value,
+      const boost::uint32_t &time_to_live, const bool &hashable);
   bool LoadItem(const std::string &key, std::vector<std::string> &values);
   bool DeleteKey(const std::string &key);
   bool DeleteItem(const std::string &key, const std::string &value);
@@ -114,6 +118,9 @@ class DataStore {
   std::vector<refresh_value> ValuesToRefresh();
   boost::uint32_t TimeToLive(const std::string &key, const std::string &value);
   void Clear();
+  std::vector< std::pair<std::string, bool> > LoadKeyAppendableAttr(
+      const std::string &key);
+  bool RefreshItem(const std::string &key, const std::string &value);
   boost::uint32_t t_refresh() const;
  private:
   datastore datastore_;

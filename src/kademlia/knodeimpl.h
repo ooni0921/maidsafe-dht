@@ -239,8 +239,9 @@ class KNodeImpl {
   bool FindValueLocal(const std::string &key,
                       std::vector<std::string> &values);
   bool StoreValueLocal(const std::string &key,
-      const std::string &value, const bool &publish,
-      const boost::uint32_t &ttl);
+      const std::string &value, const boost::uint32_t &ttl);
+  bool RefreshValueLocal(const std::string &key,
+      const std::string &value, const boost::uint32_t &ttl);
   void GetRandomContacts(const int &count,
                          const std::vector<Contact> &exclude_contacts,
                          std::vector<Contact> *contacts);
