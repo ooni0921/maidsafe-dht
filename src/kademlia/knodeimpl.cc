@@ -39,7 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/utils.h"
 #include "protobuf/contact_info.pb.h"
 #include "transport/transportapi.h"
-#include "protobuf/signed_kadvalue.pb.h"
+#include "maidsafe/signed_kadvalue.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -761,11 +761,18 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
                 &KNodeImpl::StoreValue_IterativeStoreValue,
                 resp,
                 callback_data);
-        kadrpcs_.Store(callback_data.data->key, callback_data.data->value,
-            callback_data.data->pub_key, callback_data.data->sig_pub_key,
-            callback_data.data->sig_req, callback_data.sender.host_ip(),
-            callback_data.sender.host_port(), resp, done1, false,
-            callback_data.data->ttl, callback_data.data->publish);
+        if (HasRSAKeys()) {
+          kadrpcs_.Store(callback_data.data->key, callback_data.data->sig_value,
+              callback_data.data->pub_key, callback_data.data->sig_pub_key,
+              callback_data.data->sig_req, callback_data.sender.host_ip(),
+              callback_data.sender.host_port(), resp, done1, false,
+              callback_data.data->ttl, callback_data.data->publish);
+        } else {
+          kadrpcs_.Store(callback_data.data->key, callback_data.data->value,
+              callback_data.sender.host_ip(), callback_data.sender.host_port(),
+              resp, done1, false, callback_data.data->ttl,
+              callback_data.data->publish);
+        }
         return;
       }
     }
@@ -853,10 +860,17 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
         KNodeImpl, const StoreResponse*, StoreCallbackArgs > (
             this, &KNodeImpl::StoreValue_IterativeStoreValue, resp,
             callback_args);
-    kadrpcs_.Store(callback_data.data->key, callback_data.data->value,
-        callback_data.data->pub_key, callback_data.data->sig_pub_key,
-        callback_data.data->sig_req, contact_ip, contact_port, resp, done,
-        local, callback_data.data->ttl, callback_data.data->publish);
+
+    if (callback_data.data->sig_value.IsInitialized()) {
+      kadrpcs_.Store(callback_data.data->key, callback_data.data->sig_value,
+          callback_data.data->pub_key, callback_data.data->sig_pub_key,
+          callback_data.data->sig_req, contact_ip, contact_port, resp, done,
+          local, callback_data.data->ttl, callback_data.data->publish);
+    } else {
+      kadrpcs_.Store(callback_data.data->key, callback_data.data->value,
+          contact_ip, contact_port, resp, done, local, callback_data.data->ttl,
+          callback_data.data->publish);
+    }
   }
 }
 
@@ -900,10 +914,16 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
         }
         if (stored_local) {
           bool local_result;
-          if (publish) {
-            local_result = StoreValueLocal(key, value, ttl);
+          std::string local_value;
+          if (sig_req.value.IsInitialized()) {
+            local_value = sig_req.value.SerializeAsString();
           } else {
-            local_result = RefreshValueLocal(key, value, ttl);
+            local_value = value;
+          }
+          if (publish) {
+            local_result = StoreValueLocal(key, local_value, ttl);
+          } else {
+            local_result = RefreshValueLocal(key, local_value, ttl);
           }
           if (local_result &&
               static_cast<int>(closest_nodes.size()) >= K_) {
@@ -917,7 +937,7 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
       boost::shared_ptr<IterativeStoreValueData>
           data(new struct IterativeStoreValueData(closest_nodes, key, value, cb,
                sig_req.public_key, sig_req.signed_public_key,
-               sig_req.signed_request, publish, ttl));
+               sig_req.signed_request, publish, ttl, sig_req.value));
       if (stored_local)
         data->save_nodes++;
       // decide the parallel level
@@ -943,15 +963,23 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
 }
 
 void KNodeImpl::StoreValue(const std::string &key,
-                           const std::string &value,
+                           const SignedValue &value,
                            const std::string &public_key,
                            const std::string &signed_public_key,
                            const std::string &signed_request,
                            const boost::uint32_t &ttl,
                            base::callback_func_type cb) {
-  StoreRequestSignature sig(public_key, signed_public_key, signed_request);
+  if (!value.IsInitialized()) {
+    StoreResponse resp;
+    resp.set_result(kad::kRpcResultFailure);
+    std::string ser_resp = resp.SerializeAsString();
+    cb(ser_resp);
+    return;
+  }
+  StoreRequestSignature sig(public_key, signed_public_key, signed_request,
+      value);
   FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs, this,
-                                  _1, key, value, sig, true, ttl, cb));
+                                  _1, key, "", sig, true, ttl, cb));
 }
 
 void KNodeImpl::StoreValue(const std::string &key,
@@ -2147,9 +2175,16 @@ void KNodeImpl::RefreshValue(const std::string &key,
     sig.signed_request = cobj.AsymSign(cobj.Hash(public_key_ +
         sig.signed_public_key + key, "", crypto::STRING_STRING, true), "",
         private_key_, crypto::STRING_STRING);
+    SignedValue sig_value;
+    if (!sig_value.ParseFromString(value))
+      return;
+    sig.value = sig_value;
+    FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs,
+                                  this, _1, key, "", sig, false, ttl, cb));
+  } else {
+    FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs,
+                                  this, _1, key, value, sig, false, ttl, cb));
   }
-  FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs, this,
-                                  _1, key, value, sig, false, ttl, cb));
 }
 
 void KNodeImpl::RefreshValueCallback(const std::string &result,

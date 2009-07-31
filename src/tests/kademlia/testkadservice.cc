@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
-#include "protobuf/signed_kadvalue.pb.h"
+#include "maidsafe/signed_kadvalue.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -524,12 +524,13 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   EXPECT_EQ(kRpcResultFailure, store_response.result());
 
   store_request.clear_value();
-  SignedValue sig_value;
-  sig_value.set_value(value1);
-  sig_value.set_value_signature(crypto_.AsymSign(value1, "", private_key,
+
+  SignedValue *svalue1 = store_request.mutable_sig_value();
+  svalue1->set_value(value1);
+  svalue1->set_value_signature(crypto_.AsymSign(value1, "", private_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value1 = sig_value.SerializeAsString();
-  store_request.set_value(ser_sig_value1);
+  std::string ser_sig_value1 = svalue1->SerializeAsString();
+
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   service_->Store(&controller, &store_request, &store_response, done4);
@@ -546,13 +547,12 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   // Allow thread to sleep so that second value has a different last published
   // time to first value.
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  store_request.clear_value();
-  sig_value.Clear();
-  sig_value.set_value(value2);
-  sig_value.set_value_signature(crypto_.AsymSign(value2, "", private_key,
+  store_request.clear_sig_value();
+  SignedValue *svalue2 = store_request.mutable_sig_value();
+  svalue2->set_value(value2);
+  svalue2->set_value_signature(crypto_.AsymSign(value2, "", private_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value2 = sig_value.SerializeAsString();
-  store_request.set_value(ser_sig_value2);
+  std::string ser_sig_value2 = svalue2->SerializeAsString();
   store_response.Clear();
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -568,13 +568,12 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   // Store value3
   // Allow thread to sleep for same reason as above.
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  store_request.clear_value();
-  sig_value.Clear();
-  sig_value.set_value(value3);
-  sig_value.set_value_signature(crypto_.AsymSign(value3, "", private_key,
+  store_request.clear_sig_value();
+  SignedValue *svalue3 = store_request.mutable_sig_value();
+  svalue3->set_value(value3);
+  svalue3->set_value_signature(crypto_.AsymSign(value3, "", private_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value3 = sig_value.SerializeAsString();
-  store_request.set_value(ser_sig_value3);
+  std::string ser_sig_value3 = svalue3->SerializeAsString();
   store_response.Clear();
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -635,12 +634,11 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   CreateSignedRequest(public_key, private_key, key, &signed_public_key,
       &signed_request);
   store_request.clear_value();
-  SignedValue sig_value;
-  sig_value.set_value(value);
-  sig_value.set_value_signature(crypto_.AsymSign(value, "", private_key,
+  SignedValue *sig_value = store_request.mutable_sig_value();
+  sig_value->set_value(value);
+  sig_value->set_value_signature(crypto_.AsymSign(value, "", private_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value = sig_value.SerializeAsString();
-  store_request.set_value(ser_sig_value);
+  std::string ser_sig_value = sig_value->SerializeAsString();
 
   store_request.set_public_key(public_key);
   store_request.set_signed_public_key(signed_public_key);
@@ -657,6 +655,7 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   EXPECT_EQ(ser_sig_value, values[0]);
 
   store_request.clear_value();
+  store_request.clear_sig_value();
   store_request.set_value("other value");
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -672,12 +671,12 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   // storing a hashable value
   store_request.Clear();
   store_response.Clear();
-  sig_value.Clear();
-  sig_value.set_value(value1);
-  sig_value.set_value_signature(crypto_.AsymSign(value1, "", private_key,
+  SignedValue *sig_value1 = store_request.mutable_sig_value();
+  sig_value1->set_value(value1);
+  sig_value1->set_value_signature(crypto_.AsymSign(value1, "", private_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value1 = sig_value.SerializeAsString();
-  store_request.set_value(ser_sig_value1);
+  std::string ser_sig_value1 = sig_value1->SerializeAsString();
+
   std::string key1 = crypto_.Hash(ser_sig_value1, "", crypto::STRING_STRING,
       false);
   ContactInfo *sender_info1 = store_request.mutable_sender_info();
@@ -702,14 +701,13 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   EXPECT_TRUE(datastore_->LoadItem(key1, values));
   ASSERT_EQ(1, values.size());
   EXPECT_EQ(ser_sig_value1, values[0]);
-  store_request.clear_value();
 
-  sig_value.Clear();
-  sig_value.set_value("other value");
-  sig_value.set_value_signature(crypto_.AsymSign("other value", "", private_key,
-      crypto::STRING_STRING));
-  std::string ser_sig_value2 = sig_value.SerializeAsString();
-  store_request.set_value(ser_sig_value2);
+  store_request.clear_sig_value();
+  SignedValue *sig_value2 = store_request.mutable_sig_value();
+  sig_value2->set_value("other value");
+  sig_value2->set_value_signature(crypto_.AsymSign("other value", "",
+      private_key, crypto::STRING_STRING));
+  std::string ser_sig_value2 = sig_value2->SerializeAsString();
   google::protobuf::Closure *done5 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   service_->Store(&controller, &store_request, &store_response, done5);

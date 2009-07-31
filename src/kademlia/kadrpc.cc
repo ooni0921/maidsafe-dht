@@ -26,7 +26,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "kademlia/kadrpc.h"
-#include "maidsafe/maidsafe-dht.h"
 #include "rpcprotocol/channelimpl.h"
 
 namespace kad {
@@ -88,9 +87,32 @@ void KadRpcs::Ping(const std::string &ip,
 }
 
 void KadRpcs::Store(const std::string &key,
-      const std::string &value, const std::string &public_key,
+      const SignedValue &value, const std::string &public_key,
       const std::string &signed_public_key, const std::string &signed_request,
       const std::string &ip, const boost::uint16_t &port, StoreResponse *resp,
+      google::protobuf::Closure *cb, const bool &local,
+      const boost::uint32_t &ttl, const bool &publish) {
+  StoreRequest args;
+  args.set_key(key);
+  SignedValue *svalue = args.mutable_sig_value();
+  *svalue = value;
+  args.set_ttl(ttl);
+  args.set_publish(publish);
+  args.set_public_key(public_key);
+  args.set_signed_public_key(signed_public_key);
+  args.set_signed_request(signed_request);
+  ContactInfo *sender_info = args.mutable_sender_info();
+  *sender_info = info_;
+  rpcprotocol::Controller controller;
+  boost::shared_ptr<rpcprotocol::Channel> channel(new rpcprotocol::Channel(
+      pchannel_manager_.get(), ip, port, local));
+  KademliaService::Stub service(channel.get());
+    service.Store(&controller, &args, resp, cb);
+}
+
+void KadRpcs::Store(const std::string &key,
+      const std::string &value, const std::string &ip,
+      const boost::uint16_t &port, StoreResponse *resp,
       google::protobuf::Closure *cb, const bool &local,
       const boost::uint32_t &ttl, const bool &publish) {
   StoreRequest args;
@@ -98,11 +120,6 @@ void KadRpcs::Store(const std::string &key,
   args.set_value(value);
   args.set_ttl(ttl);
   args.set_publish(publish);
-  if (public_key != "" && signed_public_key != "" && signed_request != "") {
-    args.set_public_key(public_key);
-    args.set_signed_public_key(signed_public_key);
-    args.set_signed_request(signed_request);
-  }
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   rpcprotocol::Controller controller;

@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <vector>
+#include "maidsafe/maidsafe-dht.h"
 #include "protobuf/kademlia_service.pb.h"
 
 namespace rpcprotocol {
@@ -54,10 +55,14 @@ class KadRpcs {
       google::protobuf::Closure *cb, const bool &local);
   void Ping(const std::string &ip, const boost::uint16_t &port,
       PingResponse *resp, google::protobuf::Closure *cb, const bool &local);
-  void Store(const std::string &key, const std::string &value,
+  void Store(const std::string &key, const SignedValue &value,
       const std::string &public_key, const std::string &signed_public_key,
       const std::string &signed_request, const std::string &ip,
       const boost::uint16_t &port, StoreResponse *resp,
+      google::protobuf::Closure *cb, const bool &local,
+      const boost::uint32_t &ttl, const bool &publish);
+  void Store(const std::string &key, const std::string &value,
+      const std::string &ip, const boost::uint16_t &port, StoreResponse *resp,
       google::protobuf::Closure *cb, const bool &local,
       const boost::uint32_t &ttl, const bool &publish);
   void Downlist(const std::vector<std::string> downlist,

@@ -40,8 +40,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
+#include "maidsafe/signed_kadvalue.pb.h"
 
-#if MAIDSAFE_DHT_VERSION < 3
+#if MAIDSAFE_DHT_VERSION < 4
 #error this API is not compatible with the installed library
 #error Please update the maidsafe-dht library
 #endif
@@ -85,7 +86,7 @@ class KNode {
             base::callback_func_type cb, const bool &port_forwarded);
   void Leave();
   void StoreValue(const std::string &key,
-                  const std::string &value,
+                  const SignedValue &value,
                   const std::string &public_key,
                   const std::string &signed_public_key,
                   const std::string &signed_request,

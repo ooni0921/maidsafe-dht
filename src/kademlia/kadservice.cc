@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/utils.h"
 #include "rpcprotocol/channelimpl.h"
-#include "protobuf/signed_kadvalue.pb.h"
+#include "maidsafe/signed_kadvalue.pb.h"
 
 namespace kad {
 KadService::KadService(KNodeImpl *knode) : knode_(knode) {}
@@ -231,27 +231,12 @@ void KadService::Store(google::protobuf::RpcController *,
 #endif
       response->set_result(kRpcResultFailure);
     } else {
-      std::vector<std::string> curr_values;
-      knode_->FindValueLocal(request->key(), curr_values);
-      if (curr_values.size() != 1) {
-        StoreValueLocal(request, sender, response);
-      } else {
-        crypto::Crypto checker;
-        checker.set_hash_algorithm(crypto::SHA_512);
-        std::string hash_currvalue = checker.Hash(curr_values[0], "",
-            crypto::STRING_STRING, false);
-        if (hash_currvalue == request->key() &&
-            hash_currvalue == request->value()) {
-          StoreValueLocal(request, sender, response);
-        } else if (hash_currvalue != request->key()) {
-          StoreValueLocal(request, sender, response);
-        } else {
-          response->set_result(kRpcResultFailure);
-        }
-      }
+      StoreValueLocal(request->key(), request->sig_value(), sender,
+          request->ttl(), request->publish(), response);
     }
   } else {
-    StoreValueLocal(request, sender, response);
+    StoreValueLocal(request->key(), request->value(), sender, request->ttl(),
+        request->publish(), response);
   }
   response->set_node_id(knode_->node_id());
   done->Run();
@@ -549,24 +534,41 @@ bool KadService::CheckStoreRequest(const StoreRequest *request,
     return false;
   if (knode_->HasRSAKeys()) {
     if (!request->has_public_key() || !request->has_signed_public_key() ||
-        !request->has_signed_request())
+        !request->has_signed_request() || !request->has_sig_value())
       return false;
-    SignedValue value;
-    if (!value.ParseFromString(request->value()))
+  } else {
+    if (!request->has_value())
       return false;
   }
   return GetSender(request->sender_info(), sender);
 }
 
-void KadService::StoreValueLocal(const StoreRequest *request, Contact sender,
-      StoreResponse *response) {
+void KadService::StoreValueLocal(const std::string &key,
+      const std::string &value, Contact sender, const boost::uint32_t &ttl,
+      const bool &publish, StoreResponse *response) {
   bool result;
-  if (request->publish()) {
-    result = knode_->StoreValueLocal(request->key(), request->value(),
-        request->ttl());
+  if (publish) {
+    result = knode_->StoreValueLocal(key, value, ttl);
   } else {
-    result = knode_->RefreshValueLocal(request->key(), request->value(),
-        request->ttl());
+    result = knode_->RefreshValueLocal(key, value, ttl);
+  }
+  if (result) {
+    response->set_result(kRpcResultSuccess);
+    knode_->AddContact(sender, false);
+  } else {
+    response->set_result(kRpcResultFailure);
+  }
+}
+
+void KadService::StoreValueLocal(const std::string &key,
+      const SignedValue &value, Contact sender, const boost::uint32_t &ttl,
+      const bool &publish, StoreResponse *response) {
+  bool result;
+  std::string ser_value = value.SerializeAsString();
+  if (publish) {
+    result = knode_->StoreValueLocal(key, ser_value, ttl);
+  } else {
+    result = knode_->RefreshValueLocal(key, ser_value, ttl);
   }
   if (result) {
     response->set_result(kRpcResultSuccess);

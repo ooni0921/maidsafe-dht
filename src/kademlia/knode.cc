@@ -56,7 +56,7 @@ void KNode::Leave() {
 }
 
 void KNode::StoreValue(const std::string &key,
-                       const std::string &value,
+                       const SignedValue &value,
                        const std::string &public_key,
                        const std::string &signed_public_key,
                        const std::string &signed_request,

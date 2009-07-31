@@ -22,6 +22,7 @@
 #include <google/protobuf/repeated_field.h>
 #include <google/protobuf/extension_set.h>
 #include "contact_info.pb.h"
+#include "maidsafe/signed_kadvalue.pb.h"
 
 namespace kad {
 
@@ -717,7 +718,7 @@ class StoreRequest : public ::google::protobuf::Message {
   inline void set_key(const void* value, size_t size);
   inline ::std::string* mutable_key();
   
-  // required bytes value = 2;
+  // optional bytes value = 2;
   inline bool has_value() const;
   inline void clear_value();
   static const int kValueFieldNumber = 2;
@@ -727,51 +728,58 @@ class StoreRequest : public ::google::protobuf::Message {
   inline void set_value(const void* value, size_t size);
   inline ::std::string* mutable_value();
   
-  // required int32 ttl = 3;
+  // optional .kad.SignedValue sig_value = 3;
+  inline bool has_sig_value() const;
+  inline void clear_sig_value();
+  static const int kSigValueFieldNumber = 3;
+  inline const ::kad::SignedValue& sig_value() const;
+  inline ::kad::SignedValue* mutable_sig_value();
+  
+  // required int32 ttl = 4;
   inline bool has_ttl() const;
   inline void clear_ttl();
-  static const int kTtlFieldNumber = 3;
+  static const int kTtlFieldNumber = 4;
   inline ::google::protobuf::int32 ttl() const;
   inline void set_ttl(::google::protobuf::int32 value);
   
-  // required .kad.ContactInfo sender_info = 4;
+  // required .kad.ContactInfo sender_info = 5;
   inline bool has_sender_info() const;
   inline void clear_sender_info();
-  static const int kSenderInfoFieldNumber = 4;
+  static const int kSenderInfoFieldNumber = 5;
   inline const ::kad::ContactInfo& sender_info() const;
   inline ::kad::ContactInfo* mutable_sender_info();
   
-  // required bool publish = 5;
+  // required bool publish = 6;
   inline bool has_publish() const;
   inline void clear_publish();
-  static const int kPublishFieldNumber = 5;
+  static const int kPublishFieldNumber = 6;
   inline bool publish() const;
   inline void set_publish(bool value);
   
-  // optional bytes public_key = 6;
+  // optional bytes public_key = 7;
   inline bool has_public_key() const;
   inline void clear_public_key();
-  static const int kPublicKeyFieldNumber = 6;
+  static const int kPublicKeyFieldNumber = 7;
   inline const ::std::string& public_key() const;
   inline void set_public_key(const ::std::string& value);
   inline void set_public_key(const char* value);
   inline void set_public_key(const void* value, size_t size);
   inline ::std::string* mutable_public_key();
   
-  // optional bytes signed_public_key = 7;
+  // optional bytes signed_public_key = 8;
   inline bool has_signed_public_key() const;
   inline void clear_signed_public_key();
-  static const int kSignedPublicKeyFieldNumber = 7;
+  static const int kSignedPublicKeyFieldNumber = 8;
   inline const ::std::string& signed_public_key() const;
   inline void set_signed_public_key(const ::std::string& value);
   inline void set_signed_public_key(const char* value);
   inline void set_signed_public_key(const void* value, size_t size);
   inline ::std::string* mutable_signed_public_key();
   
-  // optional bytes signed_request = 8;
+  // optional bytes signed_request = 9;
   inline bool has_signed_request() const;
   inline void clear_signed_request();
-  static const int kSignedRequestFieldNumber = 8;
+  static const int kSignedRequestFieldNumber = 9;
   inline const ::std::string& signed_request() const;
   inline void set_signed_request(const ::std::string& value);
   inline void set_signed_request(const char* value);
@@ -786,6 +794,7 @@ class StoreRequest : public ::google::protobuf::Message {
   static const ::std::string _default_key_;
   ::std::string* value_;
   static const ::std::string _default_value_;
+  ::kad::SignedValue* sig_value_;
   ::google::protobuf::int32 ttl_;
   ::kad::ContactInfo* sender_info_;
   bool publish_;
@@ -798,7 +807,7 @@ class StoreRequest : public ::google::protobuf::Message {
   friend void  protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(8 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(9 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2544,7 +2553,7 @@ inline ::std::string* StoreRequest::mutable_key() {
   return key_;
 }
 
-// required bytes value = 2;
+// optional bytes value = 2;
 inline bool StoreRequest::has_value() const {
   return _has_bit(1);
 }
@@ -2586,175 +2595,192 @@ inline ::std::string* StoreRequest::mutable_value() {
   return value_;
 }
 
-// required int32 ttl = 3;
-inline bool StoreRequest::has_ttl() const {
+// optional .kad.SignedValue sig_value = 3;
+inline bool StoreRequest::has_sig_value() const {
   return _has_bit(2);
+}
+inline void StoreRequest::clear_sig_value() {
+  if (sig_value_ != NULL) sig_value_->::kad::SignedValue::Clear();
+  _clear_bit(2);
+}
+inline const ::kad::SignedValue& StoreRequest::sig_value() const {
+  return sig_value_ != NULL ? *sig_value_ : *default_instance_->sig_value_;
+}
+inline ::kad::SignedValue* StoreRequest::mutable_sig_value() {
+  _set_bit(2);
+  if (sig_value_ == NULL) sig_value_ = new ::kad::SignedValue;
+  return sig_value_;
+}
+
+// required int32 ttl = 4;
+inline bool StoreRequest::has_ttl() const {
+  return _has_bit(3);
 }
 inline void StoreRequest::clear_ttl() {
   ttl_ = 0;
-  _clear_bit(2);
+  _clear_bit(3);
 }
 inline ::google::protobuf::int32 StoreRequest::ttl() const {
   return ttl_;
 }
 inline void StoreRequest::set_ttl(::google::protobuf::int32 value) {
-  _set_bit(2);
+  _set_bit(3);
   ttl_ = value;
 }
 
-// required .kad.ContactInfo sender_info = 4;
+// required .kad.ContactInfo sender_info = 5;
 inline bool StoreRequest::has_sender_info() const {
-  return _has_bit(3);
+  return _has_bit(4);
 }
 inline void StoreRequest::clear_sender_info() {
   if (sender_info_ != NULL) sender_info_->::kad::ContactInfo::Clear();
-  _clear_bit(3);
+  _clear_bit(4);
 }
 inline const ::kad::ContactInfo& StoreRequest::sender_info() const {
   return sender_info_ != NULL ? *sender_info_ : *default_instance_->sender_info_;
 }
 inline ::kad::ContactInfo* StoreRequest::mutable_sender_info() {
-  _set_bit(3);
+  _set_bit(4);
   if (sender_info_ == NULL) sender_info_ = new ::kad::ContactInfo;
   return sender_info_;
 }
 
-// required bool publish = 5;
+// required bool publish = 6;
 inline bool StoreRequest::has_publish() const {
-  return _has_bit(4);
+  return _has_bit(5);
 }
 inline void StoreRequest::clear_publish() {
   publish_ = false;
-  _clear_bit(4);
+  _clear_bit(5);
 }
 inline bool StoreRequest::publish() const {
   return publish_;
 }
 inline void StoreRequest::set_publish(bool value) {
-  _set_bit(4);
+  _set_bit(5);
   publish_ = value;
 }
 
-// optional bytes public_key = 6;
+// optional bytes public_key = 7;
 inline bool StoreRequest::has_public_key() const {
-  return _has_bit(5);
+  return _has_bit(6);
 }
 inline void StoreRequest::clear_public_key() {
   if (public_key_ != &_default_public_key_) {
     public_key_->clear();
   }
-  _clear_bit(5);
+  _clear_bit(6);
 }
 inline const ::std::string& StoreRequest::public_key() const {
   return *public_key_;
 }
 inline void StoreRequest::set_public_key(const ::std::string& value) {
-  _set_bit(5);
+  _set_bit(6);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void StoreRequest::set_public_key(const char* value) {
-  _set_bit(5);
+  _set_bit(6);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(value);
 }
 inline void StoreRequest::set_public_key(const void* value, size_t size) {
-  _set_bit(5);
+  _set_bit(6);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* StoreRequest::mutable_public_key() {
-  _set_bit(5);
+  _set_bit(6);
   if (public_key_ == &_default_public_key_) {
     public_key_ = new ::std::string;
   }
   return public_key_;
 }
 
-// optional bytes signed_public_key = 7;
+// optional bytes signed_public_key = 8;
 inline bool StoreRequest::has_signed_public_key() const {
-  return _has_bit(6);
+  return _has_bit(7);
 }
 inline void StoreRequest::clear_signed_public_key() {
   if (signed_public_key_ != &_default_signed_public_key_) {
     signed_public_key_->clear();
   }
-  _clear_bit(6);
+  _clear_bit(7);
 }
 inline const ::std::string& StoreRequest::signed_public_key() const {
   return *signed_public_key_;
 }
 inline void StoreRequest::set_signed_public_key(const ::std::string& value) {
-  _set_bit(6);
+  _set_bit(7);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(value);
 }
 inline void StoreRequest::set_signed_public_key(const char* value) {
-  _set_bit(6);
+  _set_bit(7);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(value);
 }
 inline void StoreRequest::set_signed_public_key(const void* value, size_t size) {
-  _set_bit(6);
+  _set_bit(7);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* StoreRequest::mutable_signed_public_key() {
-  _set_bit(6);
+  _set_bit(7);
   if (signed_public_key_ == &_default_signed_public_key_) {
     signed_public_key_ = new ::std::string;
   }
   return signed_public_key_;
 }
 
-// optional bytes signed_request = 8;
+// optional bytes signed_request = 9;
 inline bool StoreRequest::has_signed_request() const {
-  return _has_bit(7);
+  return _has_bit(8);
 }
 inline void StoreRequest::clear_signed_request() {
   if (signed_request_ != &_default_signed_request_) {
     signed_request_->clear();
   }
-  _clear_bit(7);
+  _clear_bit(8);
 }
 inline const ::std::string& StoreRequest::signed_request() const {
   return *signed_request_;
 }
 inline void StoreRequest::set_signed_request(const ::std::string& value) {
-  _set_bit(7);
+  _set_bit(8);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
 }
 inline void StoreRequest::set_signed_request(const char* value) {
-  _set_bit(7);
+  _set_bit(8);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(value);
 }
 inline void StoreRequest::set_signed_request(const void* value, size_t size) {
-  _set_bit(7);
+  _set_bit(8);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }
   signed_request_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* StoreRequest::mutable_signed_request() {
-  _set_bit(7);
+  _set_bit(8);
   if (signed_request_ == &_default_signed_request_) {
     signed_request_ = new ::std::string;
   }

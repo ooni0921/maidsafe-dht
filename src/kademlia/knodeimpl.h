@@ -117,18 +117,20 @@ struct IterativeStoreValueData {
       const std::string &key, const std::string &value,
       base::callback_func_type cb, const std::string &pubkey,
       const std::string &sigpubkey, const std::string &sigreq,
-      const bool &publish_val, const boost::uint32_t &timetolive)
-      : closest_nodes(close_nodes), key(key), value(value), save_nodes(0),
-        contacted_nodes(0), index(-1), cb(cb), is_callbacked(false),
-        data_type(0), pub_key(pubkey), sig_pub_key(sigpubkey), sig_req(sigreq),
-        publish(publish_val), ttl(timetolive) {}
+      const bool &publish_val, const boost::uint32_t &timetolive,
+      const SignedValue &svalue) : closest_nodes(close_nodes), key(key),
+        value(value), save_nodes(0), contacted_nodes(0), index(-1), cb(cb),
+        is_callbacked(false), data_type(0), pub_key(pubkey),
+        sig_pub_key(sigpubkey), sig_req(sigreq), publish(publish_val),
+        ttl(timetolive), sig_value(svalue) {}
   IterativeStoreValueData(const std::vector<Contact> &close_nodes,
       const std::string &key, const std::string &value,
       base::callback_func_type cb, const bool &publish_val,
-      const boost::uint32_t &timetolive) : closest_nodes(close_nodes), key(key),
+      const boost::uint32_t &timetolive)
+      : closest_nodes(close_nodes), key(key),
         value(value), save_nodes(0), contacted_nodes(0), index(-1), cb(cb),
         is_callbacked(false), data_type(0), pub_key(""), sig_pub_key(""),
-        sig_req(""), publish(publish_val), ttl(timetolive) {}
+        sig_req(""), publish(publish_val), ttl(timetolive), sig_value() {}
   std::vector<Contact> closest_nodes;
   std::string key, value;
   int save_nodes, contacted_nodes, index;
@@ -138,6 +140,7 @@ struct IterativeStoreValueData {
   std::string pub_key, sig_pub_key, sig_req;
   bool publish;
   boost::uint32_t ttl;
+  SignedValue sig_value;
 };
 
 struct FindCallbackArgs {
@@ -184,11 +187,12 @@ struct BootstrapArgs {
 
 struct StoreRequestSignature {
   StoreRequestSignature() : public_key(""), signed_public_key(""),
-    signed_request("") {}
+    signed_request(""), value() {}
   StoreRequestSignature(const std::string &p_key, const std::string &sig_p_key,
-    const std::string &s_req) : public_key(p_key), signed_public_key(sig_p_key),
-    signed_request(s_req) {}
+    const std::string &s_req, const SignedValue &svalue) : public_key(p_key),
+    signed_public_key(sig_p_key), signed_request(s_req), value(svalue) {}
   std::string public_key, signed_public_key, signed_request;
+  SignedValue value;
 };
 
 class KNodeImpl {
@@ -213,7 +217,7 @@ class KNodeImpl {
             const bool &port_forwarded);
   void Leave();
   void StoreValue(const std::string &key,
-                  const std::string &value,
+                  const SignedValue &value,
                   const std::string &public_key,
                   const std::string &signed_public_key,
                   const std::string &signed_request,

@@ -47,7 +47,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
 #include "transport/transportapi.h"
-#include "protobuf/signed_kadvalue.pb.h"
+#include "maidsafe/signed_kadvalue.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -336,8 +336,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
                                              kad::CLIENT,
                                              kTestK,
                                              kad::kAlpha,
-                                             kad::kBeta, kad::kRefreshTime));//,
-                                             //privkey, pubkey));
+                                             kad::kBeta, kad::kRefreshTime));
   EXPECT_EQ(0, channel_manager_local_->StartTransport(0,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knode_local_.get(), _1)));
@@ -361,7 +360,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
   std::string ser_sig_value = sig_value.SerializeAsString();
-  knode_local_->StoreValue(key, ser_sig_value, pub_key, sig_pub_key,
+  knode_local_->StoreValue(key, sig_value, pub_key, sig_pub_key,
       sig_req, 24*3600, boost::bind(&StoreValueCallback::CallbackFunc,
           &cb_1, _1));
   wait_result(&cb_1);
@@ -501,10 +500,16 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
   std::string pub_key(""), priv_key(""), sig_pub_key(""), sig_req("");
   create_rsakeys(&pub_key, &priv_key);
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
+
+  knodes_[7]->StoreValue(key, sig_value, pub_key, sig_pub_key, sig_req,
+      24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  wait_result(&cb_);
+  ASSERT_EQ(kad::kRpcResultFailure, cb_.result());
+  cb_.Reset();
+
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value = sig_value.SerializeAsString();
-  knodes_[7]->StoreValue(key, ser_sig_value, pub_key, sig_pub_key, sig_req,
+  knodes_[7]->StoreValue(key, sig_value, pub_key, sig_pub_key, sig_req,
       24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
@@ -586,8 +591,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value = sig_value.SerializeAsString();
-  knodes_[10]->StoreValue(key, ser_sig_value, pub_key, sig_pub_key, sig_req,
+  knodes_[10]->StoreValue(key, sig_value, pub_key, sig_pub_key, sig_req,
       24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
@@ -749,9 +753,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value;
-  ASSERT_TRUE(sig_value.SerializeToString(&ser_sig_value));
-  knodes_[8]->StoreValue(key, ser_sig_value, pub_key, sig_pub_key, sig_req,
+  knodes_[8]->StoreValue(key, sig_value, pub_key, sig_pub_key, sig_req,
       24*3600, boost::bind(&FakeCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
@@ -908,7 +910,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreWithInvalidRequest) {
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
   std::string ser_sig_value = sig_value.SerializeAsString();
-  knodes_[7]->StoreValue(key, ser_sig_value, pub_key, sig_pub_key,
+  knodes_[7]->StoreValue(key, sig_value, pub_key, sig_pub_key,
       "bad request", 24*3600, boost::bind(&StoreValueCallback::CallbackFunc,
           &cb_, _1));
   wait_result(&cb_);
@@ -917,7 +919,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreWithInvalidRequest) {
   create_rsakeys(&new_pub_key, &new_priv_key);
   ASSERT_NE(pub_key, new_pub_key);
   cb_.Reset();
-  knodes_[7]->StoreValue(key, ser_sig_value, new_pub_key, sig_pub_key, sig_req,
+  knodes_[7]->StoreValue(key, sig_value, new_pub_key, sig_pub_key, sig_req,
       24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultFailure, cb_.result());
