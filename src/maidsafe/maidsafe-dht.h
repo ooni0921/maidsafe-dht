@@ -40,34 +40,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
-#include "maidsafe/signed_kadvalue.pb.h"
 
-#if MAIDSAFE_DHT_VERSION < 4
-#error this API is not compatible with the installed library
-#error Please update the maidsafe-dht library
+#if MAIDSAFE_DHT_VERSION < 5
+#error This API is not compatible with the installed library.
+#error Please update the maidsafe-dht library.
 #endif
-
-
-//  int StartListening(port);
-//  trans::localport()
-//  internal declerations
-//  bool message_rec(std::string msg, int ip);
-
-
-//  actual API
-//  Transport
-//  int LocalPort() {return trans::localport(); } // XXXX is declared above
-//  LocalIP()
-//    ExternalPort()
-//    External_IP()
-//  test
-
-
-// RPC
-
 
 // Kademlia
 namespace kad {
+
+class SignedValue;
 
 class KNode {
  public:

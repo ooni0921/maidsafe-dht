@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
-#include "maidsafe/signed_kadvalue.pb.h"
+#include "protobuf/signed_kadvalue.pb.h"
 
 namespace fs = boost::filesystem;
 

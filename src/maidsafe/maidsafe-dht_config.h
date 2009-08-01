@@ -70,7 +70,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/utils.h"
 #include "maidsafe/crypto.h"
-#define MAIDSAFE_DHT_VERSION 4
+#define MAIDSAFE_DHT_VERSION 5
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *

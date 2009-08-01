@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/utils.h"
 #include "rpcprotocol/channelimpl.h"
-#include "maidsafe/signed_kadvalue.pb.h"
+#include "protobuf/signed_kadvalue.pb.h"
 
 namespace kad {
 KadService::KadService(KNodeImpl *knode) : knode_(knode) {}

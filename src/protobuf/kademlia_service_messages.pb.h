@@ -22,7 +22,7 @@
 #include <google/protobuf/repeated_field.h>
 #include <google/protobuf/extension_set.h>
 #include "contact_info.pb.h"
-#include "maidsafe/signed_kadvalue.pb.h"
+#include "signed_kadvalue.pb.h"
 
 namespace kad {
 

@@ -39,7 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/utils.h"
 #include "protobuf/contact_info.pb.h"
 #include "transport/transportapi.h"
-#include "maidsafe/signed_kadvalue.pb.h"
+#include "protobuf/signed_kadvalue.pb.h"
 
 namespace fs = boost::filesystem;
 

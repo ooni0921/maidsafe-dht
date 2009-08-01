@@ -1,6 +1,6 @@
 // Kademlia rpc arguments and responses and callback results for FindNode, Join and Leave
 import "contact_info.proto";
-import "maidsafe/signed_kadvalue.proto";
+import "signed_kadvalue.proto";
 
 package kad;
 
