@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
 #include "transport/transportapi.h"
+#include "base/routingtable.h"
 
 namespace kad {
 
@@ -168,7 +169,7 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
     std::string id("");
     base::decode_from_hex(bucket2ids[i], &id);
     Contact contact(id, ip, port, ip, port);
-    ASSERT_EQ(0, nodes_[0]->AddContact(contact, false));
+    ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     if (i == 1) last_seen = contact;
     port++;
   }
@@ -176,21 +177,21 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
     std::string id;
     base::decode_from_hex(bucket1ids[i], &id);
     Contact contact(id, ip, port, ip, port);
-    ASSERT_EQ(0, nodes_[0]->AddContact(contact, false));
+    ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     port++;
   }
   for (int i = K-2; i < K+1; i++) {
     std::string id;
     base::decode_from_hex(bucket2ids[i], &id);
     Contact contact(id, ip, port, ip, port);
-    ASSERT_EQ(0, nodes_[0]->AddContact(contact, false));
+    ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     port++;
   }
   id = "";
   port++;
   base::decode_from_hex(bucket2ids[0], &id);
   Contact contact(id, ip, port, ip, port);
-  ASSERT_EQ(2, nodes_[0]->AddContact(contact, false));
+  ASSERT_EQ(2, nodes_[0]->AddContact(contact, 0.0, false));
 
   Contact rec_contact;
   ASSERT_FALSE(nodes_[0]->GetContact(contact.node_id(), &rec_contact));
@@ -279,28 +280,28 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
     std::string id;
     base::decode_from_hex(bucket2ids[i], &id);
     Contact contact(id, ip, port, ip, port);
-    ASSERT_EQ(0, nodes_[0]->AddContact(contact, false));
+    ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     port++;
   }
   for (int i = 0; i < 3; i++) {
     std::string id;
     base::decode_from_hex(bucket1ids[i], &id);
     Contact contact(id, ip, port, ip, port);
-    ASSERT_EQ(0, nodes_[0]->AddContact(contact, false));
+    ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     port++;
   }
   for (int i = K-3; i < K; i++) {
     std::string id;
     base::decode_from_hex(bucket2ids[i], &id);
     Contact contact(id, ip, port, ip, port);
-    ASSERT_EQ(0, nodes_[0]->AddContact(contact, false));
+    ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     port++;
   }
   id = "";
   port++;
   base::decode_from_hex(bucket2ids[0], &id);
   Contact contact(id, ip, port, ip, port);
-  ASSERT_EQ(2, nodes_[0]->AddContact(contact, false));
+  ASSERT_EQ(2, nodes_[0]->AddContact(contact, 0.0, false));
 
   Contact rec_contact;
   ASSERT_FALSE(nodes_[0]->GetContact(contact.node_id(), &rec_contact));
@@ -310,12 +311,23 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   ASSERT_FALSE(nodes_[0]->GetContact(contact.node_id(), &rec_contact));
   ASSERT_TRUE(nodes_[0]->GetContact(last_seen.node_id(), &rec_contact));
 
-  ASSERT_EQ(2, nodes_[0]->AddContact(contact, false));
+  ASSERT_EQ(2, nodes_[0]->AddContact(contact, 0.0, false));
 
   // wait for ping to last seen contact to timeout
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(nodes_[0]->GetContact(contact.node_id(), &rec_contact));
   ASSERT_TRUE(nodes_[0]->GetContact(last_seen.node_id(), &rec_contact));
+
+  // Getting info from base routing table to check rtt
+  base::PDRoutingTableTuple tuple;
+  ASSERT_EQ(0, base::PDRoutingTable::getInstance()[base::itos(nodes_[0]->
+      host_port())]->GetTupleInfo(nodes_[1]->node_id(), &tuple));
+  ASSERT_EQ(nodes_[1]->node_id(), tuple.kademlia_id_);
+  ASSERT_EQ(nodes_[1]->host_ip(), tuple.host_ip_);
+  ASSERT_EQ(nodes_[1]->host_port(), tuple.host_port_);
+  ASSERT_EQ(nodes_[1]->rv_ip(), tuple.rendezvous_ip_);
+  ASSERT_EQ(nodes_[1]->rv_port(), tuple.rendezvous_port_);
+  EXPECT_LT(0.0, tuple.rtt_);
 
   nodes_[1]->Leave();
   nodes_[0]->Leave();

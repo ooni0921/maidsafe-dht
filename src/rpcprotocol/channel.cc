@@ -30,7 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace rpcprotocol {
 
-Controller::Controller() : controller_pimpl_(new ControllerImpl()) {}
+Controller::Controller() : controller_pimpl_(new ControllerImpl) {}
 
 Controller::~Controller() {}
 
@@ -62,22 +62,6 @@ void Controller::NotifyOnCancel(google::protobuf::Closure* done) {
   controller_pimpl_->NotifyOnCancel(done);
 }
 
-void Controller::set_remote_ip(const std::string &ip) {
-  controller_pimpl_->set_remote_ip(ip);
-}
-
-void Controller::set_remote_port(const uint16_t &port) {
-  controller_pimpl_->set_remote_port(port);
-}
-
-std::string Controller::remote_ip() const {
-  return controller_pimpl_->remote_ip();
-}
-
-uint16_t Controller::remote_port() const {
-  return controller_pimpl_->remote_port();
-}
-
 void Controller::set_timeout(const int &seconds) {
   controller_pimpl_->set_timeout(seconds);
 }
@@ -86,14 +70,21 @@ int Controller::timeout() const {
   return controller_pimpl_->timeout();
 }
 
+void Controller::set_rtt(const float &rtt) {
+  controller_pimpl_->set_rtt(rtt);
+}
+
+float Controller::rtt() const {
+  return controller_pimpl_->rtt();
+}
+
 Channel::Channel(rpcprotocol::ChannelManager *channelmanager)
     : pimpl_(new ChannelImpl(channelmanager)) {}
 
 Channel::Channel(rpcprotocol::ChannelManager *channelmanager,
-                 const std::string &ip,
-                 const boost::uint16_t &port,
-                 const bool &local)
-    : pimpl_(new ChannelImpl(channelmanager, ip, port, local)) {}
+      const std::string &ip, const boost::uint16_t &port,
+      const std::string &rv_ip, const boost::uint16_t &rv_port)
+      : pimpl_(new ChannelImpl(channelmanager, ip, port, rv_ip, rv_port)) {}
 
 Channel::~Channel() {}
 
@@ -110,8 +101,8 @@ void Channel::SetService(google::protobuf::Service* service) {
 }
 
 void Channel::HandleRequest(const RpcMessage &request,
-                            const boost::uint32_t &connection_id) {
-  pimpl_->HandleRequest(request, connection_id);
+      const boost::uint32_t &connection_id, const float &rtt) {
+  pimpl_->HandleRequest(request, connection_id, rtt);
 }
 
 }  // namespace rpcprotocol

@@ -89,7 +89,8 @@ class KNode {
                          const std::vector<Contact> &exclude_contacts);
   void Ping(const std::string &node_id, base::callback_func_type cb);
   void Ping(const Contact &remote, base::callback_func_type cb);
-  int AddContact(Contact new_contact, bool only_db);
+  int AddContact(Contact new_contact, const float & rtt,
+      const bool &only_db);
   void RemoveContact(const std::string &node_id);
   bool GetContact(const std::string &id, Contact *contact);
   bool FindValueLocal(const std::string &key,
@@ -153,7 +154,7 @@ class ChannelManager {
   int StopTransport();
   void CleanUpTransport();
   void MessageArrive(const RpcMessage &msg,
-                     const boost::uint32_t &connection_id);
+      const boost::uint32_t &connection_id, const float &rtt);
   void MessageSentResult(boost::uint32_t, bool);
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
@@ -176,19 +177,17 @@ class Controller : public google::protobuf::RpcController {
  public:
   Controller();
   ~Controller();
-  void SetFailed(const std::string&);
+  void SetFailed(const std::string &failure);
   void Reset();
   bool Failed() const;
   std::string ErrorText() const;
   void StartCancel();
   bool IsCanceled() const;
   void NotifyOnCancel(google::protobuf::Closure*);
-  void set_remote_ip(const std::string &ip);
-  void set_remote_port(const uint16_t &port);
-  std::string remote_ip() const;
-  uint16_t remote_port() const;
   void set_timeout(const int &seconds);
+  void set_rtt(const float &rtt);
   int timeout() const;
+  float rtt() const;
  private:
   boost::shared_ptr<ControllerImpl> controller_pimpl_;
 };
@@ -196,10 +195,9 @@ class Controller : public google::protobuf::RpcController {
 class Channel : public google::protobuf::RpcChannel {
  public:
   explicit Channel(rpcprotocol::ChannelManager *channelmanager);
-  Channel(rpcprotocol::ChannelManager *channelmanager,
-          const std::string &ip,
-          const boost::uint16_t &port,
-          const bool &local);
+  Channel(rpcprotocol::ChannelManager *channelmanager, const std::string &ip,
+      const boost::uint16_t &port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port);
   ~Channel();
   void CallMethod(const google::protobuf::MethodDescriptor *method,
                   google::protobuf::RpcController *controller,
@@ -208,7 +206,7 @@ class Channel : public google::protobuf::RpcChannel {
                   google::protobuf::Closure *done);
   void SetService(google::protobuf::Service* service);
   void HandleRequest(const RpcMessage &request,
-                     const boost::uint32_t &connection_id);
+      const boost::uint32_t &connection_id, const float &rtt);
  private:
   boost::shared_ptr<ChannelImpl> pimpl_;
 };

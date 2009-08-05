@@ -48,45 +48,49 @@ class KadRpcs {
   explicit KadRpcs(boost::shared_ptr<rpcprotocol::ChannelManager>
       channel_manager);
   void FindNode(const std::string &key, const std::string &ip,
-      const boost::uint16_t &port, FindResponse *resp,
-      google::protobuf::Closure *cb, const bool &local);
+      const boost::uint16_t &port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port, FindResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
   void FindValue(const std::string &key, const std::string &ip,
-      const boost::uint16_t &port, FindResponse *resp,
-      google::protobuf::Closure *cb, const bool &local);
+      const boost::uint16_t &port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port, FindResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
   void Ping(const std::string &ip, const boost::uint16_t &port,
-      PingResponse *resp, google::protobuf::Closure *cb, const bool &local);
+      const std::string &rv_ip, const boost::uint16_t &rv_port,
+      PingResponse *resp, rpcprotocol::Controller *ctler,
+      google::protobuf::Closure *cb);
   void Store(const std::string &key, const SignedValue &value,
       const std::string &public_key, const std::string &signed_public_key,
       const std::string &signed_request, const std::string &ip,
-      const boost::uint16_t &port, StoreResponse *resp,
-      google::protobuf::Closure *cb, const bool &local,
+      const boost::uint16_t &port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port, StoreResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb,
       const boost::uint32_t &ttl, const bool &publish);
   void Store(const std::string &key, const std::string &value,
-      const std::string &ip, const boost::uint16_t &port, StoreResponse *resp,
-      google::protobuf::Closure *cb, const bool &local,
-      const boost::uint32_t &ttl, const bool &publish);
+      const std::string &ip, const boost::uint16_t &port,
+      const std::string &rv_ip, const boost::uint16_t &rv_port,
+      StoreResponse *resp, rpcprotocol::Controller *ctler,
+      google::protobuf::Closure *cb, const boost::uint32_t &ttl,
+      const bool &publish);
   void Downlist(const std::vector<std::string> downlist,
       const std::string &ip, const boost::uint16_t &port,
-      DownlistResponse *resp, google::protobuf::Closure *cb, const bool &local);
+      const std::string &rv_ip, const boost::uint16_t &rv_port,
+      DownlistResponse *resp, rpcprotocol::Controller *ctler,
+      google::protobuf::Closure *cb);
   void NatDetection(const std::string &newcomer,
-      const std::string &bootstrap_node,
-      const boost::uint32_t type,
-      const std::string &sender_id,
-      const std::string &remote_ip,
-      const boost::uint16_t &remote_port,
-      NatDetectionResponse *resp,
-      google::protobuf::Closure *cb);
+      const std::string &bootstrap_node, const boost::uint32_t type,
+      const std::string &sender_id, const std::string &remote_ip,
+      const boost::uint16_t &remote_port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port, NatDetectionResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
   void NatDetectionPing(const std::string &remote_ip,
-      const boost::uint16_t &remote_port,
-      NatDetectionPingResponse *resp,
-      google::protobuf::Closure *cb);
-  void Bootstrap(const std::string &local_id,
-      const std::string &local_ip,
-      const boost::uint16_t &local_port,
-      const std::string &remote_ip,
-      const boost::uint16_t &remote_port,
-      BootstrapResponse *resp,
-      google::protobuf::Closure *cb);
+      const boost::uint16_t &remote_port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port, NatDetectionPingResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
+  void Bootstrap(const std::string &local_id, const std::string &local_ip,
+      const boost::uint16_t &local_port, const std::string &remote_ip,
+      const boost::uint16_t &remote_port, BootstrapResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
   void set_info(const ContactInfo &info);
  private:
   KadRpcs(const KadRpcs&);

@@ -36,6 +36,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace rpcprotocol {
 
+bool ControllerImpl::Failed() const {
+  if (failure_ == TIMEOUT)
+    return true;
+  return false;
+}
+
 struct RpcInfo {
   RpcInfo() : ctrl(NULL), rpc_id(0), connection_id(0) {}
   Controller *ctrl;
@@ -44,19 +50,25 @@ struct RpcInfo {
 
 ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager)
         : ptransport_(channelmanager->ptransport()), pmanager_(channelmanager),
-          pservice_(0), ip_(""), port_(0), local_(false), id_(0) {
+          pservice_(0), ip_(""), rv_ip_(""), port_(0), rv_port_(0), id_(0) {
   pmanager_->AddChannelId(&id_);
 }
 
 ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
-    const std::string &ip, const boost::uint16_t &port, const bool &local)
-    : ptransport_(channelmanager->ptransport()), pmanager_(channelmanager),
-      pservice_(0), ip_(""), port_(port), local_(local), id_(0) {
+      const std::string &ip, const boost::uint16_t &port,
+      const std::string &rv_ip, const boost::uint16_t &rv_port)
+      : ptransport_(channelmanager->ptransport()), pmanager_(channelmanager),
+        pservice_(0), ip_(""), rv_ip_(""), port_(port), rv_port_(rv_port),
+        id_(0) {
   // To send we need ip in decimal dotted format
   if (ip.size() == 4)
     ip_ = base::inet_btoa(ip);
   else
     ip_ = ip;
+  if (rv_ip.size() == 4)
+    rv_ip_ = base::inet_btoa(rv_ip);
+  else
+    rv_ip_ = rv_ip;
   pmanager_->AddChannelId(&id_);
 }
 
@@ -89,28 +101,17 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
   req.args = response;
   req.callback = done;
   boost::uint32_t conn_id = 0;
-  std::string rendezvous_ip;
-  uint16_t rendezvous_port = 0;
-  base::PDRoutingTableTuple tuple;
-  if (!local_)
-    if (0 == base::PDRoutingTable::getInstance()[
-        base::itos(pmanager_->external_port())]->GetTupleInfo(
-        ip_, port_, &tuple)) {
-      rendezvous_ip = tuple.rendezvous_ip();
-      rendezvous_port = tuple.rendezvous_port();
-//      if (rendezvous_ip != "" && rendezvous_port !=0)
-//        printf("node has rendezvous information\n");
-    }
   // Set the RPC request timeout
   Controller *ctrl = static_cast<Controller*>(controller);
-  if (0 == ptransport_->ConnectToSend(ip_, port_, rendezvous_ip,
-      rendezvous_port, &conn_id, true)) {
+  if (0 == ptransport_->ConnectToSend(ip_, port_, rv_ip_, rv_port_, &conn_id,
+      true)) {
     req.connection_id = conn_id;
     if (ctrl->timeout() != 0) {
       req.timeout = ctrl->timeout();
     } else {
       req.timeout = kRpcTimeout;
     }
+    req.ctrl = ctrl;
     pmanager_->AddPendingRequest(msg.message_id(), req);
     pmanager_->AddTimeOutRequest(conn_id, msg.message_id(), req.timeout);
     if (0 != ptransport_->Send(msg, conn_id, true)) {
@@ -127,6 +128,7 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
 #endif
     ctrl->set_timeout(1);
     req.timeout = ctrl->timeout();
+    req.ctrl = ctrl;
     pmanager_->AddPendingRequest(msg.message_id(), req);
     pmanager_->AddReqToTimer(msg.message_id(), req.timeout);
     return;
@@ -165,7 +167,7 @@ void ChannelImpl::SetService(google::protobuf::Service* service) {
 }
 
 void ChannelImpl::HandleRequest(const RpcMessage &request,
-                                const boost::uint32_t &connection_id) {
+      const boost::uint32_t &connection_id, const float &rtt) {
   if (pservice_) {
     const google::protobuf::MethodDescriptor* method =
         pservice_->GetDescriptor()->FindMethodByName(request.method());
@@ -179,6 +181,7 @@ void ChannelImpl::HandleRequest(const RpcMessage &request,
       return;
     }
     Controller *controller = new Controller;
+    controller->set_rtt(rtt);
     RpcInfo info;
     info.ctrl = controller;
     info.rpc_id = request.message_id();

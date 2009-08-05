@@ -102,8 +102,9 @@ void KNode::Ping(const Contact &remote, base::callback_func_type cb) {
   pimpl_->Ping(remote, cb);
 }
 
-int KNode::AddContact(Contact new_contact, bool only_db) {
-  return pimpl_->AddContact(new_contact, only_db);
+int KNode::AddContact(Contact new_contact, const float & rtt,
+      const bool &only_db) {
+  return pimpl_->AddContact(new_contact, rtt, only_db);
 }
 
 void KNode::RemoveContact(const std::string &node_id) {

@@ -36,43 +36,37 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "transport/transportapi.h"
 
 namespace rpcprotocol {
+const std::string TIMEOUT("timeout");
+
 class ControllerImpl : public google::protobuf::RpcController {
  public:
-  ControllerImpl() : remote_ip_(), remote_port_(0), timeout_(kRpcTimeout) {}
+  ControllerImpl() : timeout_(kRpcTimeout), rtt_(0.0), failure_("") {}
   ~ControllerImpl() {}
-  virtual void SetFailed(const std::string&) {}
+  virtual void SetFailed(const std::string &failure) { failure_ = failure; }
   virtual void Reset() {}
-  virtual bool Failed() const {return false;}
-  virtual std::string ErrorText() const {return "";}
+  virtual bool Failed() const;
+  virtual std::string ErrorText() const {return failure_;}
   virtual void StartCancel() {}
   virtual bool IsCanceled() const {return false;}
   virtual void NotifyOnCancel(google::protobuf::Closure*) {}
-  void set_remote_ip(const std::string &ip) {
-    // To send we need ip in decimal dotted format
-    if (ip.size() == 4)
-      remote_ip_ = base::inet_btoa(ip);
-    else
-      remote_ip_ = ip;
-  }
-  void set_remote_port(const uint16_t &port) {remote_port_ = port;}
-  std::string remote_ip() const {return remote_ip_;}
-  uint16_t remote_port() const {return remote_port_;}
   // input is in seconds
   void set_timeout(const int &seconds) {timeout_ = seconds*1000;}
   int timeout() const {return timeout_;}
+  // rtt in milliseconds
+  void set_rtt(const float &rtt) { rtt_ = rtt; }
+  float rtt() const { return rtt_; }
  private:
-  std::string remote_ip_;
-  uint16_t remote_port_;
   int timeout_;
+  float rtt_;
+  std::string failure_;
 };
 
 class ChannelImpl : public google::protobuf::RpcChannel {
  public:
   explicit ChannelImpl(rpcprotocol::ChannelManager *channelmanager);
   ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
-              const std::string &ip,
-              const boost::uint16_t &port,
-              const bool &local);
+      const std::string &ip, const boost::uint16_t &port,
+      const std::string &rv_ip, const boost::uint16_t &rv_port);
   ~ChannelImpl();
   virtual void CallMethod(const google::protobuf::MethodDescriptor *method,
                           google::protobuf::RpcController *controller,
@@ -81,18 +75,17 @@ class ChannelImpl : public google::protobuf::RpcChannel {
                           google::protobuf::Closure *done);
   void SetService(google::protobuf::Service *service);
   void HandleRequest(const RpcMessage &request,
-      const boost::uint32_t &connection_id);
+      const boost::uint32_t &connection_id, const float &rtt);
  private:
   void SendResponse(const google::protobuf::Message *response, RpcInfo info);
   std::string GetServiceName(const std::string &full_name);
   boost::shared_ptr<transport::Transport> ptransport_;
   rpcprotocol::ChannelManager *pmanager_;
   google::protobuf::Service *pservice_;
-  std::string ip_;
-  boost::uint16_t port_;
+  std::string ip_, rv_ip_;
+  boost::uint16_t port_, rv_port_;
   ChannelImpl(const ChannelImpl&);
   ChannelImpl& operator=(const ChannelImpl&);
-  bool local_;
   boost::uint32_t id_;
 };
 }  // namespace

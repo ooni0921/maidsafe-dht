@@ -62,10 +62,11 @@ namespace transport {
 
 struct IncomingMessages {
   explicit IncomingMessages(const boost::uint32_t &id)
-    : msg(), conn_id(id) {}
+    : msg(), conn_id(id), rtt(0) {}
   IncomingMessages() : msg(), conn_id() {}
   rpcprotocol::RpcMessage msg;
   boost::uint32_t conn_id;
+  double rtt;
 };
 
 struct IncomingData {
@@ -73,6 +74,8 @@ struct IncomingData {
   int64_t expect_size;
   int64_t received_size;
   boost::shared_array<char> data;
+  double accum_RTT;
+  boost::uint32_t observations;
 };
 
 struct OutgoingData {
@@ -99,13 +102,11 @@ class Transport {
            DataType type,
            const boost::uint32_t &conn_id,
            const bool &new_skt);
-  int Start(uint16_t port,
-            boost::function<void(const rpcprotocol::RpcMessage&,
-                                 const boost::uint32_t&)> on_message,
-            boost::function<void(const bool&,
-                                 const std::string&,
-                                 const boost::uint16_t&)> notify_dead_server,
-            boost::function<void(const boost::uint32_t&, const bool&)> on_send);
+  int Start(uint16_t port, boost::function<void(const rpcprotocol::RpcMessage&,
+        const boost::uint32_t&, const float &)> on_message,
+      boost::function<void(const bool&, const std::string&,
+        const boost::uint16_t&)> notify_dead_server,
+      boost::function<void(const boost::uint32_t&, const bool&)> on_send);
   void CloseConnection(boost::uint32_t connection_id);
   void Stop();
   inline bool is_stopped() { return stop_; }
@@ -135,8 +136,8 @@ class Transport {
   void ReceiveHandler();
   void MessageHandler();
   volatile bool stop_;
-  boost::function<void(const rpcprotocol::RpcMessage&,
-                  const boost::uint32_t&)> message_notifier_;
+  boost::function<void(const rpcprotocol::RpcMessage&, const boost::uint32_t&,
+      const float&)> message_notifier_;
   boost::function<void(const bool&, const std::string&,
       const boost::uint16_t&)> rendezvous_notifier_;
   boost::shared_ptr<boost::thread> accept_routine_, recv_routine_,

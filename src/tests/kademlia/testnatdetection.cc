@@ -302,11 +302,10 @@ TEST_F(NatDetectionTest, BEH_KAD_SendNatDet) {
   Callback cb_obj1(&response);
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<Callback>
       (&cb_obj1, &Callback::CallbackFunction);
-  rpcprotocol::Controller controller1;
   std::vector<Contact> ex_contacts;
   ex_contacts.push_back(contactA_);
   struct NatDetectionData nd_data1 = {contactA_, contact_strC_, node_c,
-      &response, done1, &controller1, ex_contacts};
+      &response, done1, NULL, ex_contacts};
   serviceC_->SendNatDetection(nd_data1);
   int timeout = 8000;  // milliseconds
   int count = 0;
@@ -320,11 +319,10 @@ TEST_F(NatDetectionTest, BEH_KAD_SendNatDet) {
   // with node A as newcomer - should succeed.
   response.Clear();
   Callback cb_obj2(&response);
-  rpcprotocol::Controller controller2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj2, &Callback::CallbackSendNatDet);
   struct NatDetectionData nd_data2 = {contactA_, contact_strB_, node_c,
-      &response, done2, &controller2, ex_contacts};
+      &response, done2, NULL, ex_contacts};
   serviceB_->SendNatDetection(nd_data2);
   count = 0;
   while (!response.IsInitialized() && (count < timeout)) {
@@ -344,11 +342,10 @@ TEST_F(NatDetectionTest, BEH_KAD_BootstrapNatDetRv) {
   Callback cb_obj;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
-  rpcprotocol::Controller controller1;
   std::vector<Contact> ex_contacts;
   ex_contacts.push_back(contactA_);
   struct NatDetectionData nd_data1 = {contactA_, contact_strB_, node_c,
-      &response, done1, &controller1, ex_contacts};
+      &response, done1, NULL, ex_contacts};
   serviceB_->Bootstrap_NatDetectionRv(&nd_response, nd_data1);
   int timeout = 8000;  // milliseconds
   int count = 0;
@@ -362,11 +359,10 @@ TEST_F(NatDetectionTest, BEH_KAD_BootstrapNatDetRv) {
   nd_response.Clear();
   response.Clear();
   nd_response.set_result(kRpcResultFailure);
-  rpcprotocol::Controller controller2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   struct NatDetectionData nd_data2 = {contactA_, contact_strB_, node_c,
-      &response, done2, &controller2, ex_contacts};
+      &response, done2, NULL, ex_contacts};
   serviceB_->Bootstrap_NatDetectionRv(&nd_response, nd_data2);
   count = 0;
   while ((response.nat_type() != 3) && (count < timeout)) {
@@ -382,11 +378,10 @@ TEST_F(NatDetectionTest, BEH_KAD_BootstrapNatDetRv) {
   nd_response.Clear();
   response.Clear();
   nd_response.set_result(kRpcResultSuccess);
-  rpcprotocol::Controller controller3;
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   struct NatDetectionData nd_data3 = {contactA_, contact_strB_, node_c,
-      &response, done3, &controller3, ex_contacts};
+      &response, done3, NULL, ex_contacts};
   serviceB_->Bootstrap_NatDetectionRv(&nd_response, nd_data3);
   count = 0;
   while ((response.nat_type() != 2) && (count < timeout)) {
@@ -406,10 +401,10 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   Callback cb_obj;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
-  rpcprotocol::Controller controller1;
   std::vector<Contact> ex_contacts;
+  rpcprotocol::Controller *ctrl1 = new rpcprotocol::Controller;
   struct NatDetectionData nd_data1 = {contactA_, contact_strC_, node_c,
-      &response, done1, &controller1, ex_contacts};
+      &response, done1, ctrl1, ex_contacts};
   serviceC_->Bootstrap_NatDetection(&nd_response, nd_data1);
   int timeout = 8000;  // milliseconds
   int count = 0;
@@ -427,11 +422,11 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   // node B calls new NatDetection rpc and should identify NAT type as 1.
   nd_response.Clear();
   response.Clear();
-  rpcprotocol::Controller controller2;
+  rpcprotocol::Controller *ctrl2 = new rpcprotocol::Controller;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   struct NatDetectionData nd_data2 = {contactA_, contact_strB_, node_c,
-      &response, done2, &controller2, ex_contacts};
+      &response, done2, ctrl2, ex_contacts};
   serviceB_->Bootstrap_NatDetection(&nd_response, nd_data2);
   count = 0;
   while (!nd_response.IsInitialized() && (count < timeout)) {
@@ -450,11 +445,11 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   nd_response.Clear();
   response.Clear();
   nd_response.set_result(kRpcResultFailure);
-  rpcprotocol::Controller controller3;
+  rpcprotocol::Controller *ctrl3 = new rpcprotocol::Controller;
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   struct NatDetectionData nd_data3 = {contactA_, contact_strB_, node_c,
-      &response, done3, &controller3, ex_contacts};
+      &response, done3, ctrl3, ex_contacts};
   serviceB_->Bootstrap_NatDetection(&nd_response, nd_data3);
   count = 0;
   while ((response.nat_type() != 3) && (count < timeout)) {
@@ -470,11 +465,11 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   nd_response.Clear();
   response.Clear();
   nd_response.set_result(kRpcResultSuccess);
-  rpcprotocol::Controller controller4;
+  rpcprotocol::Controller *ctrl4 = new rpcprotocol::Controller;
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   struct NatDetectionData nd_data4 = {contactA_, contact_strB_, node_c,
-      &response, done4, &controller4, ex_contacts};
+      &response, done4, ctrl4, ex_contacts};
   serviceB_->Bootstrap_NatDetection(&nd_response, nd_data4);
   count = 0;
   while ((response.nat_type() != 1) && (count < timeout)) {
@@ -491,11 +486,11 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   nd_response.Clear();
   response.Clear();
   nd_response.set_result(kRpcResultFailure);
-  rpcprotocol::Controller controller5;
+  rpcprotocol::Controller *ctrl5 = new rpcprotocol::Controller;
   google::protobuf::Closure *done5 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   struct NatDetectionData nd_data5 = {contactA_, contact_strB_, node_c,
-      &response, done5, &controller5, ex_contacts};
+      &response, done5, ctrl5, ex_contacts};
   knodeimpl3_->Leave();
   ASSERT_FALSE(knodeimpl3_->is_joined());
   serviceB_->Bootstrap_NatDetection(&nd_response, nd_data5);
@@ -604,8 +599,8 @@ TEST_F(NatDetectionTest, BEH_KAD_FullBootstrap) {
   Callback cb_obj;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
-  rpcprotocol::Controller controller1;
-  serviceB_->Bootstrap(&controller1, &request, &response, done1);
+  rpcprotocol::Controller *controller1 = new rpcprotocol::Controller;
+  serviceB_->Bootstrap(controller1, &request, &response, done1);
   int timeout = 8000;  // milliseconds
   int count = 0;
   while (!response.IsInitialized() && (count < timeout)) {
@@ -627,8 +622,8 @@ TEST_F(NatDetectionTest, BEH_KAD_FullBootstrap) {
   response.Clear();
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
-  rpcprotocol::Controller controller2;
-  serviceB_->Bootstrap(&controller2, &request, &response, done2);
+  rpcprotocol::Controller *controller2 = new rpcprotocol::Controller;
+  serviceB_->Bootstrap(controller2, &request, &response, done2);
   count = 0;
   while (!response.IsInitialized() && (count < timeout)) {
     count += 50;
@@ -647,8 +642,8 @@ TEST_F(NatDetectionTest, BEH_KAD_FullBootstrap) {
   response.Clear();
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
-  rpcprotocol::Controller controller3;
-  serviceB_->Bootstrap(&controller3, &request, &response, done3);
+  rpcprotocol::Controller *controller3 = new rpcprotocol::Controller;
+  serviceB_->Bootstrap(controller3, &request, &response, done3);
   count = 0;
   while (!response.IsInitialized() && (count < timeout)) {
     count += 50;

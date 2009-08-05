@@ -45,10 +45,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rpcprotocol {
 
 struct PendingReq {
-  PendingReq() : args(NULL), callback(NULL), connection_id(0), timeout(0),
-    size_rec(0) {}
+  PendingReq() : args(NULL), callback(NULL), ctrl(NULL), connection_id(0),
+    timeout(0), size_rec(0) {}
   google::protobuf::Message* args;
   google::protobuf::Closure* callback;
+  Controller *ctrl;
   boost::uint32_t connection_id;
   int timeout;
   int64_t size_rec;
@@ -70,15 +71,14 @@ class ChannelManagerImpl {
   void RemoveChannelId(const boost::uint32_t &id);
   void ClearChannels();
   void ClearCallLaters();
-  int StartTransport(
-      boost::uint16_t port,
+  int StartTransport(boost::uint16_t port,
       boost::function<void(const bool&, const std::string&,
-                           const boost::uint16_t&)> notify_dead_server);
+      const boost::uint16_t&)> notify_dead_server);
   int StopTransport();
   void CleanUpTransport();
 
   void MessageArrive(const RpcMessage &msg,
-      const boost::uint32_t &connection_id);
+      const boost::uint32_t &connection_id, const float &rtt);
   void MessageSentResult(boost::uint32_t , bool ) {}
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);

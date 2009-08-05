@@ -36,7 +36,7 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_AddTuple) {
   std::string rendezvous_ip("81.149.64.82");
   boost::uint16_t rendezvous_port = 5555;
   std::string public_key = base::RandomString(64);
-  boost::uint32_t rtt = 200;
+  float rtt = 200;
   boost::uint16_t rank = 5;
   boost::uint32_t space = 55555;
   base::PDRoutingTableTuple tuple_to_store(kademlia_id, host_ip, host_port,
@@ -59,7 +59,7 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_ReadTuple) {
   std::string rendezvous_ip("81.149.64.82");
   boost::uint16_t rendezvous_port = 5555;
   std::string public_key = base::RandomString(64);
-  boost::uint32_t rtt = 200;
+  float rtt = 200;
   boost::uint16_t rank = 5;
   boost::uint32_t space = 55555;
   base::PDRoutingTableTuple tuple_to_store(kademlia_id, host_ip, host_port,
@@ -106,7 +106,7 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_DeleteTuple) {
   std::string rendezvous_ip("81.149.64.82");
   boost::uint16_t rendezvous_port = 5555;
   std::string public_key = base::RandomString(64);
-  boost::uint32_t rtt = 32;
+  float rtt = 32;
   boost::uint16_t rank = 5;
   boost::uint32_t space = 3232;
   base::PDRoutingTableTuple tuple_to_store(kademlia_id, host_ip, host_port,
@@ -130,7 +130,7 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_UpdateTuple) {
   std::string rendezvous_ip("81.149.64.82");
   boost::uint16_t rendezvous_port = 5555;
   std::string public_key = base::RandomString(64);
-  boost::uint32_t rtt = 32;
+  float rtt = 32;
   boost::uint16_t rank = 5;
   boost::uint32_t space = 3232;
   base::PDRoutingTableTuple tuple_to_store(kademlia_id, host_ip, host_port,
@@ -180,7 +180,7 @@ TEST(PDRoutingTableTest, BEH_BASE_MultipleHandlers) {
   std::string rendezvous_ip("81.149.64.82");
   boost::uint16_t rendezvous_port = 5555;
   std::string public_key = base::RandomString(64);
-  boost::uint32_t rtt = 200;
+  float rtt = 200;
   boost::uint16_t rank = 5;
   boost::uint32_t space = 55555;
   base::PDRoutingTableTuple tuple_to_store1(kademlia_id1, host_ip, host_port,

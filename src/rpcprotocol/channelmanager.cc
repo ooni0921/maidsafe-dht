@@ -71,8 +71,8 @@ void ChannelManager::CleanUpTransport() {
 }
 
 void ChannelManager::MessageArrive(const RpcMessage &msg,
-                                   const boost::uint32_t &connection_id) {
-  pimpl_->MessageArrive(msg, connection_id);
+      const boost::uint32_t &connection_id, const float &rtt) {
+  pimpl_->MessageArrive(msg, connection_id, rtt);
 }
 
 void ChannelManager::UnRegisterChannel(const std::string &service_name) {

@@ -75,10 +75,9 @@ Transport::Transport() : stop_(true),
 
 
 int Transport::Start(uint16_t port,
-    boost::function<void(const rpcprotocol::RpcMessage&,
-                         const boost::uint32_t&)> on_message,
-    boost::function<void(const bool&, const std::string&,
-                         const boost::uint16_t&)> notify_dead_server,
+    boost::function<void(const rpcprotocol::RpcMessage&, const boost::uint32_t&,
+    const float&)> on_message, boost::function<void(const bool&,
+    const std::string&, const boost::uint16_t&)> notify_dead_server,
     boost::function<void(const boost::uint32_t&, const bool&)> on_send) {
   if (!stop_)
     return 1;
@@ -391,6 +390,15 @@ void Transport::ReceiveHandler() {
               continue;
             }
             (*it).second.received_size += rsize;
+            UDT::TRACEINFO perf;
+            if (UDT::ERROR == UDT::perfmon((*it).second.u, &perf)) {
+#ifdef DEBUG
+              printf("perfmon:  %s\n", UDT::getlasterror().getErrorMessage());
+#endif
+            } else {
+              (*it).second.accum_RTT += perf.msRTT;
+              (*it).second.observations++;
+            }
             if ((*it).second.expect_size <= (*it).second.received_size) {
               ++last_id_;
 #ifdef DEBUG
@@ -414,6 +422,17 @@ void Transport::ReceiveHandler() {
 #ifdef DEBUG
                   printf("message for id %d arrived\n", connection_id);
 #endif
+                  UDT::TRACEINFO perf;
+                  if (UDT::ERROR == UDT::perfmon((*it).second.u, &perf)) {
+#ifdef DEBUG
+                    printf("perfmon:  %s\n",
+                        UDT::getlasterror().getErrorMessage());
+#endif
+                  } else {
+                    msg.rtt = perf.msRTT;
+                    msg.rtt = (*it).second.accum_RTT /
+                        static_cast<double>((*it).second.observations);
+                  }
                   data_arrived_.insert(connection_id);
                   {  // NOLINT Fraser
                     boost::mutex::scoped_lock guard1(msg_hdl_mutex_);
@@ -448,7 +467,7 @@ void Transport::AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id) {
   {
     boost::mutex::scoped_lock guard(recv_mutex_);
     current_id_ = base::generate_next_transaction_id(current_id_);
-    struct IncomingData data = {u, 0, 0, boost::shared_array<char>(NULL)};
+    struct IncomingData data = {u, 0, 0, boost::shared_array<char>(NULL), 0, 0};
     incoming_sockets_[current_id_] = data;
     *conn_id = current_id_;
   }
@@ -459,7 +478,7 @@ void Transport::AddIncomingConnection(UDTSOCKET u) {
   {
     boost::mutex::scoped_lock guard(recv_mutex_);
     current_id_ = base::generate_next_transaction_id(current_id_);
-    struct IncomingData data = {u, 0, 0, boost::shared_array<char>(NULL)};
+    struct IncomingData data = {u, 0, 0, boost::shared_array<char>(NULL), 0, 0};
     incoming_sockets_[current_id_] = data;
   }
   recv_cond_.notify_one();
@@ -799,13 +818,14 @@ void Transport::MessageHandler() {
         boost::mutex::scoped_lock guard(msg_hdl_mutex_);
         msg.msg = incoming_msgs_queue_.front().msg;
         msg.conn_id = incoming_msgs_queue_.front().conn_id;
+        msg.rtt = incoming_msgs_queue_.front().rtt;
         incoming_msgs_queue_.pop_front();
       }
       {
         boost::mutex::scoped_lock gaurd(recv_mutex_);
         data_arrived_.erase(msg.conn_id);
       }
-      message_notifier_(msg.msg, msg.conn_id);
+      message_notifier_(msg.msg, msg.conn_id, msg.rtt);
       ips_from_connections_.erase(msg.conn_id);
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     }

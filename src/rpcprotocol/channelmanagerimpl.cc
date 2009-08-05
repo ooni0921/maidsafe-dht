@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rpcprotocol {
 
 ChannelManagerImpl::ChannelManagerImpl()
-    : ptransport_(new transport::Transport()), is_started(false),
-      ptimer_(new base::CallLaterTimer()), req_mutex_(), channels_mutex_(),
+    : ptransport_(new transport::Transport), is_started(false),
+      ptimer_(new base::CallLaterTimer), req_mutex_(), channels_mutex_(),
       id_mutex_(), pend_timeout_mutex_(), channels_ids_mutex_(),
       current_request_id_(0), current_channel_id_(0), channels_(),
       pending_req_(), external_port_(0), external_ip_(""), pending_timeout_(),
@@ -114,11 +114,9 @@ int ChannelManagerImpl::StartTransport(boost::uint16_t port,
   boost::uint16_t try_port_ = port;
   while (count_ <= (kMaxPort - kMinPort + 1)) {
     if (0 == ptransport_->Start(try_port_,
-                                boost::bind(&ChannelManagerImpl::MessageArrive,
-                                            this, _1, _2),
-                                notify_dead_server,
-                                boost::bind(&ChannelManagerImpl::RequestSent,
-                                  this, _1, _2))) {
+        boost::bind(&ChannelManagerImpl::MessageArrive, this, _1, _2, _3),
+        notify_dead_server, boost::bind(&ChannelManagerImpl::RequestSent,
+        this, _1, _2))) {
       start_res_ = 0;
       is_started = true;
       break;
@@ -138,7 +136,7 @@ int ChannelManagerImpl::StopTransport() {
   pending_timeout_.clear();
   ClearCallLaters();
   ptransport_->Stop();
-  base::PDRoutingTable::getInstance()[base::itos(external_port_)]->Clear();
+//  base::PDRoutingTable::getInstance()[base::itos(external_port_)]->Clear();
   {
     boost::mutex::scoped_lock lock(channels_ids_mutex_);
     while (!channels_ids_.empty()) {
@@ -156,7 +154,7 @@ void ChannelManagerImpl::CleanUpTransport() {
 }
 
 void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
-    const boost::uint32_t &connection_id) {
+    const boost::uint32_t &connection_id, const float &rtt) {
   RpcMessage decoded_msg = msg;
   if (decoded_msg.rpc_type() == REQUEST) {
     if (!decoded_msg.has_service() || !decoded_msg.has_method()) {
@@ -197,7 +195,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
           external_port_, decoded_msg.message_id());
 #endif
       channels_[decoded_msg.service()]->HandleRequest(decoded_msg,
-                                                      connection_id);
+          connection_id, rtt);
       channels_mutex_.unlock();
 #ifdef DEBUG
       printf("%i -- After Handling Request -- %i\n",
@@ -221,11 +219,11 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
 #endif
     it = pending_req_.find(decoded_msg.message_id());
     if (it != pending_req_.end()) {
-      google::protobuf::Message* response =
-          pending_req_[decoded_msg.message_id()].args;
+      google::protobuf::Message* response = (*it).second.args;
       if (response->ParseFromString(decoded_msg.args())) {
-        google::protobuf::Closure* done =
-            pending_req_[decoded_msg.message_id()].callback;
+        if ((*it).second.ctrl != NULL)
+          (*it).second.ctrl->set_rtt(rtt);
+        google::protobuf::Closure* done = (*it).second.callback;
         pending_req_.erase(decoded_msg.message_id());
         req_mutex_.unlock();
 #ifdef DEBUG
@@ -288,6 +286,7 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
 #endif
       // call back without modifying the response
       google::protobuf::Closure* done = (*it).second.callback;
+      (*it).second.ctrl->SetFailed(TIMEOUT);
       pending_req_.erase(it);
       req_mutex_.unlock();
 #ifdef DEBUG

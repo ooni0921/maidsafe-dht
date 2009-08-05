@@ -70,8 +70,10 @@ void SortLookupContact(std::list<LookupContact> *contact_list,
 
 inline void dummy_callback(const std::string&) {}
 
-inline void dummy_downlist_callback(DownlistResponse *response) {
+inline void dummy_downlist_callback(DownlistResponse *response,
+    rpcprotocol::Controller *ctrler) {
   delete response;
+  delete ctrler;
 }
 
 struct DownListCandidate {
@@ -145,32 +147,36 @@ struct IterativeStoreValueData {
 
 struct FindCallbackArgs {
     explicit FindCallbackArgs(boost::shared_ptr<IterativeLookUpData> data)
-        : sender(), data(data), retry(false) {}
-  Contact sender;
+        : remote_ctc(), data(data), retry(false), rpc_ctrler(NULL) {}
+  Contact remote_ctc;
   boost::shared_ptr<IterativeLookUpData> data;
   bool retry;
+  rpcprotocol::Controller *rpc_ctrler;
 };
 
 struct StoreCallbackArgs {
     explicit StoreCallbackArgs(boost::shared_ptr<IterativeStoreValueData> data)
-        : sender(), data(data), retry(false) {}
-  Contact sender;
+        : remote_ctc(), data(data), retry(false), rpc_ctrler(NULL) {}
+  Contact remote_ctc;
   boost::shared_ptr<IterativeStoreValueData> data;
   bool retry;
+  rpcprotocol::Controller *rpc_ctrler;
 };
 
 struct PingCallbackArgs {
   explicit PingCallbackArgs(base::callback_func_type cb)
-      : sender(), cb(cb), retry(false) {}
-  Contact sender;
+      : remote_ctc(), cb(cb), retry(false), rpc_ctrler(NULL) {}
+  Contact remote_ctc;
   base::callback_func_type cb;
   bool retry;
+  rpcprotocol::Controller *rpc_ctrler;
 };
 
 struct BootstrapData {
   base::callback_func_type cb;
   std::string bootstrap_ip;
   boost::uint16_t bootstrap_port;
+  rpcprotocol::Controller *rpc_ctrler;
 };
 
 struct BootstrapArgs {
@@ -237,7 +243,7 @@ class KNodeImpl {
                          const std::vector<Contact> &exclude_contacts);
   void Ping(const std::string &node_id, base::callback_func_type cb);
   void Ping(const Contact &remote, base::callback_func_type cb);
-  int AddContact(Contact new_contact, bool only_db);
+  int AddContact(Contact new_contact, const float & rtt, const bool &only_db);
   void RemoveContact(const std::string &node_id);
   bool GetContact(const std::string &id, Contact *contact);
   bool FindValueLocal(const std::string &key,
@@ -281,8 +287,8 @@ class KNodeImpl {
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
   inline void CallbackWithFailure(base::callback_func_type cb);
-  void Bootstrap_Callback(const boost::shared_ptr<BootstrapResponse> response,
-                          BootstrapData data);
+  void Bootstrap_Callback(const BootstrapResponse *response,
+      BootstrapData data);
   void Bootstrap(const std::string &bootstrap_ip,
                  const boost::uint16_t &bootstrap_port,
                  base::callback_func_type cb,

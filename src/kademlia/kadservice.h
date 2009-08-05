@@ -45,7 +45,7 @@ struct NatDetectionData {
   Contact node_c;
   BootstrapResponse *response;
   google::protobuf::Closure *done;
-  google::protobuf::RpcController *controller;
+  rpcprotocol::Controller *controller;
   std::vector<Contact> ex_contacts;
 };
 
@@ -53,7 +53,7 @@ struct NatDetectionPingData {
   std::string sender_id;
   NatDetectionResponse *response;
   google::protobuf::Closure *done;
-  google::protobuf::RpcController *controller;
+  rpcprotocol::Controller *controller;
 };
 
 class KadService : public KademliaService {
@@ -95,7 +95,6 @@ class KadService : public KademliaService {
       &key);
   bool GetSender(const ContactInfo &sender_info, Contact *sender);
   void RpcDownlist_Remove(const std::string &ser_response, Contact dead_node);
-  void GetSenderAddress(const std::string &res);
   void Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
       struct NatDetectionData data);
   void Bootstrap_NatDetection(const NatDetectionResponse *response,
@@ -109,10 +108,12 @@ class KadService : public KademliaService {
   bool CheckStoreRequest(const StoreRequest *request, Contact *sender);
   void StoreValueLocal(const std::string &key,
       const std::string &value, Contact sender, const boost::uint32_t &ttl,
-      const bool &publish, StoreResponse *response);
+      const bool &publish, StoreResponse *response,
+      rpcprotocol::Controller *ctrl);
   void StoreValueLocal(const std::string &key,
       const SignedValue &value, Contact sender, const boost::uint32_t &ttl,
-      const bool &publish, StoreResponse *response);
+      const bool &publish, StoreResponse *response,
+      rpcprotocol::Controller *ctrl);
   KNodeImpl *knode_;
   // boost::shared_ptr<base::PDRoutingTableHandler> routingtable_;
   KadService(const KadService&);

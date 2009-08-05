@@ -45,59 +45,31 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace base {
 
 struct PDRoutingTableTuple {
-  std::string kademlia_id_;
-  std::string host_ip_;
-  boost::uint16_t host_port_;
-  std::string rendezvous_ip_;
-  boost::uint16_t rendezvous_port_;
-  std::string public_key_;
-  boost::uint32_t rtt_;
-  boost::uint16_t rank_;
+  std::string kademlia_id_, host_ip_, rendezvous_ip_, public_key_;
+  boost::uint16_t host_port_, rendezvous_port_, rank_;
+  float rtt_;
   boost::uint32_t space_;
   int ctc_local_;
 
   // Fill the constructor as needed
-  PDRoutingTableTuple()
-    :kademlia_id_(),
-     host_ip_(),
-     host_port_(0),
-     rendezvous_ip_(),
-     rendezvous_port_(0),
-     public_key_(),
-     rtt_(0),
-     rank_(0),
-     space_(0),
-     ctc_local_(2) {}
+  PDRoutingTableTuple() : kademlia_id_(), host_ip_(), rendezvous_ip_(),
+      public_key_(), host_port_(0), rendezvous_port_(0), rank_(0), rtt_(0),
+     space_(0), ctc_local_(2) {}
   PDRoutingTableTuple(const std::string &kademlia_id,
-                      const std::string &host_ip,
-                      const boost::uint16_t &host_port,
-                      const std::string &rendezvous_ip,
-                      const boost::uint16_t &rendezvous_port,
-                      const std::string &public_key,
-                      const boost::uint32_t &rtt,
-                      const boost::uint16_t &rank,
-                      const boost::uint32_t &space)
-    :kademlia_id_(kademlia_id),
-     host_ip_(host_ip),
-     host_port_(host_port),
-     rendezvous_ip_(rendezvous_ip),
-     rendezvous_port_(rendezvous_port),
-     public_key_(public_key),
-     rtt_(rtt),
-     rank_(rank),
-     space_(space),
-     ctc_local_(2) {}
+      const std::string &host_ip, const boost::uint16_t &host_port,
+      const std::string &rendezvous_ip, const boost::uint16_t &rendezvous_port,
+      const std::string &public_key, const float &rtt,
+      const boost::uint16_t &rank, const boost::uint32_t &space)
+    : kademlia_id_(kademlia_id), host_ip_(host_ip),
+      rendezvous_ip_(rendezvous_ip), public_key_(public_key),
+      host_port_(host_port), rendezvous_port_(rendezvous_port), rank_(rank),
+      rtt_(rtt), space_(space), ctc_local_(2) {}
   PDRoutingTableTuple(const PDRoutingTableTuple &tuple)
-    :kademlia_id_(tuple.kademlia_id()),
-      host_ip_(tuple.host_ip()),
-     host_port_(tuple.host_port()),
-     rendezvous_ip_(tuple.rendezvous_ip()),
-     rendezvous_port_(tuple.rendezvous_port()),
-     public_key_(tuple.public_key()),
-     rtt_(tuple.rtt()),
-     rank_(tuple.rank()),
-     space_(tuple.space()),
-     ctc_local_(tuple.ctc_local_) {}
+    : kademlia_id_(tuple.kademlia_id()), host_ip_(tuple.host_ip()),
+      rendezvous_ip_(tuple.rendezvous_ip()), public_key_(tuple.public_key()),
+      host_port_(tuple.host_port()), rendezvous_port_(tuple.rendezvous_port()),
+      rank_(tuple.rank()), rtt_(tuple.rtt()), space_(tuple.space()),
+      ctc_local_(tuple.ctc_local_) {}
   PDRoutingTableTuple& operator=(const PDRoutingTableTuple &tuple) {
     kademlia_id_ = tuple.kademlia_id();
     host_ip_ = tuple.host_ip();
@@ -116,7 +88,7 @@ struct PDRoutingTableTuple {
   const std::string rendezvous_ip() const { return rendezvous_ip_; }
   boost::uint16_t rendezvous_port() const { return rendezvous_port_; }
   const std::string public_key() const { return public_key_; }
-  boost::uint32_t rtt() const { return rtt_; }
+  float rtt() const { return rtt_; }
   boost::uint16_t rank() const { return rank_; }
   boost::uint32_t space() const { return space_; }
   int ctc_local() const { return ctc_local_; }
@@ -146,7 +118,7 @@ typedef boost::multi_index::multi_index_container<
     >,
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<t_rtt>,
-      BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, boost::uint32_t, rtt_)
+      BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, float, rtt_)
     >,
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<t_rank>,
@@ -180,7 +152,7 @@ class PDRoutingTableHandler {
   int UpdatePublicKey(const std::string &kademlia_id,
     const std::string &new_public_key);
   int UpdateRtt(const std::string &kademlia_id,
-    const boost::uint32_t &new_rtt);
+    const float &new_rtt);
   int UpdateRank(const std::string &kademlia_id,
     const boost::uint16_t &new_rank);
   int UpdateSpace(const std::string &kademlia_id,

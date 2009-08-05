@@ -39,15 +39,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 KadService::KadService(KNodeImpl *knode) : knode_(knode) {}
 
-void KadService::GetSenderAddress(const std::string &res) {
-  FindNodeResult result_msg;
-  Contact sender_contact;
-  if (result_msg.ParseFromString(res) && result_msg.has_contact() &&
-      sender_contact.ParseFromString(result_msg.contact())) {
-    knode_->AddContact(sender_contact, false);
-  }
-}
-
 void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
                                           struct NatDetectionData data) {
   Contact sender(data.newcomer.node_id(), data.newcomer.host_ip(),
@@ -62,10 +53,19 @@ void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
       // (later we can do tunneling for clients if needed)
       data.response->set_nat_type(3);
     }
-    knode_->AddContact(sender, false);
+    if (data.controller != NULL) {
+      knode_->AddContact(sender, data.controller->rtt(), false);
+    } else {
+      printf("Bootstrap_NatDetectionRv data.controller = NULL\n");
+      knode_->AddContact(sender, 0.0, false);
+    }
+    delete data.controller;
+    data.controller = NULL;
     data.done->Run();
   } else {
     data.ex_contacts.push_back(data.node_c);
+    delete data.controller;
+    data.controller = NULL;
     SendNatDetection(data);
   }
 }
@@ -81,37 +81,38 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
       Contact sender(data.newcomer.node_id(), data.newcomer.host_ip(),
           data.newcomer.host_port(), data.newcomer.local_ip(),
           data.newcomer.local_port());  // No rendezvous info
-      knode_->AddContact(sender, false);
-  //    printf("%d -- Bootstrap_NatDetection -- returning Bootstrap response\n",
-  //      knode_->host_port());
+      if (data.controller != NULL) {
+        knode_->AddContact(sender, data.controller->rtt(), false);
+      } else {
+        printf("Bootstrap_NatDetection data.controller = NULL\n");
+        knode_->AddContact(sender, 0.0, false);
+      }
+      delete data.controller;
+      data.controller = NULL;
       data.done->Run();
     } else {
       // Node B asks C to try a rendezvous to A with B as rendezvous
-      // printf("node A is not directly connected, ");
-      // printf("sending B request to ping via rend\n");
-      // printf("newcomer data\n %s", data.newcomer.ToString().c_str());
-      NatDetectionResponse *resp = new NatDetectionResponse();
+      NatDetectionResponse *resp = new NatDetectionResponse;
       google::protobuf::Closure *done = google::protobuf::NewCallback<
         KadService, const NatDetectionResponse*, struct NatDetectionData>(this,
         &KadService::Bootstrap_NatDetectionRv, resp, data);
       std::string newcomer_str;
       data.newcomer.SerialiseToString(&newcomer_str);
-      knode_->kadrpcs()->NatDetection(newcomer_str,
-                                      data.bootstrap_node,
-                                      2,
-                                      knode_->node_id(),
-                                      data.node_c.host_ip(),
-                                      data.node_c.host_port(),
-                                      resp,
-                                      done);
+      // no need to send using rendezvous server of node C because it has
+      // already made contact with it, it can connect to it directly
+      knode_->kadrpcs()->NatDetection(newcomer_str, data.bootstrap_node, 2,
+          knode_->node_id(), data.node_c.host_ip(), data.node_c.host_port(),
+          "", 0, resp, data.controller, done);
     }
   } else {
+    delete data.controller;
+    data.controller = NULL;
     data.ex_contacts.push_back(data.node_c);
     SendNatDetection(data);
   }
 }
 
-void KadService::Ping(google::protobuf::RpcController *,
+void KadService::Ping(google::protobuf::RpcController *controller,
                       const PingRequest *request,
                       PingResponse *response,
                       google::protobuf::Closure *done) {
@@ -122,7 +123,13 @@ void KadService::Ping(google::protobuf::RpcController *,
              GetSender(request->sender_info(), &sender)) {
     response->set_echo("pong");
     response->set_result(kRpcResultSuccess);
-    knode_->AddContact(sender, false);
+    rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
+        (controller);
+    if (ctrl != NULL) {
+      knode_->AddContact(sender, ctrl->rtt(), false);
+    } else {
+      knode_->AddContact(sender, 0.0, false);
+    }
   } else {
     response->set_result(kRpcResultFailure);
   }
@@ -130,12 +137,11 @@ void KadService::Ping(google::protobuf::RpcController *,
   done->Run();
 }
 
-void KadService::FindNode(google::protobuf::RpcController *,
+void KadService::FindNode(google::protobuf::RpcController *controller,
                           const FindRequest *request,
                           FindResponse *response,
                           google::protobuf::Closure *done) {
   Contact sender;
-//  printf("%d --- KadService::FindNode\n", knode_->host_port());
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
   } else if (GetSender(request->sender_info(), &sender)) {
@@ -160,7 +166,13 @@ void KadService::FindNode(google::protobuf::RpcController *,
       }
     }
     response->set_result(kRpcResultSuccess);
-    knode_->AddContact(sender, false);
+    rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
+        (controller);
+    if (ctrl != NULL) {
+      knode_->AddContact(sender, ctrl->rtt(), false);
+    } else {
+      knode_->AddContact(sender, 0.0, false);
+    }
   } else {
     response->set_result(kRpcResultFailure);
   }
@@ -183,13 +195,6 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
     // Get the values under the specified key if present in this node's data
     // store, otherwise execute find_node for this key.
     std::string key = request->key();
-#ifdef DEBUG
-    std::string hex_key("");
-    base::encode_to_hex(key, &hex_key);
-//    printf("**************************************************\n");
-//    printf("Sought value in KadService::FindValue: %s\n", hex_key.c_str());
-//    printf("**************************************************\n");
-#endif
     std::vector<std::string> values_str;
     if (knode_->FindValueLocal(key, values_str)) {
       if (knode_->HasRSAKeys()) {
@@ -203,7 +208,13 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
           response->add_values(values_str[i]);
       }
       response->set_result(kRpcResultSuccess);
-      knode_->AddContact(sender, false);
+      rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
+        (controller);
+      if (ctrl != NULL) {
+        knode_->AddContact(sender, ctrl->rtt(), false);
+      } else  {
+        knode_->AddContact(sender, 0.0, false);
+      }
     } else {
       FindNode(controller, request, response, done);
       return;
@@ -215,11 +226,13 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
   done->Run();
 }
 
-void KadService::Store(google::protobuf::RpcController *,
+void KadService::Store(google::protobuf::RpcController *controller,
                        const StoreRequest *request,
                        StoreResponse *response,
                        google::protobuf::Closure *done) {
   Contact sender;
+  rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
+        (controller);
   if (!CheckStoreRequest(request, &sender)) {
     response->set_result(kRpcResultFailure);
   } else if (knode_->HasRSAKeys()) {
@@ -232,17 +245,17 @@ void KadService::Store(google::protobuf::RpcController *,
       response->set_result(kRpcResultFailure);
     } else {
       StoreValueLocal(request->key(), request->sig_value(), sender,
-          request->ttl(), request->publish(), response);
+          request->ttl(), request->publish(), response, ctrl);
     }
   } else {
     StoreValueLocal(request->key(), request->value(), sender, request->ttl(),
-        request->publish(), response);
+        request->publish(), response, ctrl);
   }
   response->set_node_id(knode_->node_id());
   done->Run();
 }
 
-void KadService::Downlist(google::protobuf::RpcController *,
+void KadService::Downlist(google::protobuf::RpcController *controller,
                           const DownlistRequest *request,
                           DownlistResponse *response,
                           google::protobuf::Closure *done) {
@@ -263,7 +276,13 @@ void KadService::Downlist(google::protobuf::RpcController *,
             this, _1, dead_node));
       }
     }
-    knode_->AddContact(sender, false);
+    rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
+        (controller);
+    if (ctrl != NULL) {
+      knode_->AddContact(sender, ctrl->rtt(), false);
+    } else {
+      knode_->AddContact(sender, 0.0, false);
+    }
   } else {
     response->set_result(kRpcResultFailure);
   }
@@ -318,8 +337,7 @@ void KadService::Bootstrap_NatDetectionPing(
   } else {
     data.response->set_result(kRpcResultFailure);
   }
-//  printf("%d --- Bootstrap_NatDetectionPingreturning NatDetection response\n",
-//      knode_->host_port());
+  delete data.controller;
   data.done->Run();
 }
 
@@ -329,25 +347,25 @@ void KadService::Bootstrap_NatDetectionRzPing(
   Bootstrap_NatDetectionPing(response, data);
 }
 
-void KadService::NatDetection(google::protobuf::RpcController *controller,
+void KadService::NatDetection(google::protobuf::RpcController *,
                               const NatDetectionRequest *request,
                               NatDetectionResponse *response,
                               google::protobuf::Closure *done) {
-//  printf("%d --- KadService::NatDetection\n", knode_->host_port());
   if (request->IsInitialized()) {
     if (request->type() == 1) {
       // C tries to ping A
       Contact node_a;
       if (node_a.ParseFromString(request->newcomer())) {
-        NatDetectionPingResponse *resp = new NatDetectionPingResponse();
+        NatDetectionPingResponse *resp = new NatDetectionPingResponse;
         struct NatDetectionPingData data = {request->sender_id(), response,
-                                            done, controller};
+                                            done, NULL};
+        data.controller = new rpcprotocol::Controller;
         google::protobuf::Closure *done =
             google::protobuf::NewCallback<KadService,
             const NatDetectionPingResponse*, struct NatDetectionPingData>
             (this, &KadService::Bootstrap_NatDetectionPing, resp, data);
         knode_->kadrpcs()->NatDetectionPing(node_a.host_ip(),
-            node_a.host_port(), resp, done);
+            node_a.host_port(), "", 0, resp, data.controller, done);
         return;
       }
     } else if (request->type() == 2) {
@@ -357,10 +375,10 @@ void KadService::NatDetection(google::protobuf::RpcController *controller,
       if (node_a.ParseFromString(request->newcomer()) &&
           node_b.ParseFromString(request->bootstrap_node()) &&
           node_a.node_id() != client_node_id()) {
-        knode_->AddContact(node_a, true);
-        NatDetectionPingResponse *resp = new NatDetectionPingResponse();
+        NatDetectionPingResponse *resp = new NatDetectionPingResponse;
         struct NatDetectionPingData data =
-          {request->sender_id(), response, done, controller};
+          {request->sender_id(), response, done, NULL};
+        data.controller = new rpcprotocol::Controller;
         google::protobuf::Closure *done =
           google::protobuf::NewCallback<KadService,
             const NatDetectionPingResponse*,
@@ -369,7 +387,8 @@ void KadService::NatDetection(google::protobuf::RpcController *controller,
               resp,
               data);
         knode_->kadrpcs()->NatDetectionPing(node_a.host_ip(),
-          node_a.host_port(), resp, done);
+          node_a.host_port(), node_a.rendezvous_ip(), node_a.rendezvous_port(),
+          resp, data.controller, done);
         return;
       }
     }
@@ -378,7 +397,7 @@ void KadService::NatDetection(google::protobuf::RpcController *controller,
   done->Run();
 }
 
-void KadService::NatDetectionPing(google::protobuf::RpcController *,
+void KadService::NatDetectionPing(google::protobuf::RpcController *controller,
                                   const NatDetectionPingRequest *request,
                                   NatDetectionPingResponse *response,
                                   google::protobuf::Closure *done) {
@@ -389,12 +408,12 @@ void KadService::NatDetectionPing(google::protobuf::RpcController *,
              GetSender(request->sender_info(), &sender)) {
     response->set_echo("pong");
     response->set_result(kRpcResultSuccess);
-    knode_->AddContact(sender, false);
+    rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
+        (controller);
+    knode_->AddContact(sender, ctrl->rtt(), false);
   } else {
     response->set_result(kRpcResultFailure);
   }
-//  printf("%d -- KadService::NatDetectionPing returning response\n",
-//    knode_->host_port());
   response->set_node_id(knode_->node_id());
   done->Run();
 }
@@ -403,10 +422,8 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
                            const BootstrapRequest *request,
                            BootstrapResponse *response,
                            google::protobuf::Closure *done) {
-//  printf("%d -- KadService::Bootstrap\n", knode_->host_port());
   if (!request->IsInitialized()) {
-    // Can we reply? This is a bootstrapping message from a newcomer,
-    // Can we find any contact from the local/network routingtable?
+    delete controller;
     return;
   }
   // Checking if it is a client to return its external ip/port
@@ -452,49 +469,8 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
   std::vector<Contact> ex_contacs;
   ex_contacs.push_back(newcomer);
   struct NatDetectionData data = {newcomer, this_node_str, node_c,
-      response, done, controller, ex_contacs};
+      response, done, NULL, ex_contacs};
   SendNatDetection(data);
-//  // Node C - is any random node B knows of.
-//  std::vector<Contact> exclude_contacts;
-//  std::vector<Contact> random_contacts;
-//  knode_->GetRandomContacts(1, exclude_contacts, &random_contacts);
-//  // printf("newcomer \n%s", newcomer.ToString().c_str());
-//  if (random_contacts.size() == 1
-//      && random_contacts.front() != newcomer ) {
-//    Contact node_c = random_contacts.front();
-//    // printf("node c\n%s", node_c.ToString().c_str());
-//    // Node B asks C to try ping A
-//    Contact this_node(knode_->node_id(), knode_->host_ip(),
-//      knode_->host_port(), knode_->local_host_ip(), knode_->local_host_port(),
-//      knode_->rv_ip(), knode_->rv_port());
-//    std::string this_node_str;
-//    this_node.SerialiseToString(&this_node_str);
-//    std::string newcomer_str;
-//    newcomer.SerialiseToString(&newcomer_str);
-//    struct NatDetectionData data = {/*newcomer.node_id(), */newcomer,
-//      this_node_str, node_c, response, done, controller};
-//    NatDetectionResponse *resp = new NatDetectionResponse();
-//    google::protobuf::Closure *done1 = google::protobuf::NewCallback<
-//      KadService, const NatDetectionResponse*, struct NatDetectionData>(this,
-//      &KadService::Bootstrap_NatDetection, resp, data);
-//    knode_->kadrpcs()->NatDetection(newcomer_str,
-//                                    this_node_str,
-//                                    1,
-//                                    knode_->node_id(),
-//                                    node_c.host_ip(),
-//                                    node_c.host_port(),
-//                                    resp,
-//                                    done1);
-//  } else {
-//    if (typeid(*controller) == typeid(rpcprotocol::Controller)) {
-//      rpcprotocol::Controller* rpc_controller =
-//        dynamic_cast<rpcprotocol::Controller*>(controller);  // NOLINT
-//      rpc_controller->set_remote_ip(newcomer.host_ip());
-//      rpc_controller->set_remote_port(newcomer.host_port());
-//    }
-//    // printf("still no random nodes\n");
-//    done->Run();
-//  }
 }
 
 void KadService::SendNatDetection(struct NatDetectionData data) {
@@ -503,28 +479,22 @@ void KadService::SendNatDetection(struct NatDetectionData data) {
   if (random_contacts.size() != 1) {
     if (data.ex_contacts.size() > 1)
       data.response->set_result(kRpcResultFailure);
-//    printf("%d -- SendNatDetection -- returning Bootstrap response\n",
-//      knode_->host_port());
     data.done->Run();
   } else {
     Contact node_c = random_contacts.front();
     data.node_c = node_c;
-//     printf("node c %s", node_c.ToString().c_str());
     // Node B asks C to try ping A
     std::string newcomer_str;
     data.newcomer.SerialiseToString(&newcomer_str);
-    NatDetectionResponse *resp = new NatDetectionResponse();
+    data.controller = new rpcprotocol::Controller;
+    NatDetectionResponse *resp = new NatDetectionResponse;
     google::protobuf::Closure *done = google::protobuf::NewCallback<
       KadService, const NatDetectionResponse*, struct NatDetectionData>(this,
       &KadService::Bootstrap_NatDetection, resp, data);
-    knode_->kadrpcs()->NatDetection(newcomer_str,
-                                    data.bootstrap_node,
-                                    1,
-                                    knode_->node_id(),
-                                    node_c.host_ip(),
-                                    node_c.host_port(),
-                                    resp,
-                                    done);
+    knode_->kadrpcs()->NatDetection(newcomer_str, data.bootstrap_node, 1,
+        knode_->node_id(), node_c.host_ip(), node_c.host_port(),
+        node_c.rendezvous_ip(), node_c.rendezvous_port(), resp,
+        data.controller, done);
   }
 }
 
@@ -545,7 +515,8 @@ bool KadService::CheckStoreRequest(const StoreRequest *request,
 
 void KadService::StoreValueLocal(const std::string &key,
       const std::string &value, Contact sender, const boost::uint32_t &ttl,
-      const bool &publish, StoreResponse *response) {
+      const bool &publish, StoreResponse *response,
+      rpcprotocol::Controller *ctrl) {
   bool result;
   if (publish) {
     result = knode_->StoreValueLocal(key, value, ttl);
@@ -554,7 +525,11 @@ void KadService::StoreValueLocal(const std::string &key,
   }
   if (result) {
     response->set_result(kRpcResultSuccess);
-    knode_->AddContact(sender, false);
+    if (ctrl != NULL) {
+      knode_->AddContact(sender, ctrl->rtt(), false);
+    } else {
+      knode_->AddContact(sender, 0.0, false);
+    }
   } else {
     response->set_result(kRpcResultFailure);
   }
@@ -562,7 +537,8 @@ void KadService::StoreValueLocal(const std::string &key,
 
 void KadService::StoreValueLocal(const std::string &key,
       const SignedValue &value, Contact sender, const boost::uint32_t &ttl,
-      const bool &publish, StoreResponse *response) {
+      const bool &publish, StoreResponse *response,
+      rpcprotocol::Controller *ctrl) {
   bool result;
   std::string ser_value = value.SerializeAsString();
   if (publish) {
@@ -572,7 +548,11 @@ void KadService::StoreValueLocal(const std::string &key,
   }
   if (result) {
     response->set_result(kRpcResultSuccess);
-    knode_->AddContact(sender, false);
+    if (ctrl != NULL) {
+      knode_->AddContact(sender, ctrl->rtt(), false);
+    } else {
+      knode_->AddContact(sender, 0.0, false);
+    }
   } else {
     response->set_result(kRpcResultFailure);
   }

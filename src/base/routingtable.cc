@@ -142,7 +142,7 @@ int PDRoutingTableHandler::UpdatePublicKey(const std::string &kademlia_id,
 }
 
 int PDRoutingTableHandler::UpdateRtt(const std::string &kademlia_id,
-  const boost::uint32_t &new_rtt) {
+  const float &new_rtt) {
   boost::mutex::scoped_lock guard(mutex_);
   routingtable::iterator it = routingtable_.find(kademlia_id);
   if (it == routingtable_.end())
