@@ -32,18 +32,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace rpcprotocol {
 
-ChannelManager::ChannelManager()
-    : pimpl_(new ChannelManagerImpl()) {}
+ChannelManager::ChannelManager() : pimpl_(new ChannelManagerImpl) {}
 
 ChannelManager::~ChannelManager() {}
 
 void ChannelManager::AddPendingRequest(const boost::uint32_t &req_id,
-                                       PendingReq req) {
+      PendingReq req) {
   pimpl_->AddPendingRequest(req_id, req);
 }
 
+bool ChannelManager::DeletePendingRequest(const boost::uint32_t &req_id) {
+  return pimpl_->DeletePendingRequest(req_id);
+}
+
 void ChannelManager::AddReqToTimer(const boost::uint32_t &req_id,
-                                   const int &timeout) {
+      const int &timeout) {
   pimpl_->AddReqToTimer(req_id, timeout);
 }
 
@@ -52,7 +55,7 @@ boost::uint32_t ChannelManager::CreateNewId() {
 }
 
 void ChannelManager::RegisterChannel(const std::string &service_name,
-                                     Channel* channel) {
+      Channel* channel) {
   pimpl_->RegisterChannel(service_name, channel);
 }
 
@@ -96,7 +99,7 @@ boost::uint16_t ChannelManager::external_port() const {
 }
 
 bool ChannelManager::CheckConnection(const std::string &ip,
-                                     const uint16_t &port) {
+      const uint16_t &port) {
   return pimpl_->CheckConnection(ip, port);
 }
 

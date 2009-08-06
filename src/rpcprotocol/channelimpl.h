@@ -37,28 +37,33 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace rpcprotocol {
 const std::string TIMEOUT("timeout");
+const std::string CANCELED("canceled");
 
 class ControllerImpl : public google::protobuf::RpcController {
  public:
-  ControllerImpl() : timeout_(kRpcTimeout), rtt_(0.0), failure_("") {}
+  ControllerImpl() : timeout_(kRpcTimeout), rtt_(0.0), failure_(""),
+      req_id_(0) {}
   ~ControllerImpl() {}
   virtual void SetFailed(const std::string &failure) { failure_ = failure; }
-  virtual void Reset() {}
+  virtual void Reset();
   virtual bool Failed() const;
-  virtual std::string ErrorText() const {return failure_;}
+  virtual std::string ErrorText() const { return failure_; }
   virtual void StartCancel() {}
-  virtual bool IsCanceled() const {return false;}
+  virtual bool IsCanceled() const { return false; }
   virtual void NotifyOnCancel(google::protobuf::Closure*) {}
   // input is in seconds
-  void set_timeout(const int &seconds) {timeout_ = seconds*1000;}
-  int timeout() const {return timeout_;}
+  void set_timeout(const int &seconds) { timeout_ = seconds*1000; }
+  int timeout() const { return timeout_; }
   // rtt in milliseconds
   void set_rtt(const float &rtt) { rtt_ = rtt; }
   float rtt() const { return rtt_; }
+  void set_req_id(const boost::uint32_t &id) { req_id_ = id; }
+  boost::uint32_t req_id() const { return req_id_; }
  private:
   int timeout_;
   float rtt_;
   std::string failure_;
+  boost::uint32_t req_id_;
 };
 
 class ChannelImpl : public google::protobuf::RpcChannel {

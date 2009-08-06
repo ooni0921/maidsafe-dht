@@ -76,12 +76,11 @@ class ChannelManagerImpl {
       const boost::uint16_t&)> notify_dead_server);
   int StopTransport();
   void CleanUpTransport();
-
   void MessageArrive(const RpcMessage &msg,
       const boost::uint32_t &connection_id, const float &rtt);
-  void MessageSentResult(boost::uint32_t , bool ) {}
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
+  bool DeletePendingRequest(const boost::uint32_t &req_id);
   void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
   inline boost::shared_ptr<transport::Transport> ptransport() {
     return ptransport_;
@@ -95,7 +94,6 @@ class ChannelManagerImpl {
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout);
  private:
-  void DeleteRequest(const boost::uint32_t &req_id);
   void TimerHandler(const boost::uint32_t &req_id);
   boost::shared_ptr<transport::Transport> ptransport_;
   bool is_started;

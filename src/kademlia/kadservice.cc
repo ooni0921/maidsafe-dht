@@ -301,8 +301,6 @@ bool KadService::ValidateSignedRequest(const std::string &public_key,
   if (checker.AsymCheckSig(public_key, signed_public_key, public_key,
                            crypto::STRING_STRING)) {
     checker.set_hash_algorithm(crypto::SHA_512);
-//    std::string encoded_key("");
-//    base::encode_to_hex(key, &encoded_key);
     return checker.AsymCheckSig(checker.Hash(public_key + signed_public_key +
       key, "", crypto::STRING_STRING, true), signed_request, public_key,
       crypto::STRING_STRING);

@@ -430,8 +430,12 @@ void Transport::ReceiveHandler() {
 #endif
                   } else {
                     msg.rtt = perf.msRTT;
-                    msg.rtt = (*it).second.accum_RTT /
-                        static_cast<double>((*it).second.observations);
+                    if ((*it).second.observations != 0) {
+                      msg.rtt = (*it).second.accum_RTT /
+                          static_cast<double>((*it).second.observations);
+                    } else {
+                      msg.rtt = 0.0;
+                    }
                   }
                   data_arrived_.insert(connection_id);
                   {  // NOLINT Fraser

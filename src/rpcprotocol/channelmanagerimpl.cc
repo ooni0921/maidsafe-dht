@@ -70,6 +70,28 @@ void ChannelManagerImpl::AddPendingRequest(const boost::uint32_t &req_id,
   pending_req_[req_id] = req;
 }
 
+bool ChannelManagerImpl::DeletePendingRequest(const boost::uint32_t &req_id) {
+  if (!is_started) {
+    return false;
+  }
+  std::map<boost::uint32_t, PendingReq>::iterator it;
+  req_mutex_.lock();
+  it = pending_req_.find(req_id);
+  if (it == pending_req_.end()) {
+    req_mutex_.unlock();
+    return false;
+  }
+  boost::uint32_t connection_id = it->second.connection_id;
+  it->second.ctrl->SetFailed(CANCELED);
+  google::protobuf::Closure *callback = it->second.callback;
+  pending_req_.erase(it);
+  req_mutex_.unlock();
+  if (connection_id != 0)
+    ptransport_->CloseConnection(connection_id);
+  callback->Run();
+  return true;
+}
+
 void ChannelManagerImpl::AddReqToTimer(const boost::uint32_t &req_id,
     const int &timeout) {
   if (!is_started) {
@@ -85,13 +107,8 @@ boost::uint32_t ChannelManagerImpl::CreateNewId() {
   return current_request_id_;
 }
 
-void ChannelManagerImpl::DeleteRequest(const boost::uint32_t &req_id) {
-  boost::mutex::scoped_lock guard(req_mutex_);
-  pending_req_.erase(req_id);
-}
-
 void ChannelManagerImpl::RegisterChannel(const std::string &service_name,
-                                     Channel* channel) {
+      Channel* channel) {
   boost::mutex::scoped_lock guard(channels_mutex_);
   channels_[service_name] = channel;
 }
@@ -136,7 +153,6 @@ int ChannelManagerImpl::StopTransport() {
   pending_timeout_.clear();
   ClearCallLaters();
   ptransport_->Stop();
-//  base::PDRoutingTable::getInstance()[base::itos(external_port_)]->Clear();
   {
     boost::mutex::scoped_lock lock(channels_ids_mutex_);
     while (!channels_ids_.empty()) {
@@ -194,15 +210,10 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
       printf("%i -- Calling HandleRequest for req -- %i\n",
           external_port_, decoded_msg.message_id());
 #endif
-      channels_[decoded_msg.service()]->HandleRequest(decoded_msg,
-          connection_id, rtt);
+      it->second->HandleRequest(decoded_msg, connection_id, rtt);
       channels_mutex_.unlock();
-#ifdef DEBUG
-      printf("%i -- After Handling Request -- %i\n",
-          external_port_, decoded_msg.message_id());
-#endif
     } else {
-#ifdef VERBOSE_DEBUG
+#ifdef DEBUG
       printf("\tIn ChannelManager::MessageArrive(%i - %i), ",
              external_port_,
              connection_id);
@@ -219,22 +230,13 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
 #endif
     it = pending_req_.find(decoded_msg.message_id());
     if (it != pending_req_.end()) {
-      google::protobuf::Message* response = (*it).second.args;
-      if (response->ParseFromString(decoded_msg.args())) {
-        if ((*it).second.ctrl != NULL)
-          (*it).second.ctrl->set_rtt(rtt);
+      if (it->second.args->ParseFromString(decoded_msg.args())) {
+        if (it->second.ctrl != NULL)
+          it->second.ctrl->set_rtt(rtt);
         google::protobuf::Closure* done = (*it).second.callback;
         pending_req_.erase(decoded_msg.message_id());
         req_mutex_.unlock();
-#ifdef DEBUG
-        printf("%i -- ChannelManager --- Executing Callback msg arrived %i \n",
-           external_port_, decoded_msg.message_id());
-#endif
         done->Run();
-#ifdef DEBUG
-        printf("%i -- ChannelManager --- After executing ", external_port_);
-        printf("Callback (done->Run ())\n");
-#endif
         ptransport_->CloseConnection(connection_id);
       } else {
         req_mutex_.unlock();
@@ -251,7 +253,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
 #endif
     }
   } else {
-#ifdef VERBOSE_DEBUG
+#ifdef DEBUG
     printf("\tIn ChannelManager::MessageArrive(%i - %i), ",
            external_port_,
            connection_id);
@@ -268,12 +270,12 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
   req_mutex_.lock();
   it = pending_req_.find(req_id);
   if (it != pending_req_.end()) {
-    int64_t size_rec = (*it).second.size_rec;
-    boost::uint32_t connection_id = (*it).second.connection_id;
-    int timeout = (*it).second.timeout;
+    int64_t size_rec = it->second.size_rec;
+    boost::uint32_t connection_id = it->second.connection_id;
+    int timeout = it->second.timeout;
     if (ptransport_->HasReceivedData(connection_id, &size_rec)) {
+      it->second.size_rec = size_rec;
       req_mutex_.unlock();
-      (*it).second.size_rec = size_rec;
 #ifdef DEBUG
       printf("(%d) Reseting timeout for RPC ID: %d.  Connection ID: %d\n",
         ptransport_->listening_port(), req_id, connection_id);
@@ -289,15 +291,7 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
       (*it).second.ctrl->SetFailed(TIMEOUT);
       pending_req_.erase(it);
       req_mutex_.unlock();
-#ifdef DEBUG
-      printf("%i -- executing request after timeout. id = %i\n",
-        external_port_, req_id);
-#endif
       done->Run();
-#ifdef DEBUG
-      printf("%i -- executed request after timeout. id = %i\n",
-        external_port_, req_id);
-#endif
       if (connection_id != 0)
         ptransport_->CloseConnection(connection_id);
     }
@@ -349,9 +343,9 @@ void ChannelManagerImpl::RequestSent(const boost::uint32_t &connection_id,
   it = pending_timeout_.find(connection_id);
   if (it != pending_timeout_.end()) {
     if (success) {
-      AddReqToTimer((*it).second.req_id, (*it).second.timeout);
+      AddReqToTimer(it->second.req_id, it->second.timeout);
     } else {
-      AddReqToTimer((*it).second.req_id, 1000);
+      AddReqToTimer(it->second.req_id, 1000);
     }
   }
 }

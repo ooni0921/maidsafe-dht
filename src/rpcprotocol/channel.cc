@@ -78,6 +78,14 @@ float Controller::rtt() const {
   return controller_pimpl_->rtt();
 }
 
+void Controller::set_req_id(const boost::uint32_t &id) {
+  return controller_pimpl_->set_req_id(id);
+}
+
+boost::uint32_t Controller::req_id() const {
+  return controller_pimpl_->req_id();
+}
+
 Channel::Channel(rpcprotocol::ChannelManager *channelmanager)
     : pimpl_(new ChannelImpl(channelmanager)) {}
 
@@ -89,10 +97,9 @@ Channel::Channel(rpcprotocol::ChannelManager *channelmanager,
 Channel::~Channel() {}
 
 void Channel::CallMethod(const google::protobuf::MethodDescriptor *method,
-                         google::protobuf::RpcController *controller,
-                         const google::protobuf::Message *request,
-                         google::protobuf::Message *response,
-                         google::protobuf::Closure *done) {
+      google::protobuf::RpcController *controller,
+      const google::protobuf::Message *request,
+      google::protobuf::Message *response, google::protobuf::Closure *done) {
   pimpl_->CallMethod(method, controller, request, response, done);
 }
 

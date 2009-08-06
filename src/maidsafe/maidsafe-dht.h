@@ -54,59 +54,48 @@ class SignedValue;
 class KNode {
  public:
   KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-        node_type type, const std::string &private_key = "",
-        const std::string &public_key = "");
+      node_type type, const std::string &private_key = "",
+      const std::string &public_key = "");
   // constructor used to set up parameters K, alpha, and beta for kademlia
   KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-        node_type type, const boost::uint16_t k, const int &alpha,
-        const int &beta, const int &refresh_time,
-        const std::string &private_key = "",
-        const std::string &public_key = "");
+      node_type type, const boost::uint16_t k, const int &alpha,
+      const int &beta, const int &refresh_time,
+      const std::string &private_key = "", const std::string &public_key = "");
   ~KNode();
   // if node_id is "", it will be randomly generated
   void Join(const std::string &node_id, const std::string &kad_config_file,
-            base::callback_func_type cb, const bool &port_forwarded);
+      base::callback_func_type cb, const bool &port_forwarded);
   void Leave();
-  void StoreValue(const std::string &key,
-                  const SignedValue &value,
-                  const std::string &public_key,
-                  const std::string &signed_public_key,
-                  const std::string &signed_request,
-                  const boost::uint32_t &ttl,
-                  base::callback_func_type cb);
-  void StoreValue(const std::string &key,
-                  const std::string &value,
-                  const boost::uint32_t &ttl,
-                  base::callback_func_type cb);
+  void StoreValue(const std::string &key, const SignedValue &value,
+      const std::string &public_key, const std::string &signed_public_key,
+      const std::string &signed_request, const boost::uint32_t &ttl,
+      base::callback_func_type cb);
+  void StoreValue(const std::string &key, const std::string &value,
+      const boost::uint32_t &ttl, base::callback_func_type cb);
   void FindValue(const std::string &key, base::callback_func_type cb);
-  void FindNode(const std::string &node_id,
-                base::callback_func_type cb,
-                const bool &local);
-  void FindCloseNodes(const std::string &node_id,
-                      base::callback_func_type cb);
+  void FindNode(const std::string &node_id, base::callback_func_type cb,
+      const bool &local);
+  void FindCloseNodes(const std::string &node_id, base::callback_func_type cb);
   void FindKClosestNodes(const std::string &key,
-                         std::vector<Contact> *close_nodes,
-                         const std::vector<Contact> &exclude_contacts);
+      std::vector<Contact> *close_nodes,
+      const std::vector<Contact> &exclude_contacts);
   void Ping(const std::string &node_id, base::callback_func_type cb);
   void Ping(const Contact &remote, base::callback_func_type cb);
   int AddContact(Contact new_contact, const float & rtt,
       const bool &only_db);
   void RemoveContact(const std::string &node_id);
   bool GetContact(const std::string &id, Contact *contact);
-  bool FindValueLocal(const std::string &key,
-                      std::vector<std::string> &values);
-  bool StoreValueLocal(const std::string &key,
-      const std::string &value, const boost::uint32_t &ttl);
-  bool RefreshValueLocal(const std::string &key,
-      const std::string &value, const boost::uint32_t &ttl);
+  bool FindValueLocal(const std::string &key, std::vector<std::string> &values);
+  bool StoreValueLocal(const std::string &key, const std::string &value,
+      const boost::uint32_t &ttl);
+  bool RefreshValueLocal(const std::string &key, const std::string &value,
+      const boost::uint32_t &ttl);
   void GetRandomContacts(const int &count,
-                         const std::vector<Contact> &exclude_contacts,
-                         std::vector<Contact> *contacts);
+      const std::vector<Contact> &exclude_contacts,
+      std::vector<Contact> *contacts);
   void HandleDeadRendezvousServer(const bool &dead_server);
   connect_to_node CheckContactLocalAddress(const std::string &id,
-                                           const std::string &ip,
-                                           const uint16_t &port,
-                                           const std::string &ext_ip);
+      const std::string &ip, const uint16_t &port, const std::string &ext_ip);
   void UpdatePDRTContactToRemote(const std::string &node_id);
   ContactInfo contact_info() const;
   void StopRvPing();
@@ -147,17 +136,16 @@ class ChannelManager {
   void UnRegisterChannel(const std::string &service_name);
   void ClearChannels();
   void ClearCallLaters();
-  int StartTransport(
-      boost::uint16_t port,
+  int StartTransport(boost::uint16_t port,
       boost::function<void(const bool&, const std::string&,
                            const boost::uint16_t&)> notify_dead_server);
   int StopTransport();
   void CleanUpTransport();
   void MessageArrive(const RpcMessage &msg,
       const boost::uint32_t &connection_id, const float &rtt);
-  void MessageSentResult(boost::uint32_t, bool);
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
+  bool DeletePendingRequest(const boost::uint32_t &req_id);
   void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
   boost::shared_ptr<transport::Transport> ptransport();
   boost::uint16_t external_port() const;
@@ -186,8 +174,10 @@ class Controller : public google::protobuf::RpcController {
   void NotifyOnCancel(google::protobuf::Closure*);
   void set_timeout(const int &seconds);
   void set_rtt(const float &rtt);
+  void set_req_id(const boost::uint32_t &id);
   int timeout() const;
   float rtt() const;
+  boost::uint32_t req_id() const;
  private:
   boost::shared_ptr<ControllerImpl> controller_pimpl_;
 };
@@ -200,10 +190,9 @@ class Channel : public google::protobuf::RpcChannel {
       const boost::uint16_t &rv_port);
   ~Channel();
   void CallMethod(const google::protobuf::MethodDescriptor *method,
-                  google::protobuf::RpcController *controller,
-                  const google::protobuf::Message *request,
-                  google::protobuf::Message *response,
-                  google::protobuf::Closure *done);
+      google::protobuf::RpcController *controller,
+      const google::protobuf::Message *request,
+      google::protobuf::Message *response, google::protobuf::Closure *done);
   void SetService(google::protobuf::Service* service);
   void HandleRequest(const RpcMessage &request,
       const boost::uint32_t &connection_id, const float &rtt);

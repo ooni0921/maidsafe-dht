@@ -37,9 +37,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rpcprotocol {
 
 bool ControllerImpl::Failed() const {
-  if (failure_ == TIMEOUT)
+  if (failure_ != "")
     return true;
   return false;
+}
+
+void ControllerImpl::Reset() {
+  timeout_ = kRpcTimeout;
+  rtt_ = 0.0;
+  failure_ = "";
+  req_id_ = 0;
 }
 
 struct RpcInfo {
@@ -49,8 +56,8 @@ struct RpcInfo {
 };
 
 ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager)
-        : ptransport_(channelmanager->ptransport()), pmanager_(channelmanager),
-          pservice_(0), ip_(""), rv_ip_(""), port_(0), rv_port_(0), id_(0) {
+      : ptransport_(channelmanager->ptransport()), pmanager_(channelmanager),
+        pservice_(0), ip_(""), rv_ip_(""), port_(0), rv_port_(0), id_(0) {
   pmanager_->AddChannelId(&id_);
 }
 
@@ -77,10 +84,9 @@ ChannelImpl::~ChannelImpl() {
 }
 
 void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
-                             google::protobuf::RpcController *controller,
-                             const google::protobuf::Message *request,
-                             google::protobuf::Message *response,
-                             google::protobuf::Closure *done) {
+      google::protobuf::RpcController *controller,
+      const google::protobuf::Message *request,
+      google::protobuf::Message *response, google::protobuf::Closure *done) {
   if ((ip_ == "") || (port_ == 0)) {
 #ifdef DEBUG
     printf("No remote_ip or no remote_port.\n");
@@ -101,11 +107,12 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
   req.args = response;
   req.callback = done;
   boost::uint32_t conn_id = 0;
-  // Set the RPC request timeout
   Controller *ctrl = static_cast<Controller*>(controller);
   if (0 == ptransport_->ConnectToSend(ip_, port_, rv_ip_, rv_port_, &conn_id,
       true)) {
     req.connection_id = conn_id;
+    ctrl->set_req_id(msg.message_id());
+    // Set the RPC request timeout
     if (ctrl->timeout() != 0) {
       req.timeout = ctrl->timeout();
     } else {
@@ -127,6 +134,7 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
         msg.message_id());
 #endif
     ctrl->set_timeout(1);
+    ctrl->set_req_id(msg.message_id());
     req.timeout = ctrl->timeout();
     req.ctrl = ctrl;
     pmanager_->AddPendingRequest(msg.message_id(), req);
@@ -144,8 +152,8 @@ std::string ChannelImpl::GetServiceName(const std::string &full_name) {
   std::string service_name;
   try {
     boost::char_separator<char> sep(".");
-    boost::tokenizer<boost::char_separator<char> > tok(full_name, sep);
-    boost::tokenizer<boost::char_separator<char> >::iterator beg = tok.begin();
+    boost::tokenizer< boost::char_separator<char> > tok(full_name, sep);
+    boost::tokenizer< boost::char_separator<char> >::iterator beg = tok.begin();
     int no_tokens = -1;
     while (beg != tok.end()) {
       ++beg;
@@ -197,7 +205,7 @@ void ChannelImpl::HandleRequest(const RpcMessage &request,
 }
 
 void ChannelImpl::SendResponse(const google::protobuf::Message *response,
-                               RpcInfo info) {
+      RpcInfo info) {
   RpcMessage response_msg;
   response_msg.set_message_id(info.rpc_id);
   response_msg.set_rpc_type(RESPONSE);
