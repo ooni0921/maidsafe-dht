@@ -67,6 +67,8 @@ int PDRoutingTableHandler::AddTuple(base::PDRoutingTableTuple tuple) {
     routingtable_.insert(tuple);
   } else {
     tuple.ctc_local_ = it->ctc_local_;
+    if (tuple.rtt_ == 0)
+      tuple.rtt_ = it->rtt_;
     routingtable_.replace(it, tuple);
   }
   return 0;

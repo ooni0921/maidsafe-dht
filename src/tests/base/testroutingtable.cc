@@ -96,6 +96,20 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_ReadTuple) {
   ASSERT_EQ(tuple_to_store1.rank(), retrieved_tuple1.rank());
   ASSERT_EQ(tuple_to_store1.space(), retrieved_tuple1.space());
 
+  float prev_rtt = tuple_to_store1.rtt();
+  tuple_to_store1.rtt_ = 0.0;
+  ASSERT_EQ(0, rt_handler.AddTuple(tuple_to_store1));
+  base::PDRoutingTableTuple retrieved_tuple2;
+  ASSERT_EQ(0, rt_handler.GetTupleInfo(kademlia_id, &retrieved_tuple2));
+  ASSERT_EQ(tuple_to_store1.kademlia_id(), retrieved_tuple2.kademlia_id());
+  ASSERT_EQ(tuple_to_store1.rendezvous_ip(), retrieved_tuple2.rendezvous_ip());
+  ASSERT_EQ(tuple_to_store1.rendezvous_port(),
+    retrieved_tuple2.rendezvous_port());
+  ASSERT_EQ(tuple_to_store1.public_key(), retrieved_tuple2.public_key());
+  ASSERT_EQ(prev_rtt, retrieved_tuple2.rtt());
+  ASSERT_EQ(tuple_to_store1.rank(), retrieved_tuple2.rank());
+  ASSERT_EQ(tuple_to_store1.space(), retrieved_tuple2.space());
+
   rt_handler.Clear();
 }
 

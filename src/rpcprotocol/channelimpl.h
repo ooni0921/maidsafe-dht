@@ -36,8 +36,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "transport/transportapi.h"
 
 namespace rpcprotocol {
-const std::string TIMEOUT("timeout");
-const std::string CANCELED("canceled");
+const std::string TIMEOUT("T");
+const std::string CANCELLED("C");
 
 class ControllerImpl : public google::protobuf::RpcController {
  public:

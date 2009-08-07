@@ -121,7 +121,7 @@ class ResultHolder {
   }
   void GetPingRes(const tests::PingResponse *response,
       rpcprotocol::Controller *ctrl) {
-    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::CANCELED) {
+    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::CANCELLED) {
       printf("Ping RPC canceled by the client\n");
       return;
     }
@@ -137,7 +137,7 @@ class ResultHolder {
   }
   void GetOpResult(const tests::BinaryOpResponse *response,
       rpcprotocol::Controller *ctrl) {
-    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::CANCELED) {
+    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::CANCELLED) {
       printf("BinaryOperation RPC canceled by the client\n");
       return;
     }
@@ -149,7 +149,7 @@ class ResultHolder {
   }
   void GetMirrorResult(const tests::StringMirrorResponse *response,
       rpcprotocol::Controller *ctrl) {
-    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::CANCELED) {
+    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::CANCELLED) {
       printf("Mirror RPC canceled by the client\n");
       return;
     }
@@ -480,7 +480,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   ASSERT_TRUE(client_chann_manager->DeletePendingRequest(controller.req_id()));
   boost::this_thread::sleep(boost::posix_time::seconds(11));
   ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
-  ASSERT_EQ(rpcprotocol::CANCELED, controller.ErrorText());
+  ASSERT_EQ(rpcprotocol::CANCELLED, controller.ErrorText());
   controller.Reset();
   ASSERT_EQ(std::string(""), controller.ErrorText());
 
@@ -500,7 +500,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   ASSERT_TRUE(client_chann_manager->DeletePendingRequest(controller.req_id()));
   boost::this_thread::sleep(boost::posix_time::seconds(4));
   ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
-  ASSERT_EQ(rpcprotocol::CANCELED, controller.ErrorText());
+  ASSERT_EQ(rpcprotocol::CANCELLED, controller.ErrorText());
   ASSERT_FALSE(client_chann_manager->DeletePendingRequest(1));
 }
 
