@@ -61,12 +61,16 @@ IF (WIN32)
 	link_directories(c:/MinGW/lib/ c:/MinGW/mingw32/lib/ c:/usr/lib/ ${PROJECT_BINARY_DIR}/Debug/lib)
 	ENDIF(MSVC)
 ENDIF(WIN32)
-INCLUDE_DIRECTORIES(${maidsafe-dht_SOURCE_DIR} ${INCLUDE_DIR} ${BOOST_INCLUDES})
+INCLUDE_DIRECTORIES(${maidsafe-dht_SOURCE_DIR} ${maidsafe-dht_SOURCE_DIR}/libupnp  ${INCLUDE_DIR} ${BOOST_INCLUDES})
 #########################################################################################################
 #SET UP ALL FILES AS GLOBS ##############################################################################
 #########################################################################################################
 #########################################################################################################
 ####	CODE	####											#
+#FILE(GLOB_RECURSE M_LIBUPNP_C "libupnp/*.c*")                                    					#
+#FILE(GLOB_RECURSE M_LIBUPNP_H "libupnp/*.h*")                                    					#
+LIST(APPEND M_LIBUPNP_DIR libupnp/igd_desc_parse.c libupnp/miniupnpc.c libupnp/minixml.c libupnp/minisoap.c libupnp/miniwget.c libupnp/upnpc.c libupnp/upnpcommands.c libupnp/upnpreplyparse.c libupnp/testminixml.c libupnp/minixmlvalid.c libupnp/testupnpreplyparse.c libupnp/minissdpc.c libupnp/upnperrors.c libupnp/testigddescparse.c)                                  			#
+#message("here it is" ${M_LIBUPNP_DIR})
 FILE(GLOB M_UPNP_C "upnp/*.c*")                                    					#
 FILE(GLOB M_UPNP_H "upnp/*.h*")                                    					#
 LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})                                  			#
@@ -135,7 +139,7 @@ add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${MAIDSAFE_DIR})
 add_executable(TESTupnp ${T_UPNP_DIR} ${MAIDSAFE_DIR})
 #######################################################################################
 #######################################################################################
-add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP} ) 
+add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP} ) 
 ##########################################################################################
 #Set up some extra compiler and linker flags for the tests mainly                        #
 ##########################################################################################
@@ -208,7 +212,6 @@ IF (APPLE)
 ELSEIF (UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized ")
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 ")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_RELEASE} -O2 ")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wall  -Wextra -Wfloat-equal -Wlong-long  -Wredundant-decls -Wstrict-overflow=5   -Wredundant-decls -Wunused-function  -Wunused-label  -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -Wall -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
