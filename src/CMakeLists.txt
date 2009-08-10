@@ -29,7 +29,7 @@ ELSE(UNIX)
 ENDIF(UNIX)
 
 IF(CMAKE_BUILD_TYPE MATCHES "Release")
-message("building an ok to release package")
+message("Building a package which is OK to release.")
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/bin/)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/lib)
 ELSE()
@@ -66,68 +66,68 @@ INCLUDE_DIRECTORIES(${maidsafe-dht_SOURCE_DIR} ${maidsafe-dht_SOURCE_DIR}/libupn
 #SET UP ALL FILES AS GLOBS ##############################################################################
 #########################################################################################################
 #########################################################################################################
-####	CODE	####											#
-#FILE(GLOB_RECURSE M_LIBUPNP_C "libupnp/*.c*")                                    					#
-#FILE(GLOB_RECURSE M_LIBUPNP_H "libupnp/*.h*")                                    					#
-LIST(APPEND M_LIBUPNP_DIR libupnp/igd_desc_parse.c libupnp/miniupnpc.c libupnp/minixml.c libupnp/minisoap.c libupnp/miniwget.c libupnp/upnpc.c libupnp/upnpcommands.c libupnp/upnpreplyparse.c libupnp/testminixml.c libupnp/minixmlvalid.c libupnp/testupnpreplyparse.c libupnp/minissdpc.c libupnp/upnperrors.c libupnp/testigddescparse.c)                                  			#
+####	CODE	####
+#FILE(GLOB_RECURSE M_LIBUPNP_C "libupnp/*.c*")
+#FILE(GLOB_RECURSE M_LIBUPNP_H "libupnp/*.h*")
+LIST(APPEND M_LIBUPNP_DIR libupnp/igd_desc_parse.c libupnp/miniupnpc.c libupnp/minixml.c libupnp/minisoap.c libupnp/miniwget.c libupnp/upnpc.c libupnp/upnpcommands.c libupnp/upnpreplyparse.c libupnp/testminixml.c libupnp/minixmlvalid.c libupnp/testupnpreplyparse.c libupnp/minissdpc.c libupnp/upnperrors.c libupnp/testigddescparse.c)
 #message("here it is" ${M_LIBUPNP_DIR})
-FILE(GLOB M_UPNP_C "upnp/*.c*")                                    					#
-FILE(GLOB M_UPNP_H "upnp/*.h*")                                    					#
-LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})                                  			#
-FILE(GLOB M_PROTOBUF_C "protobuf/*.c*")                            		 			#
-FILE(GLOB M_PROTOBUF_H "protobuf/*.h*")                            		 			#
-LIST(APPEND M_PROTOBUF_DIR ${M_PROTOBUF_C} ${M_PROTOBUF_H})                      			#
-FILE(GLOB M_BASE_C "base/*.c*")                                    					#
-FILE(GLOB M_BASE_H "base/*.h*")                                    					#
-LIST(APPEND M_BASE_DIR ${M_BASE_C} ${M_BASE_H})                                  			#
-FILE(GLOB M_KADEMLIA_C "kademlia/*.c*")                            					#
-FILE(GLOB M_KADEMLIA_H "kademlia/*.h*")                            					#
-LIST(APPEND M_KADEMLIA_DIR ${M_KADEMLIA_C} ${M_KADEMLIA_H})                      			#
-LIST(APPEND STYLE_KADEMLIA ${M_KADEMLIA_C} ${M_KADEMLIA_H})                      			#
-FILE(GLOB PB_KADEMLIA "kademlia/*.pb.*")                           					#
-FILE(GLOB M_TRANSPORT_C "transport/*.c*")                          					#
-FILE(GLOB M_TRANSPORT_H "transport/*.h*")                          					#
-FILE(GLOB M_UDT_C "udt/*.h*")                          							#
-FILE(GLOB M_UDT_H "udt/*.c*")                          							#
-LIST(APPEND M_TRANSPORT_DIR ${M_TRANSPORT_C} ${M_TRANSPORT_H} ${M_UDT_C} ${M_UDT_H})            	#
-FILE(GLOB MAIDSAFE_C "maidsafe/*.c*")                              					#
-FILE(GLOB MAIDSAFE_H "maidsafe/*.h*")                              					#
-LIST(APPEND MAIDSAFE_DIR ${MAIDSAFE_C} ${MAIDSAFE_H})                                  			#
-####	TESTS	####											#
-FILE(GLOB T_BASE_C "tests/base/*.c*")                              					#
-FILE(GLOB T_BASE_H "tests/base/*.h*")                              					#
-LIST(APPEND T_BASE_DIR ${T_BASE_C} ${T_BASE_H})                                  			#
-FILE(GLOB T_KADEMLIA_C "tests/kademlia/*.c*")                      					#
-FILE(GLOB T_KADEMLIA_H "tests/kademlia/*.h*")                      					#
-LIST(APPEND T_KADEMLIA_DIR ${T_KADEMLIA_C} ${T_KADEMLIA_H})                      			#
-LIST(REMOVE_ITEM T_KADEMLIA_DIR "${maidsafe-dht_SOURCE_DIR}/tests/kademlia/testknode.cc")		#
-FILE(GLOB T_TRANSPORT_C "tests/transport/*.c*")                    					#
-FILE(GLOB T_TRANSPORT_H "tests/transport/*.h*")                    					#
-LIST(APPEND T_TRANSPORT_DIR ${T_TRANSPORT_C} ${T_TRANSPORT_H})                   			#
-FILE(GLOB T_MAIN  "tests/main.cc")                                 					#
-FILE(GLOB M_RPCPROTO_C "rpcprotocol/*.c*")                         					#
-FILE(GLOB M_RPCPROTO_H "rpcprotocol/*.h*")                         					#
-LIST(APPEND M_RPCPROTO_DIR ${M_RPCPROTO_C} ${M_RPCPROTO_H})                      			#
-LIST(APPEND STYLE_RPCPROTO ${M_RPCPROTO_C} ${M_RPCPROTO_H})                      			#
-FILE(GLOB T_RPCPROTO_C "tests/rpcprotocol/*.c*")                   					#
-FILE(GLOB T_RPCPROTO_H "tests/rpcprotocol/*.h*")                   					#
-LIST(APPEND T_RPCPROTO_DIR ${T_RPCPROTO_C} ${T_RPCPROTO_H})                      			#
-FILE(GLOB STYLE_RPCPROTO_C "tests/rpcprotocol/*.c*")                   					#
-FILE(GLOB STYLE_RPCPROTO_H "tests/rpcprotocol/*.h*")                   					#
-LIST(APPEND STYLE_RPCPROTO_DIR ${STYLE_RPCPROTO_C} ${STYLE_RPCPROTO_H})                    		#
-LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${maidsafe-dht_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.h")	#
-LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${maidsafe-dht_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.cc")	#
-FILE(GLOB T_UPNP_C "tests/upnp/*.c*")                                    				#
-FILE(GLOB T_UPNP_H "tests/upnp/*.h*")                                    				#
-LIST(APPEND T_UPNP_DIR ${T_UPNP_C} ${T_UPNP_H})                                  			#
-FILE(GLOB T_FUNC_KADEMLIA_C "tests/functionalkademlia/*.c*")                      			#
-FILE(GLOB T_FUNC_KADEMLIA_H "tests/functionalkademlia/*.h*")                      			#
-LIST(APPEND T_FUNC_KADEMLIA_DIR ${T_FUNC_KADEMLIA_C} ${T_FUNC_KADEMLIA_H})                      	#
-LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "tests/kademlia/testknode.cc")                      		#
-FILE(GLOB CRYPTOPP_C "cryptopp/*.c*")                      			#
-FILE(GLOB CRYPTOPP_H "cryptopp/*.h*")                      			#
-LIST(APPEND CRYPTOPP ${CRYPTOPP_C} ${CRYPTOPP_H})                      	#
-#########################################################################################################
+FILE(GLOB M_UPNP_C "upnp/*.c*")
+FILE(GLOB M_UPNP_H "upnp/*.h*")
+LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})
+FILE(GLOB M_PROTOBUF_C "protobuf/*.c*")
+FILE(GLOB M_PROTOBUF_H "protobuf/*.h*")
+LIST(APPEND M_PROTOBUF_DIR ${M_PROTOBUF_C} ${M_PROTOBUF_H})
+FILE(GLOB M_BASE_C "base/*.c*")
+FILE(GLOB M_BASE_H "base/*.h*")
+LIST(APPEND M_BASE_DIR ${M_BASE_C} ${M_BASE_H})
+FILE(GLOB M_KADEMLIA_C "kademlia/*.c*")
+FILE(GLOB M_KADEMLIA_H "kademlia/*.h*")
+LIST(APPEND M_KADEMLIA_DIR ${M_KADEMLIA_C} ${M_KADEMLIA_H})
+LIST(APPEND STYLE_KADEMLIA ${M_KADEMLIA_C} ${M_KADEMLIA_H})
+FILE(GLOB PB_KADEMLIA "kademlia/*.pb.*")
+FILE(GLOB M_TRANSPORT_C "transport/*.c*")
+FILE(GLOB M_TRANSPORT_H "transport/*.h*")
+FILE(GLOB M_UDT_C "udt/*.h*")
+FILE(GLOB M_UDT_H "udt/*.c*")
+LIST(APPEND M_TRANSPORT_DIR ${M_TRANSPORT_C} ${M_TRANSPORT_H} ${M_UDT_C} ${M_UDT_H})
+FILE(GLOB MAIDSAFE_C "maidsafe/*.c*")
+FILE(GLOB MAIDSAFE_H "maidsafe/*.h*")
+LIST(APPEND MAIDSAFE_DIR ${MAIDSAFE_C} ${MAIDSAFE_H})
+####	TESTS	####
+FILE(GLOB T_BASE_C "tests/base/*.c*")
+FILE(GLOB T_BASE_H "tests/base/*.h*")
+LIST(APPEND T_BASE_DIR ${T_BASE_C} ${T_BASE_H})
+FILE(GLOB T_KADEMLIA_C "tests/kademlia/*.c*")
+FILE(GLOB T_KADEMLIA_H "tests/kademlia/*.h*")
+LIST(APPEND T_KADEMLIA_DIR ${T_KADEMLIA_C} ${T_KADEMLIA_H})
+LIST(REMOVE_ITEM T_KADEMLIA_DIR "${maidsafe-dht_SOURCE_DIR}/tests/kademlia/testknode.cc")
+FILE(GLOB T_TRANSPORT_C "tests/transport/*.c*")
+FILE(GLOB T_TRANSPORT_H "tests/transport/*.h*")
+LIST(APPEND T_TRANSPORT_DIR ${T_TRANSPORT_C} ${T_TRANSPORT_H})
+FILE(GLOB T_MAIN  "tests/main.cc")
+FILE(GLOB M_RPCPROTO_C "rpcprotocol/*.c*")
+FILE(GLOB M_RPCPROTO_H "rpcprotocol/*.h*")
+LIST(APPEND M_RPCPROTO_DIR ${M_RPCPROTO_C} ${M_RPCPROTO_H})
+LIST(APPEND STYLE_RPCPROTO ${M_RPCPROTO_C} ${M_RPCPROTO_H})
+FILE(GLOB T_RPCPROTO_C "tests/rpcprotocol/*.c*")
+FILE(GLOB T_RPCPROTO_H "tests/rpcprotocol/*.h*")
+LIST(APPEND T_RPCPROTO_DIR ${T_RPCPROTO_C} ${T_RPCPROTO_H})
+FILE(GLOB STYLE_RPCPROTO_C "tests/rpcprotocol/*.c*")
+FILE(GLOB STYLE_RPCPROTO_H "tests/rpcprotocol/*.h*")
+LIST(APPEND STYLE_RPCPROTO_DIR ${STYLE_RPCPROTO_C} ${STYLE_RPCPROTO_H})
+LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${maidsafe-dht_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.h")
+LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${maidsafe-dht_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.cc")
+FILE(GLOB T_UPNP_C "tests/upnp/*.c*")
+FILE(GLOB T_UPNP_H "tests/upnp/*.h*")
+LIST(APPEND T_UPNP_DIR ${T_UPNP_C} ${T_UPNP_H})
+FILE(GLOB T_FUNC_KADEMLIA_C "tests/functionalkademlia/*.c*")
+FILE(GLOB T_FUNC_KADEMLIA_H "tests/functionalkademlia/*.h*")
+LIST(APPEND T_FUNC_KADEMLIA_DIR ${T_FUNC_KADEMLIA_C} ${T_FUNC_KADEMLIA_H})
+LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "tests/kademlia/testknode.cc")
+FILE(GLOB CRYPTOPP_C "cryptopp/*.c*")
+FILE(GLOB CRYPTOPP_H "cryptopp/*.h*")
+LIST(APPEND CRYPTOPP ${CRYPTOPP_C} ${CRYPTOPP_H})
+#######################################################################################
 #All Platforms:  Add Test Exes and Create all maidsafe-dht libs                       #
 #######################################################################################
 add_executable(TESTbase ${T_MAIN} ${T_BASE_DIR} ${MAIDSAFE_DIR} )
@@ -140,11 +140,11 @@ add_executable(TESTupnp ${T_UPNP_DIR} ${MAIDSAFE_DIR})
 #######################################################################################
 #######################################################################################
 add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP} ) 
-##########################################################################################
-#Set up some extra compiler and linker flags for the tests mainly                        #
-##########################################################################################
-SET_TARGET_PROPERTIES(maidsafe-dht PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACROS" )  
-##########################################################################################
+#######################################################################################
+#Set up some extra compiler and linker flags for the tests mainly                     #
+#######################################################################################
+SET_TARGET_PROPERTIES(maidsafe-dht PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACROS" )
+#######################################################################################
 #BUILDS
 IF (APPLE)
 	SET(SYS_LIB 
@@ -201,7 +201,7 @@ TARGET_LINK_LIBRARIES(maidsafe-dht  ${SYS_LIB} )
 
 
 ##################################################################################
-# COMPILER FLAGS  - here after all targets declared                                                                #
+# COMPILER FLAGS  - here after all targets declared                              #
 ##################################################################################
 IF (APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10  -D_FILE_OFFSET_BITS=64" )
