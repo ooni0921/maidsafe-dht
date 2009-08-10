@@ -14,9 +14,6 @@ namespace {
 const ::google::protobuf::Descriptor* GeneralResponse_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   GeneralResponse_reflection_ = NULL;
-const ::google::protobuf::Descriptor* VaultConfig_descriptor_ = NULL;
-const ::google::protobuf::internal::GeneratedMessageReflection*
-  VaultConfig_reflection_ = NULL;
 const ::google::protobuf::Descriptor* KadConfig_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   KadConfig_reflection_ = NULL;
@@ -48,27 +45,7 @@ void protobuf_AssignDesc_general_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(GeneralResponse));
-  VaultConfig_descriptor_ = file->message_type(1);
-  static const int VaultConfig_offsets_[6] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, pmid_public_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, pmid_private_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, signed_pmid_public_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, chunkstore_dir_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, datastore_dir_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, port_),
-  };
-  VaultConfig_reflection_ =
-    new ::google::protobuf::internal::GeneratedMessageReflection(
-      VaultConfig_descriptor_,
-      VaultConfig::default_instance_,
-      VaultConfig_offsets_,
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, _has_bits_[0]),
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VaultConfig, _unknown_fields_),
-      -1,
-      ::google::protobuf::DescriptorPool::generated_pool(),
-      ::google::protobuf::MessageFactory::generated_factory(),
-      sizeof(VaultConfig));
-  KadConfig_descriptor_ = file->message_type(2);
+  KadConfig_descriptor_ = file->message_type(1);
   static const int KadConfig_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(KadConfig, port_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(KadConfig, contact_),
@@ -120,8 +97,6 @@ void protobuf_RegisterTypes() {
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     GeneralResponse_descriptor_, &GeneralResponse::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
-    VaultConfig_descriptor_, &VaultConfig::default_instance());
-  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     KadConfig_descriptor_, &KadConfig::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     KadConfig_Contact_descriptor_, &KadConfig_Contact::default_instance());
@@ -132,8 +107,6 @@ void protobuf_RegisterTypes() {
 void protobuf_ShutdownFile_general_5fmessages_2eproto() {
   delete GeneralResponse::default_instance_;
   delete GeneralResponse_reflection_;
-  delete VaultConfig::default_instance_;
-  delete VaultConfig_reflection_;
   delete KadConfig::default_instance_;
   delete KadConfig_reflection_;
   delete KadConfig_Contact::default_instance_;
@@ -148,24 +121,18 @@ void protobuf_AddDesc_general_5fmessages_2eproto() {
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\026general_messages.proto\022\004base\"!\n\017Genera"
-    "lResponse\022\016\n\006result\030\001 \002(\014\"\221\001\n\013VaultConfi"
-    "g\022\023\n\013pmid_public\030\001 \002(\014\022\024\n\014pmid_private\030\002"
-    " \002(\014\022\032\n\022signed_pmid_public\030\003 \002(\014\022\026\n\016chun"
-    "kstore_dir\030\004 \001(\014\022\025\n\rdatastore_dir\030\005 \001(\014\022"
-    "\014\n\004port\030\006 \001(\005\"\320\001\n\tKadConfig\022\014\n\004port\030\001 \001("
-    "\005\022(\n\007contact\030\002 \003(\0132\027.base.KadConfig.Cont"
-    "act\032\212\001\n\007Contact\022\017\n\007node_id\030\001 \002(\014\022\n\n\002ip\030\002"
-    " \002(\014\022\014\n\004port\030\003 \002(\005\022\020\n\010local_ip\030\004 \001(\014\022\022\n\n"
-    "local_port\030\005 \001(\005\022\025\n\rrendezvouz_ip\030\006 \001(\014\022"
-    "\027\n\017rendezvouz_port\030\007 \001(\005", 424);
+    "lResponse\022\016\n\006result\030\001 \002(\014\"\320\001\n\tKadConfig\022"
+    "\014\n\004port\030\001 \001(\005\022(\n\007contact\030\002 \003(\0132\027.base.Ka"
+    "dConfig.Contact\032\212\001\n\007Contact\022\017\n\007node_id\030\001"
+    " \002(\014\022\n\n\002ip\030\002 \002(\014\022\014\n\004port\030\003 \002(\005\022\020\n\010local_"
+    "ip\030\004 \001(\014\022\022\n\nlocal_port\030\005 \001(\005\022\025\n\rrendezvo"
+    "uz_ip\030\006 \001(\014\022\027\n\017rendezvouz_port\030\007 \001(\005", 276);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "general_messages.proto", &protobuf_RegisterTypes);
   GeneralResponse::default_instance_ = new GeneralResponse();
-  VaultConfig::default_instance_ = new VaultConfig();
   KadConfig::default_instance_ = new KadConfig();
   KadConfig_Contact::default_instance_ = new KadConfig_Contact();
   GeneralResponse::default_instance_->InitAsDefaultInstance();
-  VaultConfig::default_instance_->InitAsDefaultInstance();
   KadConfig::default_instance_->InitAsDefaultInstance();
   KadConfig_Contact::default_instance_->InitAsDefaultInstance();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_general_5fmessages_2eproto);
@@ -392,441 +359,6 @@ const ::google::protobuf::Descriptor* GeneralResponse::GetDescriptor() const {
 const ::google::protobuf::Reflection* GeneralResponse::GetReflection() const {
   protobuf_AssignDescriptorsOnce();
   return GeneralResponse_reflection_;
-}
-
-// ===================================================================
-
-const ::std::string VaultConfig::_default_pmid_public_;
-const ::std::string VaultConfig::_default_pmid_private_;
-const ::std::string VaultConfig::_default_signed_pmid_public_;
-const ::std::string VaultConfig::_default_chunkstore_dir_;
-const ::std::string VaultConfig::_default_datastore_dir_;
-#ifndef _MSC_VER
-const int VaultConfig::kPmidPublicFieldNumber;
-const int VaultConfig::kPmidPrivateFieldNumber;
-const int VaultConfig::kSignedPmidPublicFieldNumber;
-const int VaultConfig::kChunkstoreDirFieldNumber;
-const int VaultConfig::kDatastoreDirFieldNumber;
-const int VaultConfig::kPortFieldNumber;
-#endif  // !_MSC_VER
-
-VaultConfig::VaultConfig()
-  : ::google::protobuf::Message(),
-    _unknown_fields_(),
-    _cached_size_(0),
-    pmid_public_(const_cast< ::std::string*>(&_default_pmid_public_)),
-    pmid_private_(const_cast< ::std::string*>(&_default_pmid_private_)),
-    signed_pmid_public_(const_cast< ::std::string*>(&_default_signed_pmid_public_)),
-    chunkstore_dir_(const_cast< ::std::string*>(&_default_chunkstore_dir_)),
-    datastore_dir_(const_cast< ::std::string*>(&_default_datastore_dir_)),
-    port_(0) {
-  SharedCtor();
-}
-
-void VaultConfig::InitAsDefaultInstance() {}
-
-VaultConfig::VaultConfig(const VaultConfig& from)
-  : ::google::protobuf::Message(),
-    _unknown_fields_(),
-    _cached_size_(0),
-    pmid_public_(const_cast< ::std::string*>(&_default_pmid_public_)),
-    pmid_private_(const_cast< ::std::string*>(&_default_pmid_private_)),
-    signed_pmid_public_(const_cast< ::std::string*>(&_default_signed_pmid_public_)),
-    chunkstore_dir_(const_cast< ::std::string*>(&_default_chunkstore_dir_)),
-    datastore_dir_(const_cast< ::std::string*>(&_default_datastore_dir_)),
-    port_(0) {
-  SharedCtor();
-  MergeFrom(from);
-}
-
-void VaultConfig::SharedCtor() {
-  _cached_size_ = 0;
-  pmid_public_ = const_cast< ::std::string*>(&_default_pmid_public_);
-  pmid_private_ = const_cast< ::std::string*>(&_default_pmid_private_);
-  signed_pmid_public_ = const_cast< ::std::string*>(&_default_signed_pmid_public_);
-  chunkstore_dir_ = const_cast< ::std::string*>(&_default_chunkstore_dir_);
-  datastore_dir_ = const_cast< ::std::string*>(&_default_datastore_dir_);
-  port_ = 0;
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-}
-
-VaultConfig::~VaultConfig() {
-  SharedDtor();
-}
-
-void VaultConfig::SharedDtor() {
-  if (pmid_public_ != &_default_pmid_public_) {
-    delete pmid_public_;
-  }
-  if (pmid_private_ != &_default_pmid_private_) {
-    delete pmid_private_;
-  }
-  if (signed_pmid_public_ != &_default_signed_pmid_public_) {
-    delete signed_pmid_public_;
-  }
-  if (chunkstore_dir_ != &_default_chunkstore_dir_) {
-    delete chunkstore_dir_;
-  }
-  if (datastore_dir_ != &_default_datastore_dir_) {
-    delete datastore_dir_;
-  }
-  if (this != default_instance_) {
-  }
-}
-
-const ::google::protobuf::Descriptor* VaultConfig::descriptor() {
-  protobuf_AssignDescriptorsOnce();
-  return VaultConfig_descriptor_;
-}
-
-const VaultConfig& VaultConfig::default_instance() {
-  if (default_instance_ == NULL) protobuf_AddDesc_general_5fmessages_2eproto();  return *default_instance_;
-}
-
-VaultConfig* VaultConfig::default_instance_ = NULL;
-
-VaultConfig* VaultConfig::New() const {
-  return new VaultConfig;
-}
-
-void VaultConfig::Clear() {
-  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (_has_bit(0)) {
-      if (pmid_public_ != &_default_pmid_public_) {
-        pmid_public_->clear();
-      }
-    }
-    if (_has_bit(1)) {
-      if (pmid_private_ != &_default_pmid_private_) {
-        pmid_private_->clear();
-      }
-    }
-    if (_has_bit(2)) {
-      if (signed_pmid_public_ != &_default_signed_pmid_public_) {
-        signed_pmid_public_->clear();
-      }
-    }
-    if (_has_bit(3)) {
-      if (chunkstore_dir_ != &_default_chunkstore_dir_) {
-        chunkstore_dir_->clear();
-      }
-    }
-    if (_has_bit(4)) {
-      if (datastore_dir_ != &_default_datastore_dir_) {
-        datastore_dir_->clear();
-      }
-    }
-    port_ = 0;
-  }
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  mutable_unknown_fields()->Clear();
-}
-
-bool VaultConfig::MergePartialFromCodedStream(
-    ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
-  ::google::protobuf::uint32 tag;
-  while ((tag = input->ReadTag()) != 0) {
-    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
-      // required bytes pmid_public = 1;
-      case 1: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
-          goto handle_uninterpreted;
-        }
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pmid_public()));
-        if (input->ExpectTag(18)) goto parse_pmid_private;
-        break;
-      }
-      
-      // required bytes pmid_private = 2;
-      case 2: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
-          goto handle_uninterpreted;
-        }
-       parse_pmid_private:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_pmid_private()));
-        if (input->ExpectTag(26)) goto parse_signed_pmid_public;
-        break;
-      }
-      
-      // required bytes signed_pmid_public = 3;
-      case 3: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
-          goto handle_uninterpreted;
-        }
-       parse_signed_pmid_public:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_signed_pmid_public()));
-        if (input->ExpectTag(34)) goto parse_chunkstore_dir;
-        break;
-      }
-      
-      // optional bytes chunkstore_dir = 4;
-      case 4: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
-          goto handle_uninterpreted;
-        }
-       parse_chunkstore_dir:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_chunkstore_dir()));
-        if (input->ExpectTag(42)) goto parse_datastore_dir;
-        break;
-      }
-      
-      // optional bytes datastore_dir = 5;
-      case 5: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
-          goto handle_uninterpreted;
-        }
-       parse_datastore_dir:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_datastore_dir()));
-        if (input->ExpectTag(48)) goto parse_port;
-        break;
-      }
-      
-      // optional int32 port = 6;
-      case 6: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_VARINT) {
-          goto handle_uninterpreted;
-        }
-       parse_port:
-        DO_(::google::protobuf::internal::WireFormat::ReadInt32(
-              input, &port_));
-        _set_bit(5);
-        if (input->ExpectAtEnd()) return true;
-        break;
-      }
-      
-      default: {
-      handle_uninterpreted:
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
-          return true;
-        }
-        DO_(::google::protobuf::internal::WireFormat::SkipField(
-              input, tag, mutable_unknown_fields()));
-        break;
-      }
-    }
-  }
-  return true;
-#undef DO_
-}
-
-void VaultConfig::SerializeWithCachedSizes(
-    ::google::protobuf::io::CodedOutputStream* output) const {
-  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
-  if (raw_buffer != NULL) {
-    VaultConfig::SerializeWithCachedSizesToArray(raw_buffer);
-    return;
-  }
-  
-  // required bytes pmid_public = 1;
-  if (_has_bit(0)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->pmid_public(), output);
-  }
-  
-  // required bytes pmid_private = 2;
-  if (_has_bit(1)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->pmid_private(), output);
-  }
-  
-  // required bytes signed_pmid_public = 3;
-  if (_has_bit(2)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->signed_pmid_public(), output);
-  }
-  
-  // optional bytes chunkstore_dir = 4;
-  if (_has_bit(3)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->chunkstore_dir(), output);
-  }
-  
-  // optional bytes datastore_dir = 5;
-  if (_has_bit(4)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->datastore_dir(), output);
-  }
-  
-  // optional int32 port = 6;
-  if (_has_bit(5)) {
-    ::google::protobuf::internal::WireFormat::WriteInt32(6, this->port(), output);
-  }
-  
-  if (!unknown_fields().empty()) {
-    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
-        unknown_fields(), output);
-  }
-}
-
-::google::protobuf::uint8* VaultConfig::SerializeWithCachedSizesToArray(
-    ::google::protobuf::uint8* target) const {
-  // required bytes pmid_public = 1;
-  if (_has_bit(0)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->pmid_public(), target);
-  }
-  
-  // required bytes pmid_private = 2;
-  if (_has_bit(1)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->pmid_private(), target);
-  }
-  
-  // required bytes signed_pmid_public = 3;
-  if (_has_bit(2)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->signed_pmid_public(), target);
-  }
-  
-  // optional bytes chunkstore_dir = 4;
-  if (_has_bit(3)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->chunkstore_dir(), target);
-  }
-  
-  // optional bytes datastore_dir = 5;
-  if (_has_bit(4)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->datastore_dir(), target);
-  }
-  
-  // optional int32 port = 6;
-  if (_has_bit(5)) {
-    target = ::google::protobuf::internal::WireFormat::WriteInt32ToArray(6, this->port(), target);
-  }
-  
-  if (!unknown_fields().empty()) {
-    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
-        unknown_fields(), target);
-  }
-  return target;
-}
-
-int VaultConfig::ByteSize() const {
-  int total_size = 0;
-  
-  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required bytes pmid_public = 1;
-    if (has_pmid_public()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->pmid_public());
-    }
-    
-    // required bytes pmid_private = 2;
-    if (has_pmid_private()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->pmid_private());
-    }
-    
-    // required bytes signed_pmid_public = 3;
-    if (has_signed_pmid_public()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->signed_pmid_public());
-    }
-    
-    // optional bytes chunkstore_dir = 4;
-    if (has_chunkstore_dir()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->chunkstore_dir());
-    }
-    
-    // optional bytes datastore_dir = 5;
-    if (has_datastore_dir()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->datastore_dir());
-    }
-    
-    // optional int32 port = 6;
-    if (has_port()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::Int32Size(
-          this->port());
-    }
-    
-  }
-  if (!unknown_fields().empty()) {
-    total_size +=
-      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
-        unknown_fields());
-  }
-  _cached_size_ = total_size;
-  return total_size;
-}
-
-void VaultConfig::MergeFrom(const ::google::protobuf::Message& from) {
-  GOOGLE_CHECK_NE(&from, this);
-  const VaultConfig* source =
-    ::google::protobuf::internal::dynamic_cast_if_available<const VaultConfig*>(
-      &from);
-  if (source == NULL) {
-    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
-  } else {
-    MergeFrom(*source);
-  }
-}
-
-void VaultConfig::MergeFrom(const VaultConfig& from) {
-  GOOGLE_CHECK_NE(&from, this);
-  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (from._has_bit(0)) {
-      set_pmid_public(from.pmid_public());
-    }
-    if (from._has_bit(1)) {
-      set_pmid_private(from.pmid_private());
-    }
-    if (from._has_bit(2)) {
-      set_signed_pmid_public(from.signed_pmid_public());
-    }
-    if (from._has_bit(3)) {
-      set_chunkstore_dir(from.chunkstore_dir());
-    }
-    if (from._has_bit(4)) {
-      set_datastore_dir(from.datastore_dir());
-    }
-    if (from._has_bit(5)) {
-      set_port(from.port());
-    }
-  }
-  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
-}
-
-void VaultConfig::CopyFrom(const ::google::protobuf::Message& from) {
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-void VaultConfig::CopyFrom(const VaultConfig& from) {
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-void VaultConfig::Swap(VaultConfig* other) {
-  if (other != this) {
-    std::swap(pmid_public_, other->pmid_public_);
-    std::swap(pmid_private_, other->pmid_private_);
-    std::swap(signed_pmid_public_, other->signed_pmid_public_);
-    std::swap(chunkstore_dir_, other->chunkstore_dir_);
-    std::swap(datastore_dir_, other->datastore_dir_);
-    std::swap(port_, other->port_);
-    std::swap(_has_bits_[0], other->_has_bits_[0]);
-    _unknown_fields_.Swap(&other->_unknown_fields_);
-    std::swap(_cached_size_, other->_cached_size_);
-  }
-}
-
-bool VaultConfig::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
-  
-  return true;
-}
-
-const ::google::protobuf::Descriptor* VaultConfig::GetDescriptor() const {
-  return descriptor();
-}
-
-const ::google::protobuf::Reflection* VaultConfig::GetReflection() const {
-  protobuf_AssignDescriptorsOnce();
-  return VaultConfig_reflection_;
 }
 
 // ===================================================================

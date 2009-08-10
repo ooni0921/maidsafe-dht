@@ -35,7 +35,7 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/lib)
 ELSE()
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/bin/)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/lib)
-message("building a not for release package")
+message("Building a package which is NOT OK to release.")
 	SET(pddate "DEVELOPER_${pddate}")
 ENDIF()
 
@@ -225,7 +225,7 @@ ELSE(MSVC)
 	#SET(CTEST_COVERAGE_COMMAND c:/MinGW/bin/gcov.exe)
 	## SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wuninitialized ")
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 -pg -fprofile-arcs -ftest-coverage")
+  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 -pg")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -D_FORTIFY_SOURCE=2 -fno-stack-protector  -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -DNDEBUG  -DWIN32_LEAN_AND_MEAN  -D__MINGW__  -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static   -mthreads -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501  -mthreads ")
@@ -298,7 +298,7 @@ message ("#############################################")
 message("tests included ${MAIDSAFE_TEST_TYPE}")
 message ("#############################################")
 message (" you can set the test included with cmake -DMAIDSAFE_TEST_TYPE=")
-message ("_ ( underscore = all) BEH (behavioural)  FUNC (functional)")
+message ("_(underscore = all) BEH(behavioural - default)  FUNC(functional)")
 message ("#############################################")
 message("Build type set to ${CMAKE_BUILD_TYPE}")
 message ("#############################################")
@@ -306,7 +306,7 @@ message("You can set the build type by: cmake ../../ -DCMAKE_BUILD_TYPE=")
 message("Release (default) Debug RelWithDebInfo MinSizeRel")
 message ("#############################################")
 
-install(FILES maidsafe/maidsafe-dht.h maidsafe/maidsafe-dht_config.h maidsafe/utils.h maidsafe/crypto.h protobuf/signed_kadvalue.pb.h protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h
+install(FILES maidsafe/maidsafe-dht.h maidsafe/maidsafe-dht_config.h maidsafe/utils.h maidsafe/crypto.h protobuf/signed_kadvalue.pb.h protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h protobuf/general_messages.pb.h
         DESTINATION /usr/include/maidsafe)
 install(TARGETS maidsafe-dht
         ARCHIVE
