@@ -139,6 +139,7 @@ class ChannelManager {
   int StartTransport(boost::uint16_t port,
       boost::function<void(const bool&, const std::string&,
                            const boost::uint16_t&)> notify_dead_server);
+  int StartLocalTransport(const boost::uint16_t &port);
   int StopTransport();
   void CleanUpTransport();
   void MessageArrive(const RpcMessage &msg,

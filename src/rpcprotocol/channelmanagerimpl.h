@@ -74,6 +74,7 @@ class ChannelManagerImpl {
   int StartTransport(boost::uint16_t port,
       boost::function<void(const bool&, const std::string&,
       const boost::uint16_t&)> notify_dead_server);
+  int StartLocalTransport(const boost::uint16_t &port);
   int StopTransport();
   void CleanUpTransport();
   void MessageArrive(const RpcMessage &msg,
@@ -96,7 +97,7 @@ class ChannelManagerImpl {
  private:
   void TimerHandler(const boost::uint32_t &req_id);
   boost::shared_ptr<transport::Transport> ptransport_;
-  bool is_started;
+  bool is_started_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
   boost::mutex req_mutex_, channels_mutex_, id_mutex_, pend_timeout_mutex_,
       channels_ids_mutex_;

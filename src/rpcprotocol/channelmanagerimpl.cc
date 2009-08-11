@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rpcprotocol {
 
 ChannelManagerImpl::ChannelManagerImpl()
-    : ptransport_(new transport::Transport), is_started(false),
+    : ptransport_(new transport::Transport), is_started_(false),
       ptimer_(new base::CallLaterTimer), req_mutex_(), channels_mutex_(),
       id_mutex_(), pend_timeout_mutex_(), channels_ids_mutex_(),
       current_request_id_(0), current_channel_id_(0), channels_(),
@@ -41,7 +41,7 @@ ChannelManagerImpl::ChannelManagerImpl()
       channels_ids_(), delete_channels_cond_() {}
 
 ChannelManagerImpl::~ChannelManagerImpl() {
-  if (is_started) {
+  if (is_started_) {
     StopTransport();
   }
   channels_.clear();
@@ -55,6 +55,7 @@ void ChannelManagerImpl::AddChannelId(boost::uint32_t *id) {
   channels_ids_.insert(current_channel_id_);
   *id = current_channel_id_;
 }
+
 void ChannelManagerImpl::RemoveChannelId(const boost::uint32_t &id) {
   boost::mutex::scoped_lock guard(channels_ids_mutex_);
   channels_ids_.erase(id);
@@ -63,7 +64,7 @@ void ChannelManagerImpl::RemoveChannelId(const boost::uint32_t &id) {
 
 void ChannelManagerImpl::AddPendingRequest(const boost::uint32_t &req_id,
       PendingReq req) {
-  if (!is_started) {
+  if (!is_started_) {
     return;
   }
   boost::mutex::scoped_lock guard(req_mutex_);
@@ -71,7 +72,7 @@ void ChannelManagerImpl::AddPendingRequest(const boost::uint32_t &req_id,
 }
 
 bool ChannelManagerImpl::DeletePendingRequest(const boost::uint32_t &req_id) {
-  if (!is_started) {
+  if (!is_started_) {
     return false;
   }
   std::map<boost::uint32_t, PendingReq>::iterator it;
@@ -94,7 +95,7 @@ bool ChannelManagerImpl::DeletePendingRequest(const boost::uint32_t &req_id) {
 
 void ChannelManagerImpl::AddReqToTimer(const boost::uint32_t &req_id,
     const int &timeout) {
-  if (!is_started) {
+  if (!is_started_) {
     return;
   }
   ptimer_->AddCallLater(timeout,
@@ -116,7 +117,7 @@ void ChannelManagerImpl::RegisterChannel(const std::string &service_name,
 int ChannelManagerImpl::StartTransport(boost::uint16_t port,
     boost::function<void(const bool&, const std::string&,
                          const boost::uint16_t&)> notify_dead_server) {
-  if (is_started)
+  if (is_started_)
     return 0;
   int start_res_(-1);
   // if no port assigned, get a random port between 5000 & 65535 inclusive
@@ -135,7 +136,7 @@ int ChannelManagerImpl::StartTransport(boost::uint16_t port,
         notify_dead_server, boost::bind(&ChannelManagerImpl::RequestSent,
         this, _1, _2))) {
       start_res_ = 0;
-      is_started = true;
+      is_started_ = true;
       break;
     }
     count_++;
@@ -146,10 +147,10 @@ int ChannelManagerImpl::StartTransport(boost::uint16_t port,
 }
 
 int ChannelManagerImpl::StopTransport() {
-  if (!is_started) {
+  if (!is_started_) {
     return 0;
   }
-  is_started = false;
+  is_started_ = false;
   pending_timeout_.clear();
   ClearCallLaters();
   ptransport_->Stop();
@@ -263,7 +264,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
 }
 
 void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
-  if (!is_started) {
+  if (!is_started_) {
     return;
   }
   std::map<boost::uint32_t, PendingReq>::iterator it;
@@ -320,7 +321,7 @@ void ChannelManagerImpl::ClearCallLaters() {
 
 bool ChannelManagerImpl::CheckConnection(const std::string &ip,
     const uint16_t &port) {
-  if (!is_started)
+  if (!is_started_)
     return false;
   std::string dec_lip;
   if (ip.size() == 4) {
@@ -357,5 +358,18 @@ void ChannelManagerImpl::AddTimeOutRequest(const boost::uint32_t &connection_id,
   timestruct.timeout = timeout;
   boost::mutex::scoped_lock guard(pend_timeout_mutex_);
   pending_timeout_[connection_id] = timestruct;
+}
+
+int ChannelManagerImpl::StartLocalTransport(const boost::uint16_t &port) {
+  current_request_id_ =
+      base::generate_next_transaction_id(current_request_id_)+(port*100);
+  int result = ptransport_->StartLocal(port,
+      boost::bind(&ChannelManagerImpl::MessageArrive, this, _1, _2, _3),
+      boost::bind(&ChannelManagerImpl::RequestSent, this, _1, _2));
+  if (result == 0) {
+    external_port_ = ptransport_->listening_port();
+    is_started_ = true;
+  }
+  return result;
 }
 }

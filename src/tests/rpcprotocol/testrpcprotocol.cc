@@ -542,6 +542,177 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
   RpcProtocolTest::client_chann_manager->ClearCallLaters();
 }
 
+TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
+  rpcprotocol::ChannelManager chman;
+  std::string local_ip;
+  std::string loop_back("127.0.0.1");
+  boost::asio::ip::address local_address;
+  if (base::get_local_address(&local_address)) {
+    local_ip = local_address.to_string();
+  } else {
+    FAIL() << "Can not get local address";
+  }
+  ASSERT_NE(loop_back, local_ip);
+  ASSERT_EQ(0, chman.StartLocalTransport(0));
+  PingTestService service;
+  // creating a channel for the service
+  rpcprotocol::Channel service_channel(&chman);
+  service_channel.SetService(&service);
+  chman.RegisterChannel(service.GetDescriptor()->name(),
+      &service_channel);
+  // creating a channel for the client to send a request to the service
+  rpcprotocol::Controller controller;
+  controller.set_timeout(5);
+  rpcprotocol::Channel out_channel1(client_chann_manager, loop_back,
+      chman.external_port(), "", 0);
+  tests::PingTest::Stub stubservice1(&out_channel1);
+  tests::PingRequest req;
+  tests::PingResponse resp1;
+  req.set_ping("ping");
+  req.set_ip("127.0.0.1");
+  req.set_port(chman.external_port());
+  ResultHolder resultholder;
+  google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
+      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::GetPingRes, &resp1, &controller);
+  stubservice1.Ping(&controller, &req, &resp1, done1);
+  while (resultholder.ping_res.result() == "")
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+
+  ASSERT_EQ("S", resultholder.ping_res.result());
+  ASSERT_TRUE(resultholder.ping_res.has_pong());
+  ASSERT_EQ("pong", resultholder.ping_res.pong());
+  ASSERT_FALSE(controller.Failed());
+  controller.Reset();
+  resultholder.Reset();
+
+  controller.set_timeout(5);
+  rpcprotocol::Channel out_channel2(client_chann_manager, local_ip,
+      chman.external_port(), "", 0);
+  tests::PingTest::Stub stubservice2(&out_channel2);
+  tests::PingResponse resp2;
+  google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
+      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::GetPingRes, &resp2, &controller);
+  stubservice2.Ping(&controller, &req, &resp2, done2);
+  while (resultholder.ping_res.result() == "")
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ("F", resultholder.ping_res.result());
+  ASSERT_FALSE(resultholder.ping_res.has_pong());
+  ASSERT_TRUE(controller.Failed());
+  ASSERT_EQ(rpcprotocol::TIMEOUT, controller.ErrorText());
+
+  chman.StopTransport();
+  RpcProtocolTest::server_chann_manager->ClearCallLaters();
+  RpcProtocolTest::client_chann_manager->ClearCallLaters();
+}
+
+TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
+  rpcprotocol::ChannelManager chman;
+  std::string local_ip;
+  std::string loop_back("127.0.0.1");
+  boost::asio::ip::address local_address;
+  if (base::get_local_address(&local_address)) {
+    local_ip = local_address.to_string();
+  } else {
+    FAIL() << "Can not get local address";
+  }
+  ASSERT_NE(loop_back, local_ip);
+  ASSERT_EQ(0, chman.StartLocalTransport(0));
+  PingTestService service;
+  // creating a channel for the service
+  rpcprotocol::Channel service_channel(&chman);
+  service_channel.SetService(&service);
+  chman.RegisterChannel(service.GetDescriptor()->name(),
+      &service_channel);
+  // creating a channel for the client to send a request to the service
+  rpcprotocol::Controller controller;
+  controller.set_timeout(5);
+  rpcprotocol::Channel out_channel1(client_chann_manager, loop_back,
+      chman.external_port(), "", 0);
+  tests::PingTest::Stub stubservice1(&out_channel1);
+  tests::PingRequest req;
+  tests::PingResponse resp1;
+  req.set_ping("ping");
+  req.set_ip("127.0.0.1");
+  req.set_port(chman.external_port());
+  ResultHolder resultholder;
+  google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
+      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::GetPingRes, &resp1, &controller);
+  stubservice1.Ping(&controller, &req, &resp1, done1);
+  while (resultholder.ping_res.result() == "")
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+
+  ASSERT_EQ("S", resultholder.ping_res.result());
+  ASSERT_TRUE(resultholder.ping_res.has_pong());
+  ASSERT_EQ("pong", resultholder.ping_res.pong());
+  ASSERT_FALSE(controller.Failed());
+  controller.Reset();
+  resultholder.Reset();
+
+  controller.set_timeout(5);
+  rpcprotocol::Channel out_channel2(client_chann_manager, local_ip,
+      chman.external_port(), "", 0);
+  tests::PingTest::Stub stubservice2(&out_channel2);
+  tests::PingResponse resp2;
+  google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
+      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::GetPingRes, &resp2, &controller);
+  stubservice2.Ping(&controller, &req, &resp2, done2);
+  while (resultholder.ping_res.result() == "")
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ("F", resultholder.ping_res.result());
+  ASSERT_FALSE(resultholder.ping_res.has_pong());
+  ASSERT_TRUE(controller.Failed());
+  ASSERT_EQ(rpcprotocol::TIMEOUT, controller.ErrorText());
+
+  chman.StopTransport();
+  // starting transport
+  ASSERT_EQ(0, chman.StartTransport(0, boost::bind(&HandleDeadServer, _1, _2,
+      _3)));
+  chman.ptransport()->StartPingRendezvous(true, "", 0);
+  controller.Reset();
+  resultholder.Reset();
+  controller.set_timeout(5);
+  rpcprotocol::Channel out_channel3(client_chann_manager, loop_back,
+      chman.external_port(), "", 0);
+  tests::PingTest::Stub stubservice3(&out_channel3);
+  tests::PingResponse resp3;
+  google::protobuf::Closure *done3 = google::protobuf::NewCallback<ResultHolder,
+      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::GetPingRes, &resp3, &controller);
+  stubservice3.Ping(&controller, &req, &resp3, done3);
+  while (resultholder.ping_res.result() == "")
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+
+  ASSERT_EQ("S", resultholder.ping_res.result());
+  ASSERT_TRUE(resultholder.ping_res.has_pong());
+  ASSERT_EQ("pong", resultholder.ping_res.pong());
+  ASSERT_FALSE(controller.Failed());
+  controller.Reset();
+  resultholder.Reset();
+
+  controller.set_timeout(5);
+  rpcprotocol::Channel out_channel4(client_chann_manager, local_ip,
+      chman.external_port(), "", 0);
+  tests::PingTest::Stub stubservice4(&out_channel4);
+  tests::PingResponse resp4;
+  google::protobuf::Closure *done4 = google::protobuf::NewCallback<ResultHolder,
+      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::GetPingRes, &resp4, &controller);
+  stubservice4.Ping(&controller, &req, &resp4, done4);
+  while (resultholder.ping_res.result() == "")
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ("S", resultholder.ping_res.result());
+  ASSERT_TRUE(resultholder.ping_res.has_pong());
+  ASSERT_EQ("pong", resultholder.ping_res.pong());
+  ASSERT_FALSE(controller.Failed());
+
+  RpcProtocolTest::server_chann_manager->ClearCallLaters();
+  RpcProtocolTest::client_chann_manager->ClearCallLaters();
+}
+
 TEST(RpcControllerTest, BEH_RPC_RpcController) {
   rpcprotocol::Controller controller;
   ASSERT_FALSE(controller.Failed());

@@ -92,8 +92,7 @@ int Transport::Start(uint16_t port,
     return 1;
   }
   listening_socket_ = UDT::socket(addrinfo_res_->ai_family,
-                                  addrinfo_res_->ai_socktype,
-                                  addrinfo_res_->ai_protocol);
+      addrinfo_res_->ai_socktype, addrinfo_res_->ai_protocol);
   // UDT Options
   bool blockng = false;
   UDT::setsockopt(listening_socket_, 0, UDT_RCVSYN, &blockng, sizeof(blockng));
@@ -316,12 +315,6 @@ void Transport::ReceiveHandler() {
       if (res == 0) {
         UD_SET((*it).second.u, &readfds);
       } else {
-#ifdef DEBUG
-//        printf("%d -- dead connection found %d \n",
-            /*--- %s \n res=%i, removing it\n"*/
-//            listening_port_, (*it).first);  // ,
-//            UDT::getlasterror().getErrorMessage(), res);
-#endif
         dead_connections_ids.push_back((*it).first);
       }
     }
@@ -338,7 +331,6 @@ void Transport::ReceiveHandler() {
           int peer_addr_size = sizeof(struct sockaddr);
           if (UDT::ERROR == UDT::getpeername((*it).second.u, &peer_address_,
               &peer_addr_size)) {
-            // printf("invalid peer address\n");
             continue;
           }
           if ((*it).second.expect_size == 0) {
@@ -379,8 +371,8 @@ void Transport::ReceiveHandler() {
                   CUDTException::EASYNCRCV) {
 #ifdef DEBUG
                 printf("%i -- id %d -- error recv msg: %s\n",
-                       listening_port_, (*it).first,
-                       UDT::getlasterror().getErrorMessage());
+                    listening_port_, (*it).first,
+                    UDT::getlasterror().getErrorMessage());
 #endif
                 result = UDT::close((*it).second.u);
                 // data_activated_.erase((*it).first);
@@ -594,7 +586,6 @@ void Transport::SendHandle() {
           it->data_sent += ssize;
         } else {
           // Finished sending data
-//          printf("%d -- message correctly sent\n", listening_port_);
           send_notifier_(it->conn_id, true);
           outgoing_queue_.erase(it);
           msgs_sent_++;
@@ -640,9 +631,6 @@ int Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
 #endif
     return -1;
   }
-// #ifdef DEBUG
-//  printf("remote address %s:%d\n", peer_address.c_str(), peer_port);
-// #endif
   if (UDT::ERROR == UDT::connect(*skt, reinterpret_cast<sockaddr*>(&peer_addr),
       sizeof(peer_addr))) {
 #ifdef DEBUG
@@ -724,10 +712,6 @@ void Transport::PingHandle() {
       if (directly_connected_) return;
     }
     UDTSOCKET skt;
-// #ifdef DEBUG
-//    printf("Transport::PingHandle(): rv_ip(%s) -- rv_port(%i)\n",
-//      my_rendezvous_ip_.c_str(), my_rendezvous_port_);
-// #endif
 
     if (Connect(&skt, my_rendezvous_ip_, my_rendezvous_port_, false) == 0) {
       UDT::close(skt);
@@ -796,12 +780,16 @@ void Transport::AcceptConnHandler() {
     sockaddr peer_addr;
     int peer_addr_size = sizeof(struct sockaddr);
     if (UDT::ERROR != UDT::getpeername(recver, &peer_addr, &peer_addr_size)) {
-      std::string peer_ip(inet_ntoa(((
-          struct sockaddr_in *)&peer_addr)->sin_addr));
+//      std::string peer_ip(inet_ntoa(((
+//          struct sockaddr_in *)&peer_addr)->sin_addr));
 //      boost::uint16_t peer_port =
 //          ntohs(((struct sockaddr_in *)&peer_addr)->sin_port);
+//      printf("(%d) -- accepted connection from %s:%d\n", listening_port_,
+//          peer_ip.c_str(), peer_port);
       accepted_connections_++;
       AddIncomingConnection(recver);
+    } else {
+      UDT::close(recver);
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
@@ -841,9 +829,20 @@ int Transport::Send(const rpcprotocol::RpcMessage &data,
   TransportMessage msg;
   rpcprotocol::RpcMessage *rpc_msg = msg.mutable_rpc_msg();
   *rpc_msg = data;
-  std::string ser_msg;
-  msg.SerializeToString(&ser_msg);
-  return Send(ser_msg, STRING, conn_id, new_skt);
+  if (data.IsInitialized()) {
+    std::string ser_msg;
+    msg.SerializeToString(&ser_msg);
+    return Send(ser_msg, STRING, conn_id, new_skt);
+  } else {
+    {
+      boost::mutex::scoped_lock guard(msg_hdl_mutex_);
+      std::map<boost::uint32_t, UDTSOCKET>::iterator it =
+          send_sockets_.find(conn_id);
+      if (it != send_sockets_.end())
+        send_sockets_.erase(it);
+    }
+    return 1;
+  }
 }
 
 bool Transport::CheckConnection(const std::string &local_ip,
@@ -956,9 +955,8 @@ int Transport::ConnectToSend(const std::string &remote_ip,
     if (!connected) {
 #ifdef DEBUG
       printf("In Transport::ConnectToSend(%i), ", listening_port_);
-      printf("failed to connect to remote port %i socket %i.\n",
-             remote_port,
-             skt);
+      printf("failed to connect to remote port %i socket %i.\n", remote_port,
+          skt);
 #endif
       UDT::close(skt);
       return conn_result;
@@ -976,4 +974,83 @@ int Transport::ConnectToSend(const std::string &remote_ip,
   }
   return 0;
 }
+
+int Transport::StartLocal(const uint16_t &port, boost::function <void(
+        const rpcprotocol::RpcMessage&, const boost::uint32_t&, const float &)>
+        on_message,
+      boost::function<void(const boost::uint32_t&, const bool&)> on_send) {
+  if (!stop_)
+    return 1;
+  listening_port_ = port;
+  memset(&addrinfo_hints_, 0, sizeof(struct addrinfo));
+  addrinfo_hints_.ai_flags = AI_PASSIVE;
+  addrinfo_hints_.ai_family = AF_INET;
+  addrinfo_hints_.ai_socktype = SOCK_STREAM;
+  std::string service = boost::lexical_cast<std::string>(port);
+  if (0 != getaddrinfo("127.0.0.1", service.c_str(), &addrinfo_hints_,
+      &addrinfo_res_)) {
+    return 1;
+  }
+  listening_socket_ = UDT::socket(addrinfo_res_->ai_family,
+      addrinfo_res_->ai_socktype, addrinfo_res_->ai_protocol);
+  // UDT Options
+  bool blockng = false;
+  UDT::setsockopt(listening_socket_, 0, UDT_RCVSYN, &blockng, sizeof(blockng));
+  if (UDT::ERROR == UDT::bind(listening_socket_, addrinfo_res_->ai_addr,
+      addrinfo_res_->ai_addrlen)) {
+#ifdef DEBUG
+    printf("Error binding listening socket: %s \n",
+      UDT::getlasterror().getErrorMessage());
+#endif
+    return 1;
+  }
+  // Modify the port to reflect the port UDT has chosen
+  struct sockaddr_in name;
+  int namelen;
+  if (listening_port_ == 0) {
+    UDT::getsockname(listening_socket_, (struct sockaddr *)&name, &namelen);
+    listening_port_ = ntohs(name.sin_port);
+    std::string service = boost::lexical_cast<std::string>(listening_port_);
+    if (0 != getaddrinfo(NULL, service.c_str(), &addrinfo_hints_,
+        &addrinfo_res_)) {
+      return 1;
+    }
+  }
+
+  if (UDT::ERROR == UDT::listen(listening_socket_, 20)) {
+#ifdef DEBUG
+    printf("In Transport::Start(%i), ", listening_port_);
+    printf("failed to start listening socket %i.\n",
+           listening_socket_);
+#endif
+    return 1;
+  }
+  stop_ = false;
+  // start the listening loop
+  try {
+    accept_routine_.reset(new boost::thread(&Transport::AcceptConnHandler,
+        this));
+    recv_routine_.reset(new boost::thread(&Transport::ReceiveHandler, this));
+    send_routine_.reset(new boost::thread(&Transport::SendHandle, this));
+    handle_msgs_routine_.reset(new boost::thread(&Transport::MessageHandler,
+        this));
+  } catch(const boost::thread_resource_error& ) {
+    stop_ = true;
+    int result;
+    result = UDT::close(listening_socket_);
+#ifdef DEBUG
+    if (result == UDT::ERROR) {
+      printf("In Transport::Start(%i), ", listening_port_);
+      printf("failed to close listening socket %i - error: %s.\n",
+          listening_socket_, UDT::getlasterror().getErrorMessage());
+    }
+#endif
+    return 1;
+  }
+  message_notifier_ = on_message;
+  send_notifier_ = on_send;
+  current_id_ = base::generate_next_transaction_id(current_id_);
+  return 0;
+}
+
 };  // namespace transport
