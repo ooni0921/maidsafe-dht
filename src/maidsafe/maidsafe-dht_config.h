@@ -337,6 +337,9 @@ const std::string kStartTransportSuccess("T");
 const std::string kStartTransportFailure("F");
 // TODO(Fraser#5#): 2009-05-16 - Make these bools
 
+// RPC Error Messages
+const std::string kTimeOut("T");
+const std::string kCancelled("C");
 
 // RPC ENUMERATIONS, DATA TYPE DEFINITIONS, AND FORWARD DECLARATIONS
 struct RpcInfo;

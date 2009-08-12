@@ -121,7 +121,7 @@ class ResultHolder {
   }
   void GetPingRes(const tests::PingResponse *response,
       rpcprotocol::Controller *ctrl) {
-    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::CANCELLED) {
+    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kCancelled) {
       printf("Ping RPC canceled by the client\n");
       return;
     }
@@ -137,7 +137,7 @@ class ResultHolder {
   }
   void GetOpResult(const tests::BinaryOpResponse *response,
       rpcprotocol::Controller *ctrl) {
-    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::CANCELLED) {
+    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kCancelled) {
       printf("BinaryOperation RPC canceled by the client\n");
       return;
     }
@@ -149,7 +149,7 @@ class ResultHolder {
   }
   void GetMirrorResult(const tests::StringMirrorResponse *response,
       rpcprotocol::Controller *ctrl) {
-    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::CANCELLED) {
+    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kCancelled) {
       printf("Mirror RPC canceled by the client\n");
       return;
     }
@@ -335,7 +335,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
     FAIL();
   }
   ASSERT_TRUE(controller3.Failed());
-  ASSERT_EQ(rpcprotocol::TIMEOUT, controller3.ErrorText());
+  ASSERT_EQ(rpcprotocol::kTimeOut, controller3.ErrorText());
   resultholder.Reset();
   controller3.Reset();
   tests::MirrorTest::Stub stubservice4(&out_channel);
@@ -449,7 +449,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
   ASSERT_EQ("F", resultholder.ping_res.result());
   ASSERT_FALSE(resultholder.ping_res.has_pong());
   ASSERT_TRUE(controller.Failed());
-  ASSERT_EQ(rpcprotocol::TIMEOUT, controller.ErrorText());
+  ASSERT_EQ(rpcprotocol::kTimeOut, controller.ErrorText());
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
   RpcProtocolTest::client_chann_manager->ClearCallLaters();
 }
@@ -480,7 +480,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   ASSERT_TRUE(client_chann_manager->DeletePendingRequest(controller.req_id()));
   boost::this_thread::sleep(boost::posix_time::seconds(11));
   ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
-  ASSERT_EQ(rpcprotocol::CANCELLED, controller.ErrorText());
+  ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
   controller.Reset();
   ASSERT_EQ(std::string(""), controller.ErrorText());
 
@@ -500,7 +500,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   ASSERT_TRUE(client_chann_manager->DeletePendingRequest(controller.req_id()));
   boost::this_thread::sleep(boost::posix_time::seconds(4));
   ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
-  ASSERT_EQ(rpcprotocol::CANCELLED, controller.ErrorText());
+  ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
   ASSERT_FALSE(client_chann_manager->DeletePendingRequest(1));
 }
 
@@ -600,7 +600,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
   ASSERT_EQ("F", resultholder.ping_res.result());
   ASSERT_FALSE(resultholder.ping_res.has_pong());
   ASSERT_TRUE(controller.Failed());
-  ASSERT_EQ(rpcprotocol::TIMEOUT, controller.ErrorText());
+  ASSERT_EQ(rpcprotocol::kTimeOut, controller.ErrorText());
 
   chman.StopTransport();
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
@@ -665,7 +665,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   ASSERT_EQ("F", resultholder.ping_res.result());
   ASSERT_FALSE(resultholder.ping_res.has_pong());
   ASSERT_TRUE(controller.Failed());
-  ASSERT_EQ(rpcprotocol::TIMEOUT, controller.ErrorText());
+  ASSERT_EQ(rpcprotocol::kTimeOut, controller.ErrorText());
 
   chman.StopTransport();
   // starting transport
@@ -718,12 +718,12 @@ TEST(RpcControllerTest, BEH_RPC_RpcController) {
   ASSERT_FALSE(controller.Failed());
   ASSERT_EQ(std::string(""), controller.ErrorText());
   ASSERT_EQ(0, controller.req_id());
-  controller.SetFailed(rpcprotocol::TIMEOUT);
+  controller.SetFailed(rpcprotocol::kTimeOut);
   boost::uint32_t id = 1234;
   controller.set_req_id(id);
   ASSERT_EQ(id, controller.req_id());
   ASSERT_TRUE(controller.Failed());
-  ASSERT_EQ(rpcprotocol::TIMEOUT, controller.ErrorText());
+  ASSERT_EQ(rpcprotocol::kTimeOut, controller.ErrorText());
   controller.StartCancel();
   ASSERT_FALSE(controller.IsCanceled());
   controller.Reset();

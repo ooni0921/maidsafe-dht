@@ -83,7 +83,7 @@ bool ChannelManagerImpl::DeletePendingRequest(const boost::uint32_t &req_id) {
     return false;
   }
   boost::uint32_t connection_id = it->second.connection_id;
-  it->second.ctrl->SetFailed(CANCELLED);
+  it->second.ctrl->SetFailed(kCancelled);
   google::protobuf::Closure *callback = it->second.callback;
   pending_req_.erase(it);
   req_mutex_.unlock();
@@ -289,7 +289,7 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
 #endif
       // call back without modifying the response
       google::protobuf::Closure* done = (*it).second.callback;
-      (*it).second.ctrl->SetFailed(TIMEOUT);
+      (*it).second.ctrl->SetFailed(kTimeOut);
       pending_req_.erase(it);
       req_mutex_.unlock();
       done->Run();
