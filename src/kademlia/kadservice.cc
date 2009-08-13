@@ -26,13 +26,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "kademlia/kadservice.h"
-#include "base/routingtable.h"
 #include "kademlia/kadrpc.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
-#include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
 #include "rpcprotocol/channelimpl.h"
 #include "protobuf/signed_kadvalue.pb.h"
 

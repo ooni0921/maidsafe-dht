@@ -25,7 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "base/routingtable.h"
+#include "maidsafe/routingtable.h"
 #include <boost/filesystem.hpp>
 
 namespace base {
@@ -59,6 +59,18 @@ int PDRoutingTableHandler::GetTupleInfo(const std::string &host_ip,
     return 1;
   return 0;
 }
+
+int PDRoutingTableHandler::GetClosestRtt(
+    const float &ideal_rtt,
+    const std::set<std::string> &exclude_ids) {
+  boost::mutex::scoped_lock guard(mutex_);
+  routingtable::index<t_rtt>::type& rtt_indx = routingtable_.get<t_rtt>();
+
+
+
+  return 0;
+}
+
 
 int PDRoutingTableHandler::AddTuple(base::PDRoutingTableTuple tuple) {
   boost::mutex::scoped_lock guard(mutex_);

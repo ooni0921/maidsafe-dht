@@ -53,6 +53,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                       // when new soln impmltd.
 #endif
 
+#include <stdint.h>
 #include <boost/asio.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/function.hpp>
@@ -60,6 +61,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/shared_ptr.hpp>
+#include <google/protobuf/service.h>
+#include <google/protobuf/message.h>
+
 // not here #include <cryptopp/hex.h>
 
 #ifdef WIN32
@@ -78,16 +82,13 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
   #include <cstring>
 #endif
 
-#include <stdint.h>
-#include <google/protobuf/service.h>
-#include <google/protobuf/message.h>
-
 #include <algorithm>
 #include <string>
 #include <vector>
-#include "maidsafe/utils.h"
 #include "maidsafe/crypto.h"
-#define MAIDSAFE_DHT_VERSION 6
+#include "maidsafe/routingtable.h"
+#include "maidsafe/utils.h"
+#define MAIDSAFE_DHT_VERSION 7
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *
@@ -141,7 +142,9 @@ const boost::uint16_t kFailedRpc = 0;
 const int kMaxBootstrapContacts = 10000;
 
 // Signature used to sign anonymous RPC requests.
-const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");  // NOLINT
+const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffff"
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    "ffffffffffffffffff");
 
 
 // KADEMLIA ENUMERATIONS, DATA TYPE DEFINITIONS, AND FORWARD DECLARATIONS

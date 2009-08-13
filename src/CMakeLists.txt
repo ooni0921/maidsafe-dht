@@ -306,7 +306,7 @@ message("You can set the build type by: cmake ../../ -DCMAKE_BUILD_TYPE=")
 message("Release (default) Debug RelWithDebInfo MinSizeRel")
 message ("#############################################")
 
-install(FILES maidsafe/maidsafe-dht.h maidsafe/maidsafe-dht_config.h maidsafe/utils.h maidsafe/crypto.h protobuf/signed_kadvalue.pb.h protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h protobuf/general_messages.pb.h
+install(FILES maidsafe/maidsafe-dht.h maidsafe/maidsafe-dht_config.h maidsafe/utils.h maidsafe/crypto.h maidsafe/routingtable.h protobuf/signed_kadvalue.pb.h protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h protobuf/general_messages.pb.h
         DESTINATION /usr/include/maidsafe)
 install(TARGETS maidsafe-dht
         ARCHIVE

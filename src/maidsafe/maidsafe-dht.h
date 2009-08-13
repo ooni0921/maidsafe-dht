@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 6
+#if MAIDSAFE_DHT_VERSION < 7
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -237,16 +237,13 @@ class Transport {
       const std::string &remote_ip, const uint16_t &remote_port);
   void CleanUp();
  private:
-   boost::shared_ptr<TransportImpl> pimpl_;
+  boost::shared_ptr<TransportImpl> pimpl_;
 };
-}
+}  // namespace transport
 
 // callbacks section
 // link our callback funtions to lower level
 bool LostNet();
 bool ChangedIP();
-
-
-
 
 #endif  // MAIDSAFE_MAIDSAFE_DHT_H_

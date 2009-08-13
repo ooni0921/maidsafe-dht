@@ -37,7 +37,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "google/protobuf/message.h"
 
 #include "base/calllatertimer.h"
-#include "base/routingtable.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "rpcprotocol/channelimpl.h"
 #include "transport/transportimpl.h"

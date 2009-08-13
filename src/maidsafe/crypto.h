@@ -25,8 +25,8 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef BASE_CRYPTO_H_
-#define BASE_CRYPTO_H_
+#ifndef MAIDSAFE_CRYPTO_H_
+#define MAIDSAFE_CRYPTO_H_
 #include <string>
 
 namespace crypto {
@@ -135,5 +135,5 @@ class RsaKeyPair {
 };
 
 }   // namespace crypto
-#endif  // BASE_CRYPTO_H_
+#endif  // MAIDSAFE_CRYPTO_H_
 

@@ -31,7 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/asio.hpp>
 #include <memory>
 #include <string>
-#include "base/routingtable.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace rpcprotocol {

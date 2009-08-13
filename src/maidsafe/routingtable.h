@@ -25,8 +25,8 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef BASE_ROUTINGTABLE_H_
-#define BASE_ROUTINGTABLE_H_
+#ifndef MAIDSAFE_ROUTINGTABLE_H_
+#define MAIDSAFE_ROUTINGTABLE_H_
 #include <boost/cstdint.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/multi_index_container.hpp>
@@ -37,9 +37,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef WIN32
 #include <shlobj.h>
 #endif
-#include <string>
-#include <map>
 #include <functional>
+#include <map>
+#include <set>
+#include <string>
 
 
 namespace base {
@@ -94,7 +95,7 @@ struct PDRoutingTableTuple {
   int ctc_local() const { return ctc_local_; }
 };
 
-/* Tags */
+// Tags
 struct t_key {};
 struct t_ip {};
 struct t_port {};
@@ -139,6 +140,8 @@ class PDRoutingTableHandler {
   int GetTupleInfo(const std::string &host_ip,
                    const boost::uint16_t &host_port,
                    PDRoutingTableTuple *tuple);
+  int GetClosestRtt(const float &ideal_rtt,
+                    const std::set<std::string> &exclude_ids);
   int AddTuple(base::PDRoutingTableTuple tuple);
   int DeleteTupleByKadId(const std::string &kademlia_id);
   int UpdateHostIp(const std::string &kademlia_id,
@@ -180,6 +183,6 @@ class PDRoutingTable {
 };
 
 // typedef Singleton<PDRoutingTableHandler> PDRoutingTable;
-}
+}  // namespace base
 
-#endif  // BASE_ROUTINGTABLE_H_
+#endif  // MAIDSAFE_ROUTINGTABLE_H_

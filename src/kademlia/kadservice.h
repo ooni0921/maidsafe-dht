@@ -30,7 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include <string>
 #include <vector>
-#include "base/routingtable.h"
 #include "gtest/gtest_prod.h"
 #include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/kademlia_service.pb.h"
