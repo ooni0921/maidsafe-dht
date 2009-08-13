@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/routingtable.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "rpcprotocol/channelimpl.h"
-#include "transport/transportapi.h"
+#include "transport/transportimpl.h"
 
 namespace rpcprotocol {
 

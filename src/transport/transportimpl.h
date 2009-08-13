@@ -25,31 +25,14 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef TRANSPORT_TRANSPORTAPI_H_
-#define TRANSPORT_TRANSPORTAPI_H_
+#ifndef TRANSPORT_TRANSPORTIMPL_H_
+#define TRANSPORT_TRANSPORTIMPL_H_
 
 #include <boost/cstdint.hpp>
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/thread/mutex.hpp>
-#ifdef WIN32
-  #include <ws2tcpip.h>
-// dirvine - ugly ugly hack !!
-#ifdef __MINGW__
-void WSAAPI freeaddrinfo(struct addrinfo*);
-int WSAAPI getaddrinfo(const char*, const char*, const struct addrinfo*,
-  struct addrinfo**);
-int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
-  char*, DWORD, int);
-#endif  // dirvines ugly ugly hack
-#endif
-#ifndef WIN32
-  #include <netdb.h>
-  #include <unistd.h>
-  #include <cstdlib>
-  #include <cstring>
-#endif
 #include <list>
 #include <map>
 #include <set>
@@ -57,6 +40,7 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 #include <vector>
 #include "udt/udt.h"
 #include "protobuf/transport_message.pb.h"
+#include "maidsafe/maidsafe-dht_config.h"
 
 namespace transport {
 
@@ -87,16 +71,15 @@ struct OutgoingData {
   boost::uint32_t conn_id;
 };
 
-class Transport {
+class TransportImpl {
  public:
-  Transport();
+  TransportImpl();
   enum DataType { STRING, FILE };
   int ConnectToSend(const std::string &remote_ip, const uint16_t &remote_port,
       const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
-      boost::uint32_t *conn_id, bool keep_connection);
-  int Send(const rpcprotocol::RpcMessage &data,
-           const boost::uint32_t &conn_id,
-           const bool &new_skt);
+      boost::uint32_t *conn_id, const bool &keep_connection);
+  int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t &conn_id,
+      const bool &new_skt);
   int Start(uint16_t port, boost::function<void(const rpcprotocol::RpcMessage&,
         const boost::uint32_t&, const float &)> on_message,
       boost::function<void(const bool&, const std::string&,
@@ -106,31 +89,29 @@ class Transport {
         const rpcprotocol::RpcMessage&, const boost::uint32_t&, const float &)>
         on_message,
       boost::function<void(const boost::uint32_t&, const bool&)> on_send);
-  void CloseConnection(boost::uint32_t connection_id);
+  void CloseConnection(const boost::uint32_t &connection_id);
   void Stop();
-  inline bool is_stopped() { return stop_; }
+  inline bool is_stopped() const { return stop_; }
   struct sockaddr& peer_address() { return peer_address_; }
   bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr *addr);
-  void HandleRendezvousMsgs(const HolePunchingMsg &message);
   bool ConnectionExists(const boost::uint32_t &connection_id);
   bool HasReceivedData(const boost::uint32_t &connection_id, int64_t *size);
-  void AddIncomingConnection(UDTSOCKET u);
-  void AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id);
   inline boost::uint16_t listening_port() { return listening_port_; }
-  void StartPingRendezvous(const bool &directly_connected,
-                           std::string my_rendezvous_ip,
-                           boost::uint16_t my_rendezvous_port);
+  void StartPingRendezvous(const bool &directly_connected, const std::string
+      &my_rendezvous_ip, const boost::uint16_t &my_rendezvous_port);
   void StopPingRendezvous();
   bool CanConnect(const std::string &ip, const uint16_t &port);
   bool CheckConnection(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port);
+  void CleanUp();
  private:
-  Transport& operator=(const Transport&);
-  Transport(const Transport&);
- public:
+  TransportImpl& operator=(const TransportImpl&);
+  TransportImpl(const TransportImpl&);
+  void AddIncomingConnection(UDTSOCKET u);
+  void AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id);
+  void HandleRendezvousMsgs(const HolePunchingMsg &message);
   int Send(const std::string &data, DataType type,
       const boost::uint32_t &conn_id, const bool &new_skt);
- private:
   void SendHandle();
   int Connect(UDTSOCKET *skt, const std::string &peer_address,
       const uint16_t &peer_port, bool short_timeout);
@@ -171,4 +152,4 @@ class Transport {
 
 };  // namespace transport
 
-#endif  // TRANSPORT_TRANSPORTAPI_H_
+#endif  // TRANSPORT_TRANSPORTIMPL_H_

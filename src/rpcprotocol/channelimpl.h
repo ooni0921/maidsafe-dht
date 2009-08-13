@@ -33,7 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "base/routingtable.h"
 #include "maidsafe/maidsafe-dht_config.h"
-#include "transport/transportapi.h"
 
 namespace rpcprotocol {
 

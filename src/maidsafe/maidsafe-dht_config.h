@@ -61,6 +61,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/thread/thread.hpp>
 #include <boost/shared_ptr.hpp>
 // not here #include <cryptopp/hex.h>
+
+#ifdef WIN32
+  #include <ws2tcpip.h>
+// dirvine - ugly ugly hack !!
+#ifdef __MINGW__
+void WSAAPI freeaddrinfo(struct addrinfo*);
+int WSAAPI getaddrinfo(const char*, const char*, const struct addrinfo*,
+  struct addrinfo**);
+int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
+  char*, DWORD, int);
+#endif  // dirvines ugly ugly hack
+#endif
+#ifndef WIN32
+  #include <cstdlib>
+  #include <cstring>
+#endif
+
 #include <stdint.h>
 #include <google/protobuf/service.h>
 #include <google/protobuf/message.h>
@@ -353,10 +370,9 @@ class Controller;
 class Channel;
 }  // namespace rpcprotocol
 
-
-
 namespace transport {
 class Transport;
+class TransportImpl;
 }  // namespace transport
 
 #endif  // MAIDSAFE_MAIDSAFE_DHT_CONFIG_H_

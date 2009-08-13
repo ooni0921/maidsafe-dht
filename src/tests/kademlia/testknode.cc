@@ -46,7 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
-#include "transport/transportapi.h"
+#include "udt/udt.h"
 #include "protobuf/signed_kadvalue.pb.h"
 
 namespace fs = boost::filesystem;

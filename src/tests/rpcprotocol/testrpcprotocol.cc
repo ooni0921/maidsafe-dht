@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "protobuf/rpcmessage.pb.h"
 #include "rpcprotocol/channelimpl.h"
 #include "tests/rpcprotocol/testservices.pb.h"
-#include "transport/transportapi.h"
+#include "transport/transportimpl.h"
 
 class PingTestService : public tests::PingTest {
  public:

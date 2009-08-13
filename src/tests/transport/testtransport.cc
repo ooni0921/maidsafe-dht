@@ -32,8 +32,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <list>
 #include <string>
-#include "maidsafe/maidsafe-dht_config.h"
-#include "transport/transportapi.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "protobuf/rpcmessage.pb.h"
+#include "transport/transportimpl.h"
 
 class TransportNode {
  public:
@@ -209,7 +210,8 @@ class MessageHandlerEchoResp {
 class TransportTest: public testing::Test {
  protected:
   virtual ~TransportTest() {
-    UDT::cleanup();
+    transport::Transport trans;
+    trans.CleanUp();
   }
 };
 

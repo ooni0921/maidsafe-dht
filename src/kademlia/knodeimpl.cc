@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/bind.hpp>
 #include <google/protobuf/descriptor.h>
 #include <iostream>  // NOLINT Fraser - required for handling .kadconfig file
+#include <fstream>  // NOLINT
 #include <vector>
 #include "base/config.h"
 #include "kademlia/kadservice.h"
@@ -38,7 +39,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/utils.h"
 #include "protobuf/contact_info.pb.h"
-#include "transport/transportapi.h"
 #include "protobuf/signed_kadvalue.pb.h"
 
 namespace fs = boost::filesystem;

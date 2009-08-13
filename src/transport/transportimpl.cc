@@ -25,56 +25,29 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "transport/transportapi.h"
 #include <boost/scoped_array.hpp>
 #include <exception>
-#include "base/routingtable.h"
-#include "maidsafe/maidsafe-dht.h"
+#include "transport/transportimpl.h"
+#include "maidsafe/maidsafe-dht_config.h"
 
 
 namespace transport {
-Transport::Transport() : stop_(true),
-                         message_notifier_(),
-                         rendezvous_notifier_(),
-                         accept_routine_(),
-                         recv_routine_(),
-                         send_routine_(),
-                         ping_rendz_routine_(),
-                         handle_msgs_routine_(),
-                         listening_socket_(),
-                         peer_address_(),
-                         listening_port_(0),
-                         my_rendezvous_port_(0),
-                         my_rendezvous_ip_(""),
-                         incoming_sockets_(),
-                         outgoing_queue_(),
-                         incoming_msgs_queue_(),
-                         send_mutex_(),
-                         ping_rendez_mutex_(),
-                         recv_mutex_(),
-                         msg_hdl_mutex_(),
-                         s_skts_mutex_(),
-                         addrinfo_hints_(),
-                         addrinfo_res_(NULL),
-                         current_id_(0),
-                         send_cond_(),
-                         ping_rend_cond_(),
-                         recv_cond_(),
-                         msg_hdl_cond_(),
-                         ping_rendezvous_(false),
-                         directly_connected_(false),
-                         accepted_connections_(0),
-                         msgs_sent_(0),
-                         last_id_(0),
-                         data_arrived_(),
-                         ips_from_connections_(),
-                         send_notifier_(),
-                         send_sockets_() {
+TransportImpl::TransportImpl() : stop_(true), message_notifier_(),
+    rendezvous_notifier_(), accept_routine_(), recv_routine_(), send_routine_(),
+    ping_rendz_routine_(), handle_msgs_routine_(), listening_socket_(),
+    peer_address_(), listening_port_(0), my_rendezvous_port_(0),
+    my_rendezvous_ip_(""), incoming_sockets_(), outgoing_queue_(),
+    incoming_msgs_queue_(), send_mutex_(), ping_rendez_mutex_(), recv_mutex_(),
+    msg_hdl_mutex_(), s_skts_mutex_(), addrinfo_hints_(), addrinfo_res_(NULL),
+    current_id_(0), send_cond_(), ping_rend_cond_(), recv_cond_(),
+    msg_hdl_cond_(), ping_rendezvous_(false), directly_connected_(false),
+    accepted_connections_(0), msgs_sent_(0), last_id_(0), data_arrived_(),
+    ips_from_connections_(), send_notifier_(), send_sockets_() {
   UDT::startup();
 }
 
 
-int Transport::Start(uint16_t port,
+int TransportImpl::Start(uint16_t port,
     boost::function<void(const rpcprotocol::RpcMessage&, const boost::uint32_t&,
     const float&)> on_message, boost::function<void(const bool&,
     const std::string&, const boost::uint16_t&)> notify_dead_server,
@@ -119,7 +92,7 @@ int Transport::Start(uint16_t port,
   // freeaddrinfo(res);
   if (UDT::ERROR == UDT::listen(listening_socket_, 20)) {
 #ifdef DEBUG
-    printf("In Transport::Start(%i), ", listening_port_);
+    printf("In TransportImpl::Start(%i), ", listening_port_);
     printf("failed to start listening socket %i.\n",
            listening_socket_);
 #endif
@@ -128,12 +101,14 @@ int Transport::Start(uint16_t port,
   stop_ = false;
   // start the listening loop
   try {
-    accept_routine_.reset(new boost::thread(&Transport::AcceptConnHandler,
+    accept_routine_.reset(new boost::thread(&TransportImpl::AcceptConnHandler,
         this));
-    recv_routine_.reset(new boost::thread(&Transport::ReceiveHandler, this));
-    send_routine_.reset(new boost::thread(&Transport::SendHandle, this));
-    ping_rendz_routine_.reset(new boost::thread(&Transport::PingHandle, this));
-    handle_msgs_routine_.reset(new boost::thread(&Transport::MessageHandler,
+    recv_routine_.reset(new boost::thread(&TransportImpl::ReceiveHandler,
+        this));
+    send_routine_.reset(new boost::thread(&TransportImpl::SendHandle, this));
+    ping_rendz_routine_.reset(new boost::thread(&TransportImpl::PingHandle,
+        this));
+    handle_msgs_routine_.reset(new boost::thread(&TransportImpl::MessageHandler,
         this));
   } catch(const boost::thread_resource_error& ) {
     stop_ = true;
@@ -141,7 +116,7 @@ int Transport::Start(uint16_t port,
     result = UDT::close(listening_socket_);
 #ifdef DEBUG
     if (result == UDT::ERROR) {
-      printf("In Transport::Start(%i), ", listening_port_);
+      printf("In TransportImpl::Start(%i), ", listening_port_);
       printf("failed to close listening socket %i - error: %s.\n",
              listening_socket_,
              UDT::getlasterror().getErrorMessage());
@@ -156,7 +131,7 @@ int Transport::Start(uint16_t port,
   return 0;
 }
 
-int Transport::Send(const std::string &data,
+int TransportImpl::Send(const std::string &data,
     DataType type, const boost::uint32_t &conn_id, const bool &new_skt) {
 
   UDTSOCKET skt;
@@ -218,7 +193,7 @@ int Transport::Send(const std::string &data,
   return 0;
 }
 
-void Transport::Stop() {
+void TransportImpl::Stop() {
   if (stop_)
     return;
   stop_ = true;
@@ -289,7 +264,7 @@ void Transport::Stop() {
 #endif
 }
 
-void Transport::ReceiveHandler() {
+void TransportImpl::ReceiveHandler() {
   timeval tv;
   tv.tv_sec = 0;
   tv.tv_usec = 1000;
@@ -394,7 +369,7 @@ void Transport::ReceiveHandler() {
             if ((*it).second.expect_size <= (*it).second.received_size) {
               ++last_id_;
 #ifdef DEBUG
-              printf("%d -- Transport::ReceiveHandler last_id_: %d\n",
+              printf("%d -- TransportImpl::ReceiveHandler last_id_: %d\n",
                   listening_port_, last_id_);
 #endif
               std::string message = std::string((*it).second.data.get(),
@@ -459,7 +434,8 @@ void Transport::ReceiveHandler() {
   }
 }
 
-void Transport::AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id) {
+void TransportImpl::AddIncomingConnection(UDTSOCKET u,
+      boost::uint32_t *conn_id) {
   {
     boost::mutex::scoped_lock guard(recv_mutex_);
     current_id_ = base::generate_next_transaction_id(current_id_);
@@ -470,7 +446,7 @@ void Transport::AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id) {
   recv_cond_.notify_one();
 }
 
-void Transport::AddIncomingConnection(UDTSOCKET u) {
+void TransportImpl::AddIncomingConnection(UDTSOCKET u) {
   {
     boost::mutex::scoped_lock guard(recv_mutex_);
     current_id_ = base::generate_next_transaction_id(current_id_);
@@ -480,7 +456,7 @@ void Transport::AddIncomingConnection(UDTSOCKET u) {
   recv_cond_.notify_one();
 }
 
-void Transport::CloseConnection(boost::uint32_t connection_id) {
+void TransportImpl::CloseConnection(const boost::uint32_t &connection_id) {
   std::map<boost::uint32_t, IncomingData>::iterator it;
   boost::mutex::scoped_lock guard(recv_mutex_);
   it = incoming_sockets_.find(connection_id);
@@ -491,7 +467,7 @@ void Transport::CloseConnection(boost::uint32_t connection_id) {
   }
 }
 
-bool Transport::ConnectionExists(const boost::uint32_t &connection_id) {
+bool TransportImpl::ConnectionExists(const boost::uint32_t &connection_id) {
   std::map<boost::uint32_t, IncomingData>::iterator it;
   boost::mutex::scoped_lock guard(recv_mutex_);
   it = incoming_sockets_.find(connection_id);
@@ -502,7 +478,7 @@ bool Transport::ConnectionExists(const boost::uint32_t &connection_id) {
   }
 }
 
-bool Transport::HasReceivedData(const boost::uint32_t &connection_id,
+bool TransportImpl::HasReceivedData(const boost::uint32_t &connection_id,
     int64_t *size) {
   std::map<boost::uint32_t, IncomingData>::iterator it1;
   std::set<boost::uint32_t>::iterator it2;
@@ -532,7 +508,7 @@ bool Transport::HasReceivedData(const boost::uint32_t &connection_id,
   return result;
 }
 
-void Transport::SendHandle() {
+void TransportImpl::SendHandle() {
   while (true) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     {
@@ -596,7 +572,7 @@ void Transport::SendHandle() {
   }
 }
 
-int Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
+int TransportImpl::Connect(UDTSOCKET *skt, const std::string &peer_address,
       const uint16_t &peer_port, bool) {
   if (stop_)
     return -1;
@@ -644,7 +620,7 @@ int Transport::Connect(UDTSOCKET *skt, const std::string &peer_address,
   return 0;
 }
 
-void Transport::HandleRendezvousMsgs(const HolePunchingMsg &message) {
+void TransportImpl::HandleRendezvousMsgs(const HolePunchingMsg &message) {
   if (message.type() == FORWARD_REQ) {
     TransportMessage t_msg;
     HolePunchingMsg *forward_msg = t_msg.mutable_hp_msg();
@@ -677,9 +653,9 @@ void Transport::HandleRendezvousMsgs(const HolePunchingMsg &message) {
   }
 }
 
-void Transport::StartPingRendezvous(const bool &directly_connected,
-                           std::string my_rendezvous_ip,
-                           boost::uint16_t my_rendezvous_port) {
+void TransportImpl::StartPingRendezvous(const bool &directly_connected,
+      const std::string &my_rendezvous_ip, const boost::uint16_t
+      &my_rendezvous_port) {
   my_rendezvous_port_ = my_rendezvous_port;
   if (my_rendezvous_ip.length() == 4)
     my_rendezvous_ip_ = base::inet_btoa(my_rendezvous_ip);
@@ -693,12 +669,12 @@ void Transport::StartPingRendezvous(const bool &directly_connected,
   ping_rend_cond_.notify_one();
 }
 
-void Transport::StopPingRendezvous() {
+void TransportImpl::StopPingRendezvous() {
   boost::mutex::scoped_lock guard(ping_rendez_mutex_);
   ping_rendezvous_ = false;
 }
 
-void Transport::PingHandle() {
+void TransportImpl::PingHandle() {
   while (true) {
     {
       boost::mutex::scoped_lock lock(ping_rendez_mutex_);
@@ -750,7 +726,7 @@ void Transport::PingHandle() {
   }
 }
 
-bool Transport::CanConnect(const std::string &ip, const uint16_t &port) {
+bool TransportImpl::CanConnect(const std::string &ip, const uint16_t &port) {
   UDTSOCKET skt;
   bool result = false;
   if (Connect(&skt, ip, port, false) == 0)
@@ -759,7 +735,7 @@ bool Transport::CanConnect(const std::string &ip, const uint16_t &port) {
   return result;
 }
 
-void Transport::AcceptConnHandler() {
+void TransportImpl::AcceptConnHandler() {
   sockaddr_storage clientaddr;
   int addrlen = sizeof(clientaddr);
   UDTSOCKET recver;
@@ -795,7 +771,7 @@ void Transport::AcceptConnHandler() {
   }
 }
 
-void Transport::MessageHandler() {
+void TransportImpl::MessageHandler() {
   while (true) {
     {
       {
@@ -824,7 +800,7 @@ void Transport::MessageHandler() {
   }
 }
 
-int Transport::Send(const rpcprotocol::RpcMessage &data,
+int TransportImpl::Send(const rpcprotocol::RpcMessage &data,
     const boost::uint32_t &conn_id, const bool &new_skt) {
   TransportMessage msg;
   rpcprotocol::RpcMessage *rpc_msg = msg.mutable_rpc_msg();
@@ -845,7 +821,7 @@ int Transport::Send(const rpcprotocol::RpcMessage &data,
   }
 }
 
-bool Transport::CheckConnection(const std::string &local_ip,
+bool TransportImpl::CheckConnection(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port) {
   struct addrinfo hints, *local, *remote;
   memset(&hints, 0, sizeof(struct addrinfo));
@@ -882,7 +858,7 @@ bool Transport::CheckConnection(const std::string &local_ip,
   return true;
 }
 
-bool Transport::GetPeerAddr(const boost::uint32_t &conn_id,
+bool TransportImpl::GetPeerAddr(const boost::uint32_t &conn_id,
     struct sockaddr *addr) {
   std::map<boost::uint32_t, struct sockaddr>::iterator it;
   it = ips_from_connections_.find(conn_id);
@@ -892,10 +868,10 @@ bool Transport::GetPeerAddr(const boost::uint32_t &conn_id,
   return true;
 }
 
-int Transport::ConnectToSend(const std::string &remote_ip,
+int TransportImpl::ConnectToSend(const std::string &remote_ip,
     const uint16_t &remote_port,  const std::string &rendezvous_ip,
     const uint16_t &rendezvous_port, boost::uint32_t *conn_id,
-    bool keep_connection) {
+    const bool &keep_connection) {
   UDTSOCKET skt;
   // the node receiver is directly connected, no rendezvous information
   if (rendezvous_ip == "" && rendezvous_port == 0) {
@@ -975,7 +951,7 @@ int Transport::ConnectToSend(const std::string &remote_ip,
   return 0;
 }
 
-int Transport::StartLocal(const uint16_t &port, boost::function <void(
+int TransportImpl::StartLocal(const uint16_t &port, boost::function <void(
         const rpcprotocol::RpcMessage&, const boost::uint32_t&, const float &)>
         on_message,
       boost::function<void(const boost::uint32_t&, const bool&)> on_send) {
@@ -1028,11 +1004,12 @@ int Transport::StartLocal(const uint16_t &port, boost::function <void(
   stop_ = false;
   // start the listening loop
   try {
-    accept_routine_.reset(new boost::thread(&Transport::AcceptConnHandler,
+    accept_routine_.reset(new boost::thread(&TransportImpl::AcceptConnHandler,
         this));
-    recv_routine_.reset(new boost::thread(&Transport::ReceiveHandler, this));
-    send_routine_.reset(new boost::thread(&Transport::SendHandle, this));
-    handle_msgs_routine_.reset(new boost::thread(&Transport::MessageHandler,
+    recv_routine_.reset(new boost::thread(&TransportImpl::ReceiveHandler,
+        this));
+    send_routine_.reset(new boost::thread(&TransportImpl::SendHandle, this));
+    handle_msgs_routine_.reset(new boost::thread(&TransportImpl::MessageHandler,
         this));
   } catch(const boost::thread_resource_error& ) {
     stop_ = true;
@@ -1053,4 +1030,7 @@ int Transport::StartLocal(const uint16_t &port, boost::function <void(
   return 0;
 }
 
+void TransportImpl::CleanUp() {
+  UDT::cleanup();
+}
 };  // namespace transport

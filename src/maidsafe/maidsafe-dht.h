@@ -202,6 +202,45 @@ class Channel : public google::protobuf::RpcChannel {
 };
 }  // namespace rpcprotocol
 
+namespace transport {
+class Transport {
+ public:
+  Transport();
+  int ConnectToSend(const std::string &remote_ip, const uint16_t &remote_port,
+      const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
+      boost::uint32_t *conn_id, const bool &keep_connection);
+  int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t &conn_id,
+      const bool &new_skt);
+  int Start(uint16_t port, boost::function<void(const rpcprotocol::RpcMessage&,
+        const boost::uint32_t&, const float &)> on_message,
+      boost::function<void(const bool&, const std::string&,
+        const boost::uint16_t&)> notify_dead_server,
+      boost::function<void(const boost::uint32_t&, const bool&)> on_send);
+  int StartLocal(const uint16_t &port, boost::function <void(
+        const rpcprotocol::RpcMessage&, const boost::uint32_t&, const float &)>
+        on_message,
+      boost::function<void(const boost::uint32_t&, const bool&)> on_send);
+  void CloseConnection(const boost::uint32_t &connection_id);
+  void Stop();
+  bool is_stopped() const;
+  struct sockaddr& peer_address();
+  bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr *addr);
+  bool ConnectionExists(const boost::uint32_t &connection_id);
+  bool HasReceivedData(const boost::uint32_t &connection_id, int64_t *size);
+  boost::uint16_t listening_port();
+  void StartPingRendezvous(const bool &directly_connected,
+      const std::string &my_rendezvous_ip, const boost::uint16_t
+      &my_rendezvous_port);
+  void StopPingRendezvous();
+  bool CanConnect(const std::string &ip, const uint16_t &port);
+  bool CheckConnection(const std::string &local_ip,
+      const std::string &remote_ip, const uint16_t &remote_port);
+  void CleanUp();
+ private:
+   boost::shared_ptr<TransportImpl> pimpl_;
+};
+}
+
 // callbacks section
 // link our callback funtions to lower level
 bool LostNet();
