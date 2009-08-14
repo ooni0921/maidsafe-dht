@@ -136,7 +136,8 @@ add_executable(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_DIR})
 add_executable(TESTknode "tests/kademlia/testknode.cc" ${MAIDSAFE_DIR})
 add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${MAIDSAFE_DIR})
 add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${MAIDSAFE_DIR})
-add_executable(TESTupnp ${T_UPNP_DIR} ${MAIDSAFE_DIR})
+#add_executable(TESTupnp ${T_UPNP_DIR} ${MAIDSAFE_DIR})
+add_executable(TESTupnp "tests/upnp/testupnp2.cc" ${MAIDSAFE_DIR})
 #######################################################################################
 #######################################################################################
 add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP} ) 
