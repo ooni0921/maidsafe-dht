@@ -52,7 +52,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service.pb.h"
-#include "upnp/upnp.hpp"
+#include "upnp/upnpclient.h"
+
+namespace analysis {
+  class KNodeWrap;
+}
 
 namespace kad {
 class KadService;
@@ -282,6 +286,7 @@ class KNodeImpl {
       const std::string &value) const;
   friend class KadServicesTest;
   friend class NatDetectionTest;
+  friend class analysis::KNodeWrap;
  private:
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
@@ -345,10 +350,6 @@ class KNodeImpl {
   void ReBootstrapping_Callback(const std::string &result);
   void RegisterKadService();
   void UnRegisterKadService();
-  void OnUPnPPortMapping(int mapping,
-                         int port,
-                         std::string const& errmsg,
-                         int map_transport);
   void UPnPMap(boost::uint16_t host_port);
   void UnMapUPnP();
   void CheckToInsert(const Contact &new_contact);
@@ -391,12 +392,8 @@ class KNodeImpl {
   boost::condition_variable add_ctc_cond_;
   std::string private_key_, public_key_;
   // for UPnP
-  bool upnp_started_;
-  libtorrent::io_service upnp_ios_;
-  boost::intrusive_ptr<libtorrent::upnp> upnp_;
-  libtorrent::connection_queue *upnp_half_open_;
-  std::string upnp_user_agent_;
-  int upnp_mapped_port_, upnp_udp_map_;
+  upnp::UpnpIgdClient upnp_;
+  int upnp_mapped_port_;
 };
 }  // namespace kad
 #endif  // KADEMLIA_KNODEIMPL_H_

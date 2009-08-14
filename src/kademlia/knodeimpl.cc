@@ -135,9 +135,7 @@ KNodeImpl::KNodeImpl(
           kad_config_path_(""), local_host_ip_(""),
           local_host_port_(0), stopping_(false), contacts_to_add_(),
           addcontacts_routine_(), add_ctc_cond_(), private_key_(private_key),
-          public_key_(public_key), upnp_started_(false), upnp_ios_(), upnp_(),
-          upnp_half_open_(NULL), upnp_user_agent_("maidsafe"),
-          upnp_mapped_port_(0), upnp_udp_map_(0) {
+          public_key_(public_key), upnp_(), upnp_mapped_port_(0) {
 }
 
 KNodeImpl::KNodeImpl(
@@ -160,9 +158,7 @@ KNodeImpl::KNodeImpl(
           kad_config_path_(""), local_host_ip_(""),
           local_host_port_(0), stopping_(false), contacts_to_add_(),
           addcontacts_routine_(), add_ctc_cond_(), private_key_(private_key),
-          public_key_(public_key), upnp_started_(false), upnp_ios_(), upnp_(),
-          upnp_half_open_(NULL), upnp_user_agent_("maidsafe"),
-          upnp_mapped_port_(0), upnp_udp_map_(0) {
+          public_key_(public_key), upnp_(), upnp_mapped_port_(0) {
 }
 
 KNodeImpl::~KNodeImpl() {
@@ -171,11 +167,9 @@ KNodeImpl::~KNodeImpl() {
     is_joined_ = false;
     pdata_store_->Clear();
   }
-  if (upnp_started_ && upnp_mapped_port_ > 0) {
+  if (upnp_mapped_port_ != 0) {
     UnMapUPnP();
   }
-  upnp_started_ = false;
-  upnp_mapped_port_ = 0;
 }
 
 inline void KNodeImpl::CallbackWithFailure(base::callback_func_type cb) {
@@ -497,7 +491,7 @@ void KNodeImpl::Join(const std::string &node_id,
 
 void KNodeImpl::Leave() {
   if (is_joined_) {
-    if (upnp_started_ && upnp_mapped_port_ > 0) {
+    if (upnp_mapped_port_ != 0) {
       UnMapUPnP();
     }
     stopping_ = true;
@@ -510,8 +504,6 @@ void KNodeImpl::Leave() {
       UnRegisterKadService();
       add_ctc_cond_.notify_one();
       addcontacts_routine_->join();
-      upnp_started_ = false;
-      upnp_mapped_port_ = 0;
       SaveBootstrapContacts();
       prouting_table_->Clear();
       base::PDRoutingTable::getInstance()[base::itos(host_port_)]->Clear();
@@ -1297,95 +1289,33 @@ connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
   return conn_type;
 }
 
-void KNodeImpl::OnUPnPPortMapping(int, int port, std::string const& errmsg,
-      int) {
-  if (errmsg == "") {
-#ifdef DEBUG
-    printf("UPnP port mapped: %d\n", port);
-#endif
-    upnp_mapped_port_ = port;
-    upnp_started_ = true;
-  } else {
-#ifdef DEBUG
-    printf("\t\tError occurred when trying to map UPnP Port: %s\n",
-           errmsg.c_str());
-#endif
-  }
-}
-
 void KNodeImpl::UPnPMap(boost::uint16_t host_port) {
   // Get a UPnP mapping port
-  upnp_half_open_ = new libtorrent::connection_queue(upnp_ios_);
-#ifdef WIN32
-  // windows XP has a limit on the number of
-  // simultaneous half-open TCP connections
-  DWORD windows_version = ::GetVersion();
-  if ((windows_version & 0xff) >= 6) {
-    // on vista the limit is 5 (in home edition)
-    upnp_half_open_->limit(4);
-  } else {
-    // on XP SP2 it's 10
-    upnp_half_open_->limit(8);
-  }
-#endif
-  boost::asio::deadline_timer timer(upnp_ios_);
-  upnp_user_agent_ = "maidsafe";
   upnp_mapped_port_ = 0;
-  upnp_ = new libtorrent::upnp(upnp_ios_,
-                               *upnp_half_open_,
-                               libtorrent::address_v4(),
-                               upnp_user_agent_,
-                               boost::bind(&KNodeImpl::OnUPnPPortMapping,
-                                           this,
-                                           _1,
-                                           _2,
-                                           _3,
-                                           1),
-                               false);
 #ifdef DEBUG
-  printf("\t\tDiscovering the UPnP device...\n");
+  printf("\t\tInitialising UPnP...\n");
 #endif
-  upnp_->discover_device();
-  timer.expires_from_now(boost::posix_time::seconds(3));
-  timer.async_wait(boost::bind(&libtorrent::io_service::stop,
-                               boost::ref(upnp_ios_)));
-  upnp_ios_.reset();
-  upnp_ios_.run();
+  // ignore result, in case it's already initialised
+  upnp_.InitControlPoint();
+
 #ifdef DEBUG
   printf("\t\tMapping UPnP port...\n");
 #endif
-  upnp_udp_map_ = upnp_->add_mapping(libtorrent::upnp::udp, host_port,
-                                     host_port);
-  timer.expires_from_now(boost::posix_time::seconds(2));
-  timer.async_wait(boost::bind(&libtorrent::io_service::stop,
-                               boost::ref(upnp_ios_)));
-  upnp_ios_.reset();
-  upnp_ios_.run();
+  if (upnp_.AddPortMapping(host_port, upnp::kUdp)) {
+    upnp_mapped_port_ = host_port;
+  } else {
+#ifdef DEBUG
+    printf("\t\tPort mapping via UPnP failed.\n");
+#endif
+  }
 }
 
 void KNodeImpl::UnMapUPnP() {
-  upnp_started_ = false;
-  upnp_mapped_port_ = 0;
-  boost::asio::deadline_timer timer(upnp_ios_);
 #ifdef DEBUG
   printf("\t\tDeleting the UPnP mapped port...\n");
 #endif
-  upnp_->delete_mapping(upnp_udp_map_);
-  timer.expires_from_now(boost::posix_time::seconds(2));
-  timer.async_wait(boost::bind(&libtorrent::io_service::stop,
-                               boost::ref(upnp_ios_)));
-  upnp_ios_.reset();
-  upnp_ios_.run();
-#ifdef DEBUG
-  printf("\t\tClosing UPnP...\n");
-#endif
-  upnp_->close();
-  timer.expires_from_now(boost::posix_time::seconds(2));
-  timer.async_wait(boost::bind(&libtorrent::io_service::stop,
-                               boost::ref(upnp_ios_)));
-  upnp_ios_.reset();
-  upnp_ios_.run();
-  delete upnp_half_open_;
+  upnp_.DeletePortMapping(upnp_mapped_port_, upnp::kUdp);
+  upnp_mapped_port_ = 0;
 }
 
 void KNodeImpl::UpdatePDRTContactToRemote(const std::string &node_id) {
