@@ -1379,3 +1379,18 @@ TEST_F(TransportTest, BEH_TRANS_StartStopLocal) {
   node1.Stop();
   node2.Stop();
 }
+
+TEST_F(TransportTest, BEH_TRANS_CheckPortAvailable) {
+  transport::Transport node1, node2;
+  MessageHandler msg_handler1;
+  ASSERT_EQ(0, node1.Start(0,
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
+                _1, _2, _3),
+    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
+  boost::uint16_t lp_node1 = node1.listening_port();
+  ASSERT_FALSE(node2.IsPortAvailable(lp_node1));
+  ASSERT_TRUE(node2.IsPortAvailable(lp_node1+1));
+  node1.Stop();
+  ASSERT_TRUE(node2.IsPortAvailable(lp_node1));
+}

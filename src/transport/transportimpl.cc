@@ -1033,4 +1033,33 @@ int TransportImpl::StartLocal(const uint16_t &port, boost::function <void(
 void TransportImpl::CleanUp() {
   UDT::cleanup();
 }
+
+bool TransportImpl::IsPortAvailable(const boost::uint16_t &port) {
+  struct addrinfo addrinfo_hints;
+  struct addrinfo* addrinfo_res;
+  memset(&addrinfo_hints, 0, sizeof(struct addrinfo));
+  addrinfo_hints.ai_flags = AI_PASSIVE;
+  addrinfo_hints.ai_family = AF_INET;
+  addrinfo_hints.ai_socktype = SOCK_STREAM;
+  std::string service = boost::lexical_cast<std::string>(port);
+  if (0 != getaddrinfo(NULL, service.c_str(), &addrinfo_hints,
+      &addrinfo_res)) {
+    freeaddrinfo(addrinfo_res);
+    return false;
+  }
+  UDTSOCKET skt = UDT::socket(addrinfo_res->ai_family,
+      addrinfo_res->ai_socktype, addrinfo_res->ai_protocol);
+  if (UDT::ERROR == UDT::bind(skt, addrinfo_res->ai_addr,
+      addrinfo_res->ai_addrlen)) {
+    freeaddrinfo(addrinfo_res);
+    return false;
+  }
+  if (UDT::ERROR == UDT::listen(skt, 20)) {
+    freeaddrinfo(addrinfo_res);
+    return false;
+  }
+  UDT::close(skt);
+  freeaddrinfo(addrinfo_res);
+  return true;
+}
 };  // namespace transport

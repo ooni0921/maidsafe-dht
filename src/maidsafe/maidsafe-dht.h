@@ -236,6 +236,7 @@ class Transport {
   bool CheckConnection(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port);
   void CleanUp();
+  bool IsPortAvailable(const boost::uint16_t &port);
  private:
   boost::shared_ptr<TransportImpl> pimpl_;
 };

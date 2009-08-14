@@ -116,4 +116,8 @@ bool Transport::CheckConnection(const std::string &local_ip,
 void Transport::CleanUp() {
   pimpl_->CleanUp();
 }
+
+bool Transport::IsPortAvailable(const boost::uint16_t &port) {
+  return pimpl_->IsPortAvailable(port);
+}
 }  // namespace transport
