@@ -54,10 +54,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "protobuf/kademlia_service.pb.h"
 #include "upnp/upnpclient.h"
 
-namespace analysis {
-  class KNodeWrap;
-}
-
 namespace kad {
 class KadService;
 
@@ -286,7 +282,6 @@ class KNodeImpl {
       const std::string &value) const;
   friend class KadServicesTest;
   friend class NatDetectionTest;
-  friend class analysis::KNodeWrap;
  private:
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
