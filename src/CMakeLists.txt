@@ -74,6 +74,8 @@ LIST(APPEND M_LIBUPNP_DIR libupnp/igd_desc_parse.c libupnp/miniupnpc.c libupnp/m
 FILE(GLOB M_UPNP_C "upnp/*.c*")
 FILE(GLOB M_UPNP_H "upnp/*.h*")
 LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})
+LIST(REMOVE_ITEM M_UPNP_DIR "upnp/upnpclientimpl.cc")
+LIST(REMOVE_ITEM M_UPNP_DIR "upnp/upnpclientimpl.h")
 FILE(GLOB M_PROTOBUF_C "protobuf/*.c*")
 FILE(GLOB M_PROTOBUF_H "protobuf/*.h*")
 LIST(APPEND M_PROTOBUF_DIR ${M_PROTOBUF_C} ${M_PROTOBUF_H})
