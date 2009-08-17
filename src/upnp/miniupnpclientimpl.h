@@ -30,7 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // #define VERBOSE_DEBUG
 
-#include <upnp/upnp.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <string>
