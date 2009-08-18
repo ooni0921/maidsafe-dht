@@ -26,137 +26,89 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
-#include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/ref.hpp>
-#include <boost/intrusive_ptr.hpp>
 #include "maidsafe/maidsafe-dht.h"
-#include "upnp/upnp.hpp"
-#include "base/config.h"
+#include "upnp/upnpclient.h"
 
+// Test depends on external UPnP device, but doesn't fail if none found
 
 class UpnpTest: public testing::Test {
  public:
-  UpnpTest() : mapped_port(0), has_timed_out(false) {}
-  void OnPortMapping(int mapping, int port,
-                     std::string const& errmsg,
-                     int map_transport);
-  void OnTimeOut(libtorrent::io_service *io_service);
-  int mapped_port;
-  bool has_timed_out;
+  UpnpTest() : num_total_mappings(3), num_curr_mappings(0) {}
+  void OnNewMapping(const int &port, const upnp::ProtocolType &protocol);
+  void OnLostMapping(const int &port, const upnp::ProtocolType &protocol);
+  void OnFailedMapping(const int &port, const upnp::ProtocolType &protocol);
+
+  int num_total_mappings;
+  int num_curr_mappings;
 };
 
-void UpnpTest::OnPortMapping(int mapping, int port,
-                             std::string const& errmsg,
-                             int map_transport) {
-  if (errmsg == "") {
-    mapped_port = port;
-  } else {
-    mapped_port = 0;
-  }
-
-  printf("Port mapping result:\n\tmapping: %d\n\tport: %d\n\terrmsg: %s\n" \
-         "\tmap_transport: %d\n",
-         mapping, port, errmsg.c_str(), map_transport);
+void UpnpTest::OnNewMapping(const int &port,
+                            const upnp::ProtocolType &protocol) {
+  num_curr_mappings++;
+  printf("New port mapping: %s %d\n",
+         protocol == upnp::kUdp ? "UDP" : "TCP", port);
 }
 
-void UpnpTest::OnTimeOut(libtorrent::io_service *io_service) {
-  has_timed_out = true;
-  io_service->stop();
+void UpnpTest::OnLostMapping(const int &port,
+                             const upnp::ProtocolType &protocol) {
+  num_curr_mappings--;
+  printf("Lost port mapping: %s %d\n",
+         protocol == upnp::kUdp ? "UDP" : "TCP", port);
+}
+
+void UpnpTest::OnFailedMapping(const int &port,
+                               const upnp::ProtocolType &protocol) {
+  printf("Failed port mapping: %s %d\n",
+         protocol == upnp::kUdp ? "UDP" : "TCP", port);
 }
 
 TEST_F(UpnpTest, BEH_UPNP_PortMappingTest) {
-  libtorrent::io_service io_service;
-  libtorrent::connection_queue half_open(io_service);
+  upnp::UpnpIgdClient upnp;
 
-#ifdef MAIDSAFE_WIN32
-    // windows XP has a limit on the number of
-    // simultaneous half-open TCP connections
-    DWORD windows_version = ::GetVersion();
-    if ((windows_version & 0xff) >= 6) {
-      // on vista the limit is 5 (in home edition)
-      half_open.limit(4);
-    } else {
-      // on XP SP2 it's 10
-      half_open.limit(8);
+  printf("Initialising UPnP...\n");
+
+  ASSERT_TRUE(upnp.InitControlPoint());
+
+  if (upnp.IsAsync()) {
+    upnp.SetNewMappingCallback(
+      boost::bind(&UpnpTest::OnNewMapping, this, _1, _2));
+    upnp.SetLostMappingCallback(
+      boost::bind(&UpnpTest::OnLostMapping, this, _1, _2));
+    upnp.SetFailedMappingCallback(
+      boost::bind(&UpnpTest::OnFailedMapping, this, _1, _2));
+  }
+
+  // boost::this_thread::sleep(boost::posix_time::seconds(2));
+
+  bool all_added = true;
+  for (int i = 0; i < num_total_mappings; ++i) {
+    all_added &= upnp.AddPortMapping(1234 + i, upnp::kTcp);
+  }
+
+  if (upnp.IsAsync()) {
+    printf("Waiting...\n");
+    boost::this_thread::sleep(boost::posix_time::seconds(3));
+  }
+
+  if (upnp.HasServices()) {
+    printf("External IP: %s\n", upnp.GetExternalIpAddress().c_str());
+    ASSERT_TRUE(all_added);
+    if (upnp.IsAsync()) {
+      ASSERT_TRUE(num_curr_mappings == num_total_mappings);
     }
-#endif
-
-  boost::asio::deadline_timer timer(io_service);
-  std::string user_agent = "maidsafe test";
-  boost::intrusive_ptr<libtorrent::upnp> my_upnp =
-    new libtorrent::upnp(io_service, half_open, libtorrent::address_v4(),
-    user_agent,
-    boost::bind(&UpnpTest::OnPortMapping, this, _1, _2, _3, 1),
-    false);
-
-  printf("Discovering the UPnP device...\n");
-  my_upnp->discover_device();
-
-  has_timed_out = false;
-  timer.expires_from_now(boost::posix_time::seconds(2));
-  timer.async_wait(boost::bind(&UpnpTest::OnTimeOut, this, &io_service));
-
-  if (has_timed_out) {
-    printf("UPnP device discovery timed out.\n");
-    return;
+    printf("All UPnP mappings successful.\n");
+  } else {
+    printf("Sorry, no port mappings via UPnP possible.\n");
   }
 
-  io_service.reset();
-  io_service.run();
+  /* printf("\nPress Enter to continue...\n\n");
+  char c[2];
+  fgets(c, sizeof c, stdin); */
 
-  printf("Mapping UDP port...\n");
-  int udp_map = my_upnp->add_mapping(libtorrent::upnp::udp, 63333, 63335);
+  ASSERT_TRUE(upnp.DeletePortMapping(1233 + num_total_mappings, upnp::kTcp));
 
-  if (udp_map == -1) {
-    printf("UDP port mapping failed immediately.\n");
-    return;
-  }
-
-  has_timed_out = false;
-  timer.expires_from_now(boost::posix_time::seconds(2));
-  timer.async_wait(boost::bind(&UpnpTest::OnTimeOut, this, &io_service));
-
-  if (has_timed_out) {
-    printf("UDP port mapping timed out.\n");
-    return;
-  }
-
-  io_service.reset();
-  io_service.run();
-
-  if (mapped_port == 0) {
-    printf("UDP port mapping failed.\n");
-    return;
-  }
-
-  printf("Port successfully mapped to %d.\n", mapped_port);
-
-  printf("Deleting the UDP mapped port...\n");
-  my_upnp->delete_mapping(udp_map);
-
-  has_timed_out = false;
-  timer.expires_from_now(boost::posix_time::seconds(2));
-  timer.async_wait(boost::bind(&UpnpTest::OnTimeOut, this, &io_service));
-
-  ASSERT_FALSE(has_timed_out) << "UDP port mapping deletion timed out.";
-
-  io_service.reset();
-  io_service.run();
-
-  printf("Closing UPnP...\n");
-  my_upnp->close();
-
-  has_timed_out = false;
-  timer.expires_from_now(boost::posix_time::seconds(2));
-  timer.async_wait(boost::bind(&UpnpTest::OnTimeOut, this, &io_service));
-
-  ASSERT_FALSE(has_timed_out) << "Closing UPnP timed out.";
-
-  // io_service.reset();
-  // io_service.run();
-
-  printf("UPnP test completed successfully.\n");
+  // boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
 
 int main(int argc, char **argv) {
