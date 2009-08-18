@@ -69,7 +69,8 @@ INCLUDE_DIRECTORIES(${maidsafe-dht_SOURCE_DIR} ${maidsafe-dht_SOURCE_DIR}/libupn
 ####	CODE	####
 #FILE(GLOB_RECURSE M_LIBUPNP_C "libupnp/*.c*")
 #FILE(GLOB_RECURSE M_LIBUPNP_H "libupnp/*.h*")
-LIST(APPEND M_LIBUPNP_DIR libupnp/igd_desc_parse.c libupnp/miniupnpc.c libupnp/minixml.c libupnp/minisoap.c libupnp/miniwget.c libupnp/upnpc.c libupnp/upnpcommands.c libupnp/upnpreplyparse.c libupnp/testminixml.c libupnp/minixmlvalid.c libupnp/testupnpreplyparse.c libupnp/minissdpc.c libupnp/upnperrors.c libupnp/testigddescparse.c)
+#LIST(APPEND M_LIBUPNP_DIR libupnp/igd_desc_parse.c libupnp/miniupnpc.c libupnp/minixml.c libupnp/minisoap.c libupnp/miniwget.c libupnp/upnpc.c libupnp/upnpcommands.c libupnp/upnpreplyparse.c libupnp/testminixml.c libupnp/minixmlvalid.c libupnp/testupnpreplyparse.c libupnp/minissdpc.c libupnp/upnperrors.c libupnp/testigddescparse.c)
+LIST(APPEND M_LIBUPNP_DIR libupnp/igd_desc_parse.c  libupnp/minixml.c libupnp/minisoap.c libupnp/miniwget.c  libupnp/upnpcommands.c libupnp/upnpreplyparse.c libupnp/testupnpreplyparse.c  libupnp/upnperrors.c libupnp/miniupnpc.c libupnp/minissdpc.c)
 #message("here it is" ${M_LIBUPNP_DIR})
 FILE(GLOB M_UPNP_C "upnp/*.c*")
 FILE(GLOB M_UPNP_H "upnp/*.h*")
