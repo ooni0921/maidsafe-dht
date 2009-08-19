@@ -27,8 +27,9 @@ message FindResponse {
   required bytes result = 1;
   repeated bytes closest_nodes = 2;
   repeated bytes values = 3;
-  optional bytes requester_ext_addr = 4;
-  optional bytes node_id = 5;
+  optional bytes alternative_value = 4;
+  optional bytes requester_ext_addr = 5;
+  optional bytes node_id = 6;
 };
 
 message FindNodeResult {

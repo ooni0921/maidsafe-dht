@@ -486,20 +486,30 @@ class FindResponse : public ::google::protobuf::Message {
   inline void add_values(const char* value);
   inline void add_values(const void* value, size_t size);
   
-  // optional bytes requester_ext_addr = 4;
+  // optional bytes alternative_value = 4;
+  inline bool has_alternative_value() const;
+  inline void clear_alternative_value();
+  static const int kAlternativeValueFieldNumber = 4;
+  inline const ::std::string& alternative_value() const;
+  inline void set_alternative_value(const ::std::string& value);
+  inline void set_alternative_value(const char* value);
+  inline void set_alternative_value(const void* value, size_t size);
+  inline ::std::string* mutable_alternative_value();
+  
+  // optional bytes requester_ext_addr = 5;
   inline bool has_requester_ext_addr() const;
   inline void clear_requester_ext_addr();
-  static const int kRequesterExtAddrFieldNumber = 4;
+  static const int kRequesterExtAddrFieldNumber = 5;
   inline const ::std::string& requester_ext_addr() const;
   inline void set_requester_ext_addr(const ::std::string& value);
   inline void set_requester_ext_addr(const char* value);
   inline void set_requester_ext_addr(const void* value, size_t size);
   inline ::std::string* mutable_requester_ext_addr();
   
-  // optional bytes node_id = 5;
+  // optional bytes node_id = 6;
   inline bool has_node_id() const;
   inline void clear_node_id();
-  static const int kNodeIdFieldNumber = 5;
+  static const int kNodeIdFieldNumber = 6;
   inline const ::std::string& node_id() const;
   inline void set_node_id(const ::std::string& value);
   inline void set_node_id(const char* value);
@@ -514,6 +524,8 @@ class FindResponse : public ::google::protobuf::Message {
   static const ::std::string _default_result_;
   ::google::protobuf::RepeatedPtrField< ::std::string> closest_nodes_;
   ::google::protobuf::RepeatedPtrField< ::std::string> values_;
+  ::std::string* alternative_value_;
+  static const ::std::string _default_alternative_value_;
   ::std::string* requester_ext_addr_;
   static const ::std::string _default_requester_ext_addr_;
   ::std::string* node_id_;
@@ -521,7 +533,7 @@ class FindResponse : public ::google::protobuf::Message {
   friend void  protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(5 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -2293,84 +2305,126 @@ inline void FindResponse::add_values(const void* value, size_t size) {
   values_.Add()->assign(reinterpret_cast<const char*>(value), size);
 }
 
-// optional bytes requester_ext_addr = 4;
-inline bool FindResponse::has_requester_ext_addr() const {
+// optional bytes alternative_value = 4;
+inline bool FindResponse::has_alternative_value() const {
   return _has_bit(3);
+}
+inline void FindResponse::clear_alternative_value() {
+  if (alternative_value_ != &_default_alternative_value_) {
+    alternative_value_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& FindResponse::alternative_value() const {
+  return *alternative_value_;
+}
+inline void FindResponse::set_alternative_value(const ::std::string& value) {
+  _set_bit(3);
+  if (alternative_value_ == &_default_alternative_value_) {
+    alternative_value_ = new ::std::string;
+  }
+  alternative_value_->assign(value);
+}
+inline void FindResponse::set_alternative_value(const char* value) {
+  _set_bit(3);
+  if (alternative_value_ == &_default_alternative_value_) {
+    alternative_value_ = new ::std::string;
+  }
+  alternative_value_->assign(value);
+}
+inline void FindResponse::set_alternative_value(const void* value, size_t size) {
+  _set_bit(3);
+  if (alternative_value_ == &_default_alternative_value_) {
+    alternative_value_ = new ::std::string;
+  }
+  alternative_value_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* FindResponse::mutable_alternative_value() {
+  _set_bit(3);
+  if (alternative_value_ == &_default_alternative_value_) {
+    alternative_value_ = new ::std::string;
+  }
+  return alternative_value_;
+}
+
+// optional bytes requester_ext_addr = 5;
+inline bool FindResponse::has_requester_ext_addr() const {
+  return _has_bit(4);
 }
 inline void FindResponse::clear_requester_ext_addr() {
   if (requester_ext_addr_ != &_default_requester_ext_addr_) {
     requester_ext_addr_->clear();
   }
-  _clear_bit(3);
+  _clear_bit(4);
 }
 inline const ::std::string& FindResponse::requester_ext_addr() const {
   return *requester_ext_addr_;
 }
 inline void FindResponse::set_requester_ext_addr(const ::std::string& value) {
-  _set_bit(3);
+  _set_bit(4);
   if (requester_ext_addr_ == &_default_requester_ext_addr_) {
     requester_ext_addr_ = new ::std::string;
   }
   requester_ext_addr_->assign(value);
 }
 inline void FindResponse::set_requester_ext_addr(const char* value) {
-  _set_bit(3);
+  _set_bit(4);
   if (requester_ext_addr_ == &_default_requester_ext_addr_) {
     requester_ext_addr_ = new ::std::string;
   }
   requester_ext_addr_->assign(value);
 }
 inline void FindResponse::set_requester_ext_addr(const void* value, size_t size) {
-  _set_bit(3);
+  _set_bit(4);
   if (requester_ext_addr_ == &_default_requester_ext_addr_) {
     requester_ext_addr_ = new ::std::string;
   }
   requester_ext_addr_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* FindResponse::mutable_requester_ext_addr() {
-  _set_bit(3);
+  _set_bit(4);
   if (requester_ext_addr_ == &_default_requester_ext_addr_) {
     requester_ext_addr_ = new ::std::string;
   }
   return requester_ext_addr_;
 }
 
-// optional bytes node_id = 5;
+// optional bytes node_id = 6;
 inline bool FindResponse::has_node_id() const {
-  return _has_bit(4);
+  return _has_bit(5);
 }
 inline void FindResponse::clear_node_id() {
   if (node_id_ != &_default_node_id_) {
     node_id_->clear();
   }
-  _clear_bit(4);
+  _clear_bit(5);
 }
 inline const ::std::string& FindResponse::node_id() const {
   return *node_id_;
 }
 inline void FindResponse::set_node_id(const ::std::string& value) {
-  _set_bit(4);
+  _set_bit(5);
   if (node_id_ == &_default_node_id_) {
     node_id_ = new ::std::string;
   }
   node_id_->assign(value);
 }
 inline void FindResponse::set_node_id(const char* value) {
-  _set_bit(4);
+  _set_bit(5);
   if (node_id_ == &_default_node_id_) {
     node_id_ = new ::std::string;
   }
   node_id_->assign(value);
 }
 inline void FindResponse::set_node_id(const void* value, size_t size) {
-  _set_bit(4);
+  _set_bit(5);
   if (node_id_ == &_default_node_id_) {
     node_id_ = new ::std::string;
   }
   node_id_->assign(reinterpret_cast<const char*>(value), size);
 }
 inline ::std::string* FindResponse::mutable_node_id() {
-  _set_bit(4);
+  _set_bit(5);
   if (node_id_ == &_default_node_id_) {
     node_id_ = new ::std::string;
   }

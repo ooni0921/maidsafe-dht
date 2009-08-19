@@ -428,29 +428,30 @@ std::string Crypto::AsymSign(const std::string &input,
                              operationtype ot) {
   try {
     CryptoPP::StringSource privkey(key, true);
-    CryptoPP::RSASSA_PKCS1v15_SHA_Signer priv(privkey);
+    CryptoPP::RSASS<CryptoPP::PKCS1v15, CryptoPP::SHA512>::Signer
+        signer(privkey);
     std::string result("");
     switch (ot) {
       case STRING_STRING:
         CryptoPP::StringSource(input, true,
-            new CryptoPP::SignerFilter(GlobalRNG(), priv,
+            new CryptoPP::SignerFilter(GlobalRNG(), signer,
             new CryptoPP::StringSink(result)));
         break;
       case STRING_FILE:
         result = output;
         CryptoPP::StringSource(input , true,
-            new CryptoPP::SignerFilter(GlobalRNG(), priv,
+            new CryptoPP::SignerFilter(GlobalRNG(), signer,
             new CryptoPP::FileSink(output.c_str())));
         break;
       case FILE_STRING:
         CryptoPP::FileSource(input.c_str(), true,
-            new CryptoPP::SignerFilter(GlobalRNG(), priv,
+            new CryptoPP::SignerFilter(GlobalRNG(), signer,
             new CryptoPP::StringSink(result)));
         break;
       case FILE_FILE:
         result = output;
         CryptoPP::FileSource(input.c_str(), true,
-            new CryptoPP::SignerFilter(GlobalRNG(), priv,
+            new CryptoPP::SignerFilter(GlobalRNG(), signer,
             new CryptoPP::FileSink(output.c_str())));
         break;
     }
@@ -471,33 +472,34 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
   try {
     CryptoPP::StringSource pubkey(key, true);
 
-    CryptoPP::RSASSA_PKCS1v15_SHA_Verifier pub(pubkey);
+    CryptoPP::RSASS<CryptoPP::PKCS1v15, CryptoPP::SHA512>::Verifier
+        verifier(pubkey);
     bool result = false;
     CryptoPP::SecByteBlock *signature;
-    CryptoPP::VerifierFilter *verifierFilter;
+    CryptoPP::SignatureVerificationFilter *verifierFilter;
 
     if ((ot == STRING_STRING) || (ot == STRING_FILE)) {
       CryptoPP::StringSource signatureString(input_signature, true);
-      if (signatureString.MaxRetrievable() != pub.SignatureLength())
+      if (signatureString.MaxRetrievable() != verifier.SignatureLength())
         return result;
-      signature = new CryptoPP::SecByteBlock(pub.SignatureLength());
+      signature = new CryptoPP::SecByteBlock(verifier.SignatureLength());
       signatureString.Get(*signature, signature->size());
 
-      verifierFilter = new CryptoPP::VerifierFilter(pub);
-      verifierFilter->Put(*signature, pub.SignatureLength());
+      verifierFilter = new CryptoPP::SignatureVerificationFilter(verifier);
+      verifierFilter->Put(*signature, verifier.SignatureLength());
       CryptoPP::StringSource(input_data, true, verifierFilter);
       result = verifierFilter->GetLastResult();
       delete signature;
       return result;
     } else if ((ot == FILE_FILE) || (ot == FILE_STRING)) {
       CryptoPP::FileSource signatureFile(input_signature.c_str(), true);
-      if (signatureFile.MaxRetrievable() != pub.SignatureLength())
+      if (signatureFile.MaxRetrievable() != verifier.SignatureLength())
         return false;
-      signature = new CryptoPP::SecByteBlock(pub.SignatureLength());
+      signature = new CryptoPP::SecByteBlock(verifier.SignatureLength());
       signatureFile.Get(*signature, signature->size());
 
-      verifierFilter = new CryptoPP::VerifierFilter(pub);
-      verifierFilter->Put(*signature, pub.SignatureLength());
+      verifierFilter = new CryptoPP::SignatureVerificationFilter(verifier);
+      verifierFilter->Put(*signature, verifier.SignatureLength());
       CryptoPP::FileSource(input_data.c_str(), true, verifierFilter);
       result = verifierFilter->GetLastResult();
       delete signature;

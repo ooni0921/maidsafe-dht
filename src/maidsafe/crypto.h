@@ -81,7 +81,9 @@ class Crypto {
                           const std::string &output,
                           const std::string &key,
                           operationtype ot);
-  // AsymSign -- key is a private key
+  // AsymSign -- key is a private key.  Dependinging on the operation type, the
+  // function returns either the 512 bit signature or the path to output file
+  // which contains the signature.
   std::string AsymSign(const std::string &input,
                        const std::string &output,
                        const std::string &key,
