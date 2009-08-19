@@ -56,7 +56,7 @@ const int kTestK = 4;
 
 inline void create_rsakeys(std::string *pub_key, std::string *priv_key) {
   crypto::RsaKeyPair kp;
-  kp.GenerateKeys(512);
+  kp.GenerateKeys(4096);
   *pub_key =  kp.public_key();
   *priv_key = kp.private_key();
 }

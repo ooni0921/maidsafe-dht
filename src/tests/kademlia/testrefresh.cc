@@ -256,7 +256,7 @@ class TestRefreshSignedValues : public testing::Test {
     }
     // Creating the nodes
     crypto::RsaKeyPair keys;
-    keys.GenerateKeys(512);
+    keys.GenerateKeys(4096);
     for (int i = 0; i < testNetworkSize; i++) {
       ch_managers.push_back(boost::shared_ptr<rpcprotocol::ChannelManager>(
           new rpcprotocol::ChannelManager()));
@@ -337,7 +337,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
   std::string value = base::RandomString(1024*5);
   StoreValueCallback store_cb;
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(512);
+  keys.GenerateKeys(4096);
   std::string signed_public_key, signed_request;
   signed_public_key = co.AsymSign(keys.public_key(), "", keys.private_key(),
       crypto::STRING_STRING);
@@ -393,7 +393,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   std::string value = base::RandomString(1024*5);
   StoreValueCallback store_cb;
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(512);
+  keys.GenerateKeys(4096);
   std::string pub_key = keys.public_key();
   std::string priv_key = keys.private_key();
   std::string signed_public_key, signed_request;
@@ -406,7 +406,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   sig_value.set_value_signature(co.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
   std::string ser_sig_value = sig_value.SerializeAsString();
-  keys.GenerateKeys(512);
+  keys.GenerateKeys(4096);
   nodes[4]->StoreValue(key, sig_value, pub_key, signed_public_key,
       signed_request, 24*3600, boost::bind(
       &StoreValueCallback::CallbackFunc, &store_cb, _1));
