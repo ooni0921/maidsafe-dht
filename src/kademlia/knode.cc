@@ -33,7 +33,8 @@ namespace kad {
 KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
              node_type type, const std::string &private_key,
              const std::string &public_key)
-             : pimpl_(new KNodeImpl(channel_manager, type)) {}
+             : pimpl_(new KNodeImpl(channel_manager, type, private_key,
+               public_key)) {}
 
 KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
              node_type type, const boost::uint16_t k, const int &alpha,

@@ -203,17 +203,13 @@ struct StoreRequestSignature {
 class KNodeImpl {
  public:
   KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-            node_type type, const std::string &private_key = "",
-            const std::string &public_key = "");
+      node_type type, const std::string &private_key,
+      const std::string &public_key);
   // constructor used to set up parameters k, alpha, and beta for kademlia
   KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-            node_type type,
-            const boost::uint16_t k,
-            const int &alpha,
-            const int &beta,
-            const int &refresh_time,
-            const std::string &private_key = "",
-            const std::string &public_key = "");
+      node_type type, const boost::uint16_t k, const int &alpha,
+      const int &beta, const int &refresh_time, const std::string &private_key,
+      const std::string &public_key);
   ~KNodeImpl();
   // if node_id is "", it will be randomly generated
   void Join(const std::string &node_id,
