@@ -481,11 +481,9 @@ TEST_F(KNodeTest, FUNC_KAD_FindClosestNodes) {
   kad::SortContactList(&all_nodes, key);
   std::list<kad::Contact>::iterator it1, it2;
   it2= closest_nodes.begin();
-  for (it1 = closest_nodes.begin(); it1 != closest_nodes.end();
-      it1++, it2++) {
+  for (it1 = closest_nodes.begin(); it1 != closest_nodes.end(); it1++, it2++) {
     ASSERT_TRUE(*it1 == *it2);
   }
-  printf("\n\nDone\n");
 }
 
 TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
@@ -657,6 +655,8 @@ TEST_F(KNodeTest, FUNC_KAD_LoadNonExistingValue) {
       boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultFailure, cb_1.result());
+  ASSERT_LT(0, cb_1.closest_nodes().size());
+  ASSERT_EQ(0, cb_1.values().size());
 }
 
 TEST_F(KNodeTest, FUNC_KAD_FindNode) {

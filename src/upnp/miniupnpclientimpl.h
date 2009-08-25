@@ -69,11 +69,11 @@ class UpnpIgdClientImpl {
   std::string GetExternalIpAddress();
 
   // register a function to be called when a mapping has been successful
-  void SetNewMappingCallback(const upnp_callback &new_mapping_callback) {}
+  void SetNewMappingCallback(const upnp_callback &) {}
   // register a function to be called when all instances of a mapping are gone
-  void SetLostMappingCallback(const upnp_callback &lost_mapping_callback) {}
+  void SetLostMappingCallback(const upnp_callback &) {}
   // register a function to be called when a mapping couldn't be set up
-  void SetFailedMappingCallback(const upnp_callback &failed_mapping_callback) {}
+  void SetFailedMappingCallback(const upnp_callback &) {}
 
  private:
   UpnpIgdClientImpl(const UpnpIgdClientImpl&);

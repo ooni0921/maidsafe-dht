@@ -1878,25 +1878,26 @@ void KNodeImpl::SearchIteration_Callback(
     std::list<Contact>::iterator it1;
     int count;
     FindResponse result;
-    for (it1 = data->active_contacts.begin(), count = 0;
-         it1 != data->active_contacts.end() && count < K_; ++it1, ++count) {
+    if (data->method == FIND_VALUE && data->values_found.size() > 0) {
+      result.set_result(kRpcResultSuccess);
+      for (std::list<std::string>::iterator it2 = data->values_found.begin();
+           it2 != data->values_found.end(); it2 ++) {
+      result.add_values(*it2);
+      }
+    } else {
+      for (it1 = data->active_contacts.begin(), count = 0;
+         it1 != data->active_contacts.end() && count < K_; it1++, count++) {
       std::string ser_contact;
+      // Adding contact info of nodes contacted in the iterative search
+      // the nodes are ordered from closest to furthest away from the key/node
+      // id searched
       if (it1->SerialiseToString(&ser_contact))
         result.add_closest_nodes(ser_contact);
-    }
-    if ((data->method == FIND_VALUE) &&
-        (data->values_found.size() == 0)) {
-      result.set_result(kRpcResultFailure);
-    } else if ((data->method != FIND_VALUE) &&
-               (result.closest_nodes_size() == 0)) {
-      result.set_result(kRpcResultFailure);
-    } else {
-      result.set_result(kRpcResultSuccess);
-    }
-    std::list<std::string>::iterator it2;
-    for (it2 = data->values_found.begin(); it2 != data->values_found.end();
-         ++it2) {
-      result.add_values(*it2);
+      }
+      if (result.closest_nodes_size() > 0 && data->method == FIND_NODE)
+        result.set_result(kRpcResultSuccess);
+      else
+        result.set_result(kRpcResultFailure);
     }
     result.SerializeToString(&ser_result);
   }

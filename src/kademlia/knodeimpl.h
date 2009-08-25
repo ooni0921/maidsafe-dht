@@ -62,7 +62,7 @@ class ContactInfo;
 struct LookupContact;
 
 void SortContactList(std::list<Contact> *contact_list,
-                     const std::string &target_key);
+    const std::string &target_key);
 
 void SortLookupContact(std::list<LookupContact> *contact_list,
     const std::string &target_key);
@@ -179,11 +179,8 @@ struct BootstrapData {
 };
 
 struct BootstrapArgs {
-  BootstrapArgs(): cached_nodes(),
-                   cb(),
-                   active_process(0),
-                   is_callbacked(false),
-                   port_fw(false) {}
+  BootstrapArgs() : cached_nodes(), cb(), active_process(0),
+      is_callbacked(false), port_fw(false) {}
   std::vector<Contact> cached_nodes;
   base::callback_func_type cb;
   int active_process;
@@ -212,49 +209,38 @@ class KNodeImpl {
       const std::string &public_key);
   ~KNodeImpl();
   // if node_id is "", it will be randomly generated
-  void Join(const std::string &node_id,
-            const std::string &kad_config_file,
-            base::callback_func_type cb,
-            const bool &port_forwarded);
+  void Join(const std::string &node_id, const std::string &kad_config_file,
+      base::callback_func_type cb, const bool &port_forwarded);
   void Leave();
-  void StoreValue(const std::string &key,
-                  const SignedValue &value,
-                  const std::string &public_key,
-                  const std::string &signed_public_key,
-                  const std::string &signed_request,
-                  const boost::uint32_t &ttl,
-                  base::callback_func_type cb);
-  void StoreValue(const std::string &key,
-                  const std::string &value, const boost::uint32_t &ttl,
-                  base::callback_func_type cb);
+  void StoreValue(const std::string &key, const SignedValue &value,
+      const std::string &public_key, const std::string &signed_public_key,
+      const std::string &signed_request, const boost::uint32_t &ttl,
+      base::callback_func_type cb);
+  void StoreValue(const std::string &key, const std::string &value,
+      const boost::uint32_t &ttl, base::callback_func_type cb);
   void FindValue(const std::string &key, base::callback_func_type cb);
-  void FindNode(const std::string &node_id,
-                base::callback_func_type cb,
-                const bool &local);
-  void FindCloseNodes(const std::string &node_id,
-                      base::callback_func_type cb);
+  void FindNode(const std::string &node_id, base::callback_func_type cb,
+      const bool &local);
+  void FindCloseNodes(const std::string &node_id, base::callback_func_type cb);
   void FindKClosestNodes(const std::string &key,
-                         std::vector<Contact> *close_nodes,
-                         const std::vector<Contact> &exclude_contacts);
+      std::vector<Contact> *close_nodes,
+      const std::vector<Contact> &exclude_contacts);
   void Ping(const std::string &node_id, base::callback_func_type cb);
   void Ping(const Contact &remote, base::callback_func_type cb);
   int AddContact(Contact new_contact, const float & rtt, const bool &only_db);
   void RemoveContact(const std::string &node_id);
   bool GetContact(const std::string &id, Contact *contact);
-  bool FindValueLocal(const std::string &key,
-                      std::vector<std::string> &values);
-  bool StoreValueLocal(const std::string &key,
-      const std::string &value, const boost::uint32_t &ttl);
-  bool RefreshValueLocal(const std::string &key,
-      const std::string &value, const boost::uint32_t &ttl);
+  bool FindValueLocal(const std::string &key, std::vector<std::string> &values);
+  bool StoreValueLocal(const std::string &key, const std::string &value,
+      const boost::uint32_t &ttl);
+  bool RefreshValueLocal(const std::string &key, const std::string &value,
+      const boost::uint32_t &ttl);
   void GetRandomContacts(const int &count,
-                         const std::vector<Contact> &exclude_contacts,
-                         std::vector<Contact> *contacts);
+      const std::vector<Contact> &exclude_contacts,
+      std::vector<Contact> *contacts);
   void HandleDeadRendezvousServer(const bool &dead_server);
   connect_to_node CheckContactLocalAddress(const std::string &id,
-                                           const std::string &ip,
-                                           const uint16_t &port,
-                                           const std::string &ext_ip);
+      const std::string &ip, const uint16_t &port, const std::string &ext_ip);
   void UpdatePDRTContactToRemote(const std::string &node_id);
   ContactInfo contact_info() const;
   void StopRvPing();
@@ -285,28 +271,20 @@ class KNodeImpl {
   void Bootstrap_Callback(const BootstrapResponse *response,
       BootstrapData data);
   void Bootstrap(const std::string &bootstrap_ip,
-                 const boost::uint16_t &bootstrap_port,
-                 base::callback_func_type cb,
-                 const bool &port_forwarded);
-  void Join_Bootstrapping_Iteration_Client(
-      const std::string& result,
+      const boost::uint16_t &bootstrap_port, base::callback_func_type cb,
+      const bool &port_forwarded);
+  void Join_Bootstrapping_Iteration_Client(const std::string& result,
       boost::shared_ptr<struct BootstrapArgs> args,
-      const std::string bootstrap_ip,
-      const boost::uint16_t bootstrap_port,
-      const std::string local_bs_ip,
-      const boost::uint16_t local_bs_port);
-  void Join_Bootstrapping_Iteration(
-      const std::string& result,
+      const std::string bootstrap_ip, const boost::uint16_t bootstrap_port,
+      const std::string local_bs_ip, const boost::uint16_t local_bs_port);
+  void Join_Bootstrapping_Iteration(const std::string& result,
       boost::shared_ptr<struct BootstrapArgs> args,
-      const std::string bootstrap_ip,
-      const boost::uint16_t bootstrap_port,
-      const std::string local_bs_ip,
-      const boost::uint16_t local_bs_port);
+      const std::string bootstrap_ip, const boost::uint16_t bootstrap_port,
+      const std::string local_bs_ip, const boost::uint16_t local_bs_port);
   void Join_Bootstrapping(base::callback_func_type cb,
-                          std::vector<Contact> &cached_nodes,
-                          const bool &port_forwarded);
+      std::vector<Contact> &cached_nodes, const bool &port_forwarded);
   void Join_RefreshNode(base::callback_func_type cb,
-                        const bool &port_forwarded);
+      const bool &port_forwarded);
   void SaveBootstrapContacts();  // save the routing table into .kadconfig file
   int LoadBootstrapContacts();
   void RefreshRoutine();
@@ -324,19 +302,15 @@ class KNodeImpl {
   void SearchIteration_Callback(boost::shared_ptr<IterativeLookUpData> data);
   void SendFinalIteration(boost::shared_ptr<IterativeLookUpData> data);
   void StoreValue_IterativeStoreValue(const StoreResponse *response,
-                                      StoreCallbackArgs callback_args);
+      StoreCallbackArgs callback_args);
   void StoreValue_ExecuteStoreRPCs(const std::string &result,
-                                   const std::string &key,
-                                   const std::string &value,
-                                   const StoreRequestSignature &sig_req,
-                                   const bool &publish,
-                                   const boost::uint32_t &ttl,
-                                   base::callback_func_type cb);
-  void FindNode_GetNode(const std::string &result,
-                        const std::string &node_id,
-                        base::callback_func_type cb);
+      const std::string &key, const std::string &value,
+      const StoreRequestSignature &sig_req, const bool &publish,
+      const boost::uint32_t &ttl, base::callback_func_type cb);
+  void FindNode_GetNode(const std::string &result, const std::string &node_id,
+      base::callback_func_type cb);
   void Ping_HandleResult(const PingResponse *response,
-                         PingCallbackArgs callback_data);
+      PingCallbackArgs callback_data);
   void Ping_SendPing(const std::string& result, base::callback_func_type cb);
   void ReBootstrapping_Callback(const std::string &result);
   void RegisterKadService();
@@ -348,9 +322,8 @@ class KNodeImpl {
       Contact new_contact);
   void CheckAddContacts();
   void RefreshValuesRoutine();
-  void RefreshValue(const std::string &key,
-                    const std::string &value, const boost::uint32_t &ttl,
-                    base::callback_func_type cb);
+  void RefreshValue(const std::string &key, const std::string &value,
+      const boost::uint32_t &ttl, base::callback_func_type cb);
   void RefreshValueCallback(const std::string &result, const std::string &key,
       const std::string &value, const boost::uint32_t &ttl,
       boost::shared_ptr<int> refreshes_done, const int &total_refreshes);
