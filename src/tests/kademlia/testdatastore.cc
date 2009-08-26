@@ -358,18 +358,18 @@ TEST_F(DataStoreTest, FUNC_KAD_GetValuesToRefresh) {
       false));
     values.push_back(base::RandomString(500));
   }
-
+  boost::uint32_t ttl = 3600*24;
   for (unsigned int i = 0; i < 4; i++) {
     if (i == 2) {
-      ASSERT_TRUE(ds.StoreItem(keys[i], values[i]+"EXTRA", 3600*24, false));
+      ASSERT_TRUE(ds.StoreItem(keys[i], values[i]+"EXTRA", ttl, false));
     }
-    ASSERT_TRUE(ds.StoreItem(keys[i], values[i], 3600*24, false));
+    ASSERT_TRUE(ds.StoreItem(keys[i], values[i], ttl, false));
   }
 
   boost::this_thread::sleep(boost::posix_time::seconds(ds.t_refresh()+1));
 
   for (unsigned int i = 4; i < keys.size(); i++) {
-    ASSERT_TRUE(ds.StoreItem(keys[i], values[i], 3600*24, false));
+    ASSERT_TRUE(ds.StoreItem(keys[i], values[i], ttl, false));
   }
   // refreshing key[0] so it does not apperat in keys to refresh
   ASSERT_TRUE(ds.RefreshItem(keys[0], values[0]));
@@ -390,14 +390,51 @@ TEST_F(DataStoreTest, FUNC_KAD_GetValuesToRefresh) {
   }
   for (unsigned int i = 1; i < 4; i++) {
     bool found = false;
+    boost::uint32_t ttl_for_refresh = ttl+1;
     for (unsigned int j = 0; j < refvalues.size(); j++) {
       if (keys[i] == refvalues[j].key_ && values[i] == refvalues[j].value_) {
         found = true;
+        ttl_for_refresh = refvalues[j].ttl_;
         break;
       }
     }
     ASSERT_TRUE(found);
+    ASSERT_GE(ttl, ttl_for_refresh);
   }
+}
+
+TEST_F(DataStoreTest, FUNC_KAD_ExpiredValuesNotRefreshed) {
+  // data store with refresh time set to 3 seconds for test
+  kad::DataStore ds(3);
+  std::vector<kad::refresh_value> refvalues;
+  std::vector<std::string> keys, values;
+  for (unsigned int i = 0; i < 3; i++) {
+    keys.push_back(cry_obj_.Hash(base::itos(i), "", crypto::STRING_STRING,
+      false));
+    values.push_back(base::RandomString(500));
+  }
+  boost::uint32_t ttl = 3600*24;
+  boost::uint32_t ttl_to_expire = ds.t_refresh() - 1;
+  for (unsigned int i = 0; i < 3; i++) {
+    if (i == 1)
+      ASSERT_TRUE(ds.StoreItem(keys[i], values[i], ttl_to_expire, false));
+    else
+      ASSERT_TRUE(ds.StoreItem(keys[i], values[i], ttl, false));
+  }
+  boost::this_thread::sleep(boost::posix_time::seconds(ds.t_refresh()+1));
+  refvalues = ds.ValuesToRefresh();
+  // only values[0] and values[2], should be in the values to refresh
+  ASSERT_EQ(2, refvalues.size());
+  bool missed_value = false;
+  for (unsigned int i = 0; i < refvalues.size(); i++) {
+    if (keys[0] != refvalues[i].key_ && values[0] != refvalues[i].value_ &&
+        keys[2] != refvalues[i].key_ && values[2] != refvalues[i].value_) {
+      missed_value = true;
+      break;
+    }
+    ASSERT_GE(ttl, refvalues[i].ttl_);
+  }
+  ASSERT_FALSE(missed_value);
 }
 
 TEST_F(DataStoreTest, FUNC_KAD_DeleteExpiredValues) {

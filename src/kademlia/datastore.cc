@@ -128,11 +128,14 @@ std::vector<refresh_value> DataStore::ValuesToRefresh() {
   boost::mutex::scoped_lock guard(mutex_);
   datastore::index<kad::t_last_refresh_time>::type& indx =
       datastore_.get<kad::t_last_refresh_time>();
-  boost::uint32_t time_limit = base::get_epoch_time() - t_refresh_;
+  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t time_limit = now - t_refresh_;
   up_limit = indx.upper_bound(time_limit);
   for (it = indx.begin();
        it != up_limit; it++) {
-    values.push_back(refresh_value(it->key_, it->value_, it->ttl_));
+    boost::int32_t ttl_remaining = it->expire_time_ - now;
+    if (ttl_remaining > 0)
+      values.push_back(refresh_value(it->key_, it->value_, ttl_remaining));
   }
   return values;
 }

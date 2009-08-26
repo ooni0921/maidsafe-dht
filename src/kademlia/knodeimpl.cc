@@ -634,9 +634,8 @@ int KNodeImpl::LoadBootstrapContacts() {
 void KNodeImpl::RefreshRoutine() {
   if (is_joined_) {
     SaveBootstrapContacts();
-// TODO(Fraser#5#): 2009-06-03 - Add functionality to expire old kad key,values.
-//    pdata_store_->DeleteExpiredValues();
     // Refresh the k-buckets
+    pdata_store_->DeleteExpiredValues();
     StartSearchIteration(node_id_, FIND_NODE, &dummy_callback);
     // schedule the next refresh routine
     ptimer_->AddCallLater(kRefreshTime*1000,
