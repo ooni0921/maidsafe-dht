@@ -586,16 +586,18 @@ TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
         contacts_id_second[i] += "d";
     }
   }
-  for (int i = 0; i < (kad::K/2)+1; i++) {
+  for (boost::uint16_t i = 0; i < (kad::K/2)+1; i++) {
     std::string rep;
-    for (int j = 0; j < i+1; j++)
+    boost::uint16_t n =  i + 1;
+    for (boost::uint16_t j = 0; j < n; j++)
       rep+="f";
     contacts_id_first[i].replace(0, i, rep);
     contacts_id_first[i].replace(0, 1, "6");
   }
-  for (int i = 0; i < kad::K/2; i++) {
+  for (boost::uint16_t i = 0; i < kad::K/2; i++) {
     std::string rep;
-    for (int j = 0; j < i+1; j++)
+    boost::uint16_t n =  i + 1;
+    for (boost::uint16_t j = 0; j < n; j++)
       rep+="f";
     contacts_id_second[i].replace(0, i+1, rep);
     contacts_id_second[i].replace(0, 1, "8");

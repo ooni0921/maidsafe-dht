@@ -125,15 +125,6 @@ std::string StrToLwr(const std::string &string_) {
   return lowercase_;
 }
 
-void SanitiseSingleQuotes(std::string *str) {
-  for (unsigned int i = 0; i < str->length(); i++) {
-    if (str->at(i) == '\'') {
-      str->insert(i, "'");
-      i++;
-    }
-  }
-}
-
 bool ValidateName(const std::string &str) {
   for (unsigned int i = 0; i < str.length(); i++) {
     switch (str[i]) {

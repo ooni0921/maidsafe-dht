@@ -108,14 +108,6 @@ TEST_F(UtilsTest, BEH_BASE_IntegersAndStrings) {
             "string -> int -> string failed failed for uint32_t.";
 }
 
-TEST_F(UtilsTest, BEH_BASE_QuoteSanitisation) {
-  std::string quoted_string("dan's very own smers' magic tonic");
-  std::string sanitised_string("dan''s very own smers'' magic tonic");
-  base::SanitiseSingleQuotes(&quoted_string);
-  ASSERT_EQ(sanitised_string, quoted_string) <<
-            "String not properly sanitised for single quotes.";
-}
-
 TEST_F(UtilsTest, BEH_BASE_RandomString) {
   unsigned int length = 4096;
   std::string first = base::RandomString(length);

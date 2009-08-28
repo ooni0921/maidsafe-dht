@@ -401,11 +401,12 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToMany) {
   bool msgs_received[3] = {false, false, false};
   while ((!msgs_received[0] || !msgs_received[1] || !msgs_received[2]) &&
           base::get_epoch_time() - now < 15) {
-    if (msg_handler[3].msgs.size() >= 1)
+    boost::uint16_t zero = 0;
+    if (static_cast<boost::uint16_t>(msg_handler[3].msgs.size()) > zero)
       msgs_received[0] = true;
-    if (msg_handler[4].msgs.size() >= 1)
+    if (static_cast<boost::uint16_t>(msg_handler[4].msgs.size()) > zero)
       msgs_received[1] = true;
-    if (msg_handler[5].msgs.size() >= 1)
+    if (static_cast<boost::uint16_t>(msg_handler[5].msgs.size()) > zero)
       msgs_received[2] = true;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }

@@ -74,10 +74,6 @@ std::string WStrToStr(const std::wstring &wstring_);
 // Convert string to all lowercase.
 std::string StrToLwr(const std::string &string_);
 
-// Prepare string for use in SQLite statement by amending instances of single
-// quotes to two adjoining single quotes.
-void SanitiseSingleQuotes(std::string *str);
-
 // Check for disallowed characters for filenames.
 bool ValidateName(const std::string &str);
 
