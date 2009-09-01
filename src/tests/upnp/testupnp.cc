@@ -81,9 +81,12 @@ TEST_F(UpnpTest, BEH_UPNP_PortMappingTest) {
 
   // boost::this_thread::sleep(boost::posix_time::seconds(2));
 
+  int start_port = static_cast<int>(base::random_32bit_uinteger() % 15000)
+                   + 50000;
+
   bool all_added = true;
   for (int i = 0; i < num_total_mappings; ++i) {
-    all_added &= upnp.AddPortMapping(1234 + i, upnp::kTcp);
+    all_added &= upnp.AddPortMapping(start_port + i, upnp::kTcp);
   }
 
   if (upnp.IsAsync()) {
@@ -106,7 +109,8 @@ TEST_F(UpnpTest, BEH_UPNP_PortMappingTest) {
   char c[2];
   fgets(c, sizeof c, stdin); */
 
-  ASSERT_TRUE(upnp.DeletePortMapping(1233 + num_total_mappings, upnp::kTcp));
+  ASSERT_TRUE(upnp.DeletePortMapping(start_port + num_total_mappings - 1,
+                                     upnp::kTcp));
 
   // boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
