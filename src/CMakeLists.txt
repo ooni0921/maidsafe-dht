@@ -22,6 +22,29 @@ IF(NOT MAIDSAFE_TEST_TYPE)
    SET(MAIDSAFE_TEST_TYPE "BEH" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
 ENDIF(NOT MAIDSAFE_TEST_TYPE)
 
+#############################################################
+#Searching for Google Glog Library (logging)#################
+#Only in UNIX, since currently it cannont be compiled #######
+#On Windows with MinGW#######################################
+#############################################################
+
+INCLUDE(CheckIncludeFileCXX)
+IF(UNIX)
+  FIND_LIBRARY(GLOG_LIB NAMES libglog.a glog)
+  CHECK_INCLUDE_FILE_CXX(glog/logging.h GLOG_INCLUDE)
+  IF(GLOG_LIB AND GLOG_INCLUDE)
+    SET(HAVE_GLOG TRUE)
+  ELSE(GLOG_LIB AND GLOG_INCLUDE)
+    SET(HAVE_GLOG FALSE)
+  ENDIF(GLOG_LIB AND GLOG_INCLUDE)
+ELSE(UNIX)
+  SET(HAVE_GLOG FALSE)
+ENDIF(UNIX)
+
+#Writing the config.h file
+
+CONFIGURE_FILE(${maidsafe-dht_SOURCE_DIR}/config.h.in ${maidsafe-dht_SOURCE_DIR}/maidsafe/config.h)
+
 if(UNIX)
 	EXEC_PROGRAM(date ARGS +%a%d%m%y OUTPUT_VARIABLE pddate)
 ELSE(UNIX)
@@ -174,6 +197,9 @@ ELSEIF (UNIX AND NOT APPLE)
         dl
         pthread
 		)
+    IF(HAVE_GLOG)
+        SET(SYS_LIBS ${SYS_LIB} /usr/lib/libglog.a)
+    ENDIF(HAVE_GLOG)
 ELSEIF (WIN32)
 	IF(MSVC)
 		set(SYS_LIB c:/lib/libprotobuf.lib c:/lib/libboost_system-vc90-mt-1_36.lib c:/lib/libboost_filesystem-vc90-mt-1_36.lib  c:/lib/libboost_regex-vc90-mt-1_36.lib  c:/lib/libboost_thread-vc90-mt-1_36.lib c:/lib/libboost_date_time-vc90-mt-1_36.lib c:/lib/WSock32.lib c:/lib/IPHlpApi.lib)
@@ -310,7 +336,11 @@ message("You can set the build type by: cmake ../../ -DCMAKE_BUILD_TYPE=")
 message("Release (default) Debug RelWithDebInfo MinSizeRel")
 message ("#############################################")
 
-install(FILES maidsafe/maidsafe-dht.h maidsafe/maidsafe-dht_config.h maidsafe/utils.h maidsafe/crypto.h maidsafe/routingtable.h maidsafe/alternativestore.h protobuf/signed_kadvalue.pb.h protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h protobuf/general_messages.pb.h maidsafe/online.h
+install(FILES maidsafe/maidsafe-dht.h maidsafe/maidsafe-dht_config.h
+maidsafe/utils.h maidsafe/crypto.h maidsafe/routingtable.h
+maidsafe/alternativestore.h protobuf/signed_kadvalue.pb.h
+protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h
+protobuf/general_messages.pb.h maidsafe/online.h maidsafe/config.h
         DESTINATION /usr/include/maidsafe)
 install(TARGETS maidsafe-dht
         ARCHIVE

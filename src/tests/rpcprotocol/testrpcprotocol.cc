@@ -28,6 +28,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include <google/protobuf/descriptor.h>
+#include "maidsafe/config.h"
 #include "base/calllatertimer.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "protobuf/rpcmessage.pb.h"
@@ -47,13 +48,13 @@ class PingTestService : public tests::PingTest {
       if (request->ping() == "ping") {
         response->set_result("S");
         response->set_pong("pong");
-        printf("Got ping request, returning response.\n");
+        LOG(INFO) << "Got ping request, returning response." << std::endl;
       } else {
         response->set_result("F");
         response->set_pong("");
       }
     }
-    printf("Rtt %f\n", ctrler->rtt());
+    LOG(INFO) << "PingRpc request rtt " << ctrler->rtt() << std::endl;
     done->Run();
   }
 };
@@ -68,7 +69,7 @@ class TestOpService : public tests::TestOp {
       response->set_result(request->first() + request->second());
     rpcprotocol::Controller *ctrler =
         static_cast<rpcprotocol::Controller*>(controller);
-    printf("Rtt %f\n", ctrler->rtt());
+    LOG(INFO) << "AddRpc request rtt " << ctrler->rtt() << std::endl;
     done->Run();
   }
   void Multiplyl(google::protobuf::RpcController *controller,
@@ -79,7 +80,7 @@ class TestOpService : public tests::TestOp {
       response->set_result(request->first() * request->second());
     rpcprotocol::Controller *ctrler =
         static_cast<rpcprotocol::Controller*>(controller);
-    printf("Rtt %f\n", ctrler->rtt());
+    LOG(INFO) << "MultiplyRpc request rtt " << ctrler->rtt() << std::endl;
     done->Run();
   }
 };
@@ -94,17 +95,17 @@ class MirrorTestService : public tests::MirrorTest {
       std::string message(request->message());
       std::string inverted(request->message());
       int index = 0;
-      printf("Before reversing the string.\n");
+      LOG(INFO) << "Before reversing the string" << std::endl;
       for (int n = message.length() -1; n > -1 ; n--) {
         inverted[index] = message[n];
         index++;
       }
-      printf("Done reversing the string.\n");
+      LOG(INFO) << "Done reversing the string" << std::endl;
       response->set_mirrored_string(inverted);
     }
     rpcprotocol::Controller *ctrler =
         static_cast<rpcprotocol::Controller*>(controller);
-    printf("Rtt %f\n", ctrler->rtt());
+    LOG(INFO) << "MirrorRpc request rtt " << ctrler->rtt() << std::endl;
     if (!request->has_not_pause() || !request->not_pause()) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
     }
@@ -122,10 +123,10 @@ class ResultHolder {
   void GetPingRes(const tests::PingResponse *response,
       rpcprotocol::Controller *ctrl) {
     if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kCancelled) {
-      printf("Ping RPC canceled by the client\n");
+      LOG(INFO) << "Ping RPC canceled by the client" << std::endl;
       return;
     }
-    printf("Received result -- waiting for 1 second.\n");
+    LOG(INFO) << "Received result -- waiting for 1 second" << std::endl;
     boost::this_thread::sleep(boost::posix_time::seconds(1));
     if (response->IsInitialized()) {
       ping_res.set_result(response->result());
@@ -133,12 +134,11 @@ class ResultHolder {
     } else {
       ping_res.set_result("F");
     }
-    printf("Finished callback func.\n");
   }
   void GetOpResult(const tests::BinaryOpResponse *response,
       rpcprotocol::Controller *ctrl) {
     if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kCancelled) {
-      printf("BinaryOperation RPC canceled by the client\n");
+      LOG(INFO) << "BinaryOperation RPC canceled by the client" << std::endl;
       return;
     }
     if (response->IsInitialized()) {
@@ -150,7 +150,7 @@ class ResultHolder {
   void GetMirrorResult(const tests::StringMirrorResponse *response,
       rpcprotocol::Controller *ctrl) {
     if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kCancelled) {
-      printf("Mirror RPC canceled by the client\n");
+      LOG(INFO) << "Mirror RPC canceled by the client" << std::endl;
       return;
     }
     if (response->IsInitialized()) {
@@ -329,10 +329,9 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
   if ("+" != resultholder.mirror_res.mirrored_string()) {
-    printf("Did not time out.\n");
     RpcProtocolTest::server_chann_manager->ClearCallLaters();
     RpcProtocolTest::client_chann_manager->ClearCallLaters();
-    FAIL();
+    FAIL() << "Operation did not time out";
   }
   ASSERT_TRUE(controller3.Failed());
   ASSERT_EQ(rpcprotocol::kTimeOut, controller3.ErrorText());
@@ -356,10 +355,9 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   if ("+" == resultholder.mirror_res.mirrored_string()) {
-    printf("Result of mirror wrong.\n");
     RpcProtocolTest::server_chann_manager->ClearCallLaters();
     RpcProtocolTest::client_chann_manager->ClearCallLaters();
-    FAIL();
+    FAIL() << "Result of mirror Rpc is incorrect";
   }
   ASSERT_EQ("9876543210",
       resultholder.mirror_res.mirrored_string().substr(0, 10));
@@ -532,10 +530,9 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
   if ("+" == resultholder.mirror_res.mirrored_string()) {
-    printf("Result of mirror wrong.\n");
     RpcProtocolTest::server_chann_manager->ClearCallLaters();
     RpcProtocolTest::client_chann_manager->ClearCallLaters();
-    FAIL();
+    FAIL() << "Result of mirror Rpc is incorrect";
   }
   ASSERT_FALSE(controller.Failed());
   RpcProtocolTest::server_chann_manager->ClearCallLaters();

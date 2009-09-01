@@ -32,22 +32,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 BigInt StrToBigInt(const std::string &key) {
-  std::string enc_key("");
+  std::string enc_key;
   base::encode_to_hex(key, &enc_key);
-  enc_key = "0x"+enc_key;
+  enc_key = "0x" + enc_key;
   BigInt value(enc_key);
   return value;
 }
 
 BigInt kademlia_distance(const std::string &key_one,
-                         const std::string &key_two) {
+    const std::string &key_two) {
   BigInt value_one = StrToBigInt(key_one);
   BigInt value_two = StrToBigInt(key_two);
   return value_one ^ value_two;
 }
 
 std::string random_kademlia_id(const BigInt &min_range,
-                               const BigInt &max_range) {
+    const BigInt &max_range) {
   boost::mt19937 gen;
   gen.seed(static_cast<unsigned int>(base::random_32bit_uinteger()\
     ^static_cast<unsigned int>(std::time(0))));
@@ -61,7 +61,7 @@ std::string random_kademlia_id(const BigInt &min_range,
   std::ostringstream os;
   os.setf(std::ios_base::hex, std::ios_base::basefield);
   os << rand_num;
-  std::string result("");
+  std::string result;
   std::string temp = os.str();
   if (temp.size() < 2 * kKeySizeBytes) {
     temp = std::string(2 * kKeySizeBytes - temp.size(), '0') + temp;
@@ -74,6 +74,7 @@ std::string client_node_id() {
   std::string id(kKeySizeBytes, '\0');
   return id;
 }
+
 std::string vault_random_id() {
   BigInt min_range(0);
   BigInt max_range(2);
@@ -81,5 +82,4 @@ std::string vault_random_id() {
   max_range--;
   return random_kademlia_id(min_range, max_range);
 }
-
 }  // namespace kad

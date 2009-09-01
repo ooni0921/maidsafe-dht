@@ -25,6 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "maidsafe/config.h"
 #include "kademlia/kadservice.h"
 #include "kademlia/kadrpc.h"
 #include "kademlia/kadutils.h"
@@ -37,7 +38,7 @@ namespace kad {
 KadService::KadService(KNodeImpl *knode) : knode_(knode) {}
 
 void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
-                                          struct NatDetectionData data) {
+      struct NatDetectionData data) {
   Contact sender(data.newcomer.node_id(), data.newcomer.host_ip(),
       data.newcomer.host_port(), knode_->host_ip(), knode_->host_port());
   if (response->IsInitialized()) {
@@ -68,7 +69,7 @@ void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
 }
 
 void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
-                                        struct NatDetectionData data) {
+      struct NatDetectionData data) {
   if (response->IsInitialized()) {
     if (response->result() == kRpcResultSuccess) {
       // If true - node B replies to node A - DIRECT connected - END
@@ -110,9 +111,8 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
 }
 
 void KadService::Ping(google::protobuf::RpcController *controller,
-                      const PingRequest *request,
-                      PingResponse *response,
-                      google::protobuf::Closure *done) {
+      const PingRequest *request, PingResponse *response,
+      google::protobuf::Closure *done) {
   Contact sender;
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
@@ -135,9 +135,8 @@ void KadService::Ping(google::protobuf::RpcController *controller,
 }
 
 void KadService::FindNode(google::protobuf::RpcController *controller,
-                          const FindRequest *request,
-                          FindResponse *response,
-                          google::protobuf::Closure *done) {
+      const FindRequest *request, FindResponse *response,
+      google::protobuf::Closure *done) {
   Contact sender;
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
@@ -147,7 +146,7 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
     exclude_contacts.push_back(sender);
     knode_->FindKClosestNodes(key, &closest_contacts, exclude_contacts);
     bool found_node = false;
-    for (int i = 0; i < static_cast<int>(closest_contacts.size()); ++i) {
+    for (unsigned int i = 0; i < closest_contacts.size(); ++i) {
       std::string contact_str;
       closest_contacts[i].SerialiseToString(&contact_str);
       response->add_closest_nodes(contact_str);
@@ -173,18 +172,13 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
   } else {
     response->set_result(kRpcResultFailure);
   }
-#ifdef DEBUG
-  printf("%d --- KadService::FindNode Returning response\n",
-         knode_->host_port());
-#endif
   response->set_node_id(knode_->node_id());
   done->Run();
 }
 
 void KadService::FindValue(google::protobuf::RpcController *controller,
-                           const FindRequest *request,
-                           FindResponse *response,
-                           google::protobuf::Closure *done) {
+      const FindRequest *request, FindResponse *response,
+      google::protobuf::Closure *done) {
   Contact sender;
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
@@ -195,13 +189,13 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
     std::vector<std::string> values_str;
     if (knode_->FindValueLocal(key, values_str)) {
       if (knode_->HasRSAKeys()) {
-        for (int i = 0; i < static_cast<int>(values_str.size()); i++) {
+        for (unsigned int i = 0; i < values_str.size(); i++) {
           SignedValue signed_value;
           if (signed_value.ParseFromString(values_str[i]))
             response->add_values(signed_value.value());
         }
       } else {
-        for (int i = 0; i < static_cast<int>(values_str.size()); i++)
+        for (unsigned int i = 0; i < values_str.size(); i++)
           response->add_values(values_str[i]);
       }
       response->set_result(kRpcResultSuccess);
@@ -224,9 +218,8 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
 }
 
 void KadService::Store(google::protobuf::RpcController *controller,
-                       const StoreRequest *request,
-                       StoreResponse *response,
-                       google::protobuf::Closure *done) {
+      const StoreRequest *request, StoreResponse *response,
+      google::protobuf::Closure *done) {
   Contact sender;
   rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
         (controller);
@@ -234,11 +227,10 @@ void KadService::Store(google::protobuf::RpcController *controller,
     response->set_result(kRpcResultFailure);
   } else if (knode_->HasRSAKeys()) {
     if (!ValidateSignedRequest(request->public_key(),
-                               request->signed_public_key(),
-                               request->signed_request(), request->key())) {
-#ifdef DEBUG
-      printf("failed to validate request for kad value\n");
-#endif
+        request->signed_public_key(), request->signed_request(),
+        request->key())) {
+      DLOG(WARNING) << "Failed to validate Store request for kad value"
+           << std::endl;
       response->set_result(kRpcResultFailure);
     } else {
       StoreValueLocal(request->key(), request->sig_value(), sender,
@@ -253,9 +245,8 @@ void KadService::Store(google::protobuf::RpcController *controller,
 }
 
 void KadService::Downlist(google::protobuf::RpcController *controller,
-                          const DownlistRequest *request,
-                          DownlistResponse *response,
-                          google::protobuf::Closure *done) {
+      const DownlistRequest *request, DownlistResponse *response,
+      google::protobuf::Closure *done) {
   Contact sender;
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
@@ -288,9 +279,8 @@ void KadService::Downlist(google::protobuf::RpcController *controller,
 }
 
 bool KadService::ValidateSignedRequest(const std::string &public_key,
-                                       const std::string &signed_public_key,
-                                       const std::string &signed_request,
-                                       const std::string &key) {
+      const std::string &signed_public_key, const std::string &signed_request,
+      const std::string &key) {
   if (signed_request == kAnonymousSignedRequest)
     return true;
   crypto::Crypto checker;
@@ -302,9 +292,6 @@ bool KadService::ValidateSignedRequest(const std::string &public_key,
       key, "", crypto::STRING_STRING, true), signed_request, public_key,
       crypto::STRING_STRING);
   } else {
-#ifdef DEBUG
-    printf("failed to check sig KadService::ValidateSignedRequest\n");
-#endif
     return false;
   }
 }
@@ -316,7 +303,7 @@ bool KadService::GetSender(const ContactInfo &sender_info, Contact *sender) {
 }
 
 void KadService::RpcDownlist_Remove(const std::string &ser_response,
-                                    Contact dead_node) {
+      Contact dead_node) {
   PingResponse result_msg;
   if (!result_msg.ParseFromString(ser_response) ||
       (result_msg.result() == kRpcResultFailure)) {
@@ -343,9 +330,8 @@ void KadService::Bootstrap_NatDetectionRzPing(
 }
 
 void KadService::NatDetection(google::protobuf::RpcController *,
-                              const NatDetectionRequest *request,
-                              NatDetectionResponse *response,
-                              google::protobuf::Closure *done) {
+      const NatDetectionRequest *request, NatDetectionResponse *response,
+      google::protobuf::Closure *done) {
   if (request->IsInitialized()) {
     if (request->type() == 1) {
       // C tries to ping A
@@ -414,9 +400,8 @@ void KadService::NatDetectionPing(google::protobuf::RpcController *controller,
 }
 
 void KadService::Bootstrap(google::protobuf::RpcController *controller,
-                           const BootstrapRequest *request,
-                           BootstrapResponse *response,
-                           google::protobuf::Closure *done) {
+      const BootstrapRequest *request, BootstrapResponse *response,
+      google::protobuf::Closure *done) {
   if (!request->IsInitialized()) {
     delete controller;
     return;
@@ -435,20 +420,15 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
   if (request->newcomer_ext_ip() == request->newcomer_local_ip()
       &&request->newcomer_ext_port() == request->newcomer_local_port()) {
     // Newcomer is directly connected to the Internet
-    newcomer = Contact(request->newcomer_id(),
-                       request->newcomer_local_ip(),
-                       request->newcomer_local_port(),
-                       request->newcomer_local_ip(),
-                       request->newcomer_local_port());
+    newcomer = Contact(request->newcomer_id(), request->newcomer_local_ip(),
+        request->newcomer_local_port(), request->newcomer_local_ip(),
+        request->newcomer_local_port());
   } else {
     // Behind firewall
-    newcomer = Contact(request->newcomer_id(),
-                       request->newcomer_ext_ip(),
-                       request->newcomer_ext_port(),
-                       request->newcomer_local_ip(),
-                       request->newcomer_local_port(),
-                       knode_->host_ip(),
-                       knode_->host_port());
+    newcomer = Contact(request->newcomer_id(), request->newcomer_ext_ip(),
+          request->newcomer_ext_port(), request->newcomer_local_ip(),
+          request->newcomer_local_port(), knode_->host_ip(),
+          knode_->host_port());
   }
   response->set_bootstrap_id(knode_->node_id());
   response->set_newcomer_ext_ip(request->newcomer_ext_ip());
@@ -552,5 +532,4 @@ void KadService::StoreValueLocal(const std::string &key,
     response->set_result(kRpcResultFailure);
   }
 }
-
 }  // namespace kad

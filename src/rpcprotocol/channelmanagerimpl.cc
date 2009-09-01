@@ -25,6 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "maidsafe/config.h"
 #include "rpcprotocol/channelmanagerimpl.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
@@ -142,7 +143,7 @@ int ChannelManagerImpl::StartTransport(boost::uint16_t port,
     count_++;
     try_port_ = ((port + count_) % (kMaxPort - kMinPort + 1)) + kMinPort;
   }
-  external_port_ = try_port_;
+  external_port_ = ptransport_->listening_port();
   return start_res_;
 }
 
@@ -175,9 +176,8 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
   RpcMessage decoded_msg = msg;
   if (decoded_msg.rpc_type() == REQUEST) {
     if (!decoded_msg.has_service() || !decoded_msg.has_method()) {
-#ifdef DEBUG
-    printf("%d --- request arrived cannot parse message\n", external_port_);
-#endif
+      DLOG(ERROR) << external_port_ <<
+          " --- request arrived cannot parse message" << std::endl;
       return;
     }
     // If this is a special find node for boostrapping,
@@ -207,28 +207,18 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
     channels_mutex_.lock();
     it = channels_.find(decoded_msg.service());
     if (it != channels_.end()) {
-#ifdef DEBUG
-      printf("%i -- Calling HandleRequest for req -- %i\n",
-          external_port_, decoded_msg.message_id());
-#endif
       it->second->HandleRequest(decoded_msg, connection_id, rtt);
       channels_mutex_.unlock();
     } else {
-#ifdef DEBUG
-      printf("\tIn ChannelManager::MessageArrive(%i - %i), ",
-             external_port_,
-             connection_id);
-      printf("service not registered.\n");
-#endif
+      LOG(ERROR) << "Message arrived for unregistered service";
       channels_mutex_.unlock();
     }
   } else if (decoded_msg.rpc_type() == RESPONSE) {
     std::map<boost::uint32_t, PendingReq>::iterator it;
     req_mutex_.lock();
-#ifdef DEBUG
-    printf("%d --- response arrived for %s  -- %d\n", external_port_,
-      decoded_msg.method().c_str(), decoded_msg.message_id());
-#endif
+    DLOG(INFO) << external_port_ << " --- response arrived for " <<
+        decoded_msg.method() << " -- " << decoded_msg.message_id()
+         << std::endl;
     it = pending_req_.find(decoded_msg.message_id());
     if (it != pending_req_.end()) {
       if (it->second.args->ParseFromString(decoded_msg.args())) {
@@ -241,25 +231,18 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
         ptransport_->CloseConnection(connection_id);
       } else {
         req_mutex_.unlock();
-#ifdef DEBUG
-        printf("%i -- ChannelManager no callback for id %i\n", external_port_,
-            decoded_msg.message_id());
-#endif
+        DLOG(INFO) << external_port_ <<
+            " --ChannelManager no callback for id " << decoded_msg.message_id()
+             << std::endl;
       }
     } else {
       req_mutex_.unlock();
-#ifdef DEBUG
-        printf("%i -- ChannelManager no request for id %i\n", external_port_,
-            decoded_msg.message_id());
-#endif
+      DLOG(INFO) << external_port_ << "ChannelManager no request for id " <<
+          decoded_msg.message_id() << std::endl;
     }
   } else {
-#ifdef DEBUG
-    printf("\tIn ChannelManager::MessageArrive(%i - %i), ",
-           external_port_,
-           connection_id);
-    printf("unknown type of message received. \n");
-#endif
+    DLOG(ERROR) << external_port_ << " --- ChannelManager::MessageArrive " <<
+        "unknown type of message received" << std::endl;
   }
 }
 
@@ -277,16 +260,12 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
     if (ptransport_->HasReceivedData(connection_id, &size_rec)) {
       it->second.size_rec = size_rec;
       req_mutex_.unlock();
-#ifdef DEBUG
-      printf("(%d) Reseting timeout for RPC ID: %d.  Connection ID: %d\n",
-        ptransport_->listening_port(), req_id, connection_id);
-#endif
+      DLOG(INFO) << external_port_ << "Reseting timeout for RPC ID: " <<
+          req_id << ". Connection ID: " << connection_id << std::endl;
       AddReqToTimer(req_id, timeout);
     } else {
-#ifdef DEBUG
-      printf("transport %d Request times out. RPC ID: %d. Connection ID: %d.\n",
-             ptransport_->listening_port(), req_id, connection_id);
-#endif
+      DLOG(INFO) << external_port_ << "Request " << req_id <<
+          "times out.  Connection ID: " << connection_id << std::endl;
       // call back without modifying the response
       google::protobuf::Closure* done = (*it).second.callback;
       (*it).second.ctrl->SetFailed(kTimeOut);

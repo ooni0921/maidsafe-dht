@@ -272,7 +272,6 @@ void get_net_interfaces(std::vector<struct device_struct> *alldevices) {
   boost::asio::ip::address ip_address_tmp;
   device_struct singledevice;
 #if defined(MAIDSAFE_POSIX) || defined (MAIDSAFE_APPLE)
-// || defined (__MINGW__)
   struct ifaddrs * ifap;
   if (getifaddrs(&ifap) == 0) {
     struct ifaddrs * p = ifap;
@@ -322,7 +321,6 @@ void get_net_interfaces(std::vector<struct device_struct> *alldevices) {
       }
     }
   }
-  // }
 
 // Try to get the Adapters-info table, so we can given useful names to the IP
 // addresses we are returning. Have to call GetAdaptersInfo() up to 5 times
@@ -442,7 +440,6 @@ int32_t random_32bit_integer() {
     return static_cast<int32_t>(rand_num.AbsoluteValue().ConvertToLong());
   }
 }
-
 
 uint32_t random_32bit_uinteger() {
   CryptoPP::AutoSeededRandomPool rng;

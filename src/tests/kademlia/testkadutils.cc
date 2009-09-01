@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 bool InRange(const std::string &key, const kad::BigInt &min_range,
     const kad::BigInt &max_range) {
-  std::string key_enc("");
+  std::string key_enc;
   base::encode_to_hex(key, &key_enc);
   key_enc = "0x" + key_enc;
   kad::BigInt key_val(key_enc);
@@ -44,7 +44,7 @@ TEST(KadRandomId, BEH_KAD_InRange) {
   min_range.pow(510);
   max_range.pow(512);
   std::string id = kad::random_kademlia_id(min_range, max_range);
-  std::string enc_id("");
+  std::string enc_id;
   base::encode_to_hex(id, &enc_id);
   enc_id = "0x" + enc_id;
   kad::BigInt id_val(enc_id);
@@ -64,7 +64,7 @@ TEST(KadRandomId, BEH_KAD_InRangeKadEnv) {
     kad::BigInt y(2);
     y.pow(i+1);
     std::string id = kad::random_kademlia_id(max_range/y, max_range/x);
-    std::string enc_id("");
+    std::string enc_id;
     base::encode_to_hex(id, &enc_id);
     enc_id = "0x" + enc_id;
     kad::BigInt id_val(enc_id);
@@ -75,7 +75,7 @@ TEST(KadRandomId, BEH_KAD_InRangeKadEnv) {
   kad::BigInt x(2);
   x.pow(7);
   std::string id = kad::random_kademlia_id(min_range, max_range/x);
-  std::string enc_id("");
+  std::string enc_id;
   base::encode_to_hex(id, &enc_id);
   enc_id = "0x" + enc_id;
   kad::BigInt id_val(enc_id);
@@ -85,7 +85,7 @@ TEST(KadRandomId, BEH_KAD_InRangeKadEnv) {
     kad::BigInt x(2);
     x.pow(i);
     std::string id = kad::random_kademlia_id(min_range, x);
-    std::string enc_id("");
+    std::string enc_id;
     base::encode_to_hex(id, &enc_id);
     enc_id = "0x" + enc_id;
     kad::BigInt id_val(enc_id);
@@ -119,7 +119,7 @@ TEST(ClientNodeId, BEH_KAD_ClientCreateId) {
   ASSERT_EQ(kad::kKeySizeBytes, static_cast<int>(id.size()));
   for (int i = 0; i < kad::kKeySizeBytes; i++)
     ASSERT_EQ(id[i], '\0');
-  std::string enc_id("");
+  std::string enc_id;
   base::encode_to_hex(id, &enc_id);
   for (int i = 0; i < kad::kKeySizeBytes*2; i++)
     ASSERT_EQ(enc_id[i], '0');

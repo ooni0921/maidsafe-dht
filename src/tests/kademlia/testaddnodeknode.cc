@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
 #include "transport/transportimpl.h"
+#include "maidsafe/config.h"
 
 namespace kad {
 
@@ -44,7 +45,6 @@ class MessageHandler {
     msg.SerializeToString(&message);
     msgs.push_back(message);
     ids.push_back(conn_id);
-    printf("message %u arrived\n", static_cast<unsigned int>(msgs.size()));
     if (node_ != NULL)
       node_->CloseConnection(conn_id);
   }
@@ -83,13 +83,13 @@ class TestKnodes : public testing::Test {
  protected:
   void SetUp() {
     test_dir_ = std::string("TestKnodes") + boost::lexical_cast<std::string>(
-                 base::random_32bit_uinteger());
+        base::random_32bit_uinteger());
     try {
       if (boost::filesystem::exists(test_dir_))
         boost::filesystem::remove_all(test_dir_);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      LOG(ERROR) << "filesystem exception: " << e.what() << std::endl;
     }
     for (int i = 0; i < 2; i++) {
       msg_handlers_[i].reset(new MessageHandler());
@@ -98,10 +98,10 @@ class TestKnodes : public testing::Test {
           boost::bind(&MessageHandler::OnDeadRendezvousServer,
           msg_handlers_[i].get(), _1, _2, _3));
       datastore_dir_[i] = test_dir_ + "/Datastore" +
-                         base::itos(ch_managers_[i]->external_port());
+          base::itos(ch_managers_[i]->external_port());
       boost::filesystem::create_directories(
           boost::filesystem::path(datastore_dir_[i]));
-      nodes_[i].reset(new KNode(ch_managers_[i], VAULT));
+      nodes_[i].reset(new KNode(ch_managers_[i], VAULT, false, false));
     }
   }
   void TearDown() {
@@ -114,8 +114,8 @@ class TestKnodes : public testing::Test {
       if (boost::filesystem::exists(test_dir_))
         boost::filesystem::remove_all(test_dir_);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      LOG(ERROR) << "filesystem exception: " << e.what() << std::endl;
     }
     nodes_.clear();
     ch_managers_.clear();
@@ -134,8 +134,11 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   for (int i = 1; i < kKeySizeBytes*2; i++)
     id += "1";
   GeneralKadCallback cb;
+  boost::asio::ip::address local_ip;
+  ASSERT_TRUE(base::get_local_address(&local_ip));
   nodes_[0]->Join(id, kconfig_file,
-    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1), false);
+    local_ip.to_string(), ch_managers_[0]->ptransport()->listening_port(),
+    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
   ASSERT_EQ(kRpcResultSuccess, cb.result());
   cb.Reset();
@@ -221,8 +224,11 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
     id2 += "2";
   }
   GeneralKadCallback cb;
+  boost::asio::ip::address local_ip;
+  ASSERT_TRUE(base::get_local_address(&local_ip));
   nodes_[0]->Join(id, kconfig_file,
-    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1), false);
+    local_ip.to_string(), ch_managers_[0]->ptransport()->listening_port(),
+    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
   ASSERT_EQ(kRpcResultSuccess, cb.result());
   cb.Reset();
@@ -244,7 +250,7 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   output1.close();
 
   nodes_[1]->Join(id2, kconfig_file1,
-    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1), false);
+    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
   ASSERT_EQ(kRpcResultSuccess, cb.result());
   cb.Reset();

@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/utils.h"
 #include "protobuf/contact_info.pb.h"
 #include "protobuf/signed_kadvalue.pb.h"
+#include "maidsafe/config.h"
 
 namespace fs = boost::filesystem;
 
@@ -119,46 +120,46 @@ void SortLookupContact(std::list<LookupContact> *contact_list,
 }
 
 KNodeImpl::KNodeImpl(
-    boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-    node_type type, const std::string &private_key,
-    const std::string &public_key)
-        : routingtable_mutex_(), kadconfig_mutex_(),
-          extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
-          activeprobes_mutex_(), pendingcts_mutex_(),
-          ptimer_(new base::CallLaterTimer),
-          pchannel_manager_(channel_manager), pservice_channel_(),
-          pdata_store_(new DataStore(kRefreshTime)), premote_service_(),
-          kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
-          node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
-          host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(), K_(K),
-          alpha_(kAlpha), beta_(kBeta), refresh_routine_started_(false),
-          kad_config_path_(""), local_host_ip_(""),
-          local_host_port_(0), stopping_(false), contacts_to_add_(),
-          addcontacts_routine_(), add_ctc_cond_(), private_key_(private_key),
-          public_key_(public_key), upnp_(), upnp_mapped_port_(0) {
+      boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+      node_type type, const std::string &private_key,
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp) : routingtable_mutex_(), kadconfig_mutex_(),
+        extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
+        activeprobes_mutex_(), pendingcts_mutex_(),
+        ptimer_(new base::CallLaterTimer),
+        pchannel_manager_(channel_manager), pservice_channel_(),
+        pdata_store_(new DataStore(kRefreshTime)), premote_service_(),
+        kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
+        node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
+        host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(), K_(K),
+        alpha_(kAlpha), beta_(kBeta), refresh_routine_started_(false),
+        kad_config_path_(""), local_host_ip_(""),
+        local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
+        use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
+        add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
+        upnp_(), upnp_mapped_port_(0) {
 }
 
 KNodeImpl::KNodeImpl(
-    boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-    node_type type,
-    const boost::uint16_t k,
-    const int &alpha,
-    const int &beta, const int &refresh_time, const std::string &private_key,
-    const std::string &public_key)
-        : routingtable_mutex_(), kadconfig_mutex_(),
-          extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
-          activeprobes_mutex_(), pendingcts_mutex_(),
-          ptimer_(new base::CallLaterTimer),
-          pchannel_manager_(channel_manager), pservice_channel_(),
-          pdata_store_(new DataStore(refresh_time)), premote_service_(),
-          kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
-          node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
-          host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(),
-          K_(k), alpha_(alpha), beta_(beta), refresh_routine_started_(false),
-          kad_config_path_(""), local_host_ip_(""),
-          local_host_port_(0), stopping_(false), contacts_to_add_(),
-          addcontacts_routine_(), add_ctc_cond_(), private_key_(private_key),
-          public_key_(public_key), upnp_(), upnp_mapped_port_(0) {
+      boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+      node_type type, const boost::uint16_t k, const int &alpha,
+      const int &beta, const int &refresh_time, const std::string &private_key,
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp) : routingtable_mutex_(), kadconfig_mutex_(),
+        extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
+        activeprobes_mutex_(), pendingcts_mutex_(),
+        ptimer_(new base::CallLaterTimer),
+        pchannel_manager_(channel_manager), pservice_channel_(),
+        pdata_store_(new DataStore(refresh_time)), premote_service_(),
+        kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
+        node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
+        host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(),
+        K_(k), alpha_(alpha), beta_(beta), refresh_routine_started_(false),
+        kad_config_path_(""), local_host_ip_(""), local_host_port_(0),
+        stopping_(false), port_forwarded_(port_forwarded), use_upnp_(use_upnp),
+        contacts_to_add_(), addcontacts_routine_(), add_ctc_cond_(),
+        private_key_(private_key), public_key_(public_key), upnp_(),
+        upnp_mapped_port_(0) {
 }
 
 KNodeImpl::~KNodeImpl() {
@@ -181,14 +182,13 @@ inline void KNodeImpl::CallbackWithFailure(base::callback_func_type cb) {
 }
 
 void KNodeImpl::Bootstrap_Callback(const BootstrapResponse *response,
-    BootstrapData data) {
-  std::string result_str("");
+      BootstrapData data) {
+  std::string result_str;
   BootstrapResponse result_msg;
-  if (response->IsInitialized()) {
+  if (response->IsInitialized())
     result_msg = *response;
-  } else {
+  else
     result_msg.set_result(kRpcResultFailure);
-  }
   result_msg.SerializeToString(&result_str);
   delete data.rpc_ctrler;
   delete response;
@@ -197,7 +197,7 @@ void KNodeImpl::Bootstrap_Callback(const BootstrapResponse *response,
 
 void KNodeImpl::Bootstrap(const std::string &bootstrap_ip,
       const boost::uint16_t &bootstrap_port,
-      base::callback_func_type cb, const bool &port_forwarded) {
+      base::callback_func_type cb, const bool &dir_connected) {
   struct BootstrapData data = {cb, bootstrap_ip, bootstrap_port, NULL};
   data.rpc_ctrler = new rpcprotocol::Controller;
   // send RPC to a bootstrapping node candidate
@@ -205,7 +205,7 @@ void KNodeImpl::Bootstrap(const std::string &bootstrap_ip,
   google::protobuf::Closure *done = google::protobuf::NewCallback<
       KNodeImpl, const BootstrapResponse*, struct BootstrapData> (this,
       &KNodeImpl::Bootstrap_Callback, resp, data);
-  if (port_forwarded) {
+  if (dir_connected) {
     kadrpcs_.Bootstrap(client_node_id(), host_ip_, host_port_, bootstrap_ip,
         bootstrap_port, resp, data.rpc_ctrler, done);
   } else {
@@ -225,7 +225,7 @@ void KNodeImpl::Join_Bootstrapping_Iteration_Client(
   if ((result_msg.ParseFromString(result)) &&
       (result_msg.result() == kRpcResultSuccess)) {
     kad::Contact bootstrap_node(result_msg.bootstrap_id(), bootstrap_ip,
-                                bootstrap_port, local_bs_ip, local_bs_port);
+        bootstrap_port, local_bs_ip, local_bs_port);
     AddContact(bootstrap_node, 0.0, false);
     host_ip_ = result_msg.newcomer_ext_ip();
     host_port_ = result_msg.newcomer_ext_port();
@@ -243,10 +243,9 @@ void KNodeImpl::Join_Bootstrapping_Iteration_Client(
     args->cached_nodes.pop_back();  // inefficient!!!!
     Bootstrap(bootstrap_candidate.host_ip(), bootstrap_candidate.host_port(),
         boost::bind(&KNodeImpl::Join_Bootstrapping_Iteration_Client,
-                    this, _1, args, bootstrap_candidate.host_ip(),
-                    bootstrap_candidate.host_port(),
-                    bootstrap_candidate.local_ip(),
-                    bootstrap_candidate.local_port()), args->port_fw);
+        this, _1, args, bootstrap_candidate.host_ip(),
+        bootstrap_candidate.host_port(), bootstrap_candidate.local_ip(),
+        bootstrap_candidate.local_port()), args->dir_connected);
     ++args->active_process;
   } else if (args->active_process == 0) {
     base::GeneralResponse local_result;
@@ -280,32 +279,24 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
     if (!result_msg.has_nat_type()) {
       // this is when bootstrapping to a node that has no contacts
       // assuming that the node is directly connected
-#ifdef DEBUG
-      printf("Directly connected %s:%d\n", host_ip_.c_str(), host_port_);
-#endif
-      if (args->port_fw)
-        host_port_ = local_host_port_;
+      DLOG(INFO) << "Node directly connected. Address " << host_ip_ <<
+          ":" << host_port_ << std::endl;
       rv_ip_ = "";
       rv_port_ = 0;
     } else if (result_msg.nat_type() == 1) {
       // Direct connection
-#ifdef DEBUG
-      printf("type of NAT = 1\n");
-#endif
+      DLOG(INFO) << "Node is behind a NAT of type 1" << std::endl;
       rv_ip_ = "";
       rv_port_ = 0;
     } else if (result_msg.nat_type() == 2) {
       // need rendezvous server
-#ifdef DEBUG
-      printf("type of NAT = 2\n");
-#endif
+      DLOG(INFO) << "Node is behind a NAT of type 2 (needs rendezvous server)"
+           << std::endl;
       rv_ip_ = bootstrap_node.host_ip();
       rv_port_ = bootstrap_node.host_port();
     } else if (result_msg.nat_type() == 3) {
       // behind symmetric router or no connection
-#ifdef DEBUG
-      printf("type of NAT = 3\n");
-#endif
+      DLOG(INFO) << "Node is behind a NAT of type 3" << std::endl;
       UPnPMap(local_host_port_);
       if (upnp_mapped_port_ != 0) {
         host_port_ = upnp_mapped_port_;
@@ -336,7 +327,7 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
         boost::bind(&KNodeImpl::Join_Bootstrapping_Iteration, this, _1, args,
         bootstrap_candidate.host_ip(), bootstrap_candidate.host_port(),
         bootstrap_candidate.local_ip(), bootstrap_candidate.local_port()),
-        args->port_fw);
+        args->dir_connected);
     ++args->active_process;
   } else if (args->active_process == 0) {
     base::GeneralResponse local_result;
@@ -351,7 +342,7 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
 }
 
 void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
-      std::vector<Contact> &cached_nodes, const bool &port_forwarded) {
+      std::vector<Contact> &cached_nodes, const bool &got_external_address) {
   if (cached_nodes.empty()) {
     base::GeneralResponse local_result;
     std::string local_result_str;
@@ -376,9 +367,7 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
       UnRegisterKadService();
     }
     kadrpcs_.set_info(contact_info());
-#ifdef DEBUG
-    printf("Bootstrap End no bootstrap contacts.\n");
-#endif
+    DLOG(WARNING) << "No more bootstrap contacts" << std::endl;
     local_result.SerializeToString(&local_result_str);
     cb(local_result_str);
     return;
@@ -388,7 +377,6 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
   args->cb = cb;
   args->active_process = 0;
   args->is_callbacked = false;
-  args->port_fw = port_forwarded;
   boost::uint16_t parallel_size = 0;
   if (static_cast<int>(cached_nodes.size()) > 1)
     parallel_size = 1;
@@ -401,25 +389,26 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
     Contact bootstrap_candidate = cached_nodes.back();
     cached_nodes.pop_back();
     args->cached_nodes = cached_nodes;
-    if (type_ == CLIENT) {
+    if (port_forwarded_ || got_external_address) {
+      args->dir_connected = true;
       Bootstrap(bootstrap_candidate.host_ip(), bootstrap_candidate.host_port(),
           boost::bind(&KNodeImpl::Join_Bootstrapping_Iteration_Client, this, _1,
           args, bootstrap_candidate.host_ip(), bootstrap_candidate.host_port(),
           bootstrap_candidate.local_ip(), bootstrap_candidate.local_port()),
-          port_forwarded);
+          true);
     } else {
       Bootstrap(bootstrap_candidate.host_ip(), bootstrap_candidate.host_port(),
           boost::bind(&KNodeImpl::Join_Bootstrapping_Iteration, this, _1, args,
           bootstrap_candidate.host_ip(), bootstrap_candidate.host_port(),
           bootstrap_candidate.local_ip(), bootstrap_candidate.local_port()),
-          port_forwarded);
+          false);
     }
     ++args->active_process;
   }
 }
 
 void KNodeImpl::Join_RefreshNode(base::callback_func_type cb,
-      const bool &port_forwarded) {
+      const bool &got_external_address) {
   if (stopping_)
     return;
   // build list of bootstrapping nodes
@@ -436,7 +425,8 @@ void KNodeImpl::Join_RefreshNode(base::callback_func_type cb,
     for (unsigned int j = 0; j < local_ips.size() && !got_local_address; j++) {
       if (pchannel_manager_->CheckLocalAddress(local_ips[j], remote_ip,
           bootstrapping_nodes_[i].host_port())) {
-        host_ip_ = local_ips[j];
+        if (!got_external_address)
+          host_ip_ = local_ips[j];
         local_host_ip_ = local_ips[j];
         got_local_address = true;
       }
@@ -445,16 +435,16 @@ void KNodeImpl::Join_RefreshNode(base::callback_func_type cb,
   if (!got_local_address) {
     boost::asio::ip::address local_address;
     if (base::get_local_address(&local_address)) {
-      host_ip_ = local_address.to_string();
+      if (!got_external_address)
+          host_ip_ = local_address.to_string();
       local_host_ip_ = local_address.to_string();
     }
   }
-  Join_Bootstrapping(cb, bootstrapping_nodes_, port_forwarded);
+  Join_Bootstrapping(cb, bootstrapping_nodes_, got_external_address);
 }
 
 void KNodeImpl::Join(const std::string &node_id,
-      const std::string &kad_config_file, base::callback_func_type cb,
-      const bool &port_forwarded) {
+      const std::string &kad_config_file, base::callback_func_type cb) {
   if (is_joined_) {
     base::GeneralResponse local_result;
     local_result.set_result(kRpcResultSuccess);
@@ -468,25 +458,120 @@ void KNodeImpl::Join(const std::string &node_id,
   local_host_port_ = pchannel_manager_->ptransport()->listening_port();
   // Adding the services
   RegisterKadService();
-  // if node_id is equal to "", generate a random kad ID and save it
-  if (node_id.size() == 0) {
-    node_id_ = vault_random_id();
-  } else {
-    std::string dec_id("");
-    if (!base::decode_from_hex(node_id, &dec_id))
-      node_id_ = node_id;
-    else
-      node_id_ = dec_id;
-  }
+  std::string dec_id;
+  if (!base::decode_from_hex(node_id, &dec_id))
+    node_id_ = node_id;
+  else
+    node_id_ = dec_id;
   if (type_ == CLIENT) {
     fake_client_node_id_ = client_node_id();
+  }
+  bool got_external_address = false;
+  if (use_upnp_) {
+    UPnPMap(local_host_port_);
+    if (upnp_mapped_port_ != 0) {
+      host_port_ = upnp_mapped_port_;
+      // It is now directly connected
+      rv_ip_ = "";
+      rv_port_ = 0;
+      got_external_address = true;
+    }
   }
 
   // Set kad_config_path_
   kad_config_path_ = fs::path(kad_config_file, fs::native);
   boost::shared_ptr<RoutingTable> rtng_table_(new RoutingTable(node_id_));
   prouting_table_ = rtng_table_;
-  Join_RefreshNode(cb, port_forwarded);
+  Join_RefreshNode(cb, got_external_address);
+}
+
+void KNodeImpl::Join(const std::string &kad_config_file,
+      base::callback_func_type cb) {
+  std::string id = vault_random_id();
+  Join(id, kad_config_file, cb);
+}
+
+void KNodeImpl::Join(const std::string &node_id,
+      const std::string &kad_config_file, const std::string &external_ip,
+      const boost::uint16_t &external_port, base::callback_func_type cb) {
+  base::GeneralResponse local_result;
+  std::string local_result_str;
+  if (is_joined_) {
+    local_result.set_result(kRpcResultSuccess);
+    local_result.SerializeToString(&local_result_str);
+    cb(local_result_str);
+    return;
+  }
+
+  RegisterKadService();
+  std::string dec_id;
+  if (!base::decode_from_hex(node_id, &dec_id))
+    node_id_ = node_id;
+  else
+    node_id_ = dec_id;
+  if (type_ == CLIENT) {
+    // Client nodes can not start a network on their own
+    local_result.set_result(kRpcResultFailure);
+    local_result.SerializeToString(&local_result_str);
+    cb(local_result_str);
+    return;
+  }
+
+
+  if (use_upnp_) {
+    UPnPMap(local_host_port_);
+    if (upnp_mapped_port_ != 0) {
+      host_port_ = upnp_mapped_port_;
+      // It is now directly connected
+    } else {
+      local_result.set_result(kRpcResultFailure);
+      local_result.SerializeToString(&local_result_str);
+      cb(local_result_str);
+      return;
+    }
+  } else if (external_ip == "" || external_port == 0) {
+    local_result.set_result(kRpcResultFailure);
+    local_result.SerializeToString(&local_result_str);
+    cb(local_result_str);
+    return;
+  } else {
+    host_ip_ = external_ip;
+    host_port_ = external_port;
+  }
+  boost::asio::ip::address local_address;
+  if (base::get_local_address(&local_address))
+    local_host_ip_ = local_address.to_string();
+  local_host_port_ = pchannel_manager_->ptransport()->listening_port();
+  rv_ip_ = "";
+  rv_port_ = 0;
+  // Set kad_config_path_
+  kad_config_path_ = fs::path(kad_config_file, fs::native);
+  prouting_table_.reset(new RoutingTable(node_id_));
+
+  is_joined_ = true;
+  // since it is a 1 network node, so it has no rendezvous server to ping
+  pchannel_manager_->ptransport()->StartPingRendezvous(true, rv_ip_,
+      rv_port_);
+  addcontacts_routine_.reset(new boost::thread(&KNodeImpl::CheckAddContacts,
+      this));
+  if (!refresh_routine_started_) {
+    ptimer_->AddCallLater(kRefreshTime*1000,
+        boost::bind(&KNodeImpl::RefreshRoutine, this));
+    ptimer_->AddCallLater(2000, boost::bind(
+        &KNodeImpl::RefreshValuesRoutine, this));
+    refresh_routine_started_ = true;
+  }
+  kadrpcs_.set_info(contact_info());
+  local_result.set_result(kRpcResultSuccess);
+  local_result.SerializeToString(&local_result_str);
+  cb(local_result_str);
+}
+
+void KNodeImpl::Join(const std::string &kad_config_file,
+      const std::string &external_ip, const boost::uint16_t &external_port,
+      base::callback_func_type cb) {
+  std::string id = vault_random_id();
+  Join(id, kad_config_file, external_ip, external_port, cb);
 }
 
 void KNodeImpl::Leave() {
@@ -541,7 +626,7 @@ void KNodeImpl::SaveBootstrapContacts() {
     std::string node0_id;
     if (!bootstrapping_nodes_.empty()) {
       node0_id = bootstrapping_nodes_[0].node_id();
-      std::string hex_id("");
+      std::string hex_id;
       base::KadConfig::Contact *kad_contact = kad_config.add_contact();
       base::encode_to_hex(bootstrapping_nodes_[0].node_id(), &hex_id);
       kad_contact->set_node_id(hex_id);
@@ -559,7 +644,7 @@ void KNodeImpl::SaveBootstrapContacts() {
     std::vector<Contact>::iterator it;
     for (it = bs_contacts.begin(); it < bs_contacts.end(); ++it) {
       if (it->node_id() != node0_id) {
-        std::string hex_id("");
+        std::string hex_id;
         base::encode_to_hex(it->node_id(), &hex_id);
         base::KadConfig::Contact *kad_contact = kad_config.add_contact();
         kad_contact->set_node_id(hex_id);
@@ -582,10 +667,8 @@ void KNodeImpl::SaveBootstrapContacts() {
     }
   }
   catch(const std::exception &ex) {
-#ifdef DEBUG
-    printf("\t\tFailed to update kademlia configuration file at %s.\n%s\n",
-           kad_config_path_.string().c_str(), ex.what());
-#endif
+    DLOG(ERROR) << "Failed to updated kademlia config file " << kad_config_path_
+        << ". Error: " << ex.what() << std::endl;
   }
 }
 
@@ -597,31 +680,25 @@ int KNodeImpl::LoadBootstrapContacts() {
       std::ifstream input_(kad_config_path_.string().c_str(),
                            std::ios::in | std::ios::binary);
       if (!kad_config.ParseFromIstream(&input_)) {
-#ifdef DEBUG
-        printf("\t\tFailed to parse kademlia configuration file.\n");
-#endif
+        DLOG(ERROR) << "Failed to parse kademlia config file" << std::endl;
         return -1;
       }
       input_.close();
       if (0 == kad_config.contact_size()) {
-#ifdef DEBUG
-        printf("\t\tKademlia configuration file is empty.\n");
-#endif
+        DLOG(ERROR) << "Kademlia config file has no bootstrap nodes"
+             << std::endl;
         return -1;
       }
     }
   }
-  catch(const std::exception ex_) {
-#ifdef DEBUG
-    printf("\t\tCan't access kademlia configuration file at %s %s\n",
-           kad_config_path_.string().c_str(),
-           ex_.what());
-#endif
+  catch(const std::exception ex) {
+    DLOG(ERROR) << "Failed to access kademlia config file " << kad_config_path_
+        << ". Error: " << ex.what() << std::endl;
     return -1;
   }
   bootstrapping_nodes_.clear();
   for (int i = 0; i < kad_config.contact_size(); ++i) {
-    std::string dec_id("");
+    std::string dec_id;
     base::decode_from_hex(kad_config.contact(i).node_id(), &dec_id);
     Contact bootstrap_contact(dec_id, kad_config.contact(i).ip(),
         static_cast<uint16_t>(kad_config.contact(i).port()),
@@ -649,7 +726,9 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
       StoreCallbackArgs callback_data) {
   if (!is_joined_)
     return;
-  if (callback_data.data->is_callbacked) return;  // Only call back once
+  if (callback_data.data->is_callbacked)
+    // Only call back once
+    return;
 
   if (response != NULL) {
     if (response->IsInitialized() && response->has_node_id() &&
@@ -689,22 +768,12 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
     if (response->IsInitialized() && !callback_data.rpc_ctrler->Failed()) {
       if (response->result() == kRpcResultSuccess) {
         ++callback_data.data->save_nodes;
-#ifdef DEBUG
-        printf("KNodeImpl::StoreValue_IterativeStoreValue:");
-        printf("response->result()== kRpcResultSuccess\n");
-#endif
       }
       AddContact(callback_data.remote_ctc, callback_data.rpc_ctrler->rtt(),
           false);
-#ifdef DEBUG
-      printf("KNodeImpl::StoreValue_IterativeStoreValue: AddContact\n");
-#endif
     } else {
       // it has timeout
       RemoveContact(callback_data.remote_ctc.node_id());
-#ifdef DEBUG
-      printf("KNodeImpl::StoreValue_IterativeStoreValue: RemoveContact\n");
-#endif
     }
     // nodes has been contacted -- timeout, responded with failure or success
     ++callback_data.data->contacted_nodes;
@@ -713,12 +782,12 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
     delete response;
   }
   if (callback_data.data->contacted_nodes >=
-      static_cast<int>(callback_data.data->closest_nodes.size())) {
+      callback_data.data->closest_nodes.size()) {
     // Finish storing
     StoreResponse store_value_result;
     std::string store_value_result_str;
     double d = K_ * kMinSuccessfulPecentageStore;
-    if (callback_data.data->save_nodes >= static_cast<int>(d)) {
+    if (callback_data.data->save_nodes >= static_cast<unsigned int>(d)) {
       // Succeeded - min. number of copies were stored
       store_value_result.set_result(kRpcResultSuccess);
     } else {
@@ -730,10 +799,9 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
       //                  allowed number of copies or tried every node in our
       //                  routing table.
       store_value_result.set_result(kRpcResultFailure);
-      printf("callback_data.data->save_nodes(%i) >",
-        callback_data.data->save_nodes);
-      printf("(K_(%i) * kMinSuccessfulPecentageStore(%f) = (%f))\n",
-        K_, kMinSuccessfulPecentageStore, (K_ * kMinSuccessfulPecentageStore));
+      DLOG(ERROR) << "Successful Store rpc's " << callback_data.data->save_nodes
+        << "\nSuccessful Store rpc's required " <<
+        K_ * kMinSuccessfulPecentageStore << std::endl;
     }
     store_value_result.SerializeToString(&store_value_result_str);
     callback_data.data->is_callbacked = true;
@@ -810,10 +878,6 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
     }
     if (closest_nodes.size() > 0) {
       bool stored_local = false;
-#ifdef DEBUG
-      printf("KNodeImpl::StoreValue_ExecuteStoreRPCs -- %u\n",
-        static_cast<unsigned int>(closest_nodes.size()));
-#endif
       if (type_ != CLIENT) {
         // If this node itself is closer to the key than the last (furtherest)
         // node in the returned list, store the value at this node as well.
@@ -841,9 +905,8 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
           if (local_result &&
               static_cast<int>(closest_nodes.size()) >= K_) {
             closest_nodes.pop_back();
-#ifdef DEBUG
-            printf("KNodeImpl::StoreValue_ExecuteStoreRPCs storing locally \n");
-#endif
+            DLOG(INFO) << "StoreValue_ExecuteStoreRPCs storing locally"
+                 << std::endl;
           }
         }
       }
@@ -920,7 +983,6 @@ void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
     cb(ser_find_result);
     return;
   }
-
   //  Value not found localy, looking for it in the network
   StartSearchIteration(key, FIND_VALUE, cb);
 }
@@ -1218,7 +1280,7 @@ void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
     Leave();
     stopping_ = false;
     Join(node_id_, kad_config_path_.string(),
-         boost::bind(&KNodeImpl::ReBootstrapping_Callback, this, _1), false);
+         boost::bind(&KNodeImpl::ReBootstrapping_Callback, this, _1));
   }
 }
 
@@ -1234,7 +1296,7 @@ void KNodeImpl::ReBootstrapping_Callback(const std::string &result) {
     is_joined_ = false;
     stopping_ = false;
     Join(node_id_, kad_config_path_.string(),
-         boost::bind(&KNodeImpl::ReBootstrapping_Callback, this, _1), false);
+         boost::bind(&KNodeImpl::ReBootstrapping_Callback, this, _1));
   } else {
     is_joined_ = true;
   }
@@ -1291,28 +1353,23 @@ connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
 void KNodeImpl::UPnPMap(boost::uint16_t host_port) {
   // Get a UPnP mapping port
   upnp_mapped_port_ = 0;
-#ifdef DEBUG
-  printf("\t\tInitialising UPnP...\n");
-#endif
+  DLOG(INFO) << "Initialising UPNP" << std::endl;
   // ignore result, in case it's already initialised
   upnp_.InitControlPoint();
 
-#ifdef DEBUG
-  printf("\t\tMapping UPnP port...\n");
-#endif
+  DLOG(INFO) << "Mapping local port " << host_port << std::endl;
   if (upnp_.AddPortMapping(host_port, upnp::kUdp)) {
     upnp_mapped_port_ = host_port;
+    host_ip_ = upnp_.GetExternalIpAddress();
+    DLOG(INFO) << "Successfully mapped to " << host_ip_ << ":" <<
+        upnp_mapped_port_ << std::endl;
   } else {
-#ifdef DEBUG
-    printf("\t\tPort mapping via UPnP failed.\n");
-#endif
+    DLOG(ERROR) << "UPnP port mappin failed" << std::endl;
   }
 }
 
 void KNodeImpl::UnMapUPnP() {
-#ifdef DEBUG
-  printf("\t\tDeleting the UPnP mapped port...\n");
-#endif
+  DLOG(INFO) << "Deleting the UPnP mapped port" << std::endl;
   upnp_.DeletePortMapping(upnp_mapped_port_, upnp::kUdp);
   upnp_mapped_port_ = 0;
 }

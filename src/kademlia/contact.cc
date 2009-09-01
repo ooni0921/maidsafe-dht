@@ -30,22 +30,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 
-Contact::Contact(const std::string &node_id,
-                 const std::string &host_ip,
-                 const boost::uint16_t &host_port,
-                 const std::string &local_ip,
-                 const boost::uint16_t &local_port,
-                 const std::string &rendezvous_ip,
-                 const boost::uint16_t &rendezvous_port)
-    : node_id_(node_id),
-      host_ip_(host_ip),
-      host_port_(host_port),
-      failed_rpc_(0),
-      rendezvous_ip_(rendezvous_ip),
-      rendezvous_port_(rendezvous_port),
-      last_seen_(base::get_epoch_milliseconds()),
-      local_ip_(local_ip),
-      local_port_(local_port) {
+Contact::Contact(const std::string &node_id, const std::string &host_ip,
+      const boost::uint16_t &host_port, const std::string &local_ip,
+      const boost::uint16_t &local_port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port) : node_id_(node_id),
+        host_ip_(host_ip), host_port_(host_port), failed_rpc_(0),
+        rendezvous_ip_(rendezvous_ip), rendezvous_port_(rendezvous_port),
+        last_seen_(base::get_epoch_milliseconds()), local_ip_(local_ip),
+        local_port_(local_port) {
   if (host_ip.size() > 4)
       host_ip_ = base::inet_atob(host_ip);
   else
@@ -60,13 +52,9 @@ Contact::Contact(const std::string &node_id,
     rendezvous_ip_ = rendezvous_ip;
 }
 
-Contact::Contact(const std::string &node_id,
-                 const std::string &host_ip,
-                 const boost::uint16_t &host_port)
-    : node_id_(node_id),
-      host_ip_(host_ip),
-      host_port_(host_port),
-      failed_rpc_(0),
+Contact::Contact(const std::string &node_id, const std::string &host_ip,
+      const boost::uint16_t &host_port) : node_id_(node_id), host_ip_(host_ip),
+        host_port_(host_port), failed_rpc_(0),
       rendezvous_ip_(""),
       rendezvous_port_(0),
       last_seen_(base::get_epoch_milliseconds()),
@@ -78,20 +66,12 @@ Contact::Contact(const std::string &node_id,
     host_ip_ = host_ip;
 }
 
-Contact::Contact(const std::string &node_id,
-                 const std::string &host_ip,
-                 const boost::uint16_t &host_port,
-                 const std::string &local_ip,
-                 const boost::uint16_t &local_port)
-    : node_id_(node_id),
-      host_ip_(host_ip),
-      host_port_(host_port),
-      failed_rpc_(0),
-      rendezvous_ip_(""),
-      rendezvous_port_(0),
-      last_seen_(base::get_epoch_milliseconds()),
-      local_ip_(local_ip),
-      local_port_(local_port) {
+Contact::Contact(const std::string &node_id, const std::string &host_ip,
+      const boost::uint16_t &host_port, const std::string &local_ip,
+      const boost::uint16_t &local_port) : node_id_(node_id), host_ip_(host_ip),
+        host_port_(host_port), failed_rpc_(0), rendezvous_ip_(""),
+        rendezvous_port_(0), last_seen_(base::get_epoch_milliseconds()),
+        local_ip_(local_ip), local_port_(local_port) {
   if (host_ip.size() > 4)
       host_ip_ = base::inet_atob(host_ip);
   else
@@ -102,46 +82,47 @@ Contact::Contact(const std::string &node_id,
     local_ip_ = local_ip;
 }
 
-Contact::Contact()
-    : node_id_(""),
-      host_ip_(""),
-      host_port_(0),
-      failed_rpc_(0),
-      rendezvous_ip_(""),
-      rendezvous_port_(0),
-      last_seen_(base::get_epoch_milliseconds()),
-      local_ip_(""),
+Contact::Contact() : node_id_(""), host_ip_(""), host_port_(0), failed_rpc_(0),
+      rendezvous_ip_(""), rendezvous_port_(0),
+      last_seen_(base::get_epoch_milliseconds()), local_ip_(""),
       local_port_(0) {}
 
-Contact::Contact(const Contact&rhs)
-    : node_id_(rhs.node_id_),
-      host_ip_(rhs.host_ip_),
-      host_port_(rhs.host_port_) ,
-      failed_rpc_(rhs.failed_rpc_),
-      rendezvous_ip_(rhs.rendezvous_ip_),
-      rendezvous_port_(rhs.rendezvous_port_),
-      last_seen_(rhs.last_seen_),
-      local_ip_(rhs.local_ip_),
-      local_port_(rhs.local_port_) {}
+Contact::Contact(const Contact&rhs) : node_id_(rhs.node_id_),
+      host_ip_(rhs.host_ip_), host_port_(rhs.host_port_),
+      failed_rpc_(rhs.failed_rpc_), rendezvous_ip_(rhs.rendezvous_ip_),
+      rendezvous_port_(rhs.rendezvous_port_), last_seen_(rhs.last_seen_),
+      local_ip_(rhs.local_ip_), local_port_(rhs.local_port_) {}
 
-bool Contact::operator == (const Contact &other) {
-  return static_cast<bool>((this->node_id() == other.node_id()) ||
-                           ((this->host_ip() == other.host_ip()) &&
-                           (this->host_port() == other.host_port())));
+bool Contact::operator == (const Contact &other) const {
+  return (this->node_id() == other.node_id()) ||
+          ((this->host_ip() == other.host_ip()) &&
+          (this->host_port() == other.host_port()));
 }
 
-bool Contact::operator != (const Contact &other) {
-  return static_cast<bool>((this->node_id() != other.node_id()) &&
-                            ((this->host_ip() != other.host_ip()) ||
-                            (this->host_port() != other.host_port())));
+bool Contact::operator != (const Contact &other) const {
+  return (this->node_id() != other.node_id()) &&
+          ((this->host_ip() != other.host_ip()) ||
+          (this->host_port() != other.host_port()));
 }
 
-std::string Contact::ToString() {
+Contact& Contact::operator=(const Contact &other) {
+  this->node_id_ = other.node_id_;
+  this->host_ip_ = other.host_ip_;
+  this->host_port_ = other.host_port_;
+  this->failed_rpc_ = other.failed_rpc_;
+  this->rendezvous_ip_ = other.rendezvous_ip_;
+  this->rendezvous_port_ = other.rendezvous_port_;
+  this->last_seen_ = other.last_seen_;
+  this->local_ip_ = other.local_ip_;
+  this->local_port_ = other.local_port_;
+  return *this;
+}
+
+std::string Contact::ToString() const {
   if (node_id_ == "" && host_port_ == 0 && host_ip_ == "") {
     return "Empty contact.\n";
   }
-  std::string ser_contact("");
-  std::string enc_id("");
+  std::string ser_contact, enc_id;
   base::encode_to_hex(node_id_, &enc_id);
   std::string port(base::itos(host_port_));
   ser_contact = "Node_id: " + enc_id + "\n";
@@ -159,7 +140,6 @@ std::string Contact::ToString() {
     std::string rport(base::itos(rendezvous_port_));
     ser_contact += ("RV IP address: " + dec_rip + ":" + rport + "\n");
   }
-
   return ser_contact;
 }
 
@@ -197,7 +177,7 @@ bool Contact::ParseFromString(const std::string &data) {
       rendezvous_ip_ = info.rv_ip();
     rendezvous_port_ = static_cast<boost::uint16_t>(info.rv_port());
   } else {
-    rendezvous_ip_ = std::string("");
+    rendezvous_ip_ = "";
     rendezvous_port_ = 0;
   }
   if (info.has_local_ip()) {
@@ -207,7 +187,7 @@ bool Contact::ParseFromString(const std::string &data) {
       local_ip_ = info.local_ip();
     local_port_ = static_cast<boost::uint16_t>(info.local_port());
   } else {
-    local_ip_ = std::string("");
+    local_ip_ = "";
     local_port_ = 0;
   }
   last_seen_ = base::get_epoch_milliseconds();

@@ -25,6 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "maidsafe/config.h"
 #include "base/config.h"
 #include "base/calllatertimer.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -32,21 +33,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace base {
 
 inline bool CompareCallLaterData(const struct CallLaterMap &first,
-                          const struct CallLaterMap &second) {
+    const struct CallLaterMap &second) {
   return (first.time_to_execute < second.time_to_execute);
 }
 
-CallLaterTimer::CallLaterTimer()
-    : mutex_(),
-      calllater_id_(0),
-      is_started_(true),
-      blocking_routine(),
-      calllaters_(),
-      cond_() {
+CallLaterTimer::CallLaterTimer() : mutex_(), calllater_id_(0),
+      is_started_(true), blocking_routine_(), calllaters_(), cond_() {
   try {
-    blocking_routine.reset(new boost::thread(&CallLaterTimer::TryExecute,
-                                             this));
-  } catch(std::exception &) {
+    blocking_routine_.reset(new boost::thread(&CallLaterTimer::TryExecute,
+        this));
+  } catch(const std::exception &e) {
+    DLOG(ERROR) << e.what() << std::endl;
   }
 }
 
@@ -57,8 +54,7 @@ CallLaterTimer::~CallLaterTimer() {
     calllaters_.clear();
   }
   cond_.notify_one();
-  blocking_routine->join();
-  // calllaters_.clear();
+  blocking_routine_->join();
 }
 
 void CallLaterTimer::TryExecute() {
@@ -80,10 +76,7 @@ void CallLaterTimer::TryExecute() {
           cb();
         }
         catch(const std::exception &e) {
-          // TODO(dan): Logging this.
-  #ifdef DEBUG
-          printf("Exception in TryExecute: %s\n", e.what());
-  #endif
+          DLOG(ERROR) << e.what() << std::endl;
         }
       } else {
         mutex_.unlock();
@@ -95,7 +88,8 @@ void CallLaterTimer::TryExecute() {
   }
 }
 
-int CallLaterTimer::AddCallLater(boost::uint64_t msecs, calllater_func cb) {
+int CallLaterTimer::AddCallLater(const boost::uint64_t &msecs,
+      calllater_func cb) {
   if ((msecs <= 0) || (!is_started_))
     return -1;
   {
@@ -112,7 +106,7 @@ int CallLaterTimer::AddCallLater(boost::uint64_t msecs, calllater_func cb) {
   return calllater_id_;
 }
 
-bool CallLaterTimer::CancelOne(int calllater_id) {
+bool CallLaterTimer::CancelOne(const int &calllater_id) {
   std::list<CallLaterMap>::iterator it;
   boost::mutex::scoped_lock guard(mutex_);
   for (it = calllaters_.begin(); it != calllaters_.end(); it++) {

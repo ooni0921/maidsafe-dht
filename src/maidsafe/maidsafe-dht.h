@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 7
+#if MAIDSAFE_DHT_VERSION < 8
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -54,17 +54,24 @@ class SignedValue;
 class KNode {
  public:
   KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const std::string &private_key = "",
-      const std::string &public_key = "");
+      node_type type, const bool &port_forwarded, const bool &use_upnp,
+      const std::string &private_key = "", const std::string &public_key = "");
   // constructor used to set up parameters K, alpha, and beta for kademlia
   KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
       node_type type, const boost::uint16_t k, const int &alpha,
-      const int &beta, const int &refresh_time,
-      const std::string &private_key = "", const std::string &public_key = "");
+      const int &beta, const int &refresh_time, const bool &port_forwarded,
+      const bool &use_upnp, const std::string &private_key = "",
+      const std::string &public_key = "");
   ~KNode();
-  // if node_id is "", it will be randomly generated
   void Join(const std::string &node_id, const std::string &kad_config_file,
-      base::callback_func_type cb, const bool &port_forwarded);
+      base::callback_func_type cb);
+  void Join(const std::string &kad_config_file, base::callback_func_type cb);
+  // Use this join for the first node in the network
+  void Join(const std::string &node_id, const std::string &kad_config_file,
+      const std::string &external_ip, const boost::uint16_t &external_port,
+      base::callback_func_type cb);
+  void Join(const std::string &kad_config_file, const std::string &external_ip,
+      const boost::uint16_t &external_port, base::callback_func_type cb);
   void Leave();
   void StoreValue(const std::string &key, const SignedValue &value,
       const std::string &public_key, const std::string &signed_public_key,

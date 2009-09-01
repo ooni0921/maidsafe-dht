@@ -25,6 +25,7 @@
 #include <gtest/gtest.h>
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/thread.hpp>
+#include "maidsafe/config.h"
 
 #include "base/calllatertimer.h"
 
@@ -33,18 +34,12 @@ namespace base {
 class Lynyrd {
  public:
   Lynyrd() : count_(0) , mutex_(new boost::mutex) {}
-  ~Lynyrd() {
-    printf("\nDtor\n");
-  }
+  ~Lynyrd() {}
   void Skynyrd() {
-  if (mutex_.use_count() == 0) {
-      printf("Mutex was destroyed.\n");
+    if (mutex_.use_count() == 0)
       return;
-    }
     boost::mutex::scoped_lock guard(*mutex_.get());
-//    printf("------- %d --------\n", count_);
     ++count_;
-//    printf("******* %d ********\n", count_);
   }
   void Alabama() {
     Skynyrd();
@@ -138,14 +133,14 @@ TEST_F(CallLaterTest, BEH_BASE_AddManyCallLaters) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(100, sweethome.count()) << "Count in variable != 100";
   ASSERT_EQ(0, clt_.list_size()) << "List not empty";
-  printf("\nFirst 100 call laters executed.\n");
+  LOG(INFO) << "First 100 call laters executed." << std::endl;
   // Set up 100 calls very closely spaced
   for (int j = 0; j < 100; ++j)
     clt_.AddCallLater(50, boost::bind(&Lynyrd::Skynyrd, &sweethome));
   while (sweethome.count() < 200)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(200, sweethome.count()) << "Count in variable != 200";
-  printf("\nSecond 100 call laters executed.\n");
+  LOG(INFO) << "Second 100 call laters executed." << std::endl;
   ASSERT_EQ(0, clt_.CancelAll()) <<
       "Some calls were cancelled, list not empty";
   ASSERT_EQ(0, clt_.list_size()) << "List not empty";
@@ -163,7 +158,8 @@ TEST_F(CallLaterTest, BEH_BASE_AddRemoveCallLaters) {
     call_ids.push_back(clt_.AddCallLater(2000 + (20*i),
         boost::bind(&Lynyrd::Skynyrd, &sweethome)));
   }
-  printf("Scheduled 1st run, before cancelling %d\n", clt_.list_size());
+  LOG(INFO) << "Scheduled 1st run, before cancelling" << clt_.list_size()
+       << std::endl;
   for (int j = 0; j < 50; ++j)
     EXPECT_TRUE(clt_.CancelOne(call_ids[j]));
   while (sweethome.count() < 50) {
@@ -176,7 +172,7 @@ TEST_F(CallLaterTest, BEH_BASE_AddRemoveCallLaters) {
   ASSERT_EQ(0, sweethome.count());
 
   // Set up 100 calls again, then remove them all before they start
-  printf("Finished 1st run, before scheduling 2nd.\n");
+  LOG(INFO) << "Finished 1st run, before scheduling 2nd." << std::endl;
   for (int k = 0; k < 100; ++k)
     clt_.AddCallLater(2000 + (20*k), boost::bind(&Lynyrd::Skynyrd, &sweethome));
   int n = clt_.CancelAll();
@@ -187,7 +183,7 @@ TEST_F(CallLaterTest, BEH_BASE_AddRemoveCallLaters) {
   ASSERT_EQ(100 - n, sweethome.count()) << "Count in variable incorrect";
   sweethome.reset();
   ASSERT_EQ(0, sweethome.count());
-  printf("Finished 2nd run, before scheduling 3rd.\n");
+  LOG(INFO) << "Finished 2nd run, before scheduling 3rd." << std::endl;
 
   // Set up 100 calls again, then remove them all while they're being run.
   for (int l = 1; l < 101; ++l)

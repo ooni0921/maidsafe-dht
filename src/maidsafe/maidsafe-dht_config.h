@@ -88,7 +88,7 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 #include "maidsafe/crypto.h"
 #include "maidsafe/routingtable.h"
 #include "maidsafe/utils.h"
-#define MAIDSAFE_DHT_VERSION 7
+#define MAIDSAFE_DHT_VERSION 8
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *
@@ -159,40 +159,23 @@ class KadRpcs;
 class Contact {
 // This class contains information on a single remote contact
  public:
-  Contact(const std::string &node_id,
-          const std::string &host_ip,
-          const boost::uint16_t &host_port,
-          const std::string &local_ip,
-          const boost::uint16_t &local_port,
-          const std::string &rendezvous_ip,
-          const boost::uint16_t &rendezvous_port);
-  Contact(const std::string &node_id,
-          const std::string &host_ip,
-          const boost::uint16_t &host_port);
-  Contact(const std::string &node_id,
-          const std::string &host_ip,
-          const boost::uint16_t &host_port,
-          const std::string &local_ip,
-          const boost::uint16_t &local_port);
+  Contact(const std::string &node_id, const std::string &host_ip,
+      const boost::uint16_t &host_port, const std::string &local_ip,
+      const boost::uint16_t &local_port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port);
+  Contact(const std::string &node_id, const std::string &host_ip,
+      const boost::uint16_t &host_port);
+  Contact(const std::string &node_id, const std::string &host_ip,
+      const boost::uint16_t &host_port, const std::string &local_ip,
+      const boost::uint16_t &local_port);
   Contact();
-  // copy ctor
   Contact(const Contact&rhs);
   // Test whether this contact is equal to another according node id or (ip,
   // port)
-  bool operator == (const Contact &other);
-  bool operator != (const Contact &other);
-  Contact& operator=(const Contact &other) {  // clone the content from another
-    this->node_id_ = other.node_id_;
-    this->host_ip_ = other.host_ip_;
-    this->host_port_ = other.host_port_;
-    this->failed_rpc_ = other.failed_rpc_;
-    this->rendezvous_ip_ = other.rendezvous_ip_;
-    this->rendezvous_port_ = other.rendezvous_port_;
-    this->last_seen_ = other.last_seen_;
-    this->local_ip_ = other.local_ip_;
-    this->local_port_ = other.local_port_;
-    return *this;
-  }
+  bool operator == (const Contact &other) const;
+  bool operator != (const Contact &other) const;
+  // clone the content from another
+  Contact& operator=(const Contact &other);
   bool SerialiseToString(std::string *ser_output);
   bool ParseFromString(const std::string &data);
   inline const std::string& node_id() const { return node_id_; }
@@ -202,7 +185,7 @@ class Contact {
   inline void IncreaseFailed_RPC() { ++failed_rpc_; }
   const std::string& rendezvous_ip() const { return rendezvous_ip_; }
   boost::uint16_t rendezvous_port() const { return rendezvous_port_; }
-  std::string ToString();
+  std::string ToString() const;
   inline boost::uint64_t last_seen() const { return last_seen_; }
   inline void set_last_seen(boost::uint64_t last_seen) {
     last_seen_ = last_seen;

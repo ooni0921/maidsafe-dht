@@ -26,7 +26,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
-
 #include <boost/filesystem.hpp>
 #include "kademlia/kadservice.h"
 #include "kademlia/knodeimpl.h"
@@ -34,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
 #include "protobuf/signed_kadvalue.pb.h"
+#include "maidsafe/config.h"
 
 namespace fs = boost::filesystem;
 
@@ -45,10 +45,8 @@ inline void CreateRSAKeys(std::string *pub_key, std::string *priv_key) {
 }
 
 inline void CreateSignedRequest(const std::string &pub_key,
-                                const std::string &priv_key,
-                                const std::string &key,
-                                std::string *sig_pub_key,
-                                std::string *sig_req) {
+    const std::string &priv_key, const std::string &key,
+    std::string *sig_pub_key, std::string *sig_req) {
   crypto::Crypto cobj;
   cobj.set_symm_algorithm(crypto::AES_256);
   cobj.set_hash_algorithm(crypto::SHA_512);
@@ -67,17 +65,9 @@ class Callback {
 class KadServicesTest: public testing::Test {
  protected:
   KadServicesTest() : kad_config_file_(""),
-                      channel_manager_(new rpcprotocol::ChannelManager),
-                      knodeimpl_(),
-                      cb_(),
-                      contact_(),
-                      crypto_(),
-                      node_id_(""),
-                      remote_node_id_(""),
-                      service_(),
-                      datastore_(),
-                      routingtable_(),
-                      test_dir_("") {
+      channel_manager_(new rpcprotocol::ChannelManager), knodeimpl_(),
+      cb_(), contact_(), crypto_(), node_id_(""), remote_node_id_(""),
+      service_(), datastore_(), routingtable_(), test_dir_("") {
     test_dir_ = std::string("KadServicesTest") +
                 boost::lexical_cast<std::string>(base::random_32bit_uinteger());
     try {
@@ -86,7 +76,7 @@ class KadServicesTest: public testing::Test {
       fs::create_directories(test_dir_);
     }
     catch(const std::exception &e) {
-      printf("%s\n", e.what());
+      LOG(ERROR) << "filesystem exception: " << e.what() << std::endl;
     }
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
@@ -95,7 +85,8 @@ class KadServicesTest: public testing::Test {
     std::string priv_key, pub_key;
     CreateRSAKeys(&pub_key, &priv_key);
     knodeimpl_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl(channel_manager_, VAULT, priv_key, pub_key));
+        (new KNodeImpl(channel_manager_, VAULT, priv_key, pub_key, false,
+        false));
     std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
@@ -117,8 +108,8 @@ class KadServicesTest: public testing::Test {
       if (fs::exists(test_dir_))
         fs::remove_all(test_dir_);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      LOG(ERROR) << "filesystem exception: " << e.what() << std::endl;
     }
   }
 
@@ -128,13 +119,14 @@ class KadServicesTest: public testing::Test {
         knodeimpl_.get(), _1)));
     cb_.Reset();
     kad_config_file_ = test_dir_ + std::string("/.kadconfig");
+    boost::asio::ip::address local_ip;
+    ASSERT_TRUE(base::get_local_address(&local_ip));
     knodeimpl_->Join(node_id_, kad_config_file_,
-                     boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-                     false);
+        local_ip.to_string(), channel_manager_->ptransport()->listening_port(),
+        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
     wait_result(&cb_);
     ASSERT_EQ(kRpcResultSuccess, cb_.result());
     ASSERT_TRUE(knodeimpl_->is_joined());
-    printf("Pimpl node joined.\n");
     cb_.Reset();
     service_ = knodeimpl_->premote_service_;
     datastore_ = knodeimpl_->pdata_store_;
@@ -152,7 +144,6 @@ class KadServicesTest: public testing::Test {
     channel_manager_->StopTransport();
     channel_manager_->CleanUpTransport();
     channel_manager_.reset();
-    printf("Finished tear down.\n");
   }
   std::string kad_config_file_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
@@ -173,7 +164,7 @@ class KadServicesTest: public testing::Test {
 
 TEST_F(KadServicesTest, BEH_KAD_ServicesValidateSignedRequest) {
   std::string public_key("A"), private_key("B"), key("C");
-  std::string signed_public_key(""), signed_request("");
+  std::string signed_public_key, signed_request;
   CreateSignedRequest(public_key, private_key, key, &signed_public_key,
                       &signed_request);
   EXPECT_FALSE(service_->ValidateSignedRequest(public_key, signed_public_key,
@@ -340,7 +331,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   std::string hex_key;
   for (int i = 0; i < 128; ++i)
     hex_key += "a";
-  std::string key("");
+  std::string key;
   base::decode_from_hex(hex_key, &key);
   find_node_request.set_key(key);
   ContactInfo *sender_info = find_node_request.mutable_sender_info();
@@ -363,11 +354,11 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   // Populate routing table with a few random contacts (< K), ensure they are
   // not close to id to be searched for later, and ensure they are all
   // returned from the search.  Use one of these to search for later.
-  std::string later_key("");
+  std::string later_key;
   std::vector<std::string> rand_ids;
   for (int i = 0; i < K/2; ++i) {
     bool unique(false);
-    std::string hex_id("");
+    std::string hex_id;
     while (!unique) {
       int r = rand();  // NOLINT (Fraser)
       hex_id = crypto_.Hash(base::itos(r), "", crypto::STRING_STRING, true);
@@ -384,10 +375,10 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
       }
       rand_ids.push_back(hex_id);
     }
-    std::string id("");
+    std::string id;
     base::decode_from_hex(hex_id, &id);
     later_key = id;
-    std::string ip = "127.0.0.11";
+    std::string ip("127.0.0.11");
     boost::uint16_t port = 10101+i;
     Contact contact(id, ip, port, ip, port);
     Contact contactback;
@@ -413,8 +404,8 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   // Ensure k-1 contacts have IDs close to id being searched for later.
   std::vector<Contact> close_contacts;
   for (int i = 0; i < 50; ++i) {
-    std::string character = "1";
-    std::string hex_id = "";
+    std::string character("1");
+    std::string hex_id;
     if (i < K)
       character = "a";
     for (int j = 0; j < 126; ++j)
@@ -422,7 +413,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
     hex_id += base::itos(i+10);
     std::string id("");
     base::decode_from_hex(hex_id, &id);
-    std::string ip = "127.0.0.6";
+    std::string ip("127.0.0.6");
     boost::uint16_t port = 9000+i;
     Contact contact(id, ip, port + i, ip, port + i);
     if (i < K)
@@ -725,11 +716,11 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   std::vector<Contact> contacts;
   for (int i = 0; i < 10; ++i) {
     std::string character = base::itos(i);
-    std::string hex_id(""), id("");
+    std::string hex_id, id;
     for (int j = 0; j < 128; ++j)
       hex_id += character;
     ASSERT_TRUE(base::decode_from_hex(hex_id, &id));
-    std::string ip = "127.0.0.6";
+    std::string ip("127.0.0.6");
     boost::uint16_t port = 9000 + i;
     Contact contact(id, ip, port, ip, port);
     if (i < 7)
@@ -825,5 +816,4 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
                   &testcontact));
   }
 }
-
 }  // namespace kad

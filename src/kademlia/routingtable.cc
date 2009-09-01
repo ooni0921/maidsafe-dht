@@ -34,20 +34,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 
 RoutingTable::RoutingTable(const std::string &holder_id)
-    : k_buckets_(),
-      bucket_upper_address_(),
-      holder_id_(holder_id),
-      bucket_of_holder_(0),
-      brother_bucket_of_holder_(-1),
-      address_space_upper_address_("2") {
+      : k_buckets_(), bucket_upper_address_(), holder_id_(holder_id),
+        bucket_of_holder_(0), brother_bucket_of_holder_(-1),
+        address_space_upper_address_("2") {
   BigInt min_range(0);
   address_space_upper_address_.pow(kKeySizeBytes*8);
   address_space_upper_address_--;
   boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
-                                                 address_space_upper_address_));
+      address_space_upper_address_));
   k_buckets_.push_back(kbucket);
   bucket_upper_address_.insert(std::pair<BigInt, int>
-                               (address_space_upper_address_, 0));
+      (address_space_upper_address_, 0));
 }
 
 RoutingTable::~RoutingTable() {
@@ -56,13 +53,6 @@ RoutingTable::~RoutingTable() {
 }
 
 int RoutingTable::KBucketIndex(const std::string &key) {
-//  bool found = false;
-//  int result;
-//  for (result = 0; (result < static_cast<int>(k_buckets_.size()))&& (!found);
-//      result++)
-//    if (k_buckets_[result]->KeyInRange(key))
-//      found = true;
-//  return result-1;
   BigInt bint = StrToBigInt(key);
   if (bint > address_space_upper_address_)
     return -1;
@@ -80,7 +70,7 @@ std::vector<int> RoutingTable::SortBucketsByDistance(const std::string &key) {
   for (std::map<BigInt, int>::iterator iter = bucket_upper_address_.begin();
        iter != bucket_upper_address_.end(); ++iter)
     distance.insert(std::pair<BigInt, int>(((*iter).first ^ bint),
-                                           (*iter).second));
+        (*iter).second));
   std::vector<int> indices;
   for (std::map<BigInt, int>::iterator dist_iter = distance.begin();
        dist_iter != distance.end(); ++dist_iter)
@@ -89,7 +79,7 @@ std::vector<int> RoutingTable::SortBucketsByDistance(const std::string &key) {
 }
 
 int RoutingTable::SortContactsByDistance(const std::string &key,
-                                         std::vector<Contact> *contacts) {
+      std::vector<Contact> *contacts) {
   boost::uint32_t number_of_contacts = contacts->size();
   BigInt bint = StrToBigInt(key);
   std::map<BigInt, Contact> distance;
@@ -195,11 +185,9 @@ int RoutingTable::AddContact(const Contact &new_contact) {
   }
 }
 
-void RoutingTable::FindCloseNodes(
-    const std::string &key,
-    int count,
-    std::vector<Contact> *close_nodes,
-    const std::vector<Contact> &exclude_contacts) {
+void RoutingTable::FindCloseNodes(const std::string &key, int count,
+      std::vector<Contact> *close_nodes,
+      const std::vector<Contact> &exclude_contacts) {
   int index = KBucketIndex(key);
   if (index < 0)
     return;
@@ -263,77 +251,77 @@ void RoutingTable::Clear() {
   address_space_upper_address_.pow(kKeySizeBytes*8);
   address_space_upper_address_--;
   boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
-                                                 address_space_upper_address_));
+      address_space_upper_address_));
   k_buckets_.push_back(kbucket);
   bucket_upper_address_.insert(std::pair<BigInt, int>
-                               (address_space_upper_address_, 0));
+      (address_space_upper_address_, 0));
 }
 
 namespace detail {
-  struct ForceKEntry {
-    Contact contact;
-    int score;
-  };
+struct ForceKEntry {
+  Contact contact;
+  int score;
+};
 
-  struct ContactWithTargetPeer {
-    Contact contact;
-    std::string holder_id;
-  };
+struct ContactWithTargetPeer {
+  Contact contact;
+  std::string holder_id;
+};
 
-  bool compare_distance(const ContactWithTargetPeer &first,
-      const ContactWithTargetPeer &second) {
-    if (first.contact.node_id() == "") return true;
-    if (second.contact.node_id() == "") return false;
-    if (kademlia_distance(first.contact.node_id(), first.holder_id) <
-        kademlia_distance(second.contact.node_id(), second.holder_id))
-      return true;
-    else
-      return false;
+bool compare_distance(const ContactWithTargetPeer &first,
+    const ContactWithTargetPeer &second) {
+  if (first.contact.node_id() == "") return true;
+  if (second.contact.node_id() == "") return false;
+  if (kademlia_distance(first.contact.node_id(), first.holder_id) <
+      kademlia_distance(second.contact.node_id(), second.holder_id))
+    return true;
+  else
+    return false;
+}
+
+bool compare_time(const ContactWithTargetPeer &first,
+    const ContactWithTargetPeer &second) {
+  if (first.contact.last_seen() > second.contact.last_seen())
+    return true;
+  else
+    return false;
+}
+
+bool compare_score(const ForceKEntry &first, const ForceKEntry &second) {
+  if (first.score > second.score)
+    return true;
+  else
+    return false;
+}
+
+bool get_least_useful_contact(std::list<ContactWithTargetPeer> l,
+    Contact *least_useful_contact) {
+  l.sort(compare_distance);
+  std::list<ForceKEntry> l_score;
+  int d = 1;
+  for (std::list<ContactWithTargetPeer>::iterator it = l.begin();
+      it != l.end(); it++) {
+    ForceKEntry entry = {it->contact, d++};
+    l_score.push_back(entry);
   }
-
-  bool compare_time(const ContactWithTargetPeer &first,
-      const ContactWithTargetPeer &second) {
-    if (first.contact.last_seen() > second.contact.last_seen())
-      return true;
-    else
-      return false;
-  }
-
-  bool compare_score(const ForceKEntry &first, const ForceKEntry &second) {
-    if (first.score > second.score)
-      return true;
-    else
-      return false;
-  }
-
-  bool get_least_useful_contact(std::list<ContactWithTargetPeer> l,
-      Contact *least_useful_contact) {
-    l.sort(compare_distance);
-    std::list<ForceKEntry> l_score;
-    int d = 1;
-    for (std::list<ContactWithTargetPeer>::iterator it = l.begin();
-        it != l.end(); it++) {
-      ForceKEntry entry = {it->contact, d++};
-      l_score.push_back(entry);
-    }
-    l.sort(compare_time);
-    int t = 1;
-    for (std::list<ContactWithTargetPeer>::iterator it = l.begin();
-        it != l.end(); it++) {
-      for (std::list<ForceKEntry>::iterator it1 = l_score.begin();
-          it1 != l_score.end(); it1++) {
-        if (it->contact == it1->contact) it1->score += t++;
-      }
-    }
-    l_score.sort(compare_score);
-    if (!l_score.empty()) {
-      // return the contact with the highest score
-      *least_useful_contact = l_score.front().contact;
-      return true;
-    } else {
-      return false;
+  l.sort(compare_time);
+  int t = 1;
+  for (std::list<ContactWithTargetPeer>::iterator it = l.begin();
+      it != l.end(); it++) {
+    for (std::list<ForceKEntry>::iterator it1 = l_score.begin();
+        it1 != l_score.end(); it1++) {
+      if (it->contact == it1->contact) it1->score += t++;
     }
   }
+  l_score.sort(compare_score);
+  if (!l_score.empty()) {
+    // return the contact with the highest score
+    *least_useful_contact = l_score.front().contact;
+    return true;
+  } else {
+    return false;
+  }
+}
 }  // namespace detail
 
 int RoutingTable::ForceKAcceptNewPeer(const Contact &new_contact) {

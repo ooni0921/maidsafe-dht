@@ -26,6 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
+#include "maidsafe/config.h"
 #include "kademlia/kbucket.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/routingtable.h"
@@ -34,17 +35,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 bool TestInRange(const std::string &key, const kad::BigInt &min_range,
     const kad::BigInt &max_range) {
-  std::string key_enc("");
+  std::string key_enc;
   base::encode_to_hex(key, &key_enc);
   key_enc = "0x"+key_enc;
   kad::BigInt key_val(key_enc);
   if (min_range > key_val) {
-    std::cout << "under min range\n";
-    std::cout << "val " << key_val << std::endl;
+    LOG(INFO) << "under min range" << std::endl;
+    LOG(INFO) << "val " << key_val << std::endl;
   }
   if (key_val > max_range) {
-    std::cout << "above max range\n";
-    std::cout << "val " << key_val << std::endl;
+    LOG(INFO) << "above max range" << std::endl;
+    LOG(INFO) << "val " << key_val << std::endl;
   }
   return static_cast<bool>(min_range <= key_val && key_val <= max_range);
 }
@@ -54,10 +55,10 @@ class TestRoutingTable : public testing::Test {
  public:
   TestRoutingTable() : cry_obj() {}
  protected:
-    void SetUp() {
-      cry_obj.set_symm_algorithm(crypto::AES_256);
-      cry_obj.set_hash_algorithm(crypto::SHA_512);
-    }
+  void SetUp() {
+    cry_obj.set_symm_algorithm(crypto::AES_256);
+    cry_obj.set_hash_algorithm(crypto::SHA_512);
+  }
     crypto::Crypto cry_obj;
 };
 
@@ -65,10 +66,10 @@ class TestRoutingTable : public testing::Test {
 TEST_F(TestRoutingTable, BEH_KAD_AddContact) {
   std::string enc_id = "ef420cd03b20acc07f79441c6560b8e8953f0b601a968d71311abe6"
     "f1f5feb2611692309c66f77f93ffdac4adbeddb3a28fe3b0b92d1d23592ad9847f49580df";
-  std::string holder_id("");
+  std::string holder_id;
   base::decode_from_hex(enc_id, &holder_id);
   kad::RoutingTable routingtable(holder_id);
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   unsigned short port = 8888;
   std::string ids[16];
   ids[0] = "461b69b40db1800f0b9a6cc13c257c6a06043b57841149fbbbca4dea3bcbf9119ff"
@@ -104,7 +105,7 @@ TEST_F(TestRoutingTable, BEH_KAD_AddContact) {
   ids[15] = "a27b24b72c37e7862613b29e86502dae6f863170eb1621a04a06f909588348427b"
     "2c3bc623d7ef1bf59bd3efa010c69b19a1d8732c8512ff8510ea46176ad383";
   for (int i = 0; i < 16 && i < kad::K; i++) {
-    std::string id("");
+    std::string id;
     base::decode_from_hex(ids[i], &id);
     kad::Contact contact(id, ip, port + i, ip, port + i);
     ASSERT_EQ(0, routingtable.AddContact(contact));
@@ -115,7 +116,6 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Get_Contact) {
   std::string holder_id = kad::vault_random_id();
   kad::RoutingTable routingtable(holder_id);
   int id = rand();  // NOLINT
-  std::cout << "id: "<< id << std::endl;
   std::string contact_id = cry_obj.Hash(base::itos(id), "",
     crypto::STRING_STRING, false);
   std::string ip = "127.0.0.1";
@@ -125,7 +125,7 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Get_Contact) {
   kad::Contact rec_contact;
   ASSERT_TRUE(routingtable.GetContact(contact_id, &rec_contact));
   ASSERT_TRUE(contact == rec_contact);
-  std::cout << "Recoverd contact " << rec_contact.ToString();
+  LOG(INFO) << "Recoverd contact " << rec_contact.ToString() << std::endl;
 }
 
 TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Contact) {
@@ -134,7 +134,7 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Contact) {
   int id = rand();  // NOLINT
   std::string contact_id = cry_obj.Hash(base::itos(id), "",
     crypto::STRING_STRING, false);
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   unsigned short port = 8888;
   kad::Contact contact(contact_id, ip, port, ip, port);
   ASSERT_EQ(0, routingtable.AddContact(contact));
@@ -157,7 +157,7 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Add_Contact) {
   int id = rand();  // NOLINT
   std::string contact_id = cry_obj.Hash(base::itos(id), "",
     crypto::STRING_STRING, false);
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   unsigned short port = 8888;
   kad::Contact contact(contact_id, ip, port, ip, port);
   ASSERT_EQ(0, routingtable.AddContact(contact));
@@ -176,7 +176,7 @@ TEST_F(TestRoutingTable, BEH_KAD_SplitKBucket) {
   for (int i = 0; i < kad::K+1; i++)
     id[i] = id[0] + i;
   std::string contact_id;
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   unsigned short port = 8880;
   for (int i = 0; i < kad::K+1; i++) {
     contact_id = cry_obj.Hash(base::itos(id[i]), "", crypto::STRING_STRING,
@@ -199,7 +199,7 @@ TEST_F(TestRoutingTable, BEH_KAD_NoSplitKBucket) {
   std::string enc_holder_id;
   for (int i = 0; i < kad::kKeySizeBytes*2; i++)
     enc_holder_id += "1";
-  std::string holder_id("");
+  std::string holder_id;
   base::decode_from_hex(enc_holder_id, &holder_id);
   kad::RoutingTable routingtable(holder_id);
   std::string contacts_id[kad::K+1];
@@ -215,7 +215,7 @@ TEST_F(TestRoutingTable, BEH_KAD_NoSplitKBucket) {
     contacts_id[i].replace(0, i, rep);
   }
   std::string contact_id;
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   unsigned short port = 8880;
   for (int i = 0; i < kad::K; i++) {
     contact_id = "";
@@ -237,8 +237,7 @@ TEST_F(TestRoutingTable, BEH_KAD_NoSplitKBucket) {
 
 TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
   std::string holder_id;
-  kad::BigInt min_range(0);
-  kad::BigInt max_range(2);
+  kad::BigInt min_range(0), max_range(2);
   max_range.pow(kad::kKeySizeBytes*8);
   max_range--;
   kad::BigInt max_range1(2);
@@ -267,7 +266,7 @@ TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
     ids.push_back(id);
   }
   unsigned short port = 8880;
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   for (int i = 0; i < static_cast<int>(ids.size());i++) {
     kad::Contact contact(ids[i], ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(contact));
@@ -350,8 +349,7 @@ TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
 
 TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
   std::string holder_id;
-  kad::BigInt min_range(0);
-  kad::BigInt max_range(2);
+  kad::BigInt min_range(0), max_range(2);
   max_range.pow(kad::kKeySizeBytes*8);
   max_range--;
   kad::BigInt max_range1(2);
@@ -380,7 +378,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
     ids.push_back(id);
   }
   unsigned short port = 8880;
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   for (int i = 0; i < static_cast<int>(ids.size());i++) {
     kad::Contact contact(ids[i], ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(contact));
@@ -407,7 +405,6 @@ TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
   ids.clear();
 
   std::vector<kad::Contact> close_nodes, ex_contacts;
-//  boost::this_thread::sleep(boost::posix_time::seconds(0));
   std::string search_id = kad::random_kademlia_id(max_range1, max_range);
   routingtable.FindCloseNodes(search_id, kad::K-1, &close_nodes, ex_contacts);
   ASSERT_EQ(kad::K-1, static_cast<int>(close_nodes.size()));
@@ -418,10 +415,9 @@ TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
 TEST_F(TestRoutingTable, BEH_KAD_ClearRoutingTable) {
   std::string enc_id = "ef420cd03b20acc07f79441c6560b8e8953f0b601a968d71311abe6"
     "f1f5feb2611692309c66f77f93ffdac4adbeddb3a28fe3b0b92d1d23592ad9847f49580df";
-  std::string holder_id("");
+  std::string holder_id, ip("127.0.0.1");
   base::decode_from_hex(enc_id, &holder_id);
   kad::RoutingTable routingtable(holder_id);
-  std::string ip = "127.0.0.1";
   unsigned short port = 8888;
   std::string ids[16];
   ids[0] = "461b69b40db1800f0b9a6cc13c257c6a06043b57841149fbbbca4dea3bcbf9119ff"
@@ -457,7 +453,7 @@ TEST_F(TestRoutingTable, BEH_KAD_ClearRoutingTable) {
   ids[15] = "a27b24b72c37e7862613b29e86502dae6f863170eb1621a04a06f909588348427b"
     "2c3bc623d7ef1bf59bd3efa010c69b19a1d8732c8512ff8510ea46176ad383";
   for (int i = 0; i < 16&&i < kad::K; i++) {
-    std::string id("");
+    std::string id;
     base::decode_from_hex(ids[i], &id);
     kad::Contact contact(id, ip, port + i, ip, port + i);
     ASSERT_EQ(0, routingtable.AddContact(contact));
@@ -472,8 +468,7 @@ TEST_F(TestRoutingTable, BEH_KAD_ClearRoutingTable) {
 
 TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
   std::string holder_id;
-  kad::BigInt range1(0);
-  kad::BigInt range2(2);
+  kad::BigInt range1(0), range2(2);
   range2.pow((kad::kKeySizeBytes*8)-3);
   range2--;
   kad::BigInt range3(2);
@@ -493,7 +488,7 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
   kad::RoutingTable routingtable(holder_id);
   boost::uint64_t now = base::get_epoch_milliseconds();
   // fill the first bucket
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   unsigned short port = 8888;
   for (int i = 0; i < kad::K - 1; i++) {
     port++;
@@ -569,7 +564,7 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
 }
 
 TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
-  std::string enc_holder_id = "7";
+  std::string enc_holder_id("7");
   for (int i = 1; i < kad::kKeySizeBytes*2; i++)
     enc_holder_id += "1";
   std::string holder_id("");
@@ -602,12 +597,11 @@ TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
     contacts_id_second[i].replace(0, i+1, rep);
     contacts_id_second[i].replace(0, 1, "8");
   }
-  kad::Contact empty;
-  kad::Contact result;
+  kad::Contact empty, result;
   result = routingtable.GetLastSeenContact(0);
   ASSERT_TRUE(empty == result);
   std::string contact_id;
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   unsigned short port = 8880;
   for (int i = 0; i < (kad::K/2)+1; i++) {
     contact_id = "";

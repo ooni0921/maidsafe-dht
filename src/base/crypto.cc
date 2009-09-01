@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cryptopp/rsa.h>
 #include <cryptopp/osrng.h>
 
+#include "maidsafe/config.h"
 #include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/utils.h"
 
@@ -61,7 +62,7 @@ std::string Crypto::XOROperation(const std::string &first,
 std::string Crypto::Obfuscate(const std::string &first,
                               const std::string &second,
                               obfuscationtype obt) {
-  std::string result("");
+  std::string result;
   if ((first.length() != second.length()) || (first.length() == 0))
     return result;
   switch (obt) {
@@ -98,7 +99,7 @@ std::string Crypto::HashFunc(const std::string &input,
                              operationtype ot,
                              bool hex,
                              T hash) {
-  std::string result("");
+  std::string result;
   switch (ot) {
     case STRING_STRING:
       if (hex) {
@@ -122,9 +123,7 @@ std::string Crypto::HashFunc(const std::string &input,
         }
       }
       catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-        printf("%s\n", e.what());
-#endif
+        DLOG(ERROR) << e.what() << std::endl;
         result = "";
       }
       break;
@@ -141,9 +140,7 @@ std::string Crypto::HashFunc(const std::string &input,
         }
       }
       catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-        printf("%s\n", e.what());
-#endif
+        DLOG(ERROR) << e.what() << std::endl;
         result = "";
       }
       break;
@@ -231,9 +228,7 @@ std::string Crypto::SymmEncrypt(const std::string &input,
             new CryptoPP::FileSink(output.c_str())));
       }
       catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-        printf("%s\n", e.what());
-#endif
+        DLOG(ERROR) << e.what() << std::endl;
         result = "";
       }
       break;
@@ -244,9 +239,7 @@ std::string Crypto::SymmEncrypt(const std::string &input,
               new CryptoPP::StringSink(result)));
         }
         catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-          printf("%s\n", e.what());
-#endif
+          DLOG(ERROR) << e.what() << std::endl;
           result = "";
         }
         break;
@@ -258,9 +251,7 @@ std::string Crypto::SymmEncrypt(const std::string &input,
               new CryptoPP::FileSink(output.c_str())));
         }
         catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-          printf("%s\n", e.what());
-#endif
+          DLOG(ERROR) << e.what() << std::endl;
           result = "";
         }
         break;
@@ -299,9 +290,7 @@ std::string Crypto::SymmDecrypt(const std::string &input,
           new CryptoPP::FileSink(output.c_str())));
       }
       catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-        printf("%s\n", e.what());
-#endif
+        DLOG(ERROR) << e.what() << std::endl;
         result = "";
       }
       break;
@@ -312,9 +301,7 @@ std::string Crypto::SymmDecrypt(const std::string &input,
           new CryptoPP::StringSink(result)));
       }
       catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-        printf("%s\n", e.what());
-#endif
+        DLOG(ERROR) << e.what() << std::endl;
         result = "";
       }
       break;
@@ -326,9 +313,7 @@ std::string Crypto::SymmDecrypt(const std::string &input,
             new CryptoPP::FileSink(output.c_str())));
       }
       catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-        printf("%s\n", e.what());
-#endif
+        DLOG(ERROR) << e.what() << std::endl;
         result = "";
       }
       break;
@@ -373,9 +358,7 @@ std::string Crypto::AsymEncrypt(const std::string &input,
     return result;
   }
   catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-    printf("%s\n", e.what());
-#endif
+    DLOG(ERROR) << e.what() << std::endl;
     return "";
   }
 }
@@ -415,9 +398,7 @@ std::string Crypto::AsymDecrypt(const std::string &input,
     return result;
   }
   catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-    printf("%s\n", e.what());
-#endif
+    DLOG(ERROR) << e.what() << std::endl;
     return "";
   }
 }
@@ -430,7 +411,7 @@ std::string Crypto::AsymSign(const std::string &input,
     CryptoPP::StringSource privkey(key, true);
     CryptoPP::RSASS<CryptoPP::PKCS1v15, CryptoPP::SHA512>::Signer
         signer(privkey);
-    std::string result("");
+    std::string result;
     switch (ot) {
       case STRING_STRING:
         CryptoPP::StringSource(input, true,
@@ -458,9 +439,7 @@ std::string Crypto::AsymSign(const std::string &input,
     return result;
   }
   catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-    printf("%s\n", e.what());
-#endif
+    DLOG(ERROR) << e.what() << std::endl;
     return "";
   }
 }
@@ -509,9 +488,7 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
     }
   }
   catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-    printf("%s\n", e.what());
-#endif
+    DLOG(ERROR) << e.what() << std::endl;
     return false;
   }
 }
@@ -547,9 +524,7 @@ std::string Crypto::Compress(const std::string &input,
     return result;
   }
   catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-    printf("Failed to compress: %s\n", e.what());
-#endif
+    DLOG(ERROR) << e.what() << std::endl;
     return "";
   }
 }
@@ -558,7 +533,7 @@ std::string Crypto::Uncompress(const std::string &input,
                                const std::string &output,
                                operationtype ot) {
   try {
-    std::string result("");
+    std::string result;
     switch (ot) {
       case STRING_STRING:
         CryptoPP::StringSource(input, true, new CryptoPP::Gunzip(
@@ -582,9 +557,7 @@ std::string Crypto::Uncompress(const std::string &input,
     return result;
   }
   catch(const CryptoPP::Exception &e) {
-#ifdef DEBUG
-    printf("%s\n", e.what());
-#endif
+    DLOG(ERROR) << e.what() << std::endl;
     return "";
   }
 }

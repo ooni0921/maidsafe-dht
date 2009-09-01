@@ -30,13 +30,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // which node 2 uses to test direct-connection status of node 1.
 
 #include <gtest/gtest.h>
-
 #include <boost/filesystem.hpp>
 #include "kademlia/kadservice.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
+#include "maidsafe/config.h"
 
 namespace fs = boost::filesystem;
 
@@ -57,36 +57,17 @@ class Callback {
 class NatDetectionTest: public testing::Test {
  protected:
   NatDetectionTest() : kad_config_fileA_("NatDetectionTest/A/.kadconfig"),
-                       kad_config_fileB_("NatDetectionTest/B/.kadconfig"),
-                       kad_config_fileC_("NatDetectionTest/C/.kadconfig"),
-                       channel_managerA_(new rpcprotocol::ChannelManager),
-                       channel_managerB_(new rpcprotocol::ChannelManager),
-                       channel_managerC_(new rpcprotocol::ChannelManager),
-                       knodeimpl1_(),
-                       knodeimpl2_(),
-                       knodeimpl3_(),
-                       cb_(),
-                       contactA_(),
-                       contactB_(),
-                       contactC_(),
-                       remote_contact_(),
-                       contact_strA_(""),
-                       contact_strB_(""),
-                       contact_strC_(""),
-                       node_idA_(""),
-                       node_idB_(""),
-                       node_idC_(""),
-                       remote_node_id_(""),
-                       serviceA_(),
-                       serviceB_(),
-                       serviceC_(),
-                       datastoreA_(),
-                       datastoreB_(),
-                       datastoreC_(),
-                       routingtableA_(),
-                       routingtableB_(),
-                       routingtableC_(),
-                       test_dir_() {
+      kad_config_fileB_("NatDetectionTest/B/.kadconfig"),
+      kad_config_fileC_("NatDetectionTest/C/.kadconfig"),
+      channel_managerA_(new rpcprotocol::ChannelManager),
+      channel_managerB_(new rpcprotocol::ChannelManager),
+      channel_managerC_(new rpcprotocol::ChannelManager),
+      knodeimpl1_(), knodeimpl2_(), knodeimpl3_(), cb_(), contactA_(),
+      contactB_(), contactC_(), remote_contact_(), contact_strA_(""),
+      contact_strB_(""), contact_strC_(""), node_idA_(""), node_idB_(""),
+      node_idC_(""), remote_node_id_(""), serviceA_(), serviceB_(),
+      serviceC_(), datastoreA_(), datastoreB_(), datastoreC_(),
+      routingtableA_(), routingtableB_(), routingtableC_(), test_dir_() {
     test_dir_ = std::string("NatDetectionTest") +
                 boost::lexical_cast<std::string>(base::random_32bit_uinteger());
     std::string dirs;
@@ -101,17 +82,17 @@ class NatDetectionTest: public testing::Test {
       fs::create_directories(dirs);
     }
     catch(const std::exception &e) {
-      printf("%s\n", e.what());
+      LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
     }
     dirs = test_dir_ + std::string("/A/datastore");
     knodeimpl1_ = boost::shared_ptr<KNodeImpl> (new KNodeImpl(channel_managerA_,
-        VAULT, "", ""));
+        VAULT, "", "", false, false));
     dirs = test_dir_ + std::string("/B/datastore");
     knodeimpl2_ = boost::shared_ptr<KNodeImpl> (new KNodeImpl(channel_managerB_,
-        VAULT, "", ""));
+        VAULT, "", "", false, false));
     dirs = test_dir_ + std::string("/C/datastore");
     knodeimpl3_ = boost::shared_ptr<KNodeImpl> (new KNodeImpl(channel_managerC_,
-        VAULT, "", ""));
+        VAULT, "", "", false, false));
   }
 
   virtual ~NatDetectionTest() {
@@ -120,7 +101,7 @@ class NatDetectionTest: public testing::Test {
         fs::remove_all(test_dir_);
     }
     catch(const std::exception &e) {
-      printf("%s\n", e.what());
+      LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
     }
   }
 
@@ -134,9 +115,11 @@ class NatDetectionTest: public testing::Test {
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
         knodeimpl1_.get(), _1)));
     cb_.Reset();
+    boost::asio::ip::address local_ip;
+    ASSERT_TRUE(base::get_local_address(&local_ip));
     knodeimpl1_->Join(node_idA_, kad_config_fileA_,
-                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-                      false);
+        local_ip.to_string(), channel_managerA_->ptransport()->listening_port(),
+        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
     wait_result(&cb_);
     ASSERT_EQ(kRpcResultSuccess, cb_.result());
     ASSERT_TRUE(knodeimpl1_->is_joined());
@@ -158,8 +141,7 @@ class NatDetectionTest: public testing::Test {
         knodeimpl2_.get(), _1)));
     cb_.Reset();
     knodeimpl2_->Join(node_idB_, kad_config_fileB_,
-                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-                      false);
+        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
     wait_result(&cb_);
     ASSERT_EQ(kRpcResultSuccess, cb_.result());
     ASSERT_TRUE(knodeimpl2_->is_joined());
@@ -181,8 +163,7 @@ class NatDetectionTest: public testing::Test {
         knodeimpl3_.get(), _1)));
     cb_.Reset();
     knodeimpl3_->Join(node_idC_, kad_config_fileC_,
-                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1),
-                      false);
+                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
     wait_result(&cb_);
     ASSERT_EQ(kRpcResultSuccess, cb_.result());
     ASSERT_TRUE(knodeimpl3_->is_joined());
@@ -240,7 +221,6 @@ class NatDetectionTest: public testing::Test {
     channel_managerC_->StopTransport();
     channel_managerC_->CleanUpTransport();
     channel_managerC_.reset();
-    printf("Finished tear down.\n");
   }
 
   std::string kad_config_fileA_, kad_config_fileB_, kad_config_fileC_;
@@ -273,7 +253,7 @@ TEST_F(NatDetectionTest, BEH_KAD_NatDetPing) {
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   serviceA_->NatDetectionPing(&controller, &nd_ping_request, &nd_ping_response,
-                              done1);
+      done1);
   EXPECT_TRUE(nd_ping_response.IsInitialized());
   EXPECT_EQ(kRpcResultFailure, nd_ping_response.result());
   EXPECT_FALSE(nd_ping_response.has_echo());
@@ -286,7 +266,7 @@ TEST_F(NatDetectionTest, BEH_KAD_NatDetPing) {
       (&cb_obj, &Callback::CallbackFunction);
   nd_ping_response.Clear();
   serviceA_->NatDetectionPing(&controller, &nd_ping_request, &nd_ping_response,
-                             done2);
+      done2);
   EXPECT_TRUE(nd_ping_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, nd_ping_response.result());
   EXPECT_EQ("pong", nd_ping_response.echo());

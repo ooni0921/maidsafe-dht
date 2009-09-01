@@ -54,9 +54,9 @@ class CallLaterTimer {
   void TryExecute();
   inline bool IsStarted() { return is_started_; }
   int CancelAll();
-  bool CancelOne(int calllater_id);
+  bool CancelOne(const int &calllater_id);
   // Delay msecs milliseconds to call the function specified by cb
-  int AddCallLater(boost::uint64_t msecs, calllater_func cb);
+  int AddCallLater(const boost::uint64_t &msecs, calllater_func cb);
   friend class CallLaterTest;
 
  private:
@@ -74,7 +74,7 @@ class CallLaterTimer {
   boost::mutex mutex_;
   int calllater_id_;
   bool is_started_;
-  boost::shared_ptr<boost::thread> blocking_routine;
+  boost::shared_ptr<boost::thread> blocking_routine_;
   std::list<CallLaterMap> calllaters_;
   boost::condition_variable cond_;
 };

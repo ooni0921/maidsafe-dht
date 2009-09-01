@@ -65,12 +65,8 @@ int PDRoutingTableHandler::GetClosestRtt(
     const std::set<std::string> &exclude_ids) {
   boost::mutex::scoped_lock guard(mutex_);
   routingtable::index<t_rtt>::type& rtt_indx = routingtable_.get<t_rtt>();
-
-
-
   return 0;
 }
-
 
 int PDRoutingTableHandler::AddTuple(base::PDRoutingTableTuple tuple) {
   boost::mutex::scoped_lock guard(mutex_);

@@ -134,7 +134,7 @@ struct IterativeStoreValueData {
         sig_req(""), publish(publish_val), ttl(timetolive), sig_value() {}
   std::vector<Contact> closest_nodes;
   std::string key, value;
-  int save_nodes, contacted_nodes, index;
+  unsigned int save_nodes, contacted_nodes, index;
   base::callback_func_type cb;
   bool is_callbacked;
   int data_type;
@@ -180,11 +180,11 @@ struct BootstrapData {
 
 struct BootstrapArgs {
   BootstrapArgs() : cached_nodes(), cb(), active_process(0),
-      is_callbacked(false), port_fw(false) {}
+      is_callbacked(false), dir_connected(false) {}
   std::vector<Contact> cached_nodes;
   base::callback_func_type cb;
   int active_process;
-  bool is_callbacked, port_fw;
+  bool is_callbacked, dir_connected;
 };
 
 struct StoreRequestSignature {
@@ -201,16 +201,27 @@ class KNodeImpl {
  public:
   KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
       node_type type, const std::string &private_key,
-      const std::string &public_key);
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp);
   // constructor used to set up parameters k, alpha, and beta for kademlia
   KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
       node_type type, const boost::uint16_t k, const int &alpha,
       const int &beta, const int &refresh_time, const std::string &private_key,
-      const std::string &public_key);
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp);
   ~KNodeImpl();
-  // if node_id is "", it will be randomly generated
+
   void Join(const std::string &node_id, const std::string &kad_config_file,
-      base::callback_func_type cb, const bool &port_forwarded);
+      base::callback_func_type cb);
+  void Join(const std::string &kad_config_file, base::callback_func_type cb);
+
+  // Use this join for the first node in the network
+  void Join(const std::string &node_id, const std::string &kad_config_file,
+      const std::string &external_ip, const boost::uint16_t &external_port,
+      base::callback_func_type cb);
+  void Join(const std::string &kad_config_file, const std::string &external_ip,
+      const boost::uint16_t &external_port, base::callback_func_type cb);
+
   void Leave();
   void StoreValue(const std::string &key, const SignedValue &value,
       const std::string &public_key, const std::string &signed_public_key,
@@ -272,7 +283,7 @@ class KNodeImpl {
       BootstrapData data);
   void Bootstrap(const std::string &bootstrap_ip,
       const boost::uint16_t &bootstrap_port, base::callback_func_type cb,
-      const bool &port_forwarded);
+      const bool &dir_connected);
   void Join_Bootstrapping_Iteration_Client(const std::string& result,
       boost::shared_ptr<struct BootstrapArgs> args,
       const std::string bootstrap_ip, const boost::uint16_t bootstrap_port,
@@ -282,7 +293,7 @@ class KNodeImpl {
       const std::string bootstrap_ip, const boost::uint16_t bootstrap_port,
       const std::string local_bs_ip, const boost::uint16_t local_bs_port);
   void Join_Bootstrapping(base::callback_func_type cb,
-      std::vector<Contact> &cached_nodes, const bool &port_forwarded);
+      std::vector<Contact> &cached_nodes, const bool &got_external_address);
   void Join_RefreshNode(base::callback_func_type cb,
       const bool &port_forwarded);
   void SaveBootstrapContacts();  // save the routing table into .kadconfig file
@@ -350,7 +361,7 @@ class KNodeImpl {
   boost::filesystem::path kad_config_path_;
   std::string local_host_ip_;
   boost::uint16_t local_host_port_;
-  bool stopping_;
+  bool stopping_, port_forwarded_, use_upnp_;
   std::list<Contact> contacts_to_add_;
   boost::shared_ptr<boost::thread> addcontacts_routine_;
   boost::condition_variable add_ctc_cond_;

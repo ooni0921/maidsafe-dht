@@ -53,7 +53,7 @@ TEST_F(TestKbucket, BEH_KAD_IsInRange) {
   BigInt max_value(hex_max_val);
   KBucket kbucket1(min_value, max_value);
   std::string id = cry_obj.Hash("15641654616", "", crypto::STRING_STRING,
-                                false);
+      false);
   ASSERT_TRUE(kbucket1.KeyInRange(id));
   hex_max_val = "";
   for (int i = 0; i < kKeySizeBytes; ++i)
@@ -78,7 +78,7 @@ TEST_F(TestKbucket, BEH_KAD_AddContactGetContact) {
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
   std::string id[K];
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   unsigned short port = 8880;
   for (int i = 0; i < K; ++i) {
     ASSERT_EQ(i, kbucket.Size());
@@ -119,7 +119,7 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
   std::string id[kad::K - 1];
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   unsigned short port[kad::K - 1];
   for (int i = 0; i < kad::K - 1; ++i) {
     id[i] = cry_obj.Hash(base::itos(i), "", crypto::STRING_STRING, false);
@@ -130,7 +130,6 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
   ASSERT_EQ(kad::K - 1, kbucket.Size());
   std::vector<Contact> contacts, ex_contacts;
   for (int i = 0; i < kad::K - 1; ++i) {
-    std::cout << "contacts retrieved = " << i + 1 << std::endl;
     kbucket.GetContacts(i + 1, ex_contacts, &contacts);
     ASSERT_EQ(i + 1, static_cast<int>(contacts.size()));
     for (int j = 0; j <= i; ++j) {
@@ -174,7 +173,7 @@ TEST_F(TestKbucket, BEH_KAD_DeleteContact) {
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
   std::string id[kad::K - 1];
-  std::string ip = "127.0.0.1";
+  std::string ip("127.0.0.1");
   unsigned short port = 8880;
   for (int i = 0; i < kad::K - 1; ++i) {
     id[i] = cry_obj.Hash(base::itos(i), "", crypto::STRING_STRING, false);
@@ -255,8 +254,7 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
-  std::string id[kad::K - 1];
-  std::string ip = "127.0.0.1";
+  std::string id[kad::K - 1], ip("127.0.0.1");
   unsigned short port[kad::K - 1];
   for (int i = 0; i < kad::K - 1; ++i) {
     id[i] = cry_obj.Hash(base::itos(i), "", crypto::STRING_STRING, false);
@@ -324,8 +322,7 @@ TEST_F(TestKbucket, BEH_KAD_GetLastSeenContact) {
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
-  std::string id[kad::K - 1];
-  std::string ip = "127.0.0.1";
+  std::string id[kad::K - 1], ip("127.0.0.1");
   unsigned short port[kad::K - 1];
   Contact empty;
   Contact rec;

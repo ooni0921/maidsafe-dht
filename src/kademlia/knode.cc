@@ -31,25 +31,42 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 
 KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-             node_type type, const std::string &private_key,
-             const std::string &public_key)
+             node_type type, const bool &port_forwarded, const bool &use_upnp,
+             const std::string &private_key, const std::string &public_key)
              : pimpl_(new KNodeImpl(channel_manager, type, private_key,
-               public_key)) {}
+               public_key, port_forwarded, use_upnp)) {}
 
 KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
              node_type type, const boost::uint16_t k, const int &alpha,
              const int &beta, const int &refresh_time,
+             const bool &port_forwarded, const bool &use_upnp,
              const std::string &private_key, const std::string &public_key)
              : pimpl_(new KNodeImpl(channel_manager, type, k, alpha, beta,
-                      refresh_time, private_key, public_key)) {}
+               refresh_time, private_key, public_key, port_forwarded,
+               use_upnp)) {}
 
 KNode::~KNode() {}
 
-void KNode::Join(const std::string &node_id,
-                 const std::string &kad_config_file,
-                 base::callback_func_type cb,
-                 const bool &port_forwarded) {
-  pimpl_->Join(node_id, kad_config_file, cb, port_forwarded);
+void KNode::Join(const std::string &node_id, const std::string &kad_config_file,
+      base::callback_func_type cb) {
+  pimpl_->Join(node_id, kad_config_file, cb);
+}
+
+void KNode::Join(const std::string &kad_config_file,
+      base::callback_func_type cb) {
+  pimpl_->Join(kad_config_file, cb);
+}
+
+void KNode::Join(const std::string &node_id, const std::string &kad_config_file,
+      const std::string &external_ip, const boost::uint16_t &external_port,
+      base::callback_func_type cb) {
+  pimpl_->Join(node_id, kad_config_file, external_ip, external_port, cb);
+}
+
+void KNode::Join(const std::string &kad_config_file,
+      const std::string &external_ip, const boost::uint16_t &external_port,
+      base::callback_func_type cb) {
+  pimpl_->Join(kad_config_file, external_ip, external_port, cb);
 }
 
 void KNode::Leave() {

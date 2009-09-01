@@ -40,10 +40,10 @@ KBucket::~KBucket() {
 }
 
 bool KBucket::KeyInRange(const std::string &key) {
-  std::string key_enc("");
+  std::string key_enc;
   if (!base::encode_to_hex(key, &key_enc))
     return false;
-  key_enc = "0x"+key_enc;
+  key_enc = "0x" + key_enc;
   BigInt key_val(key_enc);
   return static_cast<bool>((range_min_ <= key_val) && (key_val < range_max_));
 }
@@ -77,7 +77,6 @@ KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
     std::list<Contact>::iterator it = contacts_.begin();
     std::advance(it, position);
     contacts_.erase(it);
-    // std::cout << "erasing contact" << std::endl;
   }
 
   if (static_cast<boost::uint16_t>(contacts_.size()) == K)
@@ -127,15 +126,14 @@ bool KBucket::GetContact(const std::string &node_id, Contact *contact) {
 }
 
 void KBucket::GetContacts(int count, const std::vector<Contact>
-  &exclude_contacts, std::vector<Contact> *contacts) {
+      &exclude_contacts, std::vector<Contact> *contacts) {
     bool insert;
     int i = 0;
     for (std::list<Contact>::iterator it = contacts_.begin();
       it != contacts_.end() && i < count; it++) {
       insert = true;
       Contact current_element = *it;
-      for (int j = 0; j < (static_cast<int>(exclude_contacts.size())) && insert;
-          j++) {
+      for (unsigned int j = 0; j < exclude_contacts.size() && insert; j++) {
         if (current_element.node_id() == exclude_contacts[j].node_id())
           insert = false;
       }

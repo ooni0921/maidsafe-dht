@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "protobuf/kademlia_service_messages.pb.h"
 #include "rpcprotocol/channelimpl.h"
 #include "rpcprotocol/channelmanagerimpl.h"
+#include "maidsafe/config.h"
 
 namespace rpcprotocol {
 
@@ -88,9 +89,8 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
       const google::protobuf::Message *request,
       google::protobuf::Message *response, google::protobuf::Closure *done) {
   if ((ip_ == "") || (port_ == 0)) {
-#ifdef DEBUG
-    printf("No remote_ip or no remote_port.\n");
-#endif
+    DLOG(ERROR) << "ChannelImpl::CallMethod. No remote_ip or remote_port"
+         << std::endl;
     done->Run();
     return;
   }
@@ -122,17 +122,14 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     pmanager_->AddPendingRequest(msg.message_id(), req);
     pmanager_->AddTimeOutRequest(conn_id, msg.message_id(), req.timeout);
     if (0 != ptransport_->Send(msg, conn_id, true)) {
-#ifdef DEBUG
-    printf("%i --- Failed to send request with id %d\n",
-        pmanager_->external_port(), msg.message_id());
-#endif
+      DLOG(WARNING) << pmanager_->external_port() <<
+        " --- Failed to send request with id " << msg.message_id()
+         << std::endl;
     }
   } else {
-#ifdef DEBUG
-    printf("%i --- Failed to connect to send rpc %s to %s:%d with id %d\n",
-        pmanager_->external_port(), msg.method().c_str(), ip_.c_str(), port_,
-        msg.message_id());
-#endif
+    DLOG(WARNING) << pmanager_->external_port() <<
+        " --- Failed to connect to send rpc " << msg.method() << " to " <<
+        ip_ << ":" << port_ << " with id " << msg.message_id() << std::endl;
     ctrl->set_timeout(1);
     ctrl->set_req_id(msg.message_id());
     req.timeout = ctrl->timeout();
@@ -141,11 +138,9 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     pmanager_->AddReqToTimer(msg.message_id(), req.timeout);
     return;
   }
-#ifdef DEBUG
-  printf("%i --- Sending rpc %s to %s:%d conn_id= %d -- rpc_id=%d\n",
-    pmanager_->external_port(), msg.method().c_str(), ip_.c_str(), port_,
-    conn_id, msg.message_id());
-#endif
+  DLOG(INFO) << pmanager_->external_port() << " --- Sending rpc " <<
+      msg.method() << " to " << ip_ << ":" << port_ << "conn_id = " <<
+      conn_id << " -- rpc_id = " << msg.message_id() << std::endl;
 }
 
 std::string ChannelImpl::GetServiceName(const std::string &full_name) {
@@ -163,9 +158,8 @@ std::string ChannelImpl::GetServiceName(const std::string &full_name) {
     advance(beg, no_tokens - 1);
     service_name = *beg;
   } catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("Error with full method name format: %s.\n", e.what());
-#endif
+    LOG(ERROR) << "ChannelImpl::GetServiceName. " <<
+        "Error with full method name format: " << e.what() << std::endl;
   }
   return service_name;
 }
@@ -213,13 +207,12 @@ void ChannelImpl::SendResponse(const google::protobuf::Message *response,
   response->SerializeToString(&ser_response);
   response_msg.set_args(ser_response);
   if (0 != ptransport_->Send(response_msg, info.connection_id, false)) {
-#ifdef DEBUG
-    printf("Failed to send response to connection %d.\n", info.connection_id);
-#endif
+    DLOG(WARNING) << pmanager_->external_port() <<
+        " Failed to send response to connection " << info.connection_id
+         << std::endl;
   }
-#ifdef DEBUG
-  printf("response to req %d sent\n", info.rpc_id);
-#endif
+  DLOG(INFO) << pmanager_->external_port() << " --- Response to req " <<
+      info.rpc_id << std::endl;
   delete response;
   delete info.ctrl;
 }

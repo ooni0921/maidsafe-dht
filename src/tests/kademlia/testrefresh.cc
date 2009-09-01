@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
 #include "udt/udt.h"
+#include "maidsafe/config.h"
 
 namespace kad {
 
@@ -49,8 +50,8 @@ class TestRefresh : public testing::Test {
       if (boost::filesystem::exists(test_dir))
         boost::filesystem::remove_all(test_dir);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
     }
     // Creating the nodes
     for (int i = 0; i < testNetworkSize; i++) {
@@ -60,33 +61,41 @@ class TestRefresh : public testing::Test {
           base::itos(i);
       boost::filesystem::create_directories(datadir);
       nodes.push_back(boost::shared_ptr<KNode>(new KNode(ch_managers[i], VAULT,
-          testK, kAlpha, kBeta, testRefresh)));
+          testK, kAlpha, kBeta, testRefresh, false, false)));
       EXPECT_EQ(0, ch_managers[i]->StartTransport(0, boost::bind(
           &kad::KNode::HandleDeadRendezvousServer, nodes[i].get(), _1)));
       datadirs.push_back(datadir);
     }
     GeneralKadCallback cb;
-    for (int i = 0; i < testNetworkSize; i++) {
-      printf("starting node %d\n", i);
+    LOG(INFO) << "starting node 0" << std::endl;
+    boost::asio::ip::address local_ip;
+    ASSERT_TRUE(base::get_local_address(&local_ip));
+    nodes[0]->Join(datadirs[0] + "/.kadconfig",
+      local_ip.to_string(), ch_managers[0]->ptransport()->listening_port(),
+      boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
+    wait_result(&cb);
+    ASSERT_EQ(kRpcResultSuccess, cb.result());
+    cb.Reset();
+    ASSERT_TRUE(nodes[0]->is_joined());
+    for (int i = 1; i < testNetworkSize; i++) {
+      LOG(INFO) << "starting node " <<  i << std::endl;
       std::string kconfig_file1 = datadirs[i] + "/.kadconfig";
-      if (i != 0) {
-        base::KadConfig kad_config1;
-        base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-        std::string hex_id;
-        base::encode_to_hex(nodes[0]->node_id(), &hex_id);
-        kad_contact->set_node_id(hex_id);
-        kad_contact->set_ip(nodes[0]->host_ip());
-        kad_contact->set_port(nodes[0]->host_port());
-        kad_contact->set_local_ip(nodes[0]->local_host_ip());
-        kad_contact->set_local_port(nodes[0]->local_host_port());
-        std::fstream output1(kconfig_file1.c_str(),
-          std::ios::out | std::ios::trunc | std::ios::binary);
-        EXPECT_TRUE(kad_config1.SerializeToOstream(&output1));
-        output1.close();
-      }
+      base::KadConfig kad_config1;
+      base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
+      std::string hex_id;
+      base::encode_to_hex(nodes[0]->node_id(), &hex_id);
+      kad_contact->set_node_id(hex_id);
+      kad_contact->set_ip(nodes[0]->host_ip());
+      kad_contact->set_port(nodes[0]->host_port());
+      kad_contact->set_local_ip(nodes[0]->local_host_ip());
+      kad_contact->set_local_port(nodes[0]->local_host_port());
+      std::fstream output1(kconfig_file1.c_str(),
+        std::ios::out | std::ios::trunc | std::ios::binary);
+      EXPECT_TRUE(kad_config1.SerializeToOstream(&output1));
+      output1.close();
 
-      nodes[i]->Join("", kconfig_file1,
-        boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1), false);
+      nodes[i]->Join(kconfig_file1,
+          boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
       wait_result(&cb);
       ASSERT_EQ(kRpcResultSuccess, cb.result());
       cb.Reset();
@@ -100,7 +109,7 @@ class TestRefresh : public testing::Test {
       nodes[i]->StopRvPing();
     }
     for (int i = testNetworkSize-1; i >= 0; i--) {
-      printf("stopping node %d\n", i);
+      LOG(INFO) << "stopping node " << i << std::endl;
       nodes[i]->Leave();
       EXPECT_FALSE(nodes[i]->is_joined());
       ch_managers[i]->StopTransport();
@@ -108,8 +117,8 @@ class TestRefresh : public testing::Test {
     try {
       boost::filesystem::remove_all(test_dir);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
     }
     nodes.clear();
     ch_managers.clear();
@@ -197,7 +206,7 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
   std::string local_dir = test_dir + std::string("/datastorenewnode");
   boost::filesystem::create_directories(local_dir);
   boost::shared_ptr<KNode> node(new KNode(ch_manager, VAULT, testK, kAlpha,
-      kBeta, testRefresh));
+      kBeta, testRefresh, false, false));
   EXPECT_EQ(0, ch_manager->StartTransport(0, boost::bind(
       &kad::KNode::HandleDeadRendezvousServer, node.get(), _1)));
   std::string kconfig_file1 = local_dir + "/.kadconfig";
@@ -217,7 +226,7 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
   GeneralKadCallback cb;
   // joining node with id == key of value stored
   node->Join(key, kconfig_file1,
-    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1), false);
+    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
   ASSERT_EQ(kRpcResultSuccess, cb.result());
   cb.Reset();
@@ -251,8 +260,8 @@ class TestRefreshSignedValues : public testing::Test {
       if (boost::filesystem::exists(test_dir))
         boost::filesystem::remove_all(test_dir);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
     }
     // Creating the nodes
     crypto::RsaKeyPair keys;
@@ -264,34 +273,42 @@ class TestRefreshSignedValues : public testing::Test {
           base::itos(i);
       boost::filesystem::create_directories(datadir);
       nodes.push_back(boost::shared_ptr<KNode>(new KNode(ch_managers[i], VAULT,
-          testK, kAlpha, kBeta, testRefresh, keys.private_key(),
+          testK, kAlpha, kBeta, testRefresh, false, false, keys.private_key(),
           keys.public_key())));
       EXPECT_EQ(0, ch_managers[i]->StartTransport(0, boost::bind(
           &kad::KNode::HandleDeadRendezvousServer, nodes[i].get(), _1)));
       datadirs.push_back(datadir);
     }
     GeneralKadCallback cb;
-    for (int i = 0; i < testNetworkSize; i++) {
-      printf("starting node %d\n", i);
+    LOG(INFO) << "starting node 0" << std::endl;
+    boost::asio::ip::address local_ip;
+    ASSERT_TRUE(base::get_local_address(&local_ip));
+    nodes[0]->Join(datadirs[0] + "/.kadconfig",
+      local_ip.to_string(), ch_managers[0]->ptransport()->listening_port(),
+      boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
+    wait_result(&cb);
+    ASSERT_EQ(kRpcResultSuccess, cb.result());
+    cb.Reset();
+    ASSERT_TRUE(nodes[0]->is_joined());
+    for (int i = 1; i < testNetworkSize; i++) {
+      LOG(INFO) << "starting node " << i << std::endl;
       std::string kconfig_file1 = datadirs[i] + "/.kadconfig";
-      if (i != 0) {
-        base::KadConfig kad_config1;
-        base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-        std::string hex_id;
-        base::encode_to_hex(nodes[0]->node_id(), &hex_id);
-        kad_contact->set_node_id(hex_id);
-        kad_contact->set_ip(nodes[0]->host_ip());
-        kad_contact->set_port(nodes[0]->host_port());
-        kad_contact->set_local_ip(nodes[0]->local_host_ip());
-        kad_contact->set_local_port(nodes[0]->local_host_port());
-        std::fstream output1(kconfig_file1.c_str(),
-          std::ios::out | std::ios::trunc | std::ios::binary);
-        EXPECT_TRUE(kad_config1.SerializeToOstream(&output1));
-        output1.close();
-      }
+      base::KadConfig kad_config1;
+      base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
+      std::string hex_id;
+      base::encode_to_hex(nodes[0]->node_id(), &hex_id);
+      kad_contact->set_node_id(hex_id);
+      kad_contact->set_ip(nodes[0]->host_ip());
+      kad_contact->set_port(nodes[0]->host_port());
+      kad_contact->set_local_ip(nodes[0]->local_host_ip());
+      kad_contact->set_local_port(nodes[0]->local_host_port());
+      std::fstream output1(kconfig_file1.c_str(),
+        std::ios::out | std::ios::trunc | std::ios::binary);
+      EXPECT_TRUE(kad_config1.SerializeToOstream(&output1));
+      output1.close();
 
-      nodes[i]->Join("", kconfig_file1,
-        boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1), false);
+      nodes[i]->Join(kconfig_file1,
+        boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
       wait_result(&cb);
       ASSERT_EQ(kRpcResultSuccess, cb.result());
       cb.Reset();
@@ -305,7 +322,7 @@ class TestRefreshSignedValues : public testing::Test {
       nodes[i]->StopRvPing();
     }
     for (int i = testNetworkSize-1; i >= 0; i--) {
-      printf("stopping node %d\n", i);
+      LOG(INFO) << "stopping node " << i << std::endl;
       nodes[i]->Leave();
       EXPECT_FALSE(nodes[i]->is_joined());
       ch_managers[i]->StopTransport();
@@ -313,8 +330,8 @@ class TestRefreshSignedValues : public testing::Test {
     try {
       boost::filesystem::remove_all(test_dir);
     }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
+    catch(const std::exception &e) {
+      LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
     }
     nodes.clear();
     ch_managers.clear();
@@ -435,7 +452,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   std::string local_dir = test_dir + std::string("/datastorenewnode");
   boost::filesystem::create_directories(local_dir);
   boost::shared_ptr<KNode> node(new KNode(ch_manager, VAULT, testK, kAlpha,
-      kBeta, testRefresh, keys.private_key(), keys.public_key()));
+      kBeta, testRefresh, false, false, keys.private_key(), keys.public_key()));
   EXPECT_EQ(0, ch_manager->StartTransport(0, boost::bind(
       &kad::KNode::HandleDeadRendezvousServer, node.get(), _1)));
   std::string kconfig_file1 = local_dir + "/.kadconfig";
@@ -455,7 +472,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   GeneralKadCallback cb;
   // joining node with id == key of value stored
   node->Join(key, kconfig_file1,
-    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1), false);
+    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
   ASSERT_EQ(kRpcResultSuccess, cb.result());
   cb.Reset();

@@ -1,0 +1,29 @@
+#ifndef MAIDSAFE_CONFIG_H_
+#define MAIDSAFE_CONFIG_H_
+
+#cmakedefine HAVE_GLOG 1
+
+#ifdef HAVE_GLOG
+#include <glog/logging.h>
+#else
+  const int INFO = 0, WARNING = 1, ERROR = 2, FATAL = 3, NUM_SEVERITIES = 4;
+  #include <iostream>
+  namespace google {
+    inline void InitGoogleLogging(char *) {}
+  }
+  class LogMessageVoidify {
+   public:
+    LogMessageVoidify() {}
+   void operator &(std::ostream&) {}
+  };
+  #define LOG(severity) std::cerr
+  #ifndef NDEBUG
+    #define DLOG(severity) std::cerr
+  #else
+    #define DLOG(severity) \
+      true ? (void) 0 : LogMessageVoidify() & LOG(severity)
+  #endif
+#endif
+
+#endif  // CONFIG_H
+
