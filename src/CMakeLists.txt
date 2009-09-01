@@ -183,6 +183,9 @@ boost_date_time-xgcc40-mt-${BOOST_VERSION}
 dl 
 pthread
 )
+IF(HAVE_GLOG)
+    SET(SYS_LIB "${SYS_LIB};/usr/lib/libglog.a")
+ENDIF(HAVE_GLOG)
 ELSEIF (UNIX AND NOT APPLE)
 	SET(SYS_LIB
         /usr/lib/libboost_thread-gcc43-mt-${BOOST_VERSION}.a
@@ -198,7 +201,7 @@ ELSEIF (UNIX AND NOT APPLE)
         pthread
 		)
     IF(HAVE_GLOG)
-        SET(SYS_LIBS ${SYS_LIB} /usr/lib/libglog.a)
+        SET(SYS_LIB "${SYS_LIB};/usr/lib/libglog.a")
     ENDIF(HAVE_GLOG)
 ELSEIF (WIN32)
 	IF(MSVC)
