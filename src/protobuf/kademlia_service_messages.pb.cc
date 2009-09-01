@@ -119,11 +119,12 @@ void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(FindRequest));
   FindResponse_descriptor_ = file->message_type(3);
-  static const int FindResponse_offsets_[6] = {
+  static const int FindResponse_offsets_[7] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(FindResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(FindResponse, closest_nodes_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(FindResponse, values_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(FindResponse, alternative_value_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(FindResponse, alternative_value_holder_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(FindResponse, needs_cache_copy_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(FindResponse, requester_ext_addr_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(FindResponse, node_id_),
   };
@@ -426,37 +427,38 @@ void protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto() {
     "ode_id\030\003 \001(\014\"\206\001\n\013FindRequest\022\013\n\003key\030\001 \002("
     "\014\022%\n\013sender_info\030\002 \002(\0132\020.kad.ContactInfo"
     "\022\023\n\013is_boostrap\030\003 \001(\010\022\025\n\rsender_ext_ip\030\004"
-    " \001(\014\022\027\n\017sender_ext_port\030\005 \001(\005\"\215\001\n\014FindRe"
+    " \001(\014\022\027\n\017sender_ext_port\030\005 \001(\005\"\300\001\n\014FindRe"
     "sponse\022\016\n\006result\030\001 \002(\014\022\025\n\rclosest_nodes\030"
-    "\002 \003(\014\022\016\n\006values\030\003 \003(\014\022\031\n\021alternative_val"
-    "ue\030\004 \001(\014\022\032\n\022requester_ext_addr\030\005 \001(\014\022\017\n\007"
-    "node_id\030\006 \001(\014\"B\n\016FindNodeResult\022\016\n\006resul"
-    "t\030\001 \002(\014\022\017\n\007contact\030\002 \001(\014\022\017\n\007node_id\030\003 \001("
-    "\014\"\333\001\n\014StoreRequest\022\013\n\003key\030\001 \002(\014\022\r\n\005value"
-    "\030\002 \001(\014\022#\n\tsig_value\030\003 \001(\0132\020.kad.SignedVa"
-    "lue\022\013\n\003ttl\030\004 \002(\005\022%\n\013sender_info\030\005 \002(\0132\020."
-    "kad.ContactInfo\022\017\n\007publish\030\006 \002(\010\022\022\n\npubl"
-    "ic_key\030\007 \001(\014\022\031\n\021signed_public_key\030\010 \001(\014\022"
-    "\026\n\016signed_request\030\t \001(\014\"0\n\rStoreResponse"
-    "\022\016\n\006result\030\001 \002(\014\022\017\n\007node_id\030\002 \001(\014\"J\n\017Dow"
-    "nlistRequest\022\020\n\010downlist\030\001 \003(\014\022%\n\013sender"
-    "_info\030\002 \002(\0132\020.kad.ContactInfo\"3\n\020Downlis"
-    "tResponse\022\016\n\006result\030\001 \002(\014\022\017\n\007node_id\030\002 \001"
-    "(\014\"\223\001\n\020BootstrapRequest\022\023\n\013newcomer_id\030\001"
-    " \002(\014\022\031\n\021newcomer_local_ip\030\002 \002(\014\022\033\n\023newco"
-    "mer_local_port\030\003 \002(\005\022\027\n\017newcomer_ext_ip\030"
-    "\004 \001(\014\022\031\n\021newcomer_ext_port\030\005 \001(\005\"\177\n\021Boot"
-    "strapResponse\022\016\n\006result\030\001 \002(\014\022\024\n\014bootstr"
-    "ap_id\030\002 \001(\014\022\027\n\017newcomer_ext_ip\030\003 \001(\014\022\031\n\021"
-    "newcomer_ext_port\030\004 \001(\005\022\020\n\010nat_type\030\005 \001("
-    "\005\"`\n\023NatDetectionRequest\022\020\n\010newcomer\030\001 \002"
-    "(\014\022\026\n\016bootstrap_node\030\002 \002(\014\022\014\n\004type\030\003 \002(\005"
-    "\022\021\n\tsender_id\030\004 \002(\014\"&\n\024NatDetectionRespo"
-    "nse\022\016\n\006result\030\001 \002(\014\"N\n\027NatDetectionPingR"
-    "equest\022\014\n\004ping\030\001 \002(\014\022%\n\013sender_info\030\002 \002("
-    "\0132\020.kad.ContactInfo\"I\n\030NatDetectionPingR"
-    "esponse\022\016\n\006result\030\001 \002(\014\022\014\n\004echo\030\002 \001(\014\022\017\n"
-    "\007node_id\030\003 \001(\014", 1534);
+    "\002 \003(\014\022\016\n\006values\030\003 \003(\014\0222\n\030alternative_val"
+    "ue_holder\030\004 \001(\0132\020.kad.ContactInfo\022\030\n\020nee"
+    "ds_cache_copy\030\005 \001(\014\022\032\n\022requester_ext_add"
+    "r\030\006 \001(\014\022\017\n\007node_id\030\007 \001(\014\"B\n\016FindNodeResu"
+    "lt\022\016\n\006result\030\001 \002(\014\022\017\n\007contact\030\002 \001(\014\022\017\n\007n"
+    "ode_id\030\003 \001(\014\"\333\001\n\014StoreRequest\022\013\n\003key\030\001 \002"
+    "(\014\022\r\n\005value\030\002 \001(\014\022#\n\tsig_value\030\003 \001(\0132\020.k"
+    "ad.SignedValue\022\013\n\003ttl\030\004 \002(\005\022%\n\013sender_in"
+    "fo\030\005 \002(\0132\020.kad.ContactInfo\022\017\n\007publish\030\006 "
+    "\002(\010\022\022\n\npublic_key\030\007 \001(\014\022\031\n\021signed_public"
+    "_key\030\010 \001(\014\022\026\n\016signed_request\030\t \001(\014\"0\n\rSt"
+    "oreResponse\022\016\n\006result\030\001 \002(\014\022\017\n\007node_id\030\002"
+    " \001(\014\"J\n\017DownlistRequest\022\020\n\010downlist\030\001 \003("
+    "\014\022%\n\013sender_info\030\002 \002(\0132\020.kad.ContactInfo"
+    "\"3\n\020DownlistResponse\022\016\n\006result\030\001 \002(\014\022\017\n\007"
+    "node_id\030\002 \001(\014\"\223\001\n\020BootstrapRequest\022\023\n\013ne"
+    "wcomer_id\030\001 \002(\014\022\031\n\021newcomer_local_ip\030\002 \002"
+    "(\014\022\033\n\023newcomer_local_port\030\003 \002(\005\022\027\n\017newco"
+    "mer_ext_ip\030\004 \001(\014\022\031\n\021newcomer_ext_port\030\005 "
+    "\001(\005\"\177\n\021BootstrapResponse\022\016\n\006result\030\001 \002(\014"
+    "\022\024\n\014bootstrap_id\030\002 \001(\014\022\027\n\017newcomer_ext_i"
+    "p\030\003 \001(\014\022\031\n\021newcomer_ext_port\030\004 \001(\005\022\020\n\010na"
+    "t_type\030\005 \001(\005\"`\n\023NatDetectionRequest\022\020\n\010n"
+    "ewcomer\030\001 \002(\014\022\026\n\016bootstrap_node\030\002 \002(\014\022\014\n"
+    "\004type\030\003 \002(\005\022\021\n\tsender_id\030\004 \002(\014\"&\n\024NatDet"
+    "ectionResponse\022\016\n\006result\030\001 \002(\014\"N\n\027NatDet"
+    "ectionPingRequest\022\014\n\004ping\030\001 \002(\014\022%\n\013sende"
+    "r_info\030\002 \002(\0132\020.kad.ContactInfo\"I\n\030NatDet"
+    "ectionPingResponse\022\016\n\006result\030\001 \002(\014\022\014\n\004ec"
+    "ho\030\002 \001(\014\022\017\n\007node_id\030\003 \001(\014", 1585);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "kademlia_service_messages.proto", &protobuf_RegisterTypes);
   PingRequest::default_instance_ = new PingRequest();
@@ -1453,14 +1455,15 @@ const ::google::protobuf::Reflection* FindRequest::GetReflection() const {
 // ===================================================================
 
 const ::std::string FindResponse::_default_result_;
-const ::std::string FindResponse::_default_alternative_value_;
+const ::std::string FindResponse::_default_needs_cache_copy_;
 const ::std::string FindResponse::_default_requester_ext_addr_;
 const ::std::string FindResponse::_default_node_id_;
 #ifndef _MSC_VER
 const int FindResponse::kResultFieldNumber;
 const int FindResponse::kClosestNodesFieldNumber;
 const int FindResponse::kValuesFieldNumber;
-const int FindResponse::kAlternativeValueFieldNumber;
+const int FindResponse::kAlternativeValueHolderFieldNumber;
+const int FindResponse::kNeedsCacheCopyFieldNumber;
 const int FindResponse::kRequesterExtAddrFieldNumber;
 const int FindResponse::kNodeIdFieldNumber;
 #endif  // !_MSC_VER
@@ -1472,13 +1475,15 @@ FindResponse::FindResponse()
     result_(const_cast< ::std::string*>(&_default_result_)),
     closest_nodes_(),
     values_(),
-    alternative_value_(const_cast< ::std::string*>(&_default_alternative_value_)),
+    alternative_value_holder_(NULL),
+    needs_cache_copy_(const_cast< ::std::string*>(&_default_needs_cache_copy_)),
     requester_ext_addr_(const_cast< ::std::string*>(&_default_requester_ext_addr_)),
     node_id_(const_cast< ::std::string*>(&_default_node_id_)) {
   SharedCtor();
 }
 
-void FindResponse::InitAsDefaultInstance() {}
+void FindResponse::InitAsDefaultInstance() {  alternative_value_holder_ = const_cast< ::kad::ContactInfo*>(&::kad::ContactInfo::default_instance());
+}
 
 FindResponse::FindResponse(const FindResponse& from)
   : ::google::protobuf::Message(),
@@ -1487,7 +1492,8 @@ FindResponse::FindResponse(const FindResponse& from)
     result_(const_cast< ::std::string*>(&_default_result_)),
     closest_nodes_(),
     values_(),
-    alternative_value_(const_cast< ::std::string*>(&_default_alternative_value_)),
+    alternative_value_holder_(NULL),
+    needs_cache_copy_(const_cast< ::std::string*>(&_default_needs_cache_copy_)),
     requester_ext_addr_(const_cast< ::std::string*>(&_default_requester_ext_addr_)),
     node_id_(const_cast< ::std::string*>(&_default_node_id_)) {
   SharedCtor();
@@ -1497,7 +1503,8 @@ FindResponse::FindResponse(const FindResponse& from)
 void FindResponse::SharedCtor() {
   _cached_size_ = 0;
   result_ = const_cast< ::std::string*>(&_default_result_);
-  alternative_value_ = const_cast< ::std::string*>(&_default_alternative_value_);
+  alternative_value_holder_ = NULL;
+  needs_cache_copy_ = const_cast< ::std::string*>(&_default_needs_cache_copy_);
   requester_ext_addr_ = const_cast< ::std::string*>(&_default_requester_ext_addr_);
   node_id_ = const_cast< ::std::string*>(&_default_node_id_);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -1511,8 +1518,8 @@ void FindResponse::SharedDtor() {
   if (result_ != &_default_result_) {
     delete result_;
   }
-  if (alternative_value_ != &_default_alternative_value_) {
-    delete alternative_value_;
+  if (needs_cache_copy_ != &_default_needs_cache_copy_) {
+    delete needs_cache_copy_;
   }
   if (requester_ext_addr_ != &_default_requester_ext_addr_) {
     delete requester_ext_addr_;
@@ -1521,6 +1528,7 @@ void FindResponse::SharedDtor() {
     delete node_id_;
   }
   if (this != default_instance_) {
+    delete alternative_value_holder_;
   }
 }
 
@@ -1547,16 +1555,19 @@ void FindResponse::Clear() {
       }
     }
     if (_has_bit(3)) {
-      if (alternative_value_ != &_default_alternative_value_) {
-        alternative_value_->clear();
-      }
+      if (alternative_value_holder_ != NULL) alternative_value_holder_->::kad::ContactInfo::Clear();
     }
     if (_has_bit(4)) {
+      if (needs_cache_copy_ != &_default_needs_cache_copy_) {
+        needs_cache_copy_->clear();
+      }
+    }
+    if (_has_bit(5)) {
       if (requester_ext_addr_ != &_default_requester_ext_addr_) {
         requester_ext_addr_->clear();
       }
     }
-    if (_has_bit(5)) {
+    if (_has_bit(6)) {
       if (node_id_ != &_default_node_id_) {
         node_id_->clear();
       }
@@ -1609,36 +1620,49 @@ bool FindResponse::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(
              input, add_values()));
         if (input->ExpectTag(26)) goto parse_values;
-        if (input->ExpectTag(34)) goto parse_alternative_value;
+        if (input->ExpectTag(34)) goto parse_alternative_value_holder;
         break;
       }
       
-      // optional bytes alternative_value = 4;
+      // optional .kad.ContactInfo alternative_value_holder = 4;
       case 4: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
-       parse_alternative_value:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_alternative_value()));
-        if (input->ExpectTag(42)) goto parse_requester_ext_addr;
+       parse_alternative_value_holder:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, mutable_alternative_value_holder()));
+        if (input->ExpectTag(42)) goto parse_needs_cache_copy;
         break;
       }
       
-      // optional bytes requester_ext_addr = 5;
+      // optional bytes needs_cache_copy = 5;
       case 5: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_needs_cache_copy:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_needs_cache_copy()));
+        if (input->ExpectTag(50)) goto parse_requester_ext_addr;
+        break;
+      }
+      
+      // optional bytes requester_ext_addr = 6;
+      case 6: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
        parse_requester_ext_addr:
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_requester_ext_addr()));
-        if (input->ExpectTag(50)) goto parse_node_id;
+        if (input->ExpectTag(58)) goto parse_node_id;
         break;
       }
       
-      // optional bytes node_id = 6;
-      case 6: {
+      // optional bytes node_id = 7;
+      case 7: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
@@ -1688,19 +1712,24 @@ void FindResponse::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(3, this->values(i), output);
   }
   
-  // optional bytes alternative_value = 4;
+  // optional .kad.ContactInfo alternative_value_holder = 4;
   if (_has_bit(3)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->alternative_value(), output);
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(4, this->alternative_value_holder(), output);
   }
   
-  // optional bytes requester_ext_addr = 5;
+  // optional bytes needs_cache_copy = 5;
   if (_has_bit(4)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->requester_ext_addr(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(5, this->needs_cache_copy(), output);
   }
   
-  // optional bytes node_id = 6;
+  // optional bytes requester_ext_addr = 6;
   if (_has_bit(5)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(6, this->node_id(), output);
+    ::google::protobuf::internal::WireFormat::WriteBytes(6, this->requester_ext_addr(), output);
+  }
+  
+  // optional bytes node_id = 7;
+  if (_has_bit(6)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(7, this->node_id(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -1726,19 +1755,24 @@ void FindResponse::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->values(i), target);
   }
   
-  // optional bytes alternative_value = 4;
+  // optional .kad.ContactInfo alternative_value_holder = 4;
   if (_has_bit(3)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->alternative_value(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(4, this->alternative_value_holder(), target);
   }
   
-  // optional bytes requester_ext_addr = 5;
+  // optional bytes needs_cache_copy = 5;
   if (_has_bit(4)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->requester_ext_addr(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(5, this->needs_cache_copy(), target);
   }
   
-  // optional bytes node_id = 6;
+  // optional bytes requester_ext_addr = 6;
   if (_has_bit(5)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->node_id(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(6, this->requester_ext_addr(), target);
+  }
+  
+  // optional bytes node_id = 7;
+  if (_has_bit(6)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(7, this->node_id(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -1758,19 +1792,26 @@ int FindResponse::ByteSize() const {
         ::google::protobuf::internal::WireFormat::BytesSize(this->result());
     }
     
-    // optional bytes alternative_value = 4;
-    if (has_alternative_value()) {
+    // optional .kad.ContactInfo alternative_value_holder = 4;
+    if (has_alternative_value_holder()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->alternative_value());
+        ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+          this->alternative_value_holder());
     }
     
-    // optional bytes requester_ext_addr = 5;
+    // optional bytes needs_cache_copy = 5;
+    if (has_needs_cache_copy()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->needs_cache_copy());
+    }
+    
+    // optional bytes requester_ext_addr = 6;
     if (has_requester_ext_addr()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->requester_ext_addr());
     }
     
-    // optional bytes node_id = 6;
+    // optional bytes node_id = 7;
     if (has_node_id()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->node_id());
@@ -1821,12 +1862,15 @@ void FindResponse::MergeFrom(const FindResponse& from) {
       set_result(from.result());
     }
     if (from._has_bit(3)) {
-      set_alternative_value(from.alternative_value());
+      mutable_alternative_value_holder()->::kad::ContactInfo::MergeFrom(from.alternative_value_holder());
     }
     if (from._has_bit(4)) {
-      set_requester_ext_addr(from.requester_ext_addr());
+      set_needs_cache_copy(from.needs_cache_copy());
     }
     if (from._has_bit(5)) {
+      set_requester_ext_addr(from.requester_ext_addr());
+    }
+    if (from._has_bit(6)) {
       set_node_id(from.node_id());
     }
   }
@@ -1850,7 +1894,8 @@ void FindResponse::Swap(FindResponse* other) {
     std::swap(result_, other->result_);
     closest_nodes_.Swap(&other->closest_nodes_);
     values_.Swap(&other->values_);
-    std::swap(alternative_value_, other->alternative_value_);
+    std::swap(alternative_value_holder_, other->alternative_value_holder_);
+    std::swap(needs_cache_copy_, other->needs_cache_copy_);
     std::swap(requester_ext_addr_, other->requester_ext_addr_);
     std::swap(node_id_, other->node_id_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
@@ -1862,6 +1907,9 @@ void FindResponse::Swap(FindResponse* other) {
 bool FindResponse::IsInitialized() const {
   if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
   
+  if (has_alternative_value_holder()) {
+    if (!this->alternative_value_holder().IsInitialized()) return false;
+  }
   return true;
 }
 

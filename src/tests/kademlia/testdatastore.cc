@@ -100,7 +100,7 @@ TEST_F(DataStoreTest, FUNC_KAD_LoadExistingData) {
   boost::int32_t now = base::get_epoch_time();
   ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
   std::vector<std::string> values;
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
   // multiple values under a key
@@ -114,7 +114,7 @@ TEST_F(DataStoreTest, FUNC_KAD_LoadExistingData) {
   ASSERT_TRUE(test_ds_->StoreItem(key2, value2_1, 3600*24, false));
   ASSERT_TRUE(test_ds_->StoreItem(key2, value2_2, 3600*24, false));
   ASSERT_TRUE(test_ds_->StoreItem(key2, value2_3, 3600*24, false));
-  ASSERT_TRUE(test_ds_->LoadItem(key2, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key2, &values));
   ASSERT_EQ(3, static_cast<int>(values.size()));
   int value_num = 0;
   for (int i = 0; i < static_cast<int>(values.size()); i++) {
@@ -150,7 +150,7 @@ TEST_F(DataStoreTest, BEH_KAD_LoadNonExistingData) {
   std::string key1 = cry_obj_.Hash("11222xc", "", crypto::STRING_STRING,
       false);
   std::vector<std::string> values;
-  ASSERT_FALSE(test_ds_->LoadItem(key1, values));
+  ASSERT_FALSE(test_ds_->LoadItem(key1, &values));
   ASSERT_TRUE(values.empty());
   std::vector< std::pair<std::string, bool> > attr_key;
   attr_key = test_ds_->LoadKeyAppendableAttr(key1);
@@ -170,7 +170,7 @@ TEST_F(DataStoreTest, BEH_KAD_UpdateData) {
   ASSERT_NE(0, t_refresh1);
   ASSERT_NE(0, t_expire1);
   std::vector<std::string> values;
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
   ASSERT_EQ(ttl1, test_ds_->TimeToLive(key1, value1));
@@ -182,7 +182,7 @@ TEST_F(DataStoreTest, BEH_KAD_UpdateData) {
   ASSERT_LT(t_refresh1, t_refresh2);
   ASSERT_LT(t_expire1, t_expire2);
   values.clear();
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
   ASSERT_EQ(ttl2, test_ds_->TimeToLive(key1, value1));
@@ -229,7 +229,7 @@ TEST_F(DataStoreTest, BEH_KAD_DeleteItem) {
   std::string value1 = base::RandomString(200);
   ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, false));
   std::vector<std::string> values;
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   // store another key with 3 values
   std::string key2 = cry_obj_.Hash("vvxxxee1", "", crypto::STRING_STRING,
@@ -242,11 +242,11 @@ TEST_F(DataStoreTest, BEH_KAD_DeleteItem) {
   ASSERT_TRUE(test_ds_->StoreItem(key2, value2_1, 3600*24, false));
   ASSERT_TRUE(test_ds_->StoreItem(key2, value2_2, 3600*24, false));
   ASSERT_TRUE(test_ds_->StoreItem(key2, value2_3, 3600*24, false));
-  ASSERT_TRUE(test_ds_->LoadItem(key2, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key2, &values));
   ASSERT_EQ(3, static_cast<int>(values.size()));
   // delete an item with key2 and value2_1
   ASSERT_TRUE(test_ds_->DeleteItem(key2, value2_1));
-  ASSERT_TRUE(test_ds_->LoadItem(key2, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key2, &values));
   ASSERT_EQ(2, static_cast<int>(values.size()));
   // value2_1 should be gone
   int value_num = 0;
@@ -258,7 +258,7 @@ TEST_F(DataStoreTest, BEH_KAD_DeleteItem) {
   ASSERT_FALSE(test_ds_->DeleteItem(key2, value2_1));
   // delete an item with key1 and value1
   ASSERT_TRUE(test_ds_->DeleteItem(key1, value1));
-  ASSERT_FALSE(test_ds_->LoadItem(key1, values));
+  ASSERT_FALSE(test_ds_->LoadItem(key1, &values));
   ASSERT_TRUE(values.empty());
   ASSERT_FALSE(test_ds_->DeleteItem(key1, value1));
 }
@@ -276,7 +276,7 @@ TEST_F(DataStoreTest, BEH_KAD_StoreMultipleValues) {
   for (unsigned int i = 0; i < values1.size(); i++)
     ASSERT_TRUE(test_ds_->StoreItem(key1, values1[i], 3600*24, false));
   std::vector<std::string> values;
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &values));
   ASSERT_EQ(static_cast<unsigned int>(2), values.size());
   int i = 0;
   for (unsigned int j = 0; j < values.size(); j++) {
@@ -299,7 +299,7 @@ TEST_F(DataStoreTest, BEH_KAD_RefreshKeyValue) {
   ASSERT_NE(0, t_refresh1);
   ASSERT_NE(0, t_expire1);
   std::vector<std::string> values;
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
   boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
@@ -313,7 +313,7 @@ TEST_F(DataStoreTest, BEH_KAD_RefreshKeyValue) {
   ASSERT_LT(t_refresh1, t_refresh2);
   ASSERT_EQ(t_expire1, t_expire2);
   values.clear();
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
 }
@@ -332,7 +332,7 @@ TEST_F(DataStoreTest, BEH_KAD_RepublishKeyValue) {
   ASSERT_NE(0, t_refresh1);
   ASSERT_NE(0, t_expire1);
   std::vector<std::string> values;
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
   boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
@@ -343,7 +343,7 @@ TEST_F(DataStoreTest, BEH_KAD_RepublishKeyValue) {
   ASSERT_LT(t_refresh1, t_refresh2);
   ASSERT_LT(t_expire1, t_expire2);
   values.clear();
-  ASSERT_TRUE(test_ds_->LoadItem(key1, values));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &values));
   ASSERT_EQ(1, static_cast<int>(values.size()));
   ASSERT_EQ(value1, values[0]);
 }

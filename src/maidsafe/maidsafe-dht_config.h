@@ -88,7 +88,8 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 #include "maidsafe/crypto.h"
 #include "maidsafe/routingtable.h"
 #include "maidsafe/utils.h"
-#define MAIDSAFE_DHT_VERSION 8
+
+#define MAIDSAFE_DHT_VERSION 9
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *
@@ -155,6 +156,7 @@ enum remote_find_method { FIND_NODE, FIND_VALUE, BOOTSTRAP };
 typedef boost::mp_math::mp_int<> BigInt;
 class KNodeImpl;
 class KadRpcs;
+class ContactInfo;
 
 class Contact {
 // This class contains information on a single remote contact
@@ -168,6 +170,7 @@ class Contact {
   Contact(const std::string &node_id, const std::string &host_ip,
       const boost::uint16_t &host_port, const std::string &local_ip,
       const boost::uint16_t &local_port);
+  Contact(const ContactInfo &contact_info);
   Contact();
   Contact(const Contact&rhs);
   // Test whether this contact is equal to another according node id or (ip,
@@ -314,6 +317,7 @@ template <class ForwardIterator, class OutputIterator>
   return result;
 }
 
+class AlternativeStore;
 class CallLaterTimer;
 }  // namespace base
 

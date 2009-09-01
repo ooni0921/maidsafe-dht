@@ -70,15 +70,15 @@ bool DataStore::StoreItem(const std::string &key,
 }
 
 bool DataStore::LoadItem(const std::string &key,
-    std::vector<std::string> &values) {
-  values.clear();
+    std::vector<std::string> *values) {
+  values->clear();
   boost::mutex::scoped_lock guard(mutex_);
   std::pair<datastore::iterator, datastore::iterator> p =
       datastore_.equal_range(boost::make_tuple(key));
   if (p.first == p.second)
     return false;
   while (p.first != p.second) {
-    values.push_back(p.first->value_);
+    values->push_back(p.first->value_);
     p.first++;
   }
   return true;

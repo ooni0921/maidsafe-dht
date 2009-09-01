@@ -150,8 +150,8 @@ class Env: public testing::Environment {
 
       boost::shared_ptr<kad::KNode>
           knode_local_(new kad::KNode(channel_managers_[i], kad::VAULT, kTestK,
-          kad::kAlpha, kad::kBeta, kad::kRefreshTime, false, false, priv_key,
-          pub_key));
+          kad::kAlpha, kad::kBeta, kad::kRefreshTime, priv_key, pub_key, false,
+          false));
       EXPECT_EQ(0, channel_managers_[i]->StartTransport(0,
           boost::bind(&kad::KNode::HandleDeadRendezvousServer,
           knode_local_.get(), _1)));
@@ -283,7 +283,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   create_rsakeys(&pubkey, &privkey);
   boost::scoped_ptr<kad::KNode> knode_local_(new kad::KNode(
       channel_manager_local_, kad::CLIENT, kTestK, kad::kAlpha, kad::kBeta,
-      kad::kRefreshTime, false, false, pubkey, privkey));
+      kad::kRefreshTime, pubkey, privkey, false, false));
   EXPECT_EQ(0, channel_manager_local_->StartTransport(0,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer,
       knode_local_.get(), _1)));
@@ -461,7 +461,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
   for (int i = 0; i < kNetworkSize; i++) {
     std::vector<std::string> values;
     bool b = false;
-    knodes_[i]->FindValueLocal(key, values);
+    knodes_[i]->FindValueLocal(key, &values);
     if (values.size() > 0) {
       for (boost::uint32_t n = 0; n < values.size() && !b; ++n) {
         kad::SignedValue sig_value;
@@ -537,7 +537,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   for (int i = 0; i < kNetworkSize; i++) {
     bool b = false;
     std::vector<std::string> values;
-    knodes_[i]->FindValueLocal(key, values);
+    knodes_[i]->FindValueLocal(key, &values);
     if (values.size() > 0) {
       for (boost::uint32_t n = 0; n < values.size(); ++n) {
         kad::SignedValue sig_value;
@@ -957,8 +957,8 @@ TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
   std::string privkey, pubkey;
   create_rsakeys(&pubkey, &privkey);
   boost::scoped_ptr<kad::KNode> node(new kad::KNode(ch_man, kad::VAULT, kTestK,
-      kad::kAlpha, kad::kBeta, kad::kRefreshTime, false, false, privkey,
-      pubkey));
+      kad::kAlpha, kad::kBeta, kad::kRefreshTime, privkey, pubkey, false,
+      false));
   EXPECT_EQ(0, ch_man->StartTransport(0,
       boost::bind(&kad::KNode::HandleDeadRendezvousServer, node.get(), _1)));
   cb_.Reset();

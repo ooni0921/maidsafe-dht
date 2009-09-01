@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kademlia/kadrpc.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
+#include "maidsafe/alternativestore.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "rpcprotocol/channelimpl.h"
 #include "protobuf/signed_kadvalue.pb.h"
@@ -183,11 +184,22 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
   } else if (GetSender(request->sender_info(), &sender)) {
-    // Get the values under the specified key if present in this node's data
-    // store, otherwise execute find_node for this key.
+    // If the value exists in the alternative store, add our contact details to
+    // field alternative_value_holder.  If not, get the values if present in
+    // this node's data store, otherwise execute find_node for this key.
     std::string key = request->key();
     std::vector<std::string> values_str;
-    if (knode_->FindValueLocal(key, values_str)) {
+    if (knode_->alternative_store() != NULL) {
+      if (knode_->alternative_store()->Has(key)) {
+        *(response->mutable_alternative_value_holder()) =
+            knode_->contact_info();
+        response->set_result(kRpcResultSuccess);
+        response->set_node_id(knode_->node_id());
+        done->Run();
+        return;
+      }
+    }
+    if (knode_->FindValueLocal(key, &values_str)) {
       if (knode_->HasRSAKeys()) {
         for (unsigned int i = 0; i < values_str.size(); i++) {
           SignedValue signed_value;

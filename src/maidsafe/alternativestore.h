@@ -35,8 +35,6 @@ class AlternativeStore {
   AlternativeStore() {}
   virtual ~AlternativeStore() {}
   virtual bool Has(const std::string &key) = 0;
-  virtual int Store(const std::string &key, const std::string &value) = 0;
-  virtual int Load(const std::string &key, std::string *value) = 0;
 };
 
 }  // namespace base

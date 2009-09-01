@@ -101,7 +101,7 @@ class TestKnodes : public testing::Test {
           base::itos(ch_managers_[i]->external_port());
       boost::filesystem::create_directories(
           boost::filesystem::path(datastore_dir_[i]));
-      nodes_[i].reset(new KNode(ch_managers_[i], VAULT, false, false));
+      nodes_[i].reset(new KNode(ch_managers_[i], VAULT, "", "", false, false));
     }
   }
   void TearDown() {

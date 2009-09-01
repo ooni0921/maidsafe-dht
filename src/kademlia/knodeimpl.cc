@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/config.h"
 #include "kademlia/kadservice.h"
 #include "kademlia/kadutils.h"
+#include "maidsafe/alternativestore.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/utils.h"
 #include "protobuf/contact_info.pb.h"
@@ -120,46 +121,57 @@ void SortLookupContact(std::list<LookupContact> *contact_list,
 }
 
 KNodeImpl::KNodeImpl(
-      boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp) : routingtable_mutex_(), kadconfig_mutex_(),
-        extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
-        activeprobes_mutex_(), pendingcts_mutex_(),
-        ptimer_(new base::CallLaterTimer),
-        pchannel_manager_(channel_manager), pservice_channel_(),
-        pdata_store_(new DataStore(kRefreshTime)), premote_service_(),
-        kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
-        node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
-        host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(), K_(K),
-        alpha_(kAlpha), beta_(kBeta), refresh_routine_started_(false),
-        kad_config_path_(""), local_host_ip_(""),
-        local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
-        use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
-        add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
-        upnp_(), upnp_mapped_port_(0) {
+    boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+    node_type type,
+    const std::string &private_key,
+    const std::string &public_key,
+    bool port_forwarded,
+    bool use_upnp)
+        : routingtable_mutex_(), kadconfig_mutex_(),
+          extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
+          activeprobes_mutex_(), pendingcts_mutex_(),
+          ptimer_(new base::CallLaterTimer),
+          pchannel_manager_(channel_manager), pservice_channel_(),
+          pdata_store_(new DataStore(kRefreshTime)),
+          alternative_store_(NULL), premote_service_(),
+          kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
+          node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
+          host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(), K_(K),
+          alpha_(kAlpha), beta_(kBeta), refresh_routine_started_(false),
+          kad_config_path_(""), local_host_ip_(""),
+          local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
+          use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
+          add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
+          upnp_(), upnp_mapped_port_(0) {
 }
 
 KNodeImpl::KNodeImpl(
-      boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const boost::uint16_t k, const int &alpha,
-      const int &beta, const int &refresh_time, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp) : routingtable_mutex_(), kadconfig_mutex_(),
-        extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
-        activeprobes_mutex_(), pendingcts_mutex_(),
-        ptimer_(new base::CallLaterTimer),
-        pchannel_manager_(channel_manager), pservice_channel_(),
-        pdata_store_(new DataStore(refresh_time)), premote_service_(),
-        kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
-        node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
-        host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(),
-        K_(k), alpha_(alpha), beta_(beta), refresh_routine_started_(false),
-        kad_config_path_(""), local_host_ip_(""), local_host_port_(0),
-        stopping_(false), port_forwarded_(port_forwarded), use_upnp_(use_upnp),
-        contacts_to_add_(), addcontacts_routine_(), add_ctc_cond_(),
-        private_key_(private_key), public_key_(public_key), upnp_(),
-        upnp_mapped_port_(0) {
+    boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
+    node_type type,
+    const boost::uint16_t k,
+    const int &alpha,
+    const int &beta,
+    const int &refresh_time,
+    const std::string &private_key,
+    const std::string &public_key,
+    bool port_forwarded,
+    bool use_upnp)
+        : routingtable_mutex_(), kadconfig_mutex_(),
+          extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
+          activeprobes_mutex_(), pendingcts_mutex_(),
+          ptimer_(new base::CallLaterTimer),
+          pchannel_manager_(channel_manager), pservice_channel_(),
+          pdata_store_(new DataStore(refresh_time)),
+          alternative_store_(NULL), premote_service_(),
+          kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
+          node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
+          host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(),
+          K_(k), alpha_(alpha), beta_(beta), refresh_routine_started_(false),
+          kad_config_path_(""), local_host_ip_(""),
+          local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
+          use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
+          add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
+          upnp_(), upnp_mapped_port_(0) {
 }
 
 KNodeImpl::~KNodeImpl() {
@@ -963,10 +975,21 @@ void KNodeImpl::StoreValue(const std::string &key, const std::string &value,
 }
 
 void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
+  // Search in alternative store first
+  kad::FindResponse result_msg;
+  if (alternative_store_ != NULL) {
+    if (alternative_store_->Has(key)) {
+      result_msg.set_result(kad::kRpcResultSuccess);
+      *result_msg.mutable_alternative_value_holder() = contact_info();
+      std::string ser_find_result;
+      result_msg.SerializeToString(&ser_find_result);
+      cb(ser_find_result);
+      return;
+    }
+  }
   std::vector<std::string> values;
-  //  Searching for value in local DataStore first
-  if (FindValueLocal(key, values)) {
-    kad::FindResponse result_msg;
+  //  Searching for value in local DataStore
+  if (FindValueLocal(key, &values)) {
     result_msg.set_result(kad::kRpcResultSuccess);
     if (HasRSAKeys()) {
       for (boost::uint64_t n = 0; n < values.size(); ++n) {
@@ -983,7 +1006,7 @@ void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
     cb(ser_find_result);
     return;
   }
-  //  Value not found localy, looking for it in the network
+  //  Value not found locally, looking for it in the network
   StartSearchIteration(key, FIND_VALUE, cb);
 }
 
@@ -1216,7 +1239,7 @@ bool KNodeImpl::GetContact(const std::string &id, Contact *contact) {
 }
 
 bool KNodeImpl::FindValueLocal(const std::string &key,
-      std::vector<std::string> &values) {
+      std::vector<std::string> *values) {
   return pdata_store_->LoadItem(key, values);
 }
 
@@ -1524,10 +1547,12 @@ void KNodeImpl::SendFindRpc(Contact remote,
 void KNodeImpl::SearchIteration(boost::shared_ptr<IterativeLookUpData> data) {
   if ((data->is_callbacked)||(!is_joined_ && data->method != BOOTSTRAP))
     return;
-  // Found the value
-  if ((data->method == FIND_VALUE) && (data->values_found.size() > 0))
+  // Found an alternative value holder or the actual value
+  if (data->method == FIND_VALUE) {
+    if (data->values_found.size() > 0 ||
+        !data->alternative_value_holder.node_id().empty())
     SearchIteration_Callback(data);
-
+  }
   // sort the active contacts
   SortContactList(&data->active_contacts, data->key);
   // sort the short_list
@@ -1934,10 +1959,15 @@ void KNodeImpl::SearchIteration_Callback(
     std::list<Contact>::iterator it1;
     int count;
     FindResponse result;
-    if (data->method == FIND_VALUE && data->values_found.size() > 0) {
+    if (data->method == FIND_VALUE &&
+        !data->alternative_value_holder.node_id().empty()) {
+      result.set_result(kRpcResultSuccess);
+      *result.mutable_alternative_value_holder() =
+          data->alternative_value_holder;
+    } else if (data->method == FIND_VALUE && data->values_found.size() > 0) {
       result.set_result(kRpcResultSuccess);
       for (std::list<std::string>::iterator it2 = data->values_found.begin();
-           it2 != data->values_found.end(); it2 ++) {
+           it2 != data->values_found.end(); ++it2) {
       result.add_values(*it2);
       }
     } else {
@@ -1955,6 +1985,23 @@ void KNodeImpl::SearchIteration_Callback(
       else
         result.set_result(kRpcResultFailure);
     }
+
+    // Add the last seen contact that didn't reply with the value from the
+    // alternative store to to the alternative_value_holder field.
+    if (data->method == FIND_VALUE) {
+      boost::mutex::scoped_lock lock(activeprobes_mutex_);
+      std::list<Contact>::iterator itr = data->current_alpha.begin();
+      while (itr != data->current_alpha.end()) {
+        if (itr->node_id() != data->alternative_value_holder.node_id()) {
+          std::string ser_contact;
+          if (itr->SerialiseToString(&ser_contact))
+            result.set_needs_cache_copy(ser_contact);
+          break;
+        }
+        ++itr;
+      }
+    }
+
     result.SerializeToString(&ser_result);
   }
   data->cb(ser_result);

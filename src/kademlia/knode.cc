@@ -31,19 +31,27 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 
 KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-             node_type type, const bool &port_forwarded, const bool &use_upnp,
-             const std::string &private_key, const std::string &public_key)
-             : pimpl_(new KNodeImpl(channel_manager, type, private_key,
-               public_key, port_forwarded, use_upnp)) {}
+             node_type type,
+             const std::string &private_key,
+             const std::string &public_key,
+             bool port_forwarded,
+             bool use_upnp)
+                 : pimpl_(new KNodeImpl(channel_manager, type, private_key,
+                          public_key, port_forwarded, use_upnp)) {}
 
 KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-             node_type type, const boost::uint16_t k, const int &alpha,
-             const int &beta, const int &refresh_time,
-             const bool &port_forwarded, const bool &use_upnp,
-             const std::string &private_key, const std::string &public_key)
-             : pimpl_(new KNodeImpl(channel_manager, type, k, alpha, beta,
-               refresh_time, private_key, public_key, port_forwarded,
-               use_upnp)) {}
+             node_type type,
+             const boost::uint16_t k,
+             const int &alpha,
+             const int &beta,
+             const int &refresh_time,
+             const std::string &private_key,
+             const std::string &public_key,
+             bool port_forwarded,
+             bool use_upnp)
+                 : pimpl_(new KNodeImpl(channel_manager, type, k, alpha, beta,
+                          refresh_time, private_key, public_key,
+                          port_forwarded, use_upnp)) {}
 
 KNode::~KNode() {}
 
@@ -134,7 +142,7 @@ bool KNode::GetContact(const std::string &id, Contact *contact) {
 }
 
 bool KNode::FindValueLocal(const std::string &key,
-                           std::vector<std::string> &values) {
+                           std::vector<std::string> *values) {
   return pimpl_->FindValueLocal(key, values);
 }
 
@@ -230,4 +238,13 @@ boost::uint32_t KNode::KeyValueTTL(const std::string &key,
       const std::string &value) const {
   return pimpl_->KeyValueTTL(key, value);
 }
+
+void KNode::SetAlternativeStore(base::AlternativeStore* alternative_store) {
+  pimpl_->SetAlternativeStore(alternative_store);
+}
+
+base::AlternativeStore *KNode::alternative_store() {
+  return pimpl_->alternative_store();
+}
+
 }  // namespace kad

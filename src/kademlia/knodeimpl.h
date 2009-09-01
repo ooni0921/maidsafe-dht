@@ -102,7 +102,7 @@ struct IterativeLookUpData {
         active_contacts(), active_probes(),
         values_found(), dead_ids(), downlist(), downlist_sent(false),
         in_final_iteration(false), is_callbacked(false), wait_for_key(false),
-        cb(cb) {}
+        cb(cb), alternative_value_holder() {}
   remote_find_method method;
   std::string key;
   std::list<LookupContact> short_list;
@@ -111,6 +111,7 @@ struct IterativeLookUpData {
   std::list<struct DownListData> downlist;
   bool downlist_sent, in_final_iteration, is_callbacked, wait_for_key;
   base::callback_func_type cb;
+  ContactInfo alternative_value_holder;
 };
 
 struct IterativeStoreValueData {
@@ -200,15 +201,22 @@ struct StoreRequestSignature {
 class KNodeImpl {
  public:
   KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp);
+            node_type type,
+            const std::string &private_key,
+            const std::string &public_key,
+            bool port_forwarded,
+            bool use_upnp);
   // constructor used to set up parameters k, alpha, and beta for kademlia
   KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const boost::uint16_t k, const int &alpha,
-      const int &beta, const int &refresh_time, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp);
+      node_type type,
+      const boost::uint16_t k,
+      const int &alpha,
+      const int &beta,
+      const int &refresh_time,
+      const std::string &private_key,
+      const std::string &public_key,
+      bool port_forwarded,
+      bool use_upnp);
   ~KNodeImpl();
 
   void Join(const std::string &node_id, const std::string &kad_config_file,
@@ -241,7 +249,7 @@ class KNodeImpl {
   int AddContact(Contact new_contact, const float & rtt, const bool &only_db);
   void RemoveContact(const std::string &node_id);
   bool GetContact(const std::string &id, Contact *contact);
-  bool FindValueLocal(const std::string &key, std::vector<std::string> &values);
+  bool FindValueLocal(const std::string &key, std::vector<std::string> *values);
   bool StoreValueLocal(const std::string &key, const std::string &value,
       const boost::uint32_t &ttl);
   bool RefreshValueLocal(const std::string &key, const std::string &value,
@@ -273,6 +281,12 @@ class KNodeImpl {
   bool HasRSAKeys();
   boost::uint32_t KeyValueTTL(const std::string &key,
       const std::string &value) const;
+  inline void SetAlternativeStore(base::AlternativeStore* alt_store) {
+    alternative_store_ = alt_store;
+  }
+  inline base::AlternativeStore *alternative_store() {
+    return alternative_store_;
+  }
   friend class KadServicesTest;
   friend class NatDetectionTest;
  private:
@@ -345,6 +359,7 @@ class KNodeImpl {
   boost::shared_ptr<rpcprotocol::ChannelManager> pchannel_manager_;
   boost::shared_ptr<rpcprotocol::Channel> pservice_channel_;
   boost::shared_ptr<DataStore> pdata_store_;
+  base::AlternativeStore *alternative_store_;
   boost::shared_ptr<KadService> premote_service_;
   KadRpcs kadrpcs_;
   volatile bool is_joined_;

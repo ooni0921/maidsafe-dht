@@ -107,7 +107,7 @@ class DataStore {
   // publish = false => reset only last_publish_time
   bool StoreItem(const std::string &key, const std::string &value,
       const boost::uint32_t &time_to_live, const bool &hashable);
-  bool LoadItem(const std::string &key, std::vector<std::string> &values);
+  bool LoadItem(const std::string &key, std::vector<std::string> *values);
   bool DeleteKey(const std::string &key);
   bool DeleteItem(const std::string &key, const std::string &value);
   void DeleteExpiredValues();

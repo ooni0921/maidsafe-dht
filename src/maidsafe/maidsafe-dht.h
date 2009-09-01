@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 8
+#if MAIDSAFE_DHT_VERSION < 9
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -54,22 +54,24 @@ class SignedValue;
 class KNode {
  public:
   KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const bool &port_forwarded, const bool &use_upnp,
-      const std::string &private_key = "", const std::string &public_key = "");
+      node_type type, const std::string &private_key,
+      const std::string &public_key, bool port_forwarded, bool use_upnp);
   // constructor used to set up parameters K, alpha, and beta for kademlia
   KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
       node_type type, const boost::uint16_t k, const int &alpha,
-      const int &beta, const int &refresh_time, const bool &port_forwarded,
-      const bool &use_upnp, const std::string &private_key = "",
-      const std::string &public_key = "");
+      const int &beta, const int &refresh_time, const std::string &private_key,
+      const std::string &public_key, bool port_forwarded, bool use_upnp);
   ~KNode();
+  // Join the network with a specific node ID.
   void Join(const std::string &node_id, const std::string &kad_config_file,
       base::callback_func_type cb);
+  // Join the network with a random node ID.
   void Join(const std::string &kad_config_file, base::callback_func_type cb);
-  // Use this join for the first node in the network
+  // Start a network (this being the first node) with a specific node ID.
   void Join(const std::string &node_id, const std::string &kad_config_file,
       const std::string &external_ip, const boost::uint16_t &external_port,
       base::callback_func_type cb);
+  // Start a network (this being the first node) with a random node ID.
   void Join(const std::string &kad_config_file, const std::string &external_ip,
       const boost::uint16_t &external_port, base::callback_func_type cb);
   void Leave();
@@ -79,6 +81,8 @@ class KNode {
       base::callback_func_type cb);
   void StoreValue(const std::string &key, const std::string &value,
       const boost::uint32_t &ttl, base::callback_func_type cb);
+  // If KNode has the value in its AlternativeStore, rather than returning this
+  // value, it returns its own contact details.
   void FindValue(const std::string &key, base::callback_func_type cb);
   void FindNode(const std::string &node_id, base::callback_func_type cb,
       const bool &local);
@@ -92,7 +96,7 @@ class KNode {
       const bool &only_db);
   void RemoveContact(const std::string &node_id);
   bool GetContact(const std::string &id, Contact *contact);
-  bool FindValueLocal(const std::string &key, std::vector<std::string> &values);
+  bool FindValueLocal(const std::string &key, std::vector<std::string> *values);
   bool StoreValueLocal(const std::string &key, const std::string &value,
       const boost::uint32_t &ttl);
   bool RefreshValueLocal(const std::string &key, const std::string &value,
@@ -122,6 +126,10 @@ class KNode {
   bool HasRSAKeys();
   boost::uint32_t KeyValueTTL(const std::string &key,
       const std::string &value) const;
+  // If this is set to a non-NULL value, then the AlternativeStore will be used
+  // before Kad's native DataStore.
+  void SetAlternativeStore(base::AlternativeStore* alternative_store);
+  base::AlternativeStore *alternative_store();
  private:
   boost::shared_ptr<KNodeImpl> pimpl_;
 };

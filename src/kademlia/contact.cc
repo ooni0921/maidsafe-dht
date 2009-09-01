@@ -40,16 +40,10 @@ Contact::Contact(const std::string &node_id, const std::string &host_ip,
         local_port_(local_port) {
   if (host_ip.size() > 4)
       host_ip_ = base::inet_atob(host_ip);
-  else
-    host_ip_ = host_ip;
   if (local_ip.size() > 4)
       local_ip_ = base::inet_atob(local_ip);
-  else
-    local_ip_ = local_ip;
   if (rendezvous_ip.size() > 4)
       rendezvous_ip_ = base::inet_atob(rendezvous_ip);
-  else
-    rendezvous_ip_ = rendezvous_ip;
 }
 
 Contact::Contact(const std::string &node_id, const std::string &host_ip,
@@ -62,8 +56,6 @@ Contact::Contact(const std::string &node_id, const std::string &host_ip,
       local_port_(0) {
   if (host_ip.size() > 4)
       host_ip_ = base::inet_atob(host_ip);
-  else
-    host_ip_ = host_ip;
 }
 
 Contact::Contact(const std::string &node_id, const std::string &host_ip,
@@ -74,17 +66,37 @@ Contact::Contact(const std::string &node_id, const std::string &host_ip,
         local_ip_(local_ip), local_port_(local_port) {
   if (host_ip.size() > 4)
       host_ip_ = base::inet_atob(host_ip);
-  else
-    host_ip_ = host_ip;
   if (local_ip.size() > 4)
       local_ip_ = base::inet_atob(local_ip);
-  else
-    local_ip_ = local_ip;
 }
 
-Contact::Contact() : node_id_(""), host_ip_(""), host_port_(0), failed_rpc_(0),
-      rendezvous_ip_(""), rendezvous_port_(0),
-      last_seen_(base::get_epoch_milliseconds()), local_ip_(""),
+Contact::Contact(const ContactInfo &contact_info)
+    : node_id_(contact_info.node_id()),
+      host_ip_(contact_info.ip()),
+      host_port_(contact_info.port()),
+      failed_rpc_(0),
+      rendezvous_ip_(contact_info.rv_ip()),
+      rendezvous_port_(contact_info.rv_port()),
+      last_seen_(base::get_epoch_milliseconds()),
+      local_ip_(contact_info.local_ip()),
+      local_port_(contact_info.local_port()) {
+  if (contact_info.ip().size() > 4)
+      host_ip_ = base::inet_atob(contact_info.ip());
+  if (contact_info.local_ip().size() > 4)
+      local_ip_ = base::inet_atob(contact_info.local_ip());
+  if (contact_info.rv_ip().size() > 4)
+      rendezvous_ip_ = base::inet_atob(contact_info.rv_ip());
+}
+
+Contact::Contact()
+    : node_id_(""),
+      host_ip_(""),
+      host_port_(0),
+      failed_rpc_(0),
+      rendezvous_ip_(""),
+      rendezvous_port_(0),
+      last_seen_(base::get_epoch_milliseconds()),
+      local_ip_(""),
       local_port_(0) {}
 
 Contact::Contact(const Contact&rhs) : node_id_(rhs.node_id_),

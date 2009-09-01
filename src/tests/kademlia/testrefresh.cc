@@ -61,7 +61,7 @@ class TestRefresh : public testing::Test {
           base::itos(i);
       boost::filesystem::create_directories(datadir);
       nodes.push_back(boost::shared_ptr<KNode>(new KNode(ch_managers[i], VAULT,
-          testK, kAlpha, kBeta, testRefresh, false, false)));
+          testK, kAlpha, kBeta, testRefresh, "", "", false, false)));
       EXPECT_EQ(0, ch_managers[i]->StartTransport(0, boost::bind(
           &kad::KNode::HandleDeadRendezvousServer, nodes[i].get(), _1)));
       datadirs.push_back(datadir);
@@ -149,7 +149,7 @@ TEST_F(TestRefresh, FUNC_KAD_RefreshValue) {
   std::vector<boost::uint32_t> expire_times;
   for (int i = 0; i < testNetworkSize; i++) {
     std::vector<std::string> values;
-    if (nodes[i]->FindValueLocal(key, values)) {
+    if (nodes[i]->FindValueLocal(key, &values)) {
       ASSERT_EQ(value, values[0]);
       indxs.push_back(i);
       boost::uint32_t last_refresh = nodes[i]->KeyLastRefreshTime(key, value);
@@ -164,7 +164,7 @@ TEST_F(TestRefresh, FUNC_KAD_RefreshValue) {
   boost::this_thread::sleep(boost::posix_time::seconds(testRefresh+8));
   for (unsigned int i = 0; i < indxs.size(); i++) {
     std::vector<std::string> values;
-    EXPECT_TRUE(nodes[indxs[i]]->FindValueLocal(key, values));
+    EXPECT_TRUE(nodes[indxs[i]]->FindValueLocal(key, &values));
     EXPECT_EQ(value, values[0]);
     EXPECT_EQ(expire_times[i], nodes[indxs[i]]->KeyExpireTime(key, value));
     EXPECT_LT(last_refresh_times[i],
@@ -189,7 +189,7 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
   std::vector<boost::uint32_t> expire_times;
   for (int i = 0; i < testNetworkSize; i++) {
     std::vector<std::string> values;
-    if (nodes[i]->FindValueLocal(key, values)) {
+    if (nodes[i]->FindValueLocal(key, &values)) {
       ASSERT_EQ(value, values[0]);
       indxs.push_back(i);
       boost::uint32_t last_refresh = nodes[i]->KeyLastRefreshTime(key, value);
@@ -206,7 +206,7 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
   std::string local_dir = test_dir + std::string("/datastorenewnode");
   boost::filesystem::create_directories(local_dir);
   boost::shared_ptr<KNode> node(new KNode(ch_manager, VAULT, testK, kAlpha,
-      kBeta, testRefresh, false, false));
+      kBeta, testRefresh, "", "", false, false));
   EXPECT_EQ(0, ch_manager->StartTransport(0, boost::bind(
       &kad::KNode::HandleDeadRendezvousServer, node.get(), _1)));
   std::string kconfig_file1 = local_dir + "/.kadconfig";
@@ -234,7 +234,7 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
 
   boost::this_thread::sleep(boost::posix_time::seconds(testRefresh+8));
   std::vector<std::string> values;
-  EXPECT_TRUE(node->FindValueLocal(key, values));
+  EXPECT_TRUE(node->FindValueLocal(key, &values));
   EXPECT_EQ(value, values[0]);
   EXPECT_NE(0, node->KeyExpireTime(key, value)) << "key/value pair not found";
   EXPECT_NE(0, node->KeyLastRefreshTime(key, value))
@@ -273,8 +273,8 @@ class TestRefreshSignedValues : public testing::Test {
           base::itos(i);
       boost::filesystem::create_directories(datadir);
       nodes.push_back(boost::shared_ptr<KNode>(new KNode(ch_managers[i], VAULT,
-          testK, kAlpha, kBeta, testRefresh, false, false, keys.private_key(),
-          keys.public_key())));
+          testK, kAlpha, kBeta, testRefresh, keys.private_key(),
+          keys.public_key(), false, false)));
       EXPECT_EQ(0, ch_managers[i]->StartTransport(0, boost::bind(
           &kad::KNode::HandleDeadRendezvousServer, nodes[i].get(), _1)));
       datadirs.push_back(datadir);
@@ -376,7 +376,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
   std::vector<boost::uint32_t> expire_times;
   for (int i = 0; i < testNetworkSize; i++) {
     std::vector<std::string> values;
-    if (nodes[i]->FindValueLocal(key, values)) {
+    if (nodes[i]->FindValueLocal(key, &values)) {
       ASSERT_EQ(ser_sig_value, values[0]);
       indxs.push_back(i);
       boost::uint32_t last_refresh = nodes[i]->KeyLastRefreshTime(key,
@@ -392,7 +392,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
   boost::this_thread::sleep(boost::posix_time::seconds(testRefresh+8));
   for (unsigned int i = 0; i < indxs.size(); i++) {
     std::vector<std::string> values;
-    EXPECT_TRUE(nodes[indxs[i]]->FindValueLocal(key, values));
+    EXPECT_TRUE(nodes[indxs[i]]->FindValueLocal(key, &values));
     EXPECT_EQ(ser_sig_value, values[0]);
     EXPECT_EQ(expire_times[i], nodes[indxs[i]]->KeyExpireTime(key,
         ser_sig_value));
@@ -434,7 +434,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   std::vector<boost::uint32_t> expire_times;
   for (int i = 0; i < testNetworkSize; i++) {
     std::vector<std::string> values;
-    if (nodes[i]->FindValueLocal(key, values)) {
+    if (nodes[i]->FindValueLocal(key, &values)) {
       ASSERT_EQ(ser_sig_value, values[0]);
       indxs.push_back(i);
       boost::uint32_t last_refresh = nodes[i]->KeyLastRefreshTime(key,
@@ -452,7 +452,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   std::string local_dir = test_dir + std::string("/datastorenewnode");
   boost::filesystem::create_directories(local_dir);
   boost::shared_ptr<KNode> node(new KNode(ch_manager, VAULT, testK, kAlpha,
-      kBeta, testRefresh, false, false, keys.private_key(), keys.public_key()));
+      kBeta, testRefresh, keys.private_key(), keys.public_key(), false, false));
   EXPECT_EQ(0, ch_manager->StartTransport(0, boost::bind(
       &kad::KNode::HandleDeadRendezvousServer, node.get(), _1)));
   std::string kconfig_file1 = local_dir + "/.kadconfig";
@@ -480,7 +480,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
 
   boost::this_thread::sleep(boost::posix_time::seconds(testRefresh+8));
   std::vector<std::string> values;
-  EXPECT_TRUE(node->FindValueLocal(key, values));
+  EXPECT_TRUE(node->FindValueLocal(key, &values));
   EXPECT_EQ(ser_sig_value, values[0]);
   EXPECT_NE(0, node->KeyExpireTime(key, ser_sig_value));
   EXPECT_NE(0, node->KeyLastRefreshTime(key, ser_sig_value));
