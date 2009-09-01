@@ -6,7 +6,6 @@
 #ifdef HAVE_GLOG
 #include <glog/logging.h>
 #else
-  const int INFO = 0, WARNING = 1, ERROR = 2, FATAL = 3, NUM_SEVERITIES = 4;
   #include <iostream>
   namespace google {
     inline void InitGoogleLogging(char *) {}
