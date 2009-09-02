@@ -26,6 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <boost/scoped_array.hpp>
+#include <boost/lexical_cast.hpp>
 #include <exception>
 #include "transport/transportimpl.h"
 #include "maidsafe/maidsafe-dht_config.h"
