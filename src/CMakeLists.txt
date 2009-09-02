@@ -4,17 +4,27 @@ message ("#############################################")
 IF(NOT CMAKE_BUILD_TYPE)
    SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
+
+option(BOOST_INCLUDES "Set location of BOOST headers ie /usr/include/boost-1_40/" "/usr/include/boost-1_40/")
+option(BOOST_VERSION "Set boost version i.e. 1_40 (use an underscore)" "1_40")
+
 IF(NOT BOOST_INCLUDES)
 	IF(WIN32)
-   SET(BOOST_INCLUDES "c:/usr/include/boost/boost-1_37" CACHE STRING "Set location of BOOST headers ie /usr/include/boost-1_37/" FORCE)
+   SET(BOOST_INCLUDES "c:/usr/include/boost/boost-1_40" CACHE STRING "Set location of BOOST headers ie /usr/include/boost-1_40/" FORCE)
 	ELSE()
-   SET(BOOST_INCLUDES "/usr/include/boost/boost-1_37" CACHE STRING "Set location of BOOST headers ie /usr/include/boost_1.37/" FORCE)
+   SET(BOOST_INCLUDES "/usr/include/boost/boost-1_40" CACHE STRING "Set location of BOOST headers ie /usr/include/boost_1.40/" FORCE)
 	ENDIF()
 ENDIF(NOT BOOST_INCLUDES)
 
 IF(NOT BOOST_VERSION)
-   SET(BOOST_VERSION "1_37" CACHE STRING "Set boost version i.e. 1_37 (use an underscore)" FORCE)
+   SET(BOOST_VERSION "1_40" CACHE STRING "Set boost version i.e. 1_40 (use an underscore)" FORCE)
 ENDIF(NOT BOOST_VERSION)
+
+message ("############################################################################################")
+message ("Boost version is set at " ${BOOST_VERSION} " to alter this please run cmake ../../ -DBOOST_VERSION=XXX where XXX is 1_39 etc.") 
+message ("############################################################################################")
+message ("Boost Includes are set at " ${BOOST_INCLUDES} " to alter this please run cmake ../../ -DBOOST_INCLUDES=XXX where XXX is /usr/include etc.") 
+message ("############################################################################################")
 
 project (maidsafe-dht)
 
@@ -174,12 +184,12 @@ SET_TARGET_PROPERTIES(maidsafe-dht PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACR
 #BUILDS
 IF (APPLE)
 	SET(SYS_LIB 
-boost_thread-xgcc40-mt-${BOOST_VERSION} 
+boost_thread-xgcc40-mt-${BOOST_VERSION}.a 
 /usr/lib/libprotobuf.a 
-boost_system-xgcc40-mt-${BOOST_VERSION}
-boost_filesystem-xgcc40-mt-${BOOST_VERSION}
-boost_regex-xgcc40-mt-${BOOST_VERSION}
-boost_date_time-xgcc40-mt-${BOOST_VERSION}
+boost_system-xgcc40-mt-${BOOST_VERSION}.a
+boost_filesystem-xgcc40-mt-${BOOST_VERSION}.a
+boost_regex-xgcc40-mt-${BOOST_VERSION}.a
+boost_date_time-xgcc40-mt-${BOOST_VERSION}.a
 dl 
 pthread
 )
