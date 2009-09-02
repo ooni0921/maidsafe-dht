@@ -34,20 +34,46 @@ OnlineController* OnlineController::instance() {
   return &oc;
 }
 
-OnlineController::OnlineController() : online_(false), ol_mutex_() { }
+OnlineController::OnlineController()
+    : online_(false), ol_mutex_(), observers_() { }
 
 OnlineController::~OnlineController() {
   online_ = false;
 }
 
+boost::uint16_t OnlineController::RegisterObserver(const observer &ob) {
+  boost::mutex::scoped_lock loch(ol_mutex_);
+  boost::uint16_t id = base::random_32bit_uinteger() % 65536;
+  std::pair<std::map<boost::uint16_t, observer>::iterator, bool> ret;
+  ret = observers_.insert(std::pair<boost::uint16_t, observer>(id, ob));
+  while (!ret.second) {
+    id = base::random_32bit_uinteger() % 65536;
+    ret = observers_.insert(std::pair<boost::uint16_t, observer>(id, ob));
+  }
+  return id;
+}
+
 void OnlineController::SetOnline(const bool &b) {
   boost::mutex::scoped_lock loch(ol_mutex_);
   online_ = b;
+  for (std::map<boost::uint16_t, observer>::iterator it = observers_.begin();
+       it != observers_.end(); ++it)
+    (*it).second(online_);
 }
 
 bool OnlineController::Online() {
   boost::mutex::scoped_lock loch(ol_mutex_);
   return online_;
+}
+
+boost::uint16_t OnlineController::ObserversCount() {
+  boost::mutex::scoped_lock loch(ol_mutex_);
+  return observers_.size();
+}
+
+void OnlineController::Reset() {
+  observers_.clear();
+  SetOnline(false);
 }
 
 }  // namespace base

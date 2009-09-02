@@ -30,14 +30,56 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/online.h"
 
-TEST(OnlineControllerTest, BEH_SingletonAddress) {
+int o1;
+int o2;
+
+void Observer1(bool b) {
+  if (b) {
+    printf("The variable has changed to TRUE.\n");
+    o1 = 1;
+  } else {
+    printf("The variable has changed to FALSE.\n");
+    o1 = 0;
+  }
+}
+
+void Observer2(bool b) {
+  if (b) {
+    printf("The variable has changed to TRUE.\n");
+    o2 = 1;
+  } else {
+    printf("The variable has changed to FALSE.\n");
+    o2 = 0;
+  }
+}
+
+
+TEST(OnlineControllerTest, BEH_BASE_SingletonAddress) {
   base::OnlineController *olc1 = base::OnlineController::instance();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
   olc1 = olc2 = NULL;
 }
 
-TEST(OnlineControllerTest, BEH_SetGetOnline) {
+TEST(OnlineControllerTest, BEH_BASE_OnlineReset) {
+  base::OnlineController *olc1 = base::OnlineController::instance();
+  base::OnlineController *olc2 = base::OnlineController::instance();
+  ASSERT_EQ(olc1, olc2);
+  ASSERT_FALSE(olc1->Online());
+  ASSERT_FALSE(olc2->Online());
+
+  olc1->SetOnline(true);
+  ASSERT_TRUE(olc1->Online());
+  ASSERT_TRUE(olc2->Online());
+
+  olc2->Reset();
+  ASSERT_FALSE(olc1->Online());
+  ASSERT_FALSE(olc2->Online());
+
+  olc1 = olc2 = NULL;
+}
+
+TEST(OnlineControllerTest, BEH_BASE_SetGetOnline) {
   base::OnlineController *olc1 = base::OnlineController::instance();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
@@ -60,10 +102,11 @@ TEST(OnlineControllerTest, BEH_SetGetOnline) {
   ASSERT_FALSE(olc1->Online());
   ASSERT_FALSE(olc2->Online());
 
+  olc1->Reset();
   olc1 = olc2 = NULL;
 }
 
-TEST(OnlineControllerTest, BEH_ThreadedSetGetOnline) {
+TEST(OnlineControllerTest, BEH_BASE_ThreadedSetGetOnline) {
   base::OnlineController *olc1 = base::OnlineController::instance();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
@@ -90,6 +133,71 @@ TEST(OnlineControllerTest, BEH_ThreadedSetGetOnline) {
 
   ASSERT_FALSE(olc1->Online());
   ASSERT_FALSE(olc2->Online());
+
+  olc1 = olc2 = NULL;
+}
+
+TEST(OnlineControllerTest, BEH_BASE_ObserverRegistration) {
+  base::OnlineController *olc1 = base::OnlineController::instance();
+  base::OnlineController *olc2 = base::OnlineController::instance();
+  ASSERT_EQ(olc1, olc2);
+  ASSERT_FALSE(olc1->Online());
+  ASSERT_FALSE(olc2->Online());
+
+  ASSERT_EQ(0, olc1->ObserversCount());
+  ASSERT_EQ(0, olc2->ObserversCount());
+
+  boost::uint16_t id1 = olc1->RegisterObserver(boost::bind(&Observer1, _1));
+  ASSERT_GT(65536, id1);
+  ASSERT_EQ(1, olc1->ObserversCount());
+  ASSERT_EQ(1, olc2->ObserversCount());
+
+  olc1->SetOnline(false);
+  ASSERT_EQ(0, o1);
+
+  olc2->SetOnline(true);
+  ASSERT_EQ(1, o1);
+
+  olc1->Reset();
+  ASSERT_EQ(0, olc1->ObserversCount());
+  ASSERT_EQ(0, olc2->ObserversCount());
+  ASSERT_EQ(1, o1);
+
+  olc1 = olc2 = NULL;
+}
+
+TEST(OnlineControllerTest, BEH_BASE_MultipleObserverRegistration) {
+  base::OnlineController *olc1 = base::OnlineController::instance();
+  base::OnlineController *olc2 = base::OnlineController::instance();
+  ASSERT_EQ(olc1, olc2);
+  ASSERT_FALSE(olc1->Online());
+  ASSERT_FALSE(olc2->Online());
+
+  ASSERT_EQ(0, olc1->ObserversCount());
+  ASSERT_EQ(0, olc2->ObserversCount());
+
+  boost::uint16_t id1 = olc1->RegisterObserver(boost::bind(&Observer1, _1));
+  ASSERT_EQ(1, olc1->ObserversCount());
+  ASSERT_EQ(1, olc2->ObserversCount());
+
+  boost::uint16_t id2 = olc1->RegisterObserver(boost::bind(&Observer2, _1));
+  ASSERT_EQ(2, olc1->ObserversCount());
+  ASSERT_EQ(2, olc2->ObserversCount());
+  ASSERT_NE(id1, id2);
+
+  olc1->SetOnline(false);
+  ASSERT_EQ(0, o1);
+  ASSERT_EQ(0, o2);
+
+  olc2->SetOnline(true);
+  ASSERT_EQ(1, o1);
+  ASSERT_EQ(1, o2);
+
+  olc1->Reset();
+  ASSERT_EQ(0, olc1->ObserversCount());
+  ASSERT_EQ(0, olc2->ObserversCount());
+  ASSERT_EQ(1, o1);
+  ASSERT_EQ(1, o2);
 
   olc1 = olc2 = NULL;
 }

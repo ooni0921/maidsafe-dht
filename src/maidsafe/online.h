@@ -25,22 +25,36 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef MAIDSAFE_ONLINE_H_
+#define MAIDSAFE_ONLINE_H_
 
-#include "base/config.h"
+#include <boost/function.hpp>
+
+#include <map>
+
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace base {
 
 class OnlineController  {
+  typedef boost::function<void(const bool&)> observer;
  public:
   static OnlineController* instance();
+  boost::uint16_t RegisterObserver(const observer &ob);
   void SetOnline(const bool &b);
   bool Online();
+  boost::uint16_t ObserversCount();
+  void Reset();
+
  private:
   OnlineController();
   ~OnlineController();
   bool online_;
   boost::mutex ol_mutex_;
+  std::map<boost::uint16_t, observer> observers_;
+//  boost::signals2::signal1<void, bool> sig;
 };
 
 }  // namespace base
+
+#endif  // MAIDSAFE_ONLINE_H_
