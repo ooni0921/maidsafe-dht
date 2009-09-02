@@ -139,10 +139,11 @@ KNodeImpl::KNodeImpl(
           host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(), K_(K),
           alpha_(kAlpha), beta_(kBeta), refresh_routine_started_(false),
           kad_config_path_(""), local_host_ip_(""),
-          local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
-          use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
-          add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
-          upnp_(), upnp_mapped_port_(0) {
+          local_host_port_(0), stopping_(false),
+          port_forwarded_(port_forwarded), use_upnp_(use_upnp),
+          contacts_to_add_(), addcontacts_routine_(), add_ctc_cond_(),
+          private_key_(private_key), public_key_(public_key), upnp_(),
+          upnp_mapped_port_(0) {
 }
 
 KNodeImpl::KNodeImpl(
@@ -168,10 +169,11 @@ KNodeImpl::KNodeImpl(
           host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(),
           K_(k), alpha_(alpha), beta_(beta), refresh_routine_started_(false),
           kad_config_path_(""), local_host_ip_(""),
-          local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
-          use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
-          add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
-          upnp_(), upnp_mapped_port_(0) {
+          local_host_port_(0), stopping_(false),
+          port_forwarded_(port_forwarded), use_upnp_(use_upnp),
+          contacts_to_add_(), addcontacts_routine_(), add_ctc_cond_(),
+          private_key_(private_key), public_key_(public_key), upnp_(),
+          upnp_mapped_port_(0) {
 }
 
 KNodeImpl::~KNodeImpl() {
