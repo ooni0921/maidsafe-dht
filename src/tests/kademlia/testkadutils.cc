@@ -41,8 +41,8 @@ bool InRange(const std::string &key, const kad::BigInt &min_range,
 TEST(KadRandomId, BEH_KAD_InRange) {
   kad::BigInt min_range(2);
   kad::BigInt max_range(2);
-  min_range.pow(510);
-  max_range.pow(512);
+  min_range.pow2(510);
+  max_range.pow2(512);
   std::string id = kad::random_kademlia_id(min_range, max_range);
   std::string enc_id;
   base::encode_to_hex(id, &enc_id);
@@ -56,13 +56,13 @@ TEST(KadRandomId, BEH_KAD_InRange) {
 TEST(KadRandomId, BEH_KAD_InRangeKadEnv) {
   kad::BigInt min_range(0);
   kad::BigInt max_range(2);
-  max_range.pow(kad::kKeySizeBytes*8);
+  max_range.pow2(kad::kKeySizeBytes*8);
   max_range--;
   for (int i = 0; i < 7; i++) {
     kad::BigInt x(2);
-    x.pow(i);
+    x.pow2(i);
     kad::BigInt y(2);
-    y.pow(i+1);
+    y.pow2(i+1);
     std::string id = kad::random_kademlia_id(max_range/y, max_range/x);
     std::string enc_id;
     base::encode_to_hex(id, &enc_id);
@@ -73,7 +73,7 @@ TEST(KadRandomId, BEH_KAD_InRangeKadEnv) {
     ASSERT_TRUE(InRange(id, max_range/y, max_range/x));
   }
   kad::BigInt x(2);
-  x.pow(7);
+  x.pow2(7);
   std::string id = kad::random_kademlia_id(min_range, max_range/x);
   std::string enc_id;
   base::encode_to_hex(id, &enc_id);
@@ -83,7 +83,7 @@ TEST(KadRandomId, BEH_KAD_InRangeKadEnv) {
   ASSERT_GE(max_range, id_val);
   for (int i = 1; i < 512; i++) {
     kad::BigInt x(2);
-    x.pow(i);
+    x.pow2(i);
     std::string id = kad::random_kademlia_id(min_range, x);
     std::string enc_id;
     base::encode_to_hex(id, &enc_id);
@@ -99,7 +99,7 @@ TEST(KadRandomId, BEH_KAD_InRangeKadEnv) {
 TEST(KadDistance, BEH_KAD_DistanceTest) {
   kad::BigInt x(0);
   kad::BigInt y(2);
-  y.pow(512);
+  y.pow2(512);
   y--;
   std::string id1 = kad::random_kademlia_id(x, y);
   std::string id2 = kad::random_kademlia_id(x, y);
@@ -134,7 +134,7 @@ TEST(VaultNodeId, FUNC_KAD_VaultCreateId) {
   std::string id;
   kad::BigInt min_range(0);
   kad::BigInt max_range(2);
-  max_range.pow(kad::kKeySizeBytes*8);
+  max_range.pow2(kad::kKeySizeBytes*8);
   max_range--;
   for (int i = 0; i < 50; i++) {
     id = kad::vault_random_id();

@@ -976,13 +976,16 @@ void KNodeImpl::StoreValue(const std::string &key, const std::string &value,
       _1, key, value, sig, true, ttl, cb));
 }
 
-void KNodeImpl::FindValue(const std::string &key, base::callback_func_type cb) {
-  // Search in alternative store first
+void KNodeImpl::FindValue(const std::string &key,
+                          bool check_alt_store,
+                          base::callback_func_type cb) {
+  // Search in own alternative store first if check_alt_store == true
   kad::FindResponse result_msg;
-  if (alternative_store_ != NULL) {
+  if (check_alt_store && alternative_store_ != NULL) {
     if (alternative_store_->Has(key)) {
       result_msg.set_result(kad::kRpcResultSuccess);
       *result_msg.mutable_alternative_value_holder() = contact_info();
+printf("In KNodeImpl::FindValue - node %s got value in alt store.\n", result_msg.alternative_value_holder().node_id().substr(0, 20).c_str());
       std::string ser_find_result;
       result_msg.SerializeToString(&ser_find_result);
       cb(ser_find_result);

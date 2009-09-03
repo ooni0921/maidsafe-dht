@@ -28,7 +28,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef KADEMLIA_ROUTINGTABLE_H_
 #define KADEMLIA_ROUTINGTABLE_H_
 
-#include <boost/mp_math/mp_int.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/cstdint.hpp>
 #include <list>
@@ -36,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 
+#include "boost/mp_math/mp_int.hpp"  // NB - This is NOT an accepted boost lib.
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace kad {

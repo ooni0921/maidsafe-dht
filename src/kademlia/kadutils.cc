@@ -27,6 +27,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/random.hpp>
 #include <ctime>
+
+#include "boost/mp_math/mp_int.hpp"  // NB - This is NOT an accepted boost lib.
 #include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe-dht.h"
 
@@ -78,7 +80,7 @@ std::string client_node_id() {
 std::string vault_random_id() {
   BigInt min_range(0);
   BigInt max_range(2);
-  max_range.pow(kKeySizeBytes*8);
+  max_range.pow2(kKeySizeBytes*8);
   max_range--;
   return random_kademlia_id(min_range, max_range);
 }

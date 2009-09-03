@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 9
+#if MAIDSAFE_DHT_VERSION < 10
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -81,9 +81,13 @@ class KNode {
       base::callback_func_type cb);
   void StoreValue(const std::string &key, const std::string &value,
       const boost::uint32_t &ttl, base::callback_func_type cb);
-  // If KNode has the value in its AlternativeStore, rather than returning this
-  // value, it returns its own contact details.
-  void FindValue(const std::string &key, base::callback_func_type cb);
+  // If any KNode during the iterative lookup has the value in its
+  // AlternativeStore, rather than returning this value, it returns its own
+  // contact details.  If check_alt_store is true, this node checks its own
+  // AlternativeStore also.
+  void FindValue(const std::string &key,
+                 bool check_alt_store,
+                 base::callback_func_type cb);
   void FindNode(const std::string &node_id, base::callback_func_type cb,
       const bool &local);
   void FindCloseNodes(const std::string &node_id, base::callback_func_type cb);

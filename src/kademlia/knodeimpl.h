@@ -237,7 +237,9 @@ class KNodeImpl {
       base::callback_func_type cb);
   void StoreValue(const std::string &key, const std::string &value,
       const boost::uint32_t &ttl, base::callback_func_type cb);
-  void FindValue(const std::string &key, base::callback_func_type cb);
+  void FindValue(const std::string &key,
+                 bool check_alt_store,
+                 base::callback_func_type cb);
   void FindNode(const std::string &node_id, base::callback_func_type cb,
       const bool &local);
   void FindCloseNodes(const std::string &node_id, base::callback_func_type cb);

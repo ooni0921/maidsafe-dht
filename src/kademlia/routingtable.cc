@@ -38,7 +38,7 @@ RoutingTable::RoutingTable(const std::string &holder_id)
         bucket_of_holder_(0), brother_bucket_of_holder_(-1),
         address_space_upper_address_("2") {
   BigInt min_range(0);
-  address_space_upper_address_.pow(kKeySizeBytes*8);
+  address_space_upper_address_.pow2(kKeySizeBytes*8);
   address_space_upper_address_--;
   boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
       address_space_upper_address_));
@@ -248,7 +248,7 @@ void RoutingTable::Clear() {
   k_buckets_.clear();
   bucket_upper_address_.clear();
   BigInt min_range(0);
-  address_space_upper_address_.pow(kKeySizeBytes*8);
+  address_space_upper_address_.pow2(kKeySizeBytes*8);
   address_space_upper_address_--;
   boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
       address_space_upper_address_));

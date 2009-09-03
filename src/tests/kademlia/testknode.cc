@@ -313,7 +313,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
 
   // loading the value with another existing node
   FindCallback cb_2;
-  knodes_[11]->FindValue(key, boost::bind(&FindCallback::CallbackFunc,
+  knodes_[11]->FindValue(key, false, boost::bind(&FindCallback::CallbackFunc,
     &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
@@ -330,7 +330,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   cb_2.Reset();
 
   // loading the value with the client
-  knode_local_->FindValue(key, boost::bind(&FindCallback::CallbackFunc,
+  knode_local_->FindValue(key, false, boost::bind(&FindCallback::CallbackFunc,
     &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
@@ -478,7 +478,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
   // load the value from no.18 node
   cb_.Reset();
   FindCallback cb_1;
-  knodes_[17]->FindValue(key, boost::bind(&FindCallback::CallbackFunc,
+  knodes_[17]->FindValue(key, false, boost::bind(&FindCallback::CallbackFunc,
     &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
@@ -496,7 +496,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
   // load the value from no.1 node
   cb_1.Reset();
   ASSERT_TRUE(knodes_[0]->is_joined());
-  knodes_[0]->FindValue(key, boost::bind(&FakeCallback::CallbackFunc, &cb_1,
+  knodes_[0]->FindValue(key, false, boost::bind(&FakeCallback::CallbackFunc, &cb_1,
       _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
@@ -553,7 +553,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   ASSERT_LE(static_cast<int>(d), number);
   // load the value from no.10 node
   FindCallback cb_1;
-  knodes_[10]->FindValue(key,
+  knodes_[10]->FindValue(key, false,
       boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
@@ -569,7 +569,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
     FAIL();
   // load the value from no.11 node
   FindCallback cb_2;
-  knodes_[11]->FindValue(key,
+  knodes_[11]->FindValue(key, false,
       boost::bind(&FindCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
@@ -590,7 +590,7 @@ TEST_F(KNodeTest, FUNC_KAD_LoadNonExistingValue) {
       false);
   // load the value from no.17 node
   FindCallback cb_1;
-  knodes_[16]->FindValue(key,
+  knodes_[16]->FindValue(key, false,
       boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultFailure, cb_1.result());
@@ -705,7 +705,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
   // try to find value
   // load the value from no.20 node
   FindCallback cb_2;
-  knodes_[19]->FindValue(key,
+  knodes_[19]->FindValue(key, false,
       boost::bind(&FakeCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());

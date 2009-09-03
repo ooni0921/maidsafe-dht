@@ -99,8 +99,10 @@ void KNode::StoreValue(const std::string &key,
   pimpl_->StoreValue(key, value, ttl, cb);
 }
 
-void KNode::FindValue(const std::string &key, base::callback_func_type cb) {
-  pimpl_->FindValue(key, cb);
+void KNode::FindValue(const std::string &key,
+                      bool check_alt_store,
+                      base::callback_func_type cb) {
+  pimpl_->FindValue(key, check_alt_store, cb);
 }
 
 void KNode::FindNode(const std::string &node_id,

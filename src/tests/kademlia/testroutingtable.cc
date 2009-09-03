@@ -238,16 +238,16 @@ TEST_F(TestRoutingTable, BEH_KAD_NoSplitKBucket) {
 TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
   std::string holder_id;
   kad::BigInt min_range(0), max_range(2);
-  max_range.pow(kad::kKeySizeBytes*8);
+  max_range.pow2(kad::kKeySizeBytes*8);
   max_range--;
   kad::BigInt max_range1(2);
-  max_range1.pow((kad::kKeySizeBytes*8)-1);
+  max_range1.pow2((kad::kKeySizeBytes*8)-1);
   max_range1--;
   kad::BigInt max_range2(2);
-  max_range2.pow((kad::kKeySizeBytes*8)-2);
+  max_range2.pow2((kad::kKeySizeBytes*8)-2);
   max_range2--;
   kad::BigInt max_range3(2);
-  max_range3.pow((kad::kKeySizeBytes*8)-3);
+  max_range3.pow2((kad::kKeySizeBytes*8)-3);
   max_range3--;
   holder_id = kad::random_kademlia_id(min_range, max_range3);
   kad::RoutingTable routingtable(holder_id);
@@ -350,16 +350,16 @@ TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
 TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
   std::string holder_id;
   kad::BigInt min_range(0), max_range(2);
-  max_range.pow(kad::kKeySizeBytes*8);
+  max_range.pow2(kad::kKeySizeBytes*8);
   max_range--;
   kad::BigInt max_range1(2);
-  max_range1.pow((kad::kKeySizeBytes*8)-1);
+  max_range1.pow2((kad::kKeySizeBytes*8)-1);
   max_range1--;
   kad::BigInt max_range2(2);
-  max_range2.pow((kad::kKeySizeBytes*8)-2);
+  max_range2.pow2((kad::kKeySizeBytes*8)-2);
   max_range2--;
   kad::BigInt max_range3(2);
-  max_range3.pow((kad::kKeySizeBytes*8)-3);
+  max_range3.pow2((kad::kKeySizeBytes*8)-3);
   max_range3--;
   holder_id = kad::random_kademlia_id(min_range, max_range2);
   kad::RoutingTable routingtable(holder_id);
@@ -469,16 +469,16 @@ TEST_F(TestRoutingTable, BEH_KAD_ClearRoutingTable) {
 TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
   std::string holder_id;
   kad::BigInt range1(0), range2(2);
-  range2.pow((kad::kKeySizeBytes*8)-3);
+  range2.pow2((kad::kKeySizeBytes*8)-3);
   range2--;
   kad::BigInt range3(2);
-  range3.pow((kad::kKeySizeBytes*8)-2);
+  range3.pow2((kad::kKeySizeBytes*8)-2);
   range3--;
   kad::BigInt range4(2);
-  range4.pow((kad::kKeySizeBytes*8)-1);
+  range4.pow2((kad::kKeySizeBytes*8)-1);
   range4--;
   kad::BigInt range5(2);
-  range5.pow((kad::kKeySizeBytes*8));
+  range5.pow2((kad::kKeySizeBytes*8));
   range5--;
   ASSERT_TRUE(range5 > range4);
   ASSERT_TRUE(range4 > range3);
