@@ -28,7 +28,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/random.hpp>
 #include <ctime>
 
-#include "boost/mp_math/mp_int.hpp"  // NB - This is NOT an accepted boost lib.
 #include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe-dht.h"
 

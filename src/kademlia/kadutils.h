@@ -33,9 +33,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include <string>
+#include "boost/mp_math/mp_int.hpp"  // NB - This is NOT an accepted boost lib.
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace kad {
+typedef boost::mp_math::mp_int<> BigInt;
+
 BigInt StrToBigInt(const std::string &key);
 // kademlia distance the input of the kademlia keys must not be encoded
 BigInt kademlia_distance(const std::string &key_one,

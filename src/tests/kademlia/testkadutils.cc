@@ -26,8 +26,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
-#include "maidsafe/maidsafe-dht.h"
 #include "kademlia/kadutils.h"
+#include "maidsafe/maidsafe-dht.h"
 
 bool InRange(const std::string &key, const kad::BigInt &min_range,
     const kad::BigInt &max_range) {

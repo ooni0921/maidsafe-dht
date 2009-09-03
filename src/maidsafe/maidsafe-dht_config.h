@@ -84,7 +84,6 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 #include <algorithm>
 #include <string>
 #include <vector>
-#include "boost/mp_math/mp_int.hpp"  // NB - This is NOT an accepted boost lib.
 #include "maidsafe/crypto.h"
 #include "maidsafe/routingtable.h"
 #include "maidsafe/utils.h"
@@ -153,7 +152,6 @@ enum KBucketExitCode { SUCCEED, FULL, FAIL };
 enum node_type { CLIENT, VAULT };
 enum connect_to_node { LOCAL, REMOTE, UNKNOWN };
 enum remote_find_method { FIND_NODE, FIND_VALUE, BOOTSTRAP };
-typedef boost::mp_math::mp_int<> BigInt;
 class KNodeImpl;
 class KadRpcs;
 class ContactInfo;
