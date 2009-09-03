@@ -41,6 +41,7 @@ class OnlineController  {
  public:
   static OnlineController* instance();
   boost::uint16_t RegisterObserver(const observer &ob);
+  bool UnregisterObserver(boost::uint16_t id);
   void SetOnline(const bool &b);
   bool Online();
   boost::uint16_t ObserversCount();

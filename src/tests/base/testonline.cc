@@ -163,6 +163,13 @@ TEST(OnlineControllerTest, BEH_BASE_ObserverRegistration) {
   ASSERT_EQ(0, olc2->ObserversCount());
   ASSERT_EQ(1, o1);
 
+  id1 = olc1->RegisterObserver(boost::bind(&Observer1, _1));
+  ASSERT_EQ(1, olc1->ObserversCount());
+  ASSERT_FALSE(olc1->UnregisterObserver((id1 + 1) % 65536));
+  ASSERT_EQ(1, olc1->ObserversCount());
+  ASSERT_TRUE(olc1->UnregisterObserver(id1));
+  ASSERT_EQ(0, olc1->ObserversCount());
+
   olc1 = olc2 = NULL;
 }
 
@@ -193,10 +200,18 @@ TEST(OnlineControllerTest, BEH_BASE_MultipleObserverRegistration) {
   ASSERT_EQ(1, o1);
   ASSERT_EQ(1, o2);
 
+  ASSERT_TRUE(olc1->UnregisterObserver(id2));
+  ASSERT_EQ(1, olc1->ObserversCount());
+  ASSERT_EQ(1, olc2->ObserversCount());
+
+  olc1->SetOnline(false);
+  ASSERT_EQ(0, o1);
+  ASSERT_EQ(1, o2);
+
   olc1->Reset();
   ASSERT_EQ(0, olc1->ObserversCount());
   ASSERT_EQ(0, olc2->ObserversCount());
-  ASSERT_EQ(1, o1);
+  ASSERT_EQ(0, o1);
   ASSERT_EQ(1, o2);
 
   olc1 = olc2 = NULL;
