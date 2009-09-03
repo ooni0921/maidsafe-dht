@@ -31,27 +31,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 
 KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-             node_type type,
-             const std::string &private_key,
-             const std::string &public_key,
-             bool port_forwarded,
-             bool use_upnp)
-                 : pimpl_(new KNodeImpl(channel_manager, type, private_key,
-                          public_key, port_forwarded, use_upnp)) {}
+      node_type type, const std::string &private_key,
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp)
+      : pimpl_(new KNodeImpl(channel_manager, type, private_key, public_key,
+        port_forwarded, use_upnp)) {}
 
 KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-             node_type type,
-             const boost::uint16_t k,
-             const int &alpha,
-             const int &beta,
-             const int &refresh_time,
-             const std::string &private_key,
-             const std::string &public_key,
-             bool port_forwarded,
-             bool use_upnp)
-                 : pimpl_(new KNodeImpl(channel_manager, type, k, alpha, beta,
-                          refresh_time, private_key, public_key,
-                          port_forwarded, use_upnp)) {}
+      node_type type, const boost::uint16_t k, const int &alpha,
+      const int &beta, const int &refresh_time, const std::string &private_key,
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp)
+      : pimpl_(new KNodeImpl(channel_manager, type, k, alpha, beta,
+        refresh_time, private_key, public_key, port_forwarded, use_upnp)) {}
 
 KNode::~KNode() {}
 
@@ -99,9 +91,8 @@ void KNode::StoreValue(const std::string &key,
   pimpl_->StoreValue(key, value, ttl, cb);
 }
 
-void KNode::FindValue(const std::string &key,
-                      bool check_alt_store,
-                      base::callback_func_type cb) {
+void KNode::FindValue(const std::string &key, const bool &check_alt_store,
+      base::callback_func_type cb) {
   pimpl_->FindValue(key, check_alt_store, cb);
 }
 

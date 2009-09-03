@@ -201,22 +201,15 @@ struct StoreRequestSignature {
 class KNodeImpl {
  public:
   KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-            node_type type,
-            const std::string &private_key,
-            const std::string &public_key,
-            bool port_forwarded,
-            bool use_upnp);
+      node_type type, const std::string &private_key,
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp);
   // constructor used to set up parameters k, alpha, and beta for kademlia
   KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type,
-      const boost::uint16_t k,
-      const int &alpha,
-      const int &beta,
-      const int &refresh_time,
-      const std::string &private_key,
-      const std::string &public_key,
-      bool port_forwarded,
-      bool use_upnp);
+      node_type type, const boost::uint16_t k, const int &alpha,
+      const int &beta, const int &refresh_time, const std::string &private_key,
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp);
   ~KNodeImpl();
 
   void Join(const std::string &node_id, const std::string &kad_config_file,
@@ -237,9 +230,8 @@ class KNodeImpl {
       base::callback_func_type cb);
   void StoreValue(const std::string &key, const std::string &value,
       const boost::uint32_t &ttl, base::callback_func_type cb);
-  void FindValue(const std::string &key,
-                 bool check_alt_store,
-                 base::callback_func_type cb);
+  void FindValue(const std::string &key, const bool &check_alt_store,
+      base::callback_func_type cb);
   void FindNode(const std::string &node_id, base::callback_func_type cb,
       const bool &local);
   void FindCloseNodes(const std::string &node_id, base::callback_func_type cb);

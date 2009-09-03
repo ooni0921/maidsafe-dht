@@ -55,12 +55,14 @@ class KNode {
  public:
   KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
       node_type type, const std::string &private_key,
-      const std::string &public_key, bool port_forwarded, bool use_upnp);
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp);
   // constructor used to set up parameters K, alpha, and beta for kademlia
   KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
       node_type type, const boost::uint16_t k, const int &alpha,
       const int &beta, const int &refresh_time, const std::string &private_key,
-      const std::string &public_key, bool port_forwarded, bool use_upnp);
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp);
   ~KNode();
   // Join the network with a specific node ID.
   void Join(const std::string &node_id, const std::string &kad_config_file,
@@ -85,9 +87,8 @@ class KNode {
   // AlternativeStore, rather than returning this value, it returns its own
   // contact details.  If check_alt_store is true, this node checks its own
   // AlternativeStore also.
-  void FindValue(const std::string &key,
-                 bool check_alt_store,
-                 base::callback_func_type cb);
+  void FindValue(const std::string &key, const bool &check_alt_store,
+      base::callback_func_type cb);
   void FindNode(const std::string &node_id, base::callback_func_type cb,
       const bool &local);
   void FindCloseNodes(const std::string &node_id, base::callback_func_type cb);

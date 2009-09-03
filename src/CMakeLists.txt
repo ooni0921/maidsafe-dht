@@ -163,6 +163,9 @@ LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "tests/kademlia/testknode.cc")
 FILE(GLOB CRYPTOPP_C "cryptopp/*.c*")
 FILE(GLOB CRYPTOPP_H "cryptopp/*.h*")
 LIST(APPEND CRYPTOPP ${CRYPTOPP_C} ${CRYPTOPP_H})
+FILE(GLOB T_DEMO_C "tests/demo/*.c*")
+FILE(GLOB T_DEMO_H "tests/demo/*.h*")
+LIST(APPEND T_DEMO_DIR ${T_DEMO_C} ${T_DEMO_H})
 #######################################################################################
 #All Platforms:  Add Test Exes and Create all maidsafe-dht libs                       #
 #######################################################################################
@@ -173,6 +176,7 @@ add_executable(TESTknode "tests/kademlia/testknode.cc" ${MAIDSAFE_DIR})
 add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${MAIDSAFE_DIR})
 add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${MAIDSAFE_DIR})
 add_executable(TESTupnp ${T_UPNP_DIR} ${MAIDSAFE_DIR})
+add_executable(kaddemo ${T_DEMO_DIR})
 #######################################################################################
 #######################################################################################
 add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP} ) 
@@ -193,6 +197,9 @@ boost_date_time-xgcc40-mt-${BOOST_VERSION}.a
 dl 
 pthread
 )
+	SET(DEMO_LIBS
+boost_program_options-xgcc40-mt-${BOOST_VERSION}
+)
 IF(HAVE_GLOG)
     SET(SYS_LIB "${SYS_LIB};/usr/lib/libglog.a")
 ENDIF(HAVE_GLOG)
@@ -210,12 +217,17 @@ ELSEIF (UNIX AND NOT APPLE)
         dl
         pthread
 		)
-    IF(HAVE_GLOG)
-        SET(SYS_LIB "${SYS_LIB};/usr/lib/libglog.a")
-    ENDIF(HAVE_GLOG)
+	IF(HAVE_GLOG)
+		SET(SYS_LIB "${SYS_LIB};/usr/lib/libglog.a")
+	ENDIF(HAVE_GLOG)
+	SET(DEMO_LIBS
+/usr/lib/libboost_program_options-gcc43-mt-${BOOST_VERSION}.a
+)
+
 ELSEIF (WIN32)
 	IF(MSVC)
 		set(SYS_LIB c:/lib/libprotobuf.lib c:/lib/libboost_system-vc90-mt-1_36.lib c:/lib/libboost_filesystem-vc90-mt-1_36.lib  c:/lib/libboost_regex-vc90-mt-1_36.lib  c:/lib/libboost_thread-vc90-mt-1_36.lib c:/lib/libboost_date_time-vc90-mt-1_36.lib c:/lib/WSock32.lib c:/lib/IPHlpApi.lib)
+		SET(DEMO_LIBS c:/lib/boost_program_options-vc90-mt-1_36.lib)
 	ELSE(MSVC)
 		SET(SYS_LIB
 		 -ladvapi32 
@@ -231,6 +243,9 @@ ELSEIF (WIN32)
 		c:/usr/lib/dokan.lib
 		c:/usr/lib/libprotobuf.a  -liphlpapi
 		)
+		SET(DEMO_LIBS
+		c:/usr/lib/libboost_program_options-mgw43-mt-${BOOST_VERSION}.lib
+		)
 	ENDIF(MSVC)
 ENDIF(APPLE)
 TARGET_LINK_LIBRARIES(TESTbase  maidsafe-dht  protobuf  gtest ${SYS_LIB})
@@ -240,6 +255,7 @@ TARGET_LINK_LIBRARIES(TESTkademlia maidsafe-dht gtest  ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTknode maidsafe-dht  gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp maidsafe-dht gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(maidsafe-dht  ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(kaddemo maidsafe-dht ${DEMO_LIBS})
 
 
 ##################################################################################
