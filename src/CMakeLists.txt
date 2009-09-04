@@ -1,36 +1,100 @@
 cmake_minimum_required(VERSION 2.6)
 #this needs to be at the top of the file
-message ("#############################################")
-IF(NOT CMAKE_BUILD_TYPE)
-   SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-ENDIF(NOT CMAKE_BUILD_TYPE)
+MESSAGE ("================================================================================")
+IF(NOT CMAKE_GEN)
+  MESSAGE("")
+  IF(UNIX)
+    MESSAGE("No generator previously specified.  Use e.g. -G\"CodeBlocks - Unix Makefiles\"")
+  ELSE(UNIX)
+    MESSAGE("No generator previously specified.  Use e.g. -G\"CodeBlocks - MinGW Makefiles\"")
+  ENDIF(UNIX)
+  MESSAGE("")
+ENDIF(NOT CMAKE_GEN)
+SET(CMAKE_GEN ${CMAKE_GENERATOR} CACHE INTERNAL "" FORCE)
 
-option(BOOST_INCLUDES "Set location of BOOST headers ie /usr/include/boost-1_40/" "/usr/include/boost-1_40/")
-option(BOOST_VERSION "Set boost version i.e. 1_40 (use an underscore)" "1_40")
+IF(NOT CMAKE_BUILD_TYPE)
+   SET(CMAKE_BUILD_TYPE "Release" CACHE INTERNAL "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+project (maidsafe-dht)
+IF(NOT MAIDSAFE_TEST_TYPE)
+   SET(MAIDSAFE_TEST_TYPE "BEH" CACHE INTERNAL "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
+ENDIF(NOT MAIDSAFE_TEST_TYPE)
+
+IF(UNIX)
+	EXEC_PROGRAM(date ARGS +%a%d%m%y OUTPUT_VARIABLE pddate)
+ELSE(UNIX)
+	EXEC_PROGRAM("c:\\msys\\1.0\\bin\\date.exe" ARGS +%a%d%m%y OUTPUT_VARIABLE pddate)
+ENDIF(UNIX)
+
+IF(CMAKE_BUILD_TYPE MATCHES "Release")
+  MESSAGE ("")
+  MESSAGE("Building a package which is OK to release.")
+  MESSAGE("------------------------------------------")
+  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/bin/)
+  SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/lib)
+ELSE()
+  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/bin/)
+  SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/lib)
+  MESSAGE ("")
+  MESSAGE("Building a package which is NOT OK to release.")
+  MESSAGE("----------------------------------------------")
+ 	SET(pddate "DEVELOPER_${pddate}")
+ENDIF()
+
+IF(NOT BOOST_VERSION)
+   SET(BOOST_VERSION "1_40" CACHE INTERNAL "Set boost version i.e. 1_40 (use an underscore)" FORCE)
+ENDIF(NOT BOOST_VERSION)
+MESSAGE ("================================================================================")
+MESSAGE ("")
+IF(${BOOST_VERSION} MATCHES "none")
+  MESSAGE ("Boost version is not set.")
+  SET(BOOST_VERSION "")
+ELSE(${BOOST_VERSION} MATCHES "none")
+  MESSAGE ("Boost version is set to \"${BOOST_VERSION}\"")
+  SET(BOOST_VERSION "-${BOOST_VERSION}")
+ENDIF(${BOOST_VERSION} MATCHES "none")
+MESSAGE ("")
+MESSAGE ("    To alter this (e.g. for Boost 1.40.x),      cmake ../.. -DBOOST_VERSION=1_40")
+MESSAGE ("    To have no Boost version set,               cmake ../.. -DBOOST_VERSION=none")
 
 IF(NOT BOOST_INCLUDES)
 	IF(WIN32)
-   SET(BOOST_INCLUDES "c:/usr/include/boost/boost-1_40" CACHE STRING "Set location of BOOST headers ie /usr/include/boost-1_40/" FORCE)
+    SET(BOOST_INCLUDES "c:\\usr\\include\\boost${BOOST_VERSION}" CACHE INTERNAL "Set location of BOOST headers eg c:\\usr\\include\\boost${BOOST_VERSION}" FORCE)
 	ELSE()
-   SET(BOOST_INCLUDES "/usr/include/boost/boost-1_40" CACHE STRING "Set location of BOOST headers ie /usr/include/boost_1.40/" FORCE)
+    SET(BOOST_INCLUDES "/usr/include/boost/" CACHE INTERNAL "Set location of BOOST headers eg /usr/include/boost/" FORCE)
 	ENDIF()
 ENDIF(NOT BOOST_INCLUDES)
-
-IF(NOT BOOST_VERSION)
-   SET(BOOST_VERSION "1_40" CACHE STRING "Set boost version i.e. 1_40 (use an underscore)" FORCE)
-ENDIF(NOT BOOST_VERSION)
-
-message ("############################################################################################")
-message ("Boost version is set at " ${BOOST_VERSION} " to alter this please run cmake ../../ -DBOOST_VERSION=XXX where XXX is 1_39 etc.") 
-message ("############################################################################################")
-message ("Boost Includes are set at " ${BOOST_INCLUDES} " to alter this please run cmake ../../ -DBOOST_INCLUDES=XXX where XXX is /usr/include etc.") 
-message ("############################################################################################")
-
-project (maidsafe-dht)
-
-IF(NOT MAIDSAFE_TEST_TYPE)
-   SET(MAIDSAFE_TEST_TYPE "BEH" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
-ENDIF(NOT MAIDSAFE_TEST_TYPE)
+MESSAGE ("================================================================================")
+MESSAGE ("")
+MESSAGE ("Boost include is set to \"${BOOST_INCLUDES}\"")
+MESSAGE ("")
+IF(UNIX)
+  MESSAGE ("    To alter this, e.g.   cmake ../.. -DBOOST_INCLUDES=/usr/include/boost-1_40")
+ELSE(UNIX)
+  MESSAGE ("    To alter this, e.g.   cmake ../.. -DBOOST_INCLUDES=c:\\usr\\include\\boost-1_40")
+ENDIF(UNIX)
+MESSAGE ("================================================================================")
+MESSAGE ("")
+IF(CMAKE_COMPILER_IS_GNUCC)
+  IF(NOT GCC_VERSION)
+    SET(GCC_VERSION "gcc43" CACHE INTERNAL "Set GCC version e.g. gcc44 (for GCC version 4.4.x)" FORCE)
+  ENDIF(NOT GCC_VERSION)
+  IF(${GCC_VERSION} MATCHES "none")
+    MESSAGE ("GCC version is not set.")
+    SET(GCC_VERSION "")
+  ELSE(${GCC_VERSION} MATCHES "none")
+    MESSAGE ("GCC version is set to \"${GCC_VERSION}\"")
+    SET(GCC_VERSION "-${GCC_VERSION}")
+  ENDIF(${GCC_VERSION} MATCHES "none")
+  MESSAGE ("")
+  MESSAGE ("    To alter this (e.g. for GCC 4.4.x),          cmake ../.. -DGCC_VERSION=gcc44") 
+  MESSAGE ("    To have no GCC version set,                   cmake ../.. -DGCC_VERSION=none")
+  MESSAGE ("================================================================================")
+ #MESSAGE ("")
+  IF(${CMAKE_GENERATOR} MATCHES "MinGW Makefiles")
+    STRING(REPLACE "gcc" "mgw" GCC_VERSION "${GCC_VERSION}")
+  ENDIF(${CMAKE_GENERATOR} MATCHES "MinGW Makefiles")
+ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 #############################################################
 #Searching for Google Glog Library (logging)#################
@@ -55,29 +119,11 @@ ENDIF(UNIX)
 
 CONFIGURE_FILE(${maidsafe-dht_SOURCE_DIR}/config.h.in ${maidsafe-dht_SOURCE_DIR}/maidsafe/config.h)
 
-if(UNIX)
-	EXEC_PROGRAM(date ARGS +%a%d%m%y OUTPUT_VARIABLE pddate)
-ELSE(UNIX)
-	EXEC_PROGRAM("c:\\msys\\1.0\\bin\\date.exe" ARGS +%a%d%m%y OUTPUT_VARIABLE pddate)
-ENDIF(UNIX)
+set(CPACK_PACKAGE_VERSION_PATCH ${pddate})
 
-IF(CMAKE_BUILD_TYPE MATCHES "Release")
-message("Building a package which is OK to release.")
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/bin/)
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/lib)
-ELSE()
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/bin/)
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/lib)
-message("Building a package which is NOT OK to release.")
-	SET(pddate "DEVELOPER_${pddate}")
-ENDIF()
-
-
- set(CPACK_PACKAGE_VERSION_PATCH ${pddate})
-
- set(CPACK_PACKAGE_VERSION "0.1.${pddate}")
- set(CPACK_PACKAGE_VERSION_MAJOR "0")
- set(CPACK_PACKAGE_VERSION_MINOR "1")
+set(CPACK_PACKAGE_VERSION "0.1.${pddate}")
+set(CPACK_PACKAGE_VERSION_MAJOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "1")
 #CMake Options
 #SET(CMAKE_VERBOSE_MAKEFILE TRUE)
 set(Boost_USE_STATIC_LIBS ON)
@@ -188,29 +234,27 @@ SET_TARGET_PROPERTIES(maidsafe-dht PROPERTIES COMPILE_FLAGS "-D__STDC_LIMIT_MACR
 #BUILDS
 IF (APPLE)
 	SET(SYS_LIB 
-boost_thread-xgcc40-mt-${BOOST_VERSION}.a 
+boost_thread-xgcc40-mt${BOOST_VERSION}.a 
 /usr/lib/libprotobuf.a 
-boost_system-xgcc40-mt-${BOOST_VERSION}.a
-boost_filesystem-xgcc40-mt-${BOOST_VERSION}.a
-boost_regex-xgcc40-mt-${BOOST_VERSION}.a
-boost_date_time-xgcc40-mt-${BOOST_VERSION}.a
+boost_system-xgcc40-mt${BOOST_VERSION}.a
+boost_filesystem-xgcc40-mt${BOOST_VERSION}.a
+boost_regex-xgcc40-mt${BOOST_VERSION}.a
+boost_date_time-xgcc40-mt${BOOST_VERSION}.a
 dl 
 pthread
 )
-	SET(DEMO_LIBS
-boost_program_options-xgcc40-mt-${BOOST_VERSION}
-)
+SET(DEMO_LIBS boost_program_options-xgcc40-mt${BOOST_VERSION})
 IF(HAVE_GLOG)
-    SET(SYS_LIB "${SYS_LIB};/usr/lib/libglog.a")
+  SET(SYS_LIB "${SYS_LIB};/usr/lib/libglog.a")
 ENDIF(HAVE_GLOG)
 ELSEIF (UNIX AND NOT APPLE)
 	SET(SYS_LIB
-        /usr/lib/libboost_thread-gcc43-mt-${BOOST_VERSION}.a
+        /usr/lib/libboost_thread${GCC_VERSION}-mt${BOOST_VERSION}.a
         /usr/lib/libprotobuf.a
-        /usr/lib/libboost_system-gcc43-mt-${BOOST_VERSION}.a
-        /usr/lib/libboost_filesystem-gcc43-mt-${BOOST_VERSION}.a
-        /usr/lib/libboost_regex-gcc43-mt-${BOOST_VERSION}.a
-        /usr/lib/libboost_date_time-gcc43-mt-${BOOST_VERSION}.a
+        /usr/lib/libboost_system${GCC_VERSION}-mt${BOOST_VERSION}.a
+        /usr/lib/libboost_filesystem${GCC_VERSION}-mt${BOOST_VERSION}.a
+        /usr/lib/libboost_regex${GCC_VERSION}-mt${BOOST_VERSION}.a
+        /usr/lib/libboost_date_time${GCC_VERSION}-mt${BOOST_VERSION}.a
         rt
         c
         m
@@ -221,7 +265,7 @@ ELSEIF (UNIX AND NOT APPLE)
 		SET(SYS_LIB "${SYS_LIB};/usr/lib/libglog.a")
 	ENDIF(HAVE_GLOG)
 	SET(DEMO_LIBS
-/usr/lib/libboost_program_options-gcc43-mt-${BOOST_VERSION}.a
+/usr/lib/libboost_program_options-gcc43-mt${BOOST_VERSION}.a
 )
 
 ELSEIF (WIN32)
@@ -235,17 +279,15 @@ ELSEIF (WIN32)
 		 -mi386pe
 		-lstdc++
 		-lws2_32
-		c:/usr/lib/libboost_system-mgw43-mt-${BOOST_VERSION}.lib
-		c:/usr/lib/libboost_filesystem-mgw43-mt-${BOOST_VERSION}.lib
-		c:/usr/lib/libboost_regex-mgw43-mt-${BOOST_VERSION}.lib
-		c:/usr/lib/libboost_thread-mgw43-mt-${BOOST_VERSION}.lib
-		c:/usr/lib/libboost_date_time-mgw43-mt-${BOOST_VERSION}.lib
+		c:/usr/lib/libboost_system${GCC_VERSION}-mt${BOOST_VERSION}.lib
+		c:/usr/lib/libboost_filesystem${GCC_VERSION}-mt${BOOST_VERSION}.lib
+		c:/usr/lib/libboost_regex${GCC_VERSION}-mt${BOOST_VERSION}.lib
+		c:/usr/lib/libboost_thread${GCC_VERSION}-mt${BOOST_VERSION}.lib
+		c:/usr/lib/libboost_date_time${GCC_VERSION}-mt${BOOST_VERSION}.lib
 		c:/usr/lib/dokan.lib
 		c:/usr/lib/libprotobuf.a  -liphlpapi
 		)
-		SET(DEMO_LIBS
-		c:/usr/lib/libboost_program_options-mgw43-mt-${BOOST_VERSION}.lib
-		)
+		SET(DEMO_LIBS c:/usr/lib/libboost_program_options${GCC_VERSION}-mt${BOOST_VERSION}.lib)
 	ENDIF(MSVC)
 ENDIF(APPLE)
 TARGET_LINK_LIBRARIES(TESTbase  maidsafe-dht  protobuf  gtest ${SYS_LIB})
@@ -256,7 +298,6 @@ TARGET_LINK_LIBRARIES(TESTknode maidsafe-dht  gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp maidsafe-dht gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(maidsafe-dht  ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(kaddemo maidsafe-dht ${DEMO_LIBS})
-
 
 ##################################################################################
 # COMPILER FLAGS  - here after all targets declared                              #
@@ -351,19 +392,22 @@ SET(MEMORYCHECK_COMMAND "/usr/bin/valgrind --show-reachable=no")
 ENDIF(UNIX)
 
 ################################################################
-message ("#############################################")
-message("package version = " ${pddate})
-message ("#############################################")
-message("tests included ${MAIDSAFE_TEST_TYPE}")
-message ("#############################################")
-message (" you can set the test included with cmake -DMAIDSAFE_TEST_TYPE=")
-message ("_(underscore = all) BEH(behavioural - default)  FUNC(functional)")
-message ("#############################################")
-message("Build type set to ${CMAKE_BUILD_TYPE}")
-message ("#############################################")
-message("You can set the build type by: cmake ../../ -DCMAKE_BUILD_TYPE=")
-message("Release (default) Debug RelWithDebInfo MinSizeRel")
-message ("#############################################")
+MESSAGE ("Package version is set to \"${pddate}\"")
+MESSAGE ("================================================================================")
+MESSAGE ("")
+MESSAGE ("Tests included: \"${MAIDSAFE_TEST_TYPE}\"")
+MESSAGE ("")
+MESSAGE ("    To include all tests,                     cmake ../.. -DMAIDSAFE_TEST_TYPE=_")
+MESSAGE ("    To include behavioural tests,           cmake ../.. -DMAIDSAFE_TEST_TYPE=BEH")
+MESSAGE ("    To include functional tests,           cmake ../.. -DMAIDSAFE_TEST_TYPE=FUNC")
+MESSAGE ("================================================================================")
+MESSAGE ("")
+MESSAGE ("Build type is set to \"${CMAKE_BUILD_TYPE}\"")
+MESSAGE ("")
+MESSAGE ("    To alter this (e.g. to Debug),          cmake ../.. -DCMAKE_BUILD_TYPE=Debug")
+MESSAGE ("    Options are Release, Debug, RelWithDebInfo, MinSizeRel")
+MESSAGE ("================================================================================")
+MESSAGE ("")
 
 install(FILES maidsafe/maidsafe-dht.h maidsafe/maidsafe-dht_config.h
 maidsafe/utils.h maidsafe/crypto.h maidsafe/routingtable.h
@@ -385,6 +429,9 @@ set(CPACK_PACKAGE_VENDOR "Maidsafe.net")
  set(CPACK_RESOURCE_FILE_README "${maidsafe-dht_SOURCE_DIR}/../docs/readme.txt")
  set(CPACK_RESOURCE_FILE_WELCOME "${maidsafe-dht_SOURCE_DIR}/../docs/welcome.txt")
 
+MESSAGE ("Install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
+MESSAGE ("================================================================================")
+MESSAGE ("")
 
 IF(UNIX)
 	SET(CMAKE_INSTALL_PREFIX "/usr")
