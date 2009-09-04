@@ -231,6 +231,8 @@ void KNodeImpl::Join_Bootstrapping_Iteration_Client(
     AddContact(bootstrap_node, 0.0, false);
     host_ip_ = result_msg.newcomer_ext_ip();
     host_port_ = result_msg.newcomer_ext_port();
+    pchannel_manager_->ptransport()->StartPingRendezvous(false,
+        bootstrap_node.host_ip(), bootstrap_node.host_port());
     kadrpcs_.set_info(contact_info());
     args->is_callbacked = true;
     StartSearchIteration(node_id_, BOOTSTRAP, args->cb);

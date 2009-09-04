@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "transport/transportimpl.h"
 #include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/config.h"
+#include "maidsafe/online.h"
 
 
 namespace transport {
@@ -659,6 +660,7 @@ void TransportImpl::PingHandle() {
           boost::mutex::scoped_lock lock(ping_rendez_mutex_);
           ping_rendezvous_ = false;
         }
+        base::OnlineController::instance()->SetOnline(listening_port_, false);
         // check in case Stop was called before timeout of connection, then
         // there is no need to call rendezvous_notifier_
         if (stop_) return;
@@ -666,6 +668,7 @@ void TransportImpl::PingHandle() {
         rendezvous_notifier_(dead_rendezvous_server, my_rendezvous_ip_,
           my_rendezvous_port_);
       } else {
+        base::OnlineController::instance()->SetOnline(listening_port_, true);
         bool dead_rendezvous_server = false;
         rendezvous_notifier_(dead_rendezvous_server, "", 0);
         boost::this_thread::sleep(boost::posix_time::seconds(8));

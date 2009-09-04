@@ -174,10 +174,12 @@ class ChannelManager {
   bool CheckConnection(const std::string &ip, const uint16_t &port);
   bool CheckLocalAddress(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port);
+  void RequestSent(const boost::uint32_t &connection_id, const bool &success);
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout);
   void AddChannelId(boost::uint32_t *id);
   void RemoveChannelId(const boost::uint32_t &id);
+  void OnlineStatusChanged(const bool &online);
  private:
   boost::shared_ptr<ChannelManagerImpl> pimpl_;
 };

@@ -93,6 +93,7 @@ class ChannelManagerImpl {
   void RequestSent(const boost::uint32_t &connection_id, const bool &success);
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout);
+  void OnlineStatusChanged(const bool &online);
  private:
   void TimerHandler(const boost::uint32_t &req_id);
   boost::shared_ptr<transport::Transport> ptransport_;
@@ -110,6 +111,7 @@ class ChannelManagerImpl {
   std::map<boost::uint32_t, PendingTimeOut> pending_timeout_;
   std::set<boost::uint32_t> channels_ids_;
   boost::condition_variable delete_channels_cond_;
+  boost::uint16_t online_status_id_;
 };
 }  // namespace rpcprotocol
 #endif  // RPCPROTOCOL_CHANNELMANAGERIMPL_H_

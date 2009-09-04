@@ -147,6 +147,7 @@ TEST(OnlineControllerTest, BEH_BASE_ObserverRegistration) {
   ASSERT_EQ(0, olc2->ObserversCount());
 
   boost::uint16_t id1 = olc1->RegisterObserver(0, boost::bind(&Observer1, _1));
+  ASSERT_LT(0, id1);
   ASSERT_GT(65536, id1);
   ASSERT_EQ(1, olc1->ObserversCount());
   ASSERT_EQ(1, olc2->ObserversCount());

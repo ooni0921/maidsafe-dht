@@ -26,6 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "maidsafe/config.h"
+#include "maidsafe/online.h"
 #include "rpcprotocol/channelmanagerimpl.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
@@ -39,7 +40,7 @@ ChannelManagerImpl::ChannelManagerImpl()
       id_mutex_(), pend_timeout_mutex_(), channels_ids_mutex_(),
       current_request_id_(0), current_channel_id_(0), channels_(),
       pending_req_(), external_port_(0), external_ip_(""), pending_timeout_(),
-      channels_ids_(), delete_channels_cond_() {}
+      channels_ids_(), delete_channels_cond_(), online_status_id_(0) {}
 
 ChannelManagerImpl::~ChannelManagerImpl() {
   if (is_started_) {
@@ -138,12 +139,15 @@ int ChannelManagerImpl::StartTransport(boost::uint16_t port,
         this, _1, _2))) {
       start_res_ = 0;
       is_started_ = true;
+      external_port_ = ptransport_->listening_port();
+      online_status_id_ = base::OnlineController::instance()->RegisterObserver(
+          external_port_, boost::bind(&ChannelManagerImpl::OnlineStatusChanged,
+          this, _1));
       break;
     }
     count_++;
     try_port_ = ((port + count_) % (kMaxPort - kMinPort + 1)) + kMinPort;
   }
-  external_port_ = ptransport_->listening_port();
   return start_res_;
 }
 
@@ -152,6 +156,7 @@ int ChannelManagerImpl::StopTransport() {
     return 0;
   }
   is_started_ = false;
+  base::OnlineController::instance()->UnregisterObserver(online_status_id_);
   pending_timeout_.clear();
   ClearCallLaters();
   ptransport_->Stop();
@@ -210,7 +215,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
       it->second->HandleRequest(decoded_msg, connection_id, rtt);
       channels_mutex_.unlock();
     } else {
-      LOG(ERROR) << "Message arrived for unregistered service";
+      LOG(ERROR) << "Message arrived for unregistered service" << std::endl;
       channels_mutex_.unlock();
     }
   } else if (decoded_msg.rpc_type() == RESPONSE) {
@@ -340,6 +345,8 @@ void ChannelManagerImpl::AddTimeOutRequest(const boost::uint32_t &connection_id,
 }
 
 int ChannelManagerImpl::StartLocalTransport(const boost::uint16_t &port) {
+  if (is_started_)
+    return 0;
   current_request_id_ =
       base::generate_next_transaction_id(current_request_id_)+(port*100);
   int result = ptransport_->StartLocal(port,
@@ -347,8 +354,16 @@ int ChannelManagerImpl::StartLocalTransport(const boost::uint16_t &port) {
       boost::bind(&ChannelManagerImpl::RequestSent, this, _1, _2));
   if (result == 0) {
     external_port_ = ptransport_->listening_port();
+    online_status_id_ = base::OnlineController::instance()->RegisterObserver(
+        external_port_, boost::bind(&ChannelManagerImpl::OnlineStatusChanged,
+        this, _1));
     is_started_ = true;
   }
   return result;
 }
+
+void ChannelManagerImpl::OnlineStatusChanged(const bool &online) {
+  // TODO(anyone) handle connection loss
 }
+
+}  // namespace rpcprotocol

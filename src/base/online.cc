@@ -40,12 +40,12 @@ OnlineController::OnlineController()
 boost::uint16_t OnlineController::RegisterObserver(
     const boost::uint16_t &group, const Observer &ob) {
   boost::mutex::scoped_lock loch(ol_mutex_);
-  boost::uint16_t id = base::random_32bit_uinteger() % 65536;
+  boost::uint16_t id = 1 + base::random_32bit_uinteger() % 65535;
   std::pair<std::map<boost::uint16_t, GroupedObserver>::iterator, bool> ret;
   ret = observers_.insert(std::pair<boost::uint16_t, GroupedObserver>
                           (id, GroupedObserver(group, ob)));
   while (!ret.second) {
-    id = base::random_32bit_uinteger() % 65536;
+    id = 1 + base::random_32bit_uinteger() % 65535;
     ret = observers_.insert(std::pair<boost::uint16_t, GroupedObserver>
                             (id, GroupedObserver(group, ob)));
   }
