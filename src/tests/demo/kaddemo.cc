@@ -26,6 +26,7 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
+#include <iostream>
 #include <fstream>
 #include "maidsafe/config.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -62,8 +63,8 @@ void conflicting_options(const po::variables_map& vm, const char* opt1,
         "' and '" + opt2 + "'.");
 }
 
-/* Function used to check that of 'for_what' is specified, then
-   'required_option' is specified too. */
+// Function used to check that of 'for_what' is specified, then
+// 'required_option' is specified too.
 void option_dependency(const po::variables_map& vm,
     const char* for_what, const char* required_option) {
   if (vm.count(for_what) && !vm[for_what].defaulted())
@@ -114,7 +115,6 @@ bool write_to_kadconfig(const std::string &path, const std::string &node_id,
   return boost::filesystem::exists(path);
 }
 
-
 volatile int ctrlc_pressed = 0;
 
 void ctrlc_handler(int) {
@@ -124,11 +124,6 @@ void ctrlc_handler(int) {
 void printf_info(kad::ContactInfo info) {
   kad::Contact ctc(info);
   printf("Node info: %s", ctc.ToString().c_str());
-}
-
-inline void executecb(base::callback_func_type cb) {
-  //boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  cb("MIERDA");
 }
 
 int main(int argc, char **argv) {
@@ -243,8 +238,8 @@ int main(int argc, char **argv) {
       type = kad::CLIENT;
     else
       type = kad::VAULT;
-    kad::KNode node(chmanager, type, "", "", vm["upnp"].as<bool>(),
-        vm["port_fw"].as<bool>());
+    kad::KNode node(chmanager, type, "", "", vm["port_fw"].as<bool>(),
+        vm["upnp"].as<bool>());
     if (0 != chmanager->StartTransport(port, boost::bind(
           &kad::KNode::HandleDeadRendezvousServer, &node, _1))) {
       printf("Unable to start node on port %d\n", port);
