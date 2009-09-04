@@ -35,27 +35,26 @@ OnlineController* OnlineController::instance() {
 }
 
 OnlineController::OnlineController()
-    : online_(false), ol_mutex_(), observers_() { }
+    : online_(), ol_mutex_(), observers_() { }
 
-OnlineController::~OnlineController() {
-  online_ = false;
-}
-
-boost::uint16_t OnlineController::RegisterObserver(const observer &ob) {
+boost::uint16_t OnlineController::RegisterObserver(
+    const boost::uint16_t &group, const Observer &ob) {
   boost::mutex::scoped_lock loch(ol_mutex_);
   boost::uint16_t id = base::random_32bit_uinteger() % 65536;
-  std::pair<std::map<boost::uint16_t, observer>::iterator, bool> ret;
-  ret = observers_.insert(std::pair<boost::uint16_t, observer>(id, ob));
+  std::pair<std::map<boost::uint16_t, GroupedObserver>::iterator, bool> ret;
+  ret = observers_.insert(std::pair<boost::uint16_t, GroupedObserver>
+                          (id, GroupedObserver(group, ob)));
   while (!ret.second) {
     id = base::random_32bit_uinteger() % 65536;
-    ret = observers_.insert(std::pair<boost::uint16_t, observer>(id, ob));
+    ret = observers_.insert(std::pair<boost::uint16_t, GroupedObserver>
+                            (id, GroupedObserver(group, ob)));
   }
   return id;
 }
 
 bool OnlineController::UnregisterObserver(boost::uint16_t id) {
   boost::mutex::scoped_lock loch(ol_mutex_);
-  std::map<boost::uint16_t, observer>::iterator it = observers_.find(id);
+  std::map<boost::uint16_t, GroupedObserver>::iterator it = observers_.find(id);
   if (it != observers_.end()) {
     observers_.erase(it);
     return true;
@@ -63,17 +62,47 @@ bool OnlineController::UnregisterObserver(boost::uint16_t id) {
   return false;
 }
 
-void OnlineController::SetOnline(const bool &b) {
+void OnlineController::UnregisterGroup(const boost::uint16_t &group) {
   boost::mutex::scoped_lock loch(ol_mutex_);
-  online_ = b;
-  for (std::map<boost::uint16_t, observer>::iterator it = observers_.begin();
-       it != observers_.end(); ++it)
-    (*it).second(online_);
+  for (std::map<boost::uint16_t, GroupedObserver>::iterator it =
+       observers_.begin(); it != observers_.end(); ++it) {
+    if ((*it).second.first == group)
+      observers_.erase(it);
+  }
 }
 
-bool OnlineController::Online() {
+void OnlineController::UnregisterAll() {
   boost::mutex::scoped_lock loch(ol_mutex_);
-  return online_;
+  observers_.clear();
+}
+
+void OnlineController::SetOnline(const boost::uint16_t &group, const bool &b) {
+  boost::mutex::scoped_lock loch(ol_mutex_);
+  online_[group] = b;
+  for (std::map<boost::uint16_t, GroupedObserver>::iterator it =
+       observers_.begin(); it != observers_.end(); ++it) {
+    if ((*it).second.first == group)
+      (*it).second.second(b);
+  }
+}
+
+void OnlineController::SetAllOnline(const bool &b) {
+  boost::mutex::scoped_lock loch(ol_mutex_);
+  for (std::map<boost::uint16_t, bool>::iterator it = online_.begin();
+       it != online_.end(); ++it) {
+    (*it).second = b;
+  }
+  for (std::map<boost::uint16_t, GroupedObserver>::iterator it =
+       observers_.begin(); it != observers_.end(); ++it) {
+    online_[(*it).second.first] = b;
+    (*it).second.second(b);
+  }
+}
+
+bool OnlineController::Online(const boost::uint16_t &group) {
+  boost::mutex::scoped_lock loch(ol_mutex_);
+  std::map<boost::uint16_t, bool>::iterator it = online_.find(group);
+  return (it != online_.end()) && (*it).second;
 }
 
 boost::uint16_t OnlineController::ObserversCount() {
@@ -81,9 +110,22 @@ boost::uint16_t OnlineController::ObserversCount() {
   return observers_.size();
 }
 
+boost::uint16_t OnlineController::ObserversInGroupCount(
+    const boost::uint16_t &group) {
+  boost::mutex::scoped_lock loch(ol_mutex_);
+  boost::uint16_t n(0);
+  for (std::map<boost::uint16_t, GroupedObserver>::iterator it =
+       observers_.begin(); it != observers_.end(); ++it) {
+    if ((*it).second.first == group)
+      n++;
+  }
+  return n;
+}
+
 void OnlineController::Reset() {
+  boost::mutex::scoped_lock loch(ol_mutex_);
   observers_.clear();
-  SetOnline(false);
+  online_.clear();
 }
 
 }  // namespace base

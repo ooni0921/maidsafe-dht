@@ -29,31 +29,34 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAIDSAFE_ONLINE_H_
 
 #include <boost/function.hpp>
-
 #include <map>
-
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace base {
 
 class OnlineController  {
-  typedef boost::function<void(const bool&)> observer;
+  typedef boost::function<void(const bool&)> Observer;
+  typedef std::pair<boost::uint16_t, Observer> GroupedObserver;
  public:
   static OnlineController* instance();
-  boost::uint16_t RegisterObserver(const observer &ob);
+  boost::uint16_t RegisterObserver(const boost::uint16_t &group,
+                                   const Observer &ob);
   bool UnregisterObserver(boost::uint16_t id);
-  void SetOnline(const bool &b);
-  bool Online();
+  void UnregisterGroup(const boost::uint16_t &group);
+  void UnregisterAll();
+  void SetOnline(const boost::uint16_t &group, const bool &b);
+  void SetAllOnline(const bool &b);
+  bool Online(const boost::uint16_t &group);
   boost::uint16_t ObserversCount();
+  boost::uint16_t ObserversInGroupCount(const boost::uint16_t &group);
   void Reset();
 
  private:
   OnlineController();
-  ~OnlineController();
-  bool online_;
+  ~OnlineController() {}
+  std::map<boost::uint16_t, bool> online_;
   boost::mutex ol_mutex_;
-  std::map<boost::uint16_t, observer> observers_;
-//  boost::signals2::signal1<void, bool> sig;
+  std::map<boost::uint16_t, GroupedObserver> observers_;
 };
 
 }  // namespace base

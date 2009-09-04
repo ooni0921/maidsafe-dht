@@ -30,27 +30,26 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/online.h"
 
-int o1;
-int o2;
+bool o1, o2, o3, o4;
 
 void Observer1(bool b) {
-  if (b) {
-    printf("The variable has changed to TRUE.\n");
-    o1 = 1;
-  } else {
-    printf("The variable has changed to FALSE.\n");
-    o1 = 0;
-  }
+  o1 = b;
+  printf("Variable 1 has changed to %s.\n", b ? "TRUE" : "FALSE");
 }
 
 void Observer2(bool b) {
-  if (b) {
-    printf("The variable has changed to TRUE.\n");
-    o2 = 1;
-  } else {
-    printf("The variable has changed to FALSE.\n");
-    o2 = 0;
-  }
+  o2 = b;
+  printf("Variable 2 has changed to %s.\n", b ? "TRUE" : "FALSE");
+}
+
+void Observer3(bool b) {
+  o3 = b;
+  printf("Variable 3 has changed to %s.\n", b ? "TRUE" : "FALSE");
+}
+
+void Observer4(bool b) {
+  o4 = b;
+  printf("Variable 4 has changed to %s.\n", b ? "TRUE" : "FALSE");
 }
 
 
@@ -65,16 +64,16 @@ TEST(OnlineControllerTest, BEH_BASE_OnlineReset) {
   base::OnlineController *olc1 = base::OnlineController::instance();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
-  ASSERT_FALSE(olc1->Online());
-  ASSERT_FALSE(olc2->Online());
+  ASSERT_FALSE(olc1->Online(0));
+  ASSERT_FALSE(olc2->Online(0));
 
-  olc1->SetOnline(true);
-  ASSERT_TRUE(olc1->Online());
-  ASSERT_TRUE(olc2->Online());
+  olc1->SetOnline(0, true);
+  ASSERT_TRUE(olc1->Online(0));
+  ASSERT_TRUE(olc2->Online(0));
 
   olc2->Reset();
-  ASSERT_FALSE(olc1->Online());
-  ASSERT_FALSE(olc2->Online());
+  ASSERT_FALSE(olc1->Online(0));
+  ASSERT_FALSE(olc2->Online(0));
 
   olc1 = olc2 = NULL;
 }
@@ -83,24 +82,24 @@ TEST(OnlineControllerTest, BEH_BASE_SetGetOnline) {
   base::OnlineController *olc1 = base::OnlineController::instance();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
-  ASSERT_FALSE(olc1->Online());
-  ASSERT_FALSE(olc2->Online());
+  ASSERT_FALSE(olc1->Online(0));
+  ASSERT_FALSE(olc2->Online(0));
 
-  olc1->SetOnline(true);
-  ASSERT_TRUE(olc1->Online());
-  ASSERT_TRUE(olc2->Online());
+  olc1->SetOnline(0, true);
+  ASSERT_TRUE(olc1->Online(0));
+  ASSERT_TRUE(olc2->Online(0));
 
-  olc2->SetOnline(false);
-  ASSERT_FALSE(olc1->Online());
-  ASSERT_FALSE(olc2->Online());
+  olc2->SetOnline(0, false);
+  ASSERT_FALSE(olc1->Online(0));
+  ASSERT_FALSE(olc2->Online(0));
 
-  olc2->SetOnline(true);
-  ASSERT_TRUE(olc1->Online());
-  ASSERT_TRUE(olc2->Online());
+  olc2->SetOnline(0, true);
+  ASSERT_TRUE(olc1->Online(0));
+  ASSERT_TRUE(olc2->Online(0));
 
-  olc2->SetOnline(false);
-  ASSERT_FALSE(olc1->Online());
-  ASSERT_FALSE(olc2->Online());
+  olc2->SetOnline(0, false);
+  ASSERT_FALSE(olc1->Online(0));
+  ASSERT_FALSE(olc2->Online(0));
 
   olc1->Reset();
   olc1 = olc2 = NULL;
@@ -110,29 +109,29 @@ TEST(OnlineControllerTest, BEH_BASE_ThreadedSetGetOnline) {
   base::OnlineController *olc1 = base::OnlineController::instance();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
-  ASSERT_FALSE(olc1->Online());
-  ASSERT_FALSE(olc2->Online());
+  ASSERT_FALSE(olc1->Online(0));
+  ASSERT_FALSE(olc2->Online(0));
 
   base::CallLaterTimer clt_;
   ASSERT_TRUE(clt_.IsStarted());
   clt_.CancelAll();
   clt_.AddCallLater(500, boost::bind(&base::OnlineController::SetOnline,
-                    olc1, true));
+                    olc1, 0, true));
 
-  while (!olc2->Online())
+  while (!olc2->Online(0))
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 
-  ASSERT_TRUE(olc1->Online());
-  ASSERT_TRUE(olc2->Online());
+  ASSERT_TRUE(olc1->Online(0));
+  ASSERT_TRUE(olc2->Online(0));
 
   clt_.AddCallLater(500, boost::bind(&base::OnlineController::SetOnline,
-                    olc2, false));
+                    olc2, 0, false));
 
-  while (olc1->Online())
+  while (olc1->Online(0))
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 
-  ASSERT_FALSE(olc1->Online());
-  ASSERT_FALSE(olc2->Online());
+  ASSERT_FALSE(olc1->Online(0));
+  ASSERT_FALSE(olc2->Online(0));
 
   olc1 = olc2 = NULL;
 }
@@ -141,29 +140,29 @@ TEST(OnlineControllerTest, BEH_BASE_ObserverRegistration) {
   base::OnlineController *olc1 = base::OnlineController::instance();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
-  ASSERT_FALSE(olc1->Online());
-  ASSERT_FALSE(olc2->Online());
+  ASSERT_FALSE(olc1->Online(0));
+  ASSERT_FALSE(olc2->Online(0));
 
   ASSERT_EQ(0, olc1->ObserversCount());
   ASSERT_EQ(0, olc2->ObserversCount());
 
-  boost::uint16_t id1 = olc1->RegisterObserver(boost::bind(&Observer1, _1));
+  boost::uint16_t id1 = olc1->RegisterObserver(0, boost::bind(&Observer1, _1));
   ASSERT_GT(65536, id1);
   ASSERT_EQ(1, olc1->ObserversCount());
   ASSERT_EQ(1, olc2->ObserversCount());
 
-  olc1->SetOnline(false);
-  ASSERT_EQ(0, o1);
+  olc1->SetOnline(0, false);
+  ASSERT_FALSE(o1);
 
-  olc2->SetOnline(true);
-  ASSERT_EQ(1, o1);
+  olc2->SetOnline(0, true);
+  ASSERT_TRUE(o1);
 
   olc1->Reset();
   ASSERT_EQ(0, olc1->ObserversCount());
   ASSERT_EQ(0, olc2->ObserversCount());
-  ASSERT_EQ(1, o1);
+  ASSERT_TRUE(o1);
 
-  id1 = olc1->RegisterObserver(boost::bind(&Observer1, _1));
+  id1 = olc1->RegisterObserver(0, boost::bind(&Observer1, _1));
   ASSERT_EQ(1, olc1->ObserversCount());
   ASSERT_FALSE(olc1->UnregisterObserver((id1 + 1) % 65536));
   ASSERT_EQ(1, olc1->ObserversCount());
@@ -177,42 +176,126 @@ TEST(OnlineControllerTest, BEH_BASE_MultipleObserverRegistration) {
   base::OnlineController *olc1 = base::OnlineController::instance();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
-  ASSERT_FALSE(olc1->Online());
-  ASSERT_FALSE(olc2->Online());
+  ASSERT_FALSE(olc1->Online(0));
+  ASSERT_FALSE(olc2->Online(0));
 
   ASSERT_EQ(0, olc1->ObserversCount());
   ASSERT_EQ(0, olc2->ObserversCount());
 
-  boost::uint16_t id1 = olc1->RegisterObserver(boost::bind(&Observer1, _1));
+  boost::uint16_t id1 = olc1->RegisterObserver(0, boost::bind(&Observer1, _1));
   ASSERT_EQ(1, olc1->ObserversCount());
   ASSERT_EQ(1, olc2->ObserversCount());
 
-  boost::uint16_t id2 = olc1->RegisterObserver(boost::bind(&Observer2, _1));
+  boost::uint16_t id2 = olc1->RegisterObserver(0, boost::bind(&Observer2, _1));
   ASSERT_EQ(2, olc1->ObserversCount());
   ASSERT_EQ(2, olc2->ObserversCount());
   ASSERT_NE(id1, id2);
 
-  olc1->SetOnline(false);
-  ASSERT_EQ(0, o1);
-  ASSERT_EQ(0, o2);
+  olc1->SetOnline(0, false);
+  ASSERT_FALSE(o1);
+  ASSERT_FALSE(o2);
 
-  olc2->SetOnline(true);
-  ASSERT_EQ(1, o1);
-  ASSERT_EQ(1, o2);
+  olc2->SetOnline(0, true);
+  ASSERT_TRUE(o1);
+  ASSERT_TRUE(o2);
 
   ASSERT_TRUE(olc1->UnregisterObserver(id2));
   ASSERT_EQ(1, olc1->ObserversCount());
   ASSERT_EQ(1, olc2->ObserversCount());
 
-  olc1->SetOnline(false);
-  ASSERT_EQ(0, o1);
-  ASSERT_EQ(1, o2);
+  olc1->SetOnline(0, false);
+  ASSERT_FALSE(o1);
+  ASSERT_TRUE(o2);
 
   olc1->Reset();
   ASSERT_EQ(0, olc1->ObserversCount());
   ASSERT_EQ(0, olc2->ObserversCount());
-  ASSERT_EQ(0, o1);
-  ASSERT_EQ(1, o2);
+  ASSERT_FALSE(o1);
+  ASSERT_TRUE(o2);
 
   olc1 = olc2 = NULL;
+}
+
+TEST(OnlineControllerTest, BEH_BASE_GroupedObserverRegistration) {
+  base::OnlineController *olc = base::OnlineController::instance();
+
+  ASSERT_EQ(0, olc->ObserversCount());
+  ASSERT_EQ(0, olc->ObserversInGroupCount(0));
+  ASSERT_EQ(0, olc->ObserversInGroupCount(1));
+  ASSERT_EQ(0, olc->ObserversInGroupCount(2));
+
+  ASSERT_FALSE(olc->Online(0));
+  ASSERT_FALSE(olc->Online(1));
+  ASSERT_FALSE(olc->Online(2));
+
+  olc->RegisterObserver(0, boost::bind(&Observer1, _1));
+  olc->RegisterObserver(0, boost::bind(&Observer2, _1));
+  boost::uint16_t id3 = olc->RegisterObserver(0, boost::bind(&Observer3, _1));
+  olc->RegisterObserver(1, boost::bind(&Observer4, _1));
+
+  ASSERT_EQ(4, olc->ObserversCount());
+  ASSERT_EQ(3, olc->ObserversInGroupCount(0));
+  ASSERT_EQ(1, olc->ObserversInGroupCount(1));
+  ASSERT_EQ(0, olc->ObserversInGroupCount(2));
+
+  olc->SetAllOnline(true);
+  ASSERT_TRUE(olc->Online(0));
+  ASSERT_TRUE(olc->Online(1));
+  ASSERT_FALSE(olc->Online(2));  // group never used
+  ASSERT_TRUE(o1);
+  ASSERT_TRUE(o2);
+  ASSERT_TRUE(o3);
+  ASSERT_TRUE(o4);
+
+  olc->SetOnline(0, false);
+  ASSERT_FALSE(olc->Online(0));
+  ASSERT_TRUE(olc->Online(1));
+  ASSERT_FALSE(olc->Online(2));
+  ASSERT_FALSE(o1);
+  ASSERT_FALSE(o2);
+  ASSERT_FALSE(o3);
+  ASSERT_TRUE(o4);
+
+  olc->UnregisterObserver(id3);
+  ASSERT_EQ(3, olc->ObserversCount());
+  ASSERT_EQ(2, olc->ObserversInGroupCount(0));
+  ASSERT_EQ(1, olc->ObserversInGroupCount(1));
+  ASSERT_EQ(0, olc->ObserversInGroupCount(2));
+
+  olc->SetOnline(0, true);
+  ASSERT_TRUE(olc->Online(0));
+  ASSERT_TRUE(olc->Online(1));
+  ASSERT_FALSE(olc->Online(2));
+  ASSERT_TRUE(o1);
+  ASSERT_TRUE(o2);
+  ASSERT_FALSE(o3);
+  ASSERT_TRUE(o4);
+
+  olc->UnregisterGroup(0);
+  ASSERT_EQ(1, olc->ObserversCount());
+  ASSERT_EQ(0, olc->ObserversInGroupCount(0));
+  ASSERT_EQ(1, olc->ObserversInGroupCount(1));
+  ASSERT_EQ(0, olc->ObserversInGroupCount(2));
+
+  olc->SetAllOnline(false);
+  ASSERT_FALSE(olc->Online(0));
+  ASSERT_FALSE(olc->Online(1));
+  ASSERT_FALSE(olc->Online(2));
+  ASSERT_TRUE(o1);
+  ASSERT_TRUE(o2);
+  ASSERT_FALSE(o3);
+  ASSERT_FALSE(o4);
+
+  olc->UnregisterAll();
+  ASSERT_EQ(0, olc->ObserversCount());
+  ASSERT_EQ(0, olc->ObserversInGroupCount(0));
+  ASSERT_EQ(0, olc->ObserversInGroupCount(1));
+  ASSERT_EQ(0, olc->ObserversInGroupCount(2));
+
+  olc->SetOnline(0, true);
+  ASSERT_TRUE(olc->Online(0));
+  olc->Reset();
+  ASSERT_FALSE(olc->Online(0));
+
+  olc = NULL;
 }
