@@ -265,7 +265,7 @@ ELSEIF (UNIX AND NOT APPLE)
 		SET(SYS_LIB "${SYS_LIB};/usr/lib/libglog.a")
 	ENDIF(HAVE_GLOG)
 	SET(DEMO_LIBS
-/usr/lib/libboost_program_options-gcc43-mt${BOOST_VERSION}.a
+/usr/lib/libboost_program_options${GCC_VERSION}-mt${BOOST_VERSION}.a
 )
 
 ELSEIF (WIN32)
