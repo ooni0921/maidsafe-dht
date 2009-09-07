@@ -135,29 +135,26 @@ int main(int argc, char **argv) {
     po::options_description desc("Options");
     desc.add_options()
       ("help,h", "Print options informations and exit.")
-      ("logfilepath,l", po::value(&logpath)->default_value(logpath),
-        "Path of logfile")
+      ("logfilepath,l", po::value(&logpath), "Path of logfile")
       ("verbose,v", po::bool_switch(), "Print log to console.")
       ("kadconfigfile,k", po::value(&kadconfigpath)->default_value(kadconfigpath),
         "Complete pathname of kadconfig file. Default is KNode<port>/.kadconfig")
       ("client,c", po::bool_switch(), "Start the node as a client node.")
       ("port,p", po::value(&port)->default_value(port),
         "Local port to start node.  Default is 0, that starts in random port.")
-      ("bs_ip", po::value(&bs_ip), "Bootstrap Node ip")
-      ("bs_port", po::value(&bs_port), "Bootstrap Node port")
-      ("bs_local_ip", po::value(&bs_local_ip), "Bootstrap Node local ip")
-      ("bs_local_port", po::value(&bs_local_port), "Bootstrap Node local port")
-      ("bs_id", po::value(&bs_id), "Bootstrap Node id")
-      ("upnp", po::bool_switch(), "Use UPnP for Nat Traversal")
-      ("port_fw", po::bool_switch(), "Manually port forwared local port")
+      ("bs_ip", po::value(&bs_ip), "Bootstrap Node ip.")
+      ("bs_port", po::value(&bs_port), "Bootstrap Node port.")
+      ("bs_local_ip", po::value(&bs_local_ip), "Bootstrap Node local ip.")
+      ("bs_local_port", po::value(&bs_local_port), "Bootstrap Node local port.")
+      ("bs_id", po::value(&bs_id), "Bootstrap Node id.")
+      ("upnp", po::bool_switch(), "Use UPnP for Nat Traversal.")
+      ("port_fw", po::bool_switch(), "Manually port forwared local port.")
       ("externalip", po::value(&ext_ip),
         "Node's external ip.  Use only when it is the first node in the network.")
       ("externalport", po::value(&ext_port),
           "Node's external ip.  Use only when it is the first node in the network.")
       ("noconsole", po::bool_switch(),
-        "Do not have access to kademlia functions (store/load/ping) after node startup")
-//      ("configfile", po::value(&configfile),
-//        "Pathname to config file to get port and nodeid from previous instance.")
+        "Do not have access to kademlia functions (store/load/ping) after node startup.")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -219,16 +216,27 @@ int main(int argc, char **argv) {
     }
 
     // setting log
-    google::InitGoogleLogging(argv[0]);
 #ifndef HAVE_GLOG
     bool FLAGS_logtostderr;
     std::string FLAGS_log_dir;
 #endif
     if (vm.count("logfilepath")) {
-      FLAGS_log_dir = vm["logfilepath"].as<std::string>();
+#ifdef HAVE_GLOG
+      try {
+        if (!boost::filesystem::exists(vm["logfilepath"].as<std::string>()))
+          boost::filesystem::create_directories(
+              vm["logfilepath"].as<std::string>());
+        FLAGS_log_dir = vm["logfilepath"].as<std::string>();
+      }
+      catch(const std::exception &e) {
+        printf("error creating directory for log path: %s\n", e.what());
+        printf("logfile going to default dir (/tmp)");
+      }
+#endif
     } else {
       FLAGS_logtostderr = vm["verbose"].as<bool>();
     }
+    google::InitGoogleLogging(argv[0]);
     // Starting transport on port
     port = vm["port"].as<boost::uint16_t>();
     boost::shared_ptr<rpcprotocol::ChannelManager> chmanager(
@@ -255,7 +263,6 @@ int main(int argc, char **argv) {
     // if not the first vault, write to kadconfig file bootstrapping info
     // if provided in options
     if (!first_node && vm.count("bs_id")) {
-      printf("writting to %s\n", kadconfigpath.c_str());
       if(!write_to_kadconfig(kadconfigpath, vm["bs_id"].as<std::string>(),
           vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>(),
           vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>())) {
@@ -285,7 +292,7 @@ int main(int argc, char **argv) {
     printf_info(node.contact_info());
 
     if (!vm["noconsole"].as<bool>()) {
-      kaddemo::Commands cmds(&node, 16);
+      kaddemo::Commands cmds(&node, kad::K);
       cmds.Run();
     } else {
       printf("=====================================\n");

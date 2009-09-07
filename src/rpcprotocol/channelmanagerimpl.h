@@ -90,12 +90,12 @@ class ChannelManagerImpl {
   bool CheckConnection(const std::string &ip, const uint16_t &port);
   bool CheckLocalAddress(const std::string &local_ip,
     const std::string &remote_ip, const uint16_t &remote_port);
-  void RequestSent(const boost::uint32_t &connection_id, const bool &success);
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout);
   void OnlineStatusChanged(const bool &online);
  private:
   void TimerHandler(const boost::uint32_t &req_id);
+  void RequestSent(const boost::uint32_t &connection_id, const bool &success);
   boost::shared_ptr<transport::Transport> ptransport_;
   bool is_started_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;

@@ -590,6 +590,7 @@ void KNodeImpl::Leave() {
       pchannel_manager_->ClearCallLaters();
       pchannel_manager_->ptransport()->StopPingRendezvous();
       UnRegisterKadService();
+      pdata_store_->Clear();
       add_ctc_cond_.notify_one();
       addcontacts_routine_->join();
       SaveBootstrapContacts();

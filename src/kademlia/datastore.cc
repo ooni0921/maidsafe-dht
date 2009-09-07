@@ -77,10 +77,15 @@ bool DataStore::LoadItem(const std::string &key,
       datastore_.equal_range(boost::make_tuple(key));
   if (p.first == p.second)
     return false;
+  boost::uint32_t now = base::get_epoch_time();
   while (p.first != p.second) {
-    values->push_back(p.first->value_);
+    boost::int32_t ttl_remaining = p.first->expire_time_ - now;
+    if (ttl_remaining > 0)
+      values->push_back(p.first->value_);
     p.first++;
   }
+  if (values->empty())
+    return false;
   return true;
 }
 

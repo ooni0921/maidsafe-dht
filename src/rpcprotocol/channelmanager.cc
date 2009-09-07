@@ -108,11 +108,6 @@ bool ChannelManager::CheckLocalAddress(const std::string &local_ip,
   return pimpl_->CheckLocalAddress(local_ip, remote_ip, remote_port);
 }
 
-void ChannelManager::RequestSent(const boost::uint32_t &connection_id,
-    const bool &success) {
-  pimpl_->RequestSent(connection_id, success);
-}
-
 void ChannelManager::AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout) {
   return pimpl_->AddTimeOutRequest(connection_id, req_id, timeout);
