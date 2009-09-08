@@ -47,6 +47,9 @@ class Commands {
   void PrintUsage();
   bool ReadFile(const std::string &path, std::string *content);
   void WriteToFile(const std::string &path, const std::string &content);
+  void Store50Values(const std::string &prefix);
+  void Store50Callback(const std::string &result, const std::string &key,
+      bool *arrived);
   kad::KNode *node_;
   bool result_arrived_;
   double min_succ_stores_;

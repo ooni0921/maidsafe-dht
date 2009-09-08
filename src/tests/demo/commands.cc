@@ -205,6 +205,8 @@ void Commands::PrintUsage() {
   printf("\tfindfile key filepath       Find value stored with key and save ");
   printf("it to filepath.\n");
   printf("\tfindvalue key               Find value stored with key.\n");
+  printf("\tstore50values prefix        Store 50 key value pairs of for ");
+  printf("(prefix[i],prefix[i]*100.\n");
   printf("\texit                        Stop the node and exit.\n");
   printf("\n\tNOTE -- node_id should be input encoded.\n");
   printf("\t          If key is not a valid 512 hash key (encoded format),\n");
@@ -318,6 +320,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
   } else if (cmd == "getinfo") {
     kad::Contact ctc(node_->contact_info());
     printf("Node info:\n, %s", ctc.ToString().c_str());
+    *wait_for_cb = false;
   } else if (cmd == "help") {
     PrintUsage();
     *wait_for_cb = false;
@@ -325,9 +328,56 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
     printf("Exiting application...\n");
     finish_ = true;
     *wait_for_cb = false;
+  } else if (cmd == "store50values") {
+    if (args.size() != 1) {
+      *wait_for_cb = false;
+      printf("Invalid number of arguments for store50values command\n");
+    } else {
+      Store50Values(args[0]);
+      *wait_for_cb = true;
+    }
   } else {
     printf("Invalid command %s\n", cmd.c_str());
     *wait_for_cb = false;
   }
+}
+
+void Commands::Store50Values(const std::string &prefix) {
+  bool arrived;
+  std::string key, value;
+  for (int i = 0; i < 50; i++) {
+    arrived = false;
+    key = "";
+    key = cryobj_.Hash(prefix + base::itos(i), "", crypto::STRING_STRING,
+        false);
+    value = "";
+    for (int j = 0; j < 1024*10; j++)
+      value += prefix + base::itos(i);
+      node_->StoreValue(key, value, 1040*60, boost::bind(
+            &Commands::Store50Callback, this, _1, prefix + base::itos(i),
+            &arrived));
+      while (!arrived)
+        boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  }
+  result_arrived_ = true;
+}
+
+void Commands::Store50Callback(const std::string &result,
+      const std::string &key, bool *arrived) {
+  kad::StoreResponse msg;
+  if (!msg.ParseFromString(result)) {
+    printf("ERROR. Invalid response. Kademlia Store Value key %s\n",
+        key.c_str());
+    result_arrived_ = true;
+    return;
+  }
+  if (msg.result() != kad::kRpcResultSuccess) {
+    printf("Failed to store %f copies of values for key %s.\n",
+        min_succ_stores_, key.c_str());
+    printf("Some copies might have been stored\n");
+  } else {
+    printf("Successfully stored key %s\n", key.c_str());
+  }
+  *arrived = true;
 }
 }
