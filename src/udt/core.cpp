@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 06/11/2009
+   Yunhong Gu, last updated 08/01/2009
 *****************************************************************************/
 
 #ifndef WIN32
@@ -103,7 +103,7 @@ CUDT::CUDT()
    m_bSynRecving = true;
    m_iFlightFlagSize = 25600;
    m_iSndBufSize = 8192;
-   m_iRcvBufSize = 8192;
+   m_iRcvBufSize = 8192; //Rcv buffer MUST NOT be bigger than Flight Flag size
    m_Linger.l_onoff = 1;
    m_Linger.l_linger = 180;
    m_iUDPSndBufSize = 65536;
@@ -247,7 +247,11 @@ void CUDT::setOpt(UDTOpt optName, const void* optval, const int&)
       if (*(int*)optval < 1)
          throw CUDTException(5, 3);
 
-      m_iFlightFlagSize = *(int*)optval;
+      // Mimimum recv flight flag size is 32 packets
+      if (*(int*)optval > 32)
+         m_iFlightFlagSize = *(int*)optval;
+      else
+         m_iFlightFlagSize = 32;
 
       break;
 
@@ -274,6 +278,10 @@ void CUDT::setOpt(UDTOpt optName, const void* optval, const int&)
          m_iRcvBufSize = *(int*)optval / (m_iMSS - 28);
       else
          m_iRcvBufSize = 32;
+
+      // recv buffer MUST not be greater than FC size
+      if (m_iRcvBufSize > m_iFlightFlagSize)
+         m_iRcvBufSize = m_iFlightFlagSize;
 
       break;
 
@@ -444,6 +452,7 @@ void CUDT::open()
    m_llSentTotal = m_llRecvTotal = m_iSndLossTotal = m_iRcvLossTotal = m_iRetransTotal = m_iSentACKTotal = m_iRecvACKTotal = m_iSentNAKTotal = m_iRecvNAKTotal = 0;
    m_LastSampleTime = CTimer::getTime();
    m_llTraceSent = m_llTraceRecv = m_iTraceSndLoss = m_iTraceRcvLoss = m_iTraceRetrans = m_iSentACK = m_iRecvACK = m_iSentNAK = m_iRecvNAK = 0;
+   m_llSndDuration = m_llSndDurationTotal = 0;
 
    // structures for queue
    if (NULL == m_pSNode)
@@ -1323,16 +1332,16 @@ void CUDT::sample(CPerfMon* perf, bool clear)
    uint64_t currtime = CTimer::getTime();
    perf->msTimeStamp = (currtime - m_StartTime) / 1000;
 
-   m_llSentTotal += m_llTraceSent;
-   m_llRecvTotal += m_llTraceRecv;
-   m_iSndLossTotal += m_iTraceSndLoss;
-   m_iRcvLossTotal += m_iTraceRcvLoss;
-   m_iRetransTotal += m_iTraceRetrans;
-   m_iSentACKTotal += m_iSentACK;
-   m_iRecvACKTotal += m_iRecvACK;
-   m_iSentNAKTotal += m_iSentNAK;
-   m_iRecvNAKTotal += m_iRecvNAK;
-   m_llSndDurationTotal += m_llSndDuration;
+   perf->pktSent = m_llTraceSent;
+   perf->pktRecv = m_llTraceRecv;
+   perf->pktSndLoss = m_iTraceSndLoss;
+   perf->pktRcvLoss = m_iTraceRcvLoss;
+   perf->pktRetrans = m_iTraceRetrans;
+   perf->pktSentACK = m_iSentACK;
+   perf->pktRecvACK = m_iRecvACK;
+   perf->pktSentNAK = m_iSentNAK;
+   perf->pktRecvNAK = m_iRecvNAK;
+   perf->usSndDuration = m_llSndDuration;
 
    perf->pktSentTotal = m_llSentTotal;
    perf->pktRecvTotal = m_llRecvTotal;
@@ -1344,17 +1353,6 @@ void CUDT::sample(CPerfMon* perf, bool clear)
    perf->pktSentNAKTotal = m_iSentNAKTotal;
    perf->pktRecvNAKTotal = m_iRecvNAKTotal;
    perf->usSndDurationTotal = m_llSndDurationTotal;
-
-   perf->pktSent = m_llTraceSent;
-   perf->pktRecv = m_llTraceRecv;
-   perf->pktSndLoss = m_iTraceSndLoss;
-   perf->pktRcvLoss = m_iTraceRcvLoss;
-   perf->pktRetrans = m_iTraceRetrans;
-   perf->pktSentACK = m_iSentACK;
-   perf->pktRecvACK = m_iRecvACK;
-   perf->pktSentNAK = m_iSentNAK;
-   perf->pktRecvNAK = m_iRecvNAK;
-   perf->usSndDuration = m_llSndDuration;
 
    double interval = double(currtime - m_LastSampleTime);
 
@@ -1565,6 +1563,7 @@ void CUDT::sendCtrl(const int& pkttype, void* lparam, void* rparam, const int& s
          m_pACKWindow->store(m_iAckSeqNo, m_iRcvLastAck);
 
          ++ m_iSentACK;
+         ++ m_iSentACKTotal;
       }
 
       break;
@@ -1595,6 +1594,7 @@ void CUDT::sendCtrl(const int& pkttype, void* lparam, void* rparam, const int& s
          m_pSndQueue->sendto(m_pPeerAddr, ctrlpkt);
 
          ++ m_iSentNAK;
+         ++ m_iSentNAKTotal;
       }
       else if (m_pRcvLossList->getLossLength() > 0)
       {
@@ -1612,6 +1612,7 @@ void CUDT::sendCtrl(const int& pkttype, void* lparam, void* rparam, const int& s
             m_pSndQueue->sendto(m_pPeerAddr, ctrlpkt);
 
             ++ m_iSentNAK;
+            ++ m_iSentNAKTotal;
          }
 
          delete [] data;
@@ -1656,7 +1657,7 @@ void CUDT::sendCtrl(const int& pkttype, void* lparam, void* rparam, const int& s
 
       break;
 
-   case 65535: //0x7FFF - Resevered for future use
+   case 32767: //0x7FFF - Resevered for future use
       break;
 
    default:
@@ -1742,6 +1743,7 @@ void CUDT::processCtrl(CPacket& ctrlpkt)
 
       // record total time used for sending
       m_llSndDuration += currtime - m_llSndDurationCounter;
+      m_llSndDurationTotal += currtime - m_llSndDurationCounter;
       m_llSndDurationCounter = currtime;
 
       // update sending variables
@@ -1795,6 +1797,7 @@ void CUDT::processCtrl(CPacket& ctrlpkt)
       m_dCongestionWindow = m_pCC->m_dCWndSize;
 
       ++ m_iRecvACK;
+      ++ m_iRecvACKTotal;
 
       break;
       }
@@ -1834,7 +1837,7 @@ void CUDT::processCtrl(CPacket& ctrlpkt)
       {
       int32_t* losslist = (int32_t *)(ctrlpkt.m_pcData);
 
-      m_pCC->onLoss(losslist, ctrlpkt.getLength());
+      m_pCC->onLoss(losslist, ctrlpkt.getLength() / 4);
       // update CC parameters
       m_ullInterval = (uint64_t)(m_pCC->m_dPktSndPeriod * m_ullCPUFrequency);
       m_dCongestionWindow = m_pCC->m_dCWndSize;
@@ -1853,10 +1856,14 @@ void CUDT::processCtrl(CPacket& ctrlpkt)
                break;
             }
 
+            int num = 0;
             if (CSeqNo::seqcmp(losslist[i] & 0x7FFFFFFF, const_cast<int32_t&>(m_iSndLastAck)) >= 0)
-               m_iTraceSndLoss += m_pSndLossList->insert(losslist[i] & 0x7FFFFFFF, losslist[i + 1]);
+               num = m_pSndLossList->insert(losslist[i] & 0x7FFFFFFF, losslist[i + 1]);
             else if (CSeqNo::seqcmp(losslist[i + 1], const_cast<int32_t&>(m_iSndLastAck)) >= 0)
-               m_iTraceSndLoss += m_pSndLossList->insert(const_cast<int32_t&>(m_iSndLastAck), losslist[i + 1]);
+               num = m_pSndLossList->insert(const_cast<int32_t&>(m_iSndLastAck), losslist[i + 1]);
+
+            m_iTraceSndLoss += num;
+            m_iSndLossTotal += num;
 
             ++ i;
          }
@@ -1869,7 +1876,10 @@ void CUDT::processCtrl(CPacket& ctrlpkt)
                break;
             }
 
-            m_iTraceSndLoss += m_pSndLossList->insert(losslist[i], losslist[i]);
+            int num = m_pSndLossList->insert(losslist[i], losslist[i]);
+
+            m_iTraceSndLoss += num;
+            m_iSndLossTotal += num;
          }
       }
 
@@ -1885,6 +1895,7 @@ void CUDT::processCtrl(CPacket& ctrlpkt)
       m_pSndQueue->m_pSndUList->update(this);
 
       ++ m_iRecvNAK;
+      ++ m_iRecvNAKTotal;
 
       break;
       }
@@ -1938,7 +1949,7 @@ void CUDT::processCtrl(CPacket& ctrlpkt)
 
       break;
 
-   case 65535: //0x7FFF - reserved and user defined messages
+   case 32767: //0x7FFF - reserved and user defined messages
       m_pCC->processCustomMsg(&ctrlpkt);
       // update CC parameters
       m_ullInterval = (uint64_t)(m_pCC->m_dPktSndPeriod * m_ullCPUFrequency);
@@ -1992,6 +2003,7 @@ int CUDT::packData(CPacket& packet, uint64_t& ts)
          return 0;
 
       ++ m_iTraceRetrans;
+      ++ m_iRetransTotal;
    }
    else
    {
@@ -2037,6 +2049,7 @@ int CUDT::packData(CPacket& packet, uint64_t& ts)
    m_pCC->onPktSent(&packet);
 
    ++ m_llTraceSent;
+   ++ m_llSentTotal;
 
    if (probe)
    {
@@ -2101,6 +2114,7 @@ int CUDT::processData(CUnit* unit)
       m_pRcvTimeWindow->probe2Arrival();
 
    ++ m_llTraceRecv;
+   ++ m_llRecvTotal;
 
    int32_t offset = CSeqNo::seqoff(m_iRcvLastAck, packet.m_iSeqNo);
    if ((offset < 0) || (offset >= m_pRcvBuffer->getAvailBufSize()))
@@ -2274,7 +2288,9 @@ void CUDT::checkTimers()
       if (CSeqNo::incseq(m_iSndCurrSeqNo) != m_iSndLastAck)
       {
          int32_t csn = m_iSndCurrSeqNo;
-         m_pSndLossList->insert(const_cast<int32_t&>(m_iSndLastAck), csn);
+         int num = m_pSndLossList->insert(const_cast<int32_t&>(m_iSndLastAck), csn);
+         m_iTraceSndLoss += num;
+         m_iSndLossTotal += num;
       }
       else
          sendCtrl(1);

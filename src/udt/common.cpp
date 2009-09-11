@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 05/21/2009
+   Yunhong Gu, last updated 08/15/2009
 *****************************************************************************/
 
 
@@ -535,7 +535,7 @@ const char* CUDTException::getErrorMessage()
    }
 
    // Adding "errno" information
-   if (0 < m_iErrno)
+   if ((0 != m_iMajor) && (0 < m_iErrno))
    {
       m_strMsg += ": ";
       #ifndef WIN32

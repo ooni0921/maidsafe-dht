@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 06/10/2009
+   Yunhong Gu, last updated 09/09/2009
 *****************************************************************************/
 
 #ifdef WIN32
@@ -189,6 +189,8 @@ int CUDTUnited::startup()
 {
    CGuard gcinit(m_InitLock);
 
+   //init CTimer::EventLock
+
    if (m_bGCStatus)
       return true;
 
@@ -212,6 +214,8 @@ int CUDTUnited::startup()
 int CUDTUnited::cleanup()
 {
    CGuard gcinit(m_InitLock);
+
+   //destroy CTimer::EventLock
 
    if (!m_bGCStatus)
       return 0;
@@ -430,7 +434,9 @@ int CUDTUnited::newConnection(const UDTSOCKET listen, const sockaddr* peer, CHan
 
    // wake up a waiting accept() call
    #ifndef WIN32
+      pthread_mutex_lock(&(ls->m_AcceptLock));
       pthread_cond_signal(&(ls->m_AcceptCond));
+      pthread_mutex_unlock(&(ls->m_AcceptLock));
    #else
       SetEvent(ls->m_AcceptCond);
    #endif
@@ -750,7 +756,7 @@ int CUDTUnited::close(const UDTSOCKET u)
 
    // silently drop a request to close an invalid ID, rather than return error
    if (NULL == s)
-      return 0;
+      throw CUDTException(5, 4, 0);
 
    s->m_pUDT->close();
 
@@ -962,44 +968,30 @@ int CUDTUnited::selectEx(const vector<UDTSOCKET>& fds, vector<UDTSOCKET>* readfd
 
    uint64_t to;
    if (msTimeOut >= 0)
-      to = msTimeOut;
+      to = msTimeOut * 1000;
    else
       to = 0xFFFFFFFFFFFFFFFFULL;
 
    // initialize results
    int count = 0;
-
-   // retrieve related UDT sockets
-   CUDTSocket* s;
-   vector<CUDTSocket*> fds_u;
-
-   for (vector<UDTSOCKET>::const_iterator i = fds.begin(); i != fds.end(); ++ i)
-   {
-      if (CUDTSocket::BROKEN == getStatus(*i))
-      {
-         if (NULL != exceptfds)
-         {
-            exceptfds->push_back(*i);
-            ++ count;
-         }
-      }
-      else if (NULL == (s = locate(*i)))
-         throw CUDTException(5, 4, 0);
-      else
-         fds_u.push_back(s);
-   }
+   if (NULL != readfds)
+      readfds->clear();
+   if (NULL != writefds)
+      writefds->clear();
+   if (NULL != exceptfds)
+      exceptfds->clear();
 
    do
    {
-      for (vector<CUDTSocket*>::iterator j = fds_u.begin(); j != fds_u.end(); ++ j)
+      for (vector<UDTSOCKET>::const_iterator i = fds.begin(); i != fds.end(); ++ i)
       {
-         s = *j;
+         CUDTSocket* s = locate(*i);
 
-         if (s->m_pUDT->m_bBroken || !s->m_pUDT->m_bConnected || (s->m_Status == CUDTSocket::CLOSED))
+         if ((NULL == s) || s->m_pUDT->m_bBroken || (s->m_Status == CUDTSocket::CLOSED))
          {
             if (NULL != exceptfds)
             {
-               exceptfds->push_back(s->m_SocketID);
+               exceptfds->push_back(*i);
                ++ count;
             }
             continue;
@@ -1385,25 +1377,21 @@ void CUDTUnited::updateMux(CUDT* u, const CUDTSocket* ls)
    {
       i->second->m_pUDT->close();
       i->second->m_Status = CUDTSocket::CLOSED;
-      i->second->m_TimeStamp = 0;
+      i->second->m_TimeStamp = CTimer::getTime();
       self->m_ClosedSockets[i->first] = i->second;
    }
    self->m_Sockets.clear();
-   self->checkBrokenSockets();
 
-   for (vector<CMultiplexer>::iterator m = self->m_vMultiplexer.begin(); m != self->m_vMultiplexer.end(); ++ m)
+   while (!self->m_ClosedSockets.empty())
    {
-      m->m_pChannel->close();
-      delete m->m_pSndQueue;
-      delete m->m_pRcvQueue;
-      delete m->m_pTimer;
-      delete m->m_pChannel;
-   }
-   self->m_vMultiplexer.clear();
+      #ifndef WIN32
+         usleep(1000);
+      #else
+         Sleep(1);
+      #endif
 
-   for (map<UDTSOCKET, CUDTSocket*>::iterator c = self->m_ClosedSockets.begin(); c != self->m_ClosedSockets.end(); ++ c)
-      delete c->second;
-   self->m_ClosedSockets.clear();
+      self->checkBrokenSockets();
+   }
 
    #ifndef WIN32
       return NULL;
@@ -1814,7 +1802,7 @@ int CUDT::select(int, ud_set* readfds, ud_set* writefds, ud_set* exceptfds, cons
 
 int CUDT::selectEx(const vector<UDTSOCKET>& fds, vector<UDTSOCKET>* readfds, vector<UDTSOCKET>* writefds, vector<UDTSOCKET>* exceptfds, int64_t msTimeOut)
 {
-   if ((NULL == readfds) && (NULL == writefds))
+   if ((NULL == readfds) && (NULL == writefds) && (NULL == exceptfds))
    {
       s_UDTUnited.setError(new CUDTException(5, 3, 0));
       return ERROR;
@@ -1981,6 +1969,11 @@ int64_t recvfile(UDTSOCKET u, fstream& ofs, int64_t offset, int64_t size, int bl
 int select(int nfds, UDSET* readfds, UDSET* writefds, UDSET* exceptfds, const struct timeval* timeout)
 {
    return CUDT::select(nfds, readfds, writefds, exceptfds, timeout);
+}
+
+int selectEx(const vector<UDTSOCKET>& fds, vector<UDTSOCKET>* readfds, vector<UDTSOCKET>* writefds, vector<UDTSOCKET>* exceptfds, int64_t msTimeOut)
+{
+   return CUDT::selectEx(fds, readfds, writefds, exceptfds, msTimeOut);
 }
 
 ERRORINFO& getlasterror()
