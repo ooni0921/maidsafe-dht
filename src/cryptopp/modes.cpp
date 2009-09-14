@@ -6,12 +6,12 @@
 
 #include "modes.h"
 
-#ifndef NDEBUG
-#include "des.h"
-#endif
+//#ifndef NDEBUG
+//#include "des.h"
+//#endif
 
 NAMESPACE_BEGIN(CryptoPP)
-
+/*
 #ifndef NDEBUG
 void Modes_TestInstantiations()
 {
@@ -23,7 +23,7 @@ void Modes_TestInstantiations()
 	CBC_Mode<DES>::Encryption m5;
 }
 #endif
-
+*/
 void CFB_ModePolicy::Iterate(byte *output, const byte *input, CipherDir dir, size_t iterationCount)
 {
 	assert(m_cipher->IsForwardTransformation());	// CFB mode needs the "encrypt" direction of the underlying block cipher, even to decrypt
