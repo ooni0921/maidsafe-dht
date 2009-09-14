@@ -310,7 +310,7 @@ IF (APPLE)
  ## SET_TARGET_PROPERTIES(maidsafe-dht  PROPERTIES COMPILE_FLAGS -w )
 ELSEIF (UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wall  -Wextra -Wfloat-equal -Wlong-long  -Wredundant-decls -Wstrict-overflow=5   -Wredundant-decls -Wunused-function  -Wunused-label  -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -Wall -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 -pg -fprofile-arcs -ftest-coverage")
+  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}   -DDEBUG -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized ")
   #SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_RELEASE} -O2 ")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!

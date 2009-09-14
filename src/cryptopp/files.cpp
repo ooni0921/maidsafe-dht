@@ -11,7 +11,7 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 using namespace std;
-
+/*
 #ifndef NDEBUG
 void Files_TestInstantiations()
 {
@@ -20,7 +20,7 @@ void Files_TestInstantiations()
 	FileSink f2;
 }
 #endif
-
+*/
 void FileStore::StoreInitialize(const NameValuePairs &parameters)
 {
 	m_waiting = false;
