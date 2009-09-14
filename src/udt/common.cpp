@@ -663,9 +663,9 @@ void CIPAddress::pton(sockaddr* addr, const uint32_t ip[4], const int& ver)
       for (int i = 0; i < 4; ++ i)
       {
          a->sin6_addr.s6_addr[i * 4] = ip[i] & 0xFF;
-         a->sin6_addr.s6_addr[i * 4 + 1] = ip[i] & 0xFF00;
-         a->sin6_addr.s6_addr[i * 4 + 2] = ip[i] & 0xFF0000;
-         a->sin6_addr.s6_addr[i * 4 + 3] = ip[i] & 0xFF000000;
+         a->sin6_addr.s6_addr[i * 4 + 1] = (unsigned char)((ip[i] & 0xFF00) >> 8);
+         a->sin6_addr.s6_addr[i * 4 + 2] = (unsigned char)((ip[i] & 0xFF0000) >> 16);
+         a->sin6_addr.s6_addr[i * 4 + 3] = (unsigned char)((ip[i] & 0xFF000000) >> 24);
       }
    }
 }

@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 08/01/2009
+   Yunhong Gu, last updated 09/13/2009
 *****************************************************************************/
 
 #ifndef WIN32
@@ -1006,7 +1006,11 @@ int CUDT::recv(char* data, const int& len)
                locktime.tv_nsec = (exptime % 1000000) * 1000;
 
                while (!m_bBroken && m_bConnected && !m_bClosing && (0 == m_pRcvBuffer->getRcvDataSize()))
+               {
                   pthread_cond_timedwait(&m_RecvDataCond, &m_RecvDataLock, &locktime); 
+                  if (CTimer::getTime() >= exptime)
+                     break;
+               }
             }
             pthread_mutex_unlock(&m_RecvDataLock);
          #else
@@ -1022,6 +1026,8 @@ int CUDT::recv(char* data, const int& len)
                while (!m_bBroken && m_bConnected && !m_bClosing && (0 == m_pRcvBuffer->getRcvDataSize()))
                {
                   int diff = int(CTimer::getTime() - enter_time) / 1000;
+                  if (diff >= m_iRcvTimeOut)
+                      break;
                   WaitForSingleObject(m_RecvDataCond, DWORD(m_iRcvTimeOut - diff ));
                }
             }
@@ -2291,6 +2297,11 @@ void CUDT::checkTimers()
          int num = m_pSndLossList->insert(const_cast<int32_t&>(m_iSndLastAck), csn);
          m_iTraceSndLoss += num;
          m_iSndLossTotal += num;
+
+         m_pCC->onTimeout();
+         // update CC parameters
+         m_ullInterval = (uint64_t)(m_pCC->m_dPktSndPeriod * m_ullCPUFrequency);
+         m_dCongestionWindow = m_pCC->m_dCWndSize;
       }
       else
          sendCtrl(1);
@@ -2307,10 +2318,5 @@ void CUDT::checkTimers()
          m_ullEXPInt = m_iEXPCount * 100000 * m_ullCPUFrequency;
       CTimer::rdtsc(m_ullNextEXPTime);
       m_ullNextEXPTime += m_ullEXPInt;
-
-      m_pCC->onTimeout();
-      // update CC parameters
-      m_ullInterval = (uint64_t)(m_pCC->m_dPktSndPeriod * m_ullCPUFrequency);
-      m_dCongestionWindow = m_pCC->m_dCWndSize;
    }
 }
