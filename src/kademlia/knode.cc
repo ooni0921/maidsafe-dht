@@ -166,8 +166,9 @@ connect_to_node KNode::CheckContactLocalAddress(const std::string &id,
   return pimpl_->CheckContactLocalAddress(id, ip, port, ext_ip);
 }
 
-void KNode::UpdatePDRTContactToRemote(const std::string &node_id) {
-  pimpl_->UpdatePDRTContactToRemote(node_id);
+void KNode::UpdatePDRTContactToRemote(const std::string &node_id,
+                                      const std::string &host_ip) {
+  pimpl_->UpdatePDRTContactToRemote(node_id, host_ip);
 }
 
 ContactInfo KNode::contact_info() const {

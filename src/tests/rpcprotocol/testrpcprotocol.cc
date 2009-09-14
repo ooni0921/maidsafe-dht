@@ -219,7 +219,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_RegisterAChannel) {
   rpcprotocol::Controller controller;
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel(client_chann_manager, "127.0.0.1",
-      server_chann_manager->external_port(), "", 0);
+      server_chann_manager->external_port(), "", 0, "", 0);
   tests::PingTest::Stub stubservice(&out_channel);
   tests::PingRequest req;
   tests::PingResponse resp;
@@ -270,7 +270,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
   rpcprotocol::Controller controller;
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel(client_chann_manager, "127.0.0.1",
-      server_chann_manager->external_port(), "", 0);
+      server_chann_manager->external_port(), "", 0, "", 0);
   tests::PingTest::Stub stubservice1(&out_channel);
   tests::PingRequest req1;
   tests::PingResponse resp1;
@@ -383,9 +383,9 @@ TEST_F(RpcProtocolTest, BEH_RPC_ServerAndClientAtSameTime) {
   controller2.set_timeout(5);
 
   rpcprotocol::Channel out_channel1(server_chann_manager, "127.0.0.1",
-      client_chann_manager->external_port(), "", 0);
+      client_chann_manager->external_port(), "", 0, "", 0);
   rpcprotocol::Channel out_channel2(client_chann_manager, "127.0.0.1",
-      server_chann_manager->external_port(), "", 0);
+      server_chann_manager->external_port(), "", 0, "", 0);
   tests::TestOp::Stub stubservice1(&out_channel1);
 
   tests::BinaryOpRequest req1;
@@ -431,7 +431,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
   int timeout = 3;
   controller.set_timeout(timeout);
   rpcprotocol::Channel out_channel(client_chann_manager, "127.0.0.1",
-      server_chann_manager->external_port() - 1, "", 0);
+      server_chann_manager->external_port() - 1, "", 0, "", 0);
   tests::PingTest::Stub stubservice(&out_channel);
   tests::PingRequest req;
   tests::PingResponse resp;
@@ -462,7 +462,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   rpcprotocol::Controller controller;
   controller.set_timeout(10);
   rpcprotocol::Channel out_channel1(client_chann_manager, "127.0.0.1",
-      server_chann_manager->external_port(), "", 0);
+      server_chann_manager->external_port(), "", 0, "", 0);
   std::string test_string(base::RandomString(500 * 1024));
   tests::MirrorTest::Stub stubservice1(&out_channel1);
   tests::StringMirrorRequest req1, req2;
@@ -486,7 +486,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   // times out
   controller.set_timeout(3);
   rpcprotocol::Channel out_channel2(client_chann_manager, "2.2.2.1",
-      5555, "", 0);
+      5555, "", 0, "", 0);
   req2.set_message(test_string);
   req2.set_ip("2.2.2.1");
   req2.set_port(5555);
@@ -513,7 +513,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
   rpcprotocol::Controller controller;
   controller.set_timeout(20);
   rpcprotocol::Channel out_channel(client_chann_manager, "127.0.0.1",
-      server_chann_manager->external_port(), "", 0);
+      server_chann_manager->external_port(), "", 0, "", 0);
   tests::MirrorTest::Stub stubservice(&out_channel);
   tests::StringMirrorRequest req;
   tests::StringMirrorResponse resp;
@@ -561,7 +561,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
   rpcprotocol::Controller controller;
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel1(client_chann_manager, loop_back,
-      chman.external_port(), "", 0);
+      chman.external_port(), "", 0, "", 0);
   tests::PingTest::Stub stubservice1(&out_channel1);
   tests::PingRequest req;
   tests::PingResponse resp1;
@@ -585,7 +585,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
 
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel2(client_chann_manager, local_ip,
-      chman.external_port(), "", 0);
+      chman.external_port(), "", 0, "", 0);
   tests::PingTest::Stub stubservice2(&out_channel2);
   tests::PingResponse resp2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
@@ -626,7 +626,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   rpcprotocol::Controller controller;
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel1(client_chann_manager, loop_back,
-      chman.external_port(), "", 0);
+      chman.external_port(), "", 0, "", 0);
   tests::PingTest::Stub stubservice1(&out_channel1);
   tests::PingRequest req;
   tests::PingResponse resp1;
@@ -650,7 +650,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
 
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel2(client_chann_manager, local_ip,
-      chman.external_port(), "", 0);
+      chman.external_port(), "", 0, "", 0);
   tests::PingTest::Stub stubservice2(&out_channel2);
   tests::PingResponse resp2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
@@ -673,7 +673,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   resultholder.Reset();
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel3(client_chann_manager, loop_back,
-      chman.external_port(), "", 0);
+      chman.external_port(), "", 0, "", 0);
   tests::PingTest::Stub stubservice3(&out_channel3);
   tests::PingResponse resp3;
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<ResultHolder,
@@ -692,7 +692,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
 
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel4(client_chann_manager, local_ip,
-      chman.external_port(), "", 0);
+      chman.external_port(), "", 0, "", 0);
   tests::PingTest::Stub stubservice4(&out_channel4);
   tests::PingResponse resp4;
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<ResultHolder,

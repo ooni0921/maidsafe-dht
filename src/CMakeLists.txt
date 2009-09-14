@@ -392,6 +392,7 @@ SET(MEMORYCHECK_COMMAND "/usr/bin/valgrind --show-reachable=no")
 ENDIF(UNIX)
 
 ################################################################
+MESSAGE ("")
 MESSAGE ("Package version is set to \"${pddate}\"")
 MESSAGE ("================================================================================")
 MESSAGE ("")

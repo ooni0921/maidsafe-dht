@@ -27,14 +27,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/routingtable.h"
 #include <boost/filesystem.hpp>
+#include "maidsafe/maidsafe-dht_config.h"
 
 namespace base {
 
 int PDRoutingTableHandler::GetTupleInfo(const std::string &kademlia_id,
   PDRoutingTableTuple *tuple) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 1;
   *tuple = *it;
   return 0;
@@ -43,20 +45,11 @@ int PDRoutingTableHandler::GetTupleInfo(const std::string &kademlia_id,
 int PDRoutingTableHandler::GetTupleInfo(const std::string &host_ip,
     const boost::uint16_t &host_port, PDRoutingTableTuple *tuple) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::index<t_ip>::type& ip_indx = routingtable_.get<t_ip>();
-  routingtable::index<t_ip>::type::iterator it = ip_indx.find(host_ip);
-  if (it == ip_indx.end())
+  routingtable::iterator it = routingtable_.find(boost::make_tuple(host_ip,
+                                                                   host_port));
+  if (it == routingtable_.end())
     return 1;
-  bool found = false;
-  while (it != ip_indx.end() && !found) {
-    if (it->host_port_ == host_port) {
-      *tuple = *it;
-      found = true;
-    }
-    it++;
-  }
-  if (!found)
-    return 1;
+  *tuple = *it;
   return 0;
 }
 
@@ -70,139 +63,165 @@ int PDRoutingTableHandler::GetClosestRtt(
 
 int PDRoutingTableHandler::AddTuple(base::PDRoutingTableTuple tuple) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(tuple.kademlia_id());
-  if (it == routingtable_.end()) {
-    routingtable_.insert(tuple);
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it =
+      key_indx.find(tuple.kademlia_id());
+  if (it == key_indx.end()) {
+    key_indx.insert(tuple);
   } else {
     tuple.ctc_local_ = it->ctc_local_;
     if (tuple.rtt_ == 0)
       tuple.rtt_ = it->rtt_;
-    routingtable_.replace(it, tuple);
+    key_indx.replace(it, tuple);
   }
   return 0;
 }
 
 int PDRoutingTableHandler::DeleteTupleByKadId(const std::string &kademlia_id) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 1;
-  routingtable_.erase(it);
+  key_indx.erase(it);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateHostIp(const std::string &kademlia_id,
   const std::string &new_host_ip) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 1;
   PDRoutingTableTuple new_tuple = *it;
   new_tuple.host_ip_ = new_host_ip;
-  routingtable_.replace(it, new_tuple);
+  key_indx.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateHostPort(const std::string &kademlia_id,
   const boost::uint16_t &new_host_port) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 1;
   PDRoutingTableTuple new_tuple = *it;
   new_tuple.host_port_ = new_host_port;
-  routingtable_.replace(it, new_tuple);
+  key_indx.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateRendezvousIp(const std::string &kademlia_id,
   const std::string &new_rv_ip) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 1;
   PDRoutingTableTuple new_tuple = *it;
   new_tuple.rendezvous_ip_ = new_rv_ip;
-  routingtable_.replace(it, new_tuple);
+  key_indx.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateRendezvousPort(const std::string &kademlia_id,
   const boost::uint16_t &new_rv_port) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 1;
   PDRoutingTableTuple new_tuple = *it;
   new_tuple.rendezvous_port_ = new_rv_port;
-  routingtable_.replace(it, new_tuple);
+  key_indx.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdatePublicKey(const std::string &kademlia_id,
   const std::string &new_public_key) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 1;
   PDRoutingTableTuple new_tuple = *it;
   new_tuple.public_key_ = new_public_key;
-  routingtable_.replace(it, new_tuple);
+  key_indx.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateRtt(const std::string &kademlia_id,
   const float &new_rtt) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 1;
   PDRoutingTableTuple new_tuple = *it;
   new_tuple.rtt_ = new_rtt;
-  routingtable_.replace(it, new_tuple);
+  key_indx.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateRank(const std::string &kademlia_id,
   const boost::uint16_t &new_rank) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 1;
   PDRoutingTableTuple new_tuple = *it;
   new_tuple.rank_ = new_rank;
-  routingtable_.replace(it, new_tuple);
+  key_indx.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::UpdateSpace(const std::string &kademlia_id,
   const boost::uint32_t &new_space) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 1;
   PDRoutingTableTuple new_tuple = *it;
   new_tuple.space_ = new_space;
-  routingtable_.replace(it, new_tuple);
+  key_indx.replace(it, new_tuple);
   return 0;
 }
 
 int PDRoutingTableHandler::ContactLocal(const std::string &kademlia_id) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
-  if (it == routingtable_.end())
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
     return 2;
   return it->ctc_local();
 }
 
 int PDRoutingTableHandler::UpdateContactLocal(const std::string &kademlia_id,
-  const int &new_contact_local) {
+    const std::string &host_ip, const int &new_contact_local) {
   boost::mutex::scoped_lock guard(mutex_);
-  routingtable::iterator it = routingtable_.find(kademlia_id);
+  routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
+  routingtable::index<t_key>::type::iterator it = key_indx.find(kademlia_id);
+  if (it == key_indx.end())
+    return 1;
+  PDRoutingTableTuple new_tuple = *it;
+  new_tuple.host_ip_ = host_ip;
+  new_tuple.ctc_local_ = new_contact_local;
+  key_indx.replace(it, new_tuple);
+  return 0;
+}
+
+int PDRoutingTableHandler::UpdateLocalToUnknown(const std::string &ip,
+                                                const boost::uint16_t &port) {
+  boost::mutex::scoped_lock guard(mutex_);
+  routingtable::iterator it = routingtable_.find(boost::make_tuple(ip, port));
   if (it == routingtable_.end())
     return 1;
   PDRoutingTableTuple new_tuple = *it;
-  new_tuple.ctc_local_ = new_contact_local;
+  new_tuple.ctc_local_ = kad::UNKNOWN;
   routingtable_.replace(it, new_tuple);
   return 0;
 }

@@ -90,9 +90,11 @@ Channel::Channel(rpcprotocol::ChannelManager *channelmanager)
     : pimpl_(new ChannelImpl(channelmanager)) {}
 
 Channel::Channel(rpcprotocol::ChannelManager *channelmanager,
-      const std::string &ip, const boost::uint16_t &port,
+      const std::string &remote_ip, const boost::uint16_t &remote_port,
+      const std::string &local_ip, const boost::uint16_t &local_port,
       const std::string &rv_ip, const boost::uint16_t &rv_port)
-      : pimpl_(new ChannelImpl(channelmanager, ip, port, rv_ip, rv_port)) {}
+      : pimpl_(new ChannelImpl(channelmanager, remote_ip, remote_port, local_ip,
+                               local_port, rv_ip, rv_port)) {}
 
 Channel::~Channel() {}
 

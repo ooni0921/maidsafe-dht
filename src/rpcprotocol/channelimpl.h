@@ -66,7 +66,8 @@ class ChannelImpl : public google::protobuf::RpcChannel {
  public:
   explicit ChannelImpl(rpcprotocol::ChannelManager *channelmanager);
   ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
-      const std::string &ip, const boost::uint16_t &port,
+      const std::string &remote_ip, const boost::uint16_t &remote_port,
+      const std::string &local_ip, const boost::uint16_t &local_port,
       const std::string &rv_ip, const boost::uint16_t &rv_port);
   ~ChannelImpl();
   virtual void CallMethod(const google::protobuf::MethodDescriptor *method,
@@ -83,8 +84,8 @@ class ChannelImpl : public google::protobuf::RpcChannel {
   boost::shared_ptr<transport::Transport> ptransport_;
   rpcprotocol::ChannelManager *pmanager_;
   google::protobuf::Service *pservice_;
-  std::string ip_, rv_ip_;
-  boost::uint16_t port_, rv_port_;
+  std::string remote_ip_, local_ip_, rv_ip_;
+  boost::uint16_t remote_port_, local_port_, rv_port_;
   ChannelImpl(const ChannelImpl&);
   ChannelImpl& operator=(const ChannelImpl&);
   boost::uint32_t id_;

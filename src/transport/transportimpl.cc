@@ -551,8 +551,8 @@ int TransportImpl::Connect(UDTSOCKET *skt, const std::string &peer_address,
     addrinfo_res_->ai_protocol);
   if (UDT::ERROR == UDT::bind(*skt, addrinfo_res_->ai_addr,
       addrinfo_res_->ai_addrlen)) {
-    DLOG(ERROR) << "(" << listening_port_ << ") UDT Bind error: " <<
-        UDT::getlasterror().getErrorMessage();
+    LOG(ERROR) << "(" << listening_port_ << ") UDT Bind error: " <<
+        UDT::getlasterror().getErrorMessage()<< std::endl;
     return -1;
   }
 
@@ -565,13 +565,15 @@ int TransportImpl::Connect(UDTSOCKET *skt, const std::string &peer_address,
   if (INADDR_NONE == (peer_addr.sin_addr.s_addr =
     inet_addr(peer_address.c_str()))) {
 #endif
-    DLOG(ERROR) << "Invalid remote address " << peer_address << ":"<< peer_port;
+    LOG(ERROR) << "Invalid remote address " << peer_address << ":"<< peer_port
+        << std::endl;
     return -1;
   }
   if (UDT::ERROR == UDT::connect(*skt, reinterpret_cast<sockaddr*>(&peer_addr),
       sizeof(peer_addr))) {
-    DLOG(ERROR) << "(" << listening_port_ << ") UDT connect to " << peer_address
-        << ":" << peer_port << " -- " << UDT::getlasterror().getErrorMessage();
+    LOG(ERROR) << "(" << listening_port_ << ") UDT connect to " << peer_address
+        << ":" << peer_port << " -- " << UDT::getlasterror().getErrorMessage()
+        << std::endl;
     return UDT::getlasterror().getErrorCode();
   }
   return 0;
@@ -591,8 +593,8 @@ void TransportImpl::HandleRendezvousMsgs(const HolePunchingMsg &message) {
     std::string ser_msg;
     t_msg.SerializeToString(&ser_msg);
     boost::uint32_t conn_id;
-    if (0 == ConnectToSend(message.ip(), message.port(), "", 0,
-                           &conn_id, false))
+    if (0 == ConnectToSend(message.ip(), message.port(), "", 0, "", 0, false,
+                           &conn_id))
       Send(ser_msg, STRING, conn_id, true);
   } else if (message.type() == FORWARD_MSG) {
     UDTSOCKET skt;
@@ -809,18 +811,35 @@ bool TransportImpl::GetPeerAddr(const boost::uint32_t &conn_id,
 }
 
 int TransportImpl::ConnectToSend(const std::string &remote_ip,
-    const uint16_t &remote_port,  const std::string &rendezvous_ip,
-    const uint16_t &rendezvous_port, boost::uint32_t *conn_id,
-    const bool &keep_connection) {
+    const uint16_t &remote_port, const std::string &local_ip,
+    const uint16_t &local_port, const std::string &rendezvous_ip,
+    const uint16_t &rendezvous_port, const bool &keep_connection,
+    boost::uint32_t *conn_id) {
   UDTSOCKET skt;
   // the node receiver is directly connected, no rendezvous information
   if (rendezvous_ip == "" && rendezvous_port == 0) {
-    int conn_result = Connect(&skt, remote_ip, remote_port, false);
-    if (conn_result != 0) {
-      DLOG(ERROR) << "(" << listening_port_ << ") Transport::ConnectToSend " <<
-          "failed to connect to remote port" << remote_port;
-      UDT::close(skt);
-      return conn_result;
+    bool remote(local_ip == "" || local_port == 0);
+    // the node is believed to be local
+    if (!remote) {
+      int conn_result = Connect(&skt, local_ip, local_port, false);
+      if (conn_result != 0) {
+        DLOG(ERROR) << "(" << listening_port_ << ") Transport::ConnectToSend "
+            << "failed to connect to local port " << local_port <<
+            " with udp error " << conn_result << std::endl;
+        UDT::close(skt);
+        remote = true;
+        base::PDRoutingTable::getInstance()[base::itos(listening_port_)]->
+            UpdateLocalToUnknown(local_ip, local_port);
+      }
+    }
+    if (remote) {
+      int conn_result = Connect(&skt, remote_ip, remote_port, false);
+      if (conn_result != 0) {
+        DLOG(ERROR) << "(" << listening_port_ << ") Transport::ConnectToSend "
+            << "failed to connect to remote port" << remote_port;
+        UDT::close(skt);
+        return conn_result;
+      }
     }
   } else {
     UDTSOCKET rend_skt;

@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/multi_index_container.hpp>
+#include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/member.hpp>
@@ -96,26 +97,26 @@ struct PDRoutingTableTuple {
 };
 
 // Tags
+struct t_ip_port {};
 struct t_key {};
-struct t_ip {};
-struct t_port {};
 struct t_rtt {};
 struct t_rank {};
 
-typedef boost::multi_index::multi_index_container<
+typedef boost::multi_index_container<
   PDRoutingTableTuple,
   boost::multi_index::indexed_by<
     boost::multi_index::ordered_unique<
+      boost::multi_index::tag<t_ip_port>,
+      boost::multi_index::composite_key<
+        PDRoutingTableTuple,
+        BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, std::string, host_ip_),
+        BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, boost::uint16_t,
+                                 host_port_)
+      >
+    >,
+    boost::multi_index::ordered_unique<
       boost::multi_index::tag<t_key>,
       BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, std::string, kademlia_id_)
-    >,
-    boost::multi_index::ordered_non_unique<
-      boost::multi_index::tag<t_ip>,
-      BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, std::string, host_ip_)
-    >,
-    boost::multi_index::ordered_non_unique<
-      boost::multi_index::tag<t_port>,
-      BOOST_MULTI_INDEX_MEMBER(PDRoutingTableTuple, boost::uint16_t, host_port_)
     >,
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<t_rtt>,
@@ -162,7 +163,8 @@ class PDRoutingTableHandler {
     const boost::uint32_t &new_space);
   int ContactLocal(const std::string &kademlia_id);
   int UpdateContactLocal(const std::string &kademlia_id,
-    const int &new_contact_local);
+    const std::string &host_ip, const int &new_contact_local);
+  int UpdateLocalToUnknown(const std::string &ip, const boost::uint16_t &port);
  private:
 //  PDRoutingTableHandler(const PDRoutingTableHandler&);
   PDRoutingTableHandler &operator=(const PDRoutingTableHandler &);

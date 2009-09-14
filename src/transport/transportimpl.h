@@ -76,8 +76,9 @@ class TransportImpl {
   TransportImpl();
   enum DataType { STRING, FILE };
   int ConnectToSend(const std::string &remote_ip, const uint16_t &remote_port,
+      const std::string &local_ip, const uint16_t &local_port,
       const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
-      boost::uint32_t *conn_id, const bool &keep_connection);
+      const bool &keep_connection, boost::uint32_t *conn_id);
   int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t &conn_id,
       const bool &new_skt);
   int Start(uint16_t port, boost::function<void(const rpcprotocol::RpcMessage&,

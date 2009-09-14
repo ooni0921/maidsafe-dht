@@ -33,10 +33,11 @@ namespace transport {
 Transport::Transport() : pimpl_(new TransportImpl()) {}
 
 int Transport::ConnectToSend(const std::string &remote_ip, const uint16_t
-      &remote_port, const std::string &rendezvous_ip, const uint16_t
-      &rendezvous_port, boost::uint32_t *conn_id, const bool &keep_connection) {
-  return pimpl_->ConnectToSend(remote_ip, remote_port, rendezvous_ip,
-      rendezvous_port, conn_id, keep_connection);
+      &remote_port, const std::string &local_ip, const uint16_t &local_port,
+      const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
+      const bool &keep_connection, boost::uint32_t *conn_id) {
+  return pimpl_->ConnectToSend(remote_ip, remote_port, local_ip, local_port,
+      rendezvous_ip, rendezvous_port, keep_connection, conn_id);
 }
 
 int Transport::Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t
@@ -44,11 +45,13 @@ int Transport::Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t
   return pimpl_->Send(data, conn_id, new_skt);
 }
 
-int Transport::Start(uint16_t port, boost::function<void(const
-      rpcprotocol::RpcMessage&, const boost::uint32_t&, const float &)>
-      on_message, boost::function<void(const bool&, const std::string&,
-      const boost::uint16_t&)> notify_dead_server, boost::function<void(
-      const boost::uint32_t&, const bool&)> on_send) {
+int Transport::Start(uint16_t port,
+                     boost::function<void(const rpcprotocol::RpcMessage&,
+                         const boost::uint32_t&, const float &)> on_message,
+                     boost::function<void(const bool&, const std::string&,
+                         const boost::uint16_t&)> notify_dead_server,
+                     boost::function<void(const boost::uint32_t&,
+                         const bool&)> on_send) {
   return pimpl_->Start(port, on_message, notify_dead_server, on_send);
 }
 

@@ -162,7 +162,7 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_UpdateTuple) {
   ASSERT_EQ(0, rt_handler.UpdateRtt(kademlia_id, 50));
   ASSERT_EQ(0, rt_handler.UpdateRank(kademlia_id, 10));
   ASSERT_EQ(0, rt_handler.UpdateSpace(kademlia_id, 6666));
-  ASSERT_EQ(0, rt_handler.UpdateContactLocal(kademlia_id, 0));
+  ASSERT_EQ(0, rt_handler.UpdateContactLocal(kademlia_id, "211.11.11.11", 0));
   ASSERT_EQ(0, rt_handler.ContactLocal(kademlia_id));
   base::PDRoutingTableTuple retrieved_tuple;
   ASSERT_EQ(0, rt_handler.GetTupleInfo(kademlia_id, &retrieved_tuple));
@@ -174,7 +174,36 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_UpdateTuple) {
   ASSERT_EQ(static_cast<boost::uint32_t>(50), retrieved_tuple.rtt());
   ASSERT_EQ(static_cast<boost::uint16_t>(10), retrieved_tuple.rank());
   ASSERT_EQ(static_cast<boost::uint32_t>(6666), retrieved_tuple.space());
+  ASSERT_EQ(0, rt_handler.UpdateContactLocal(kademlia_id, "210.11.11.11", 1));
+  ASSERT_EQ(1, rt_handler.ContactLocal(kademlia_id));
+  ASSERT_EQ(0, rt_handler.GetTupleInfo(kademlia_id, &retrieved_tuple));
+  ASSERT_EQ("210.11.11.11", retrieved_tuple.host_ip());
 
+  rt_handler.Clear();
+}
+
+TEST(PDRoutingTableHandlerTest, BEH_BASE_UpdateToUnknown) {
+  std::string kademlia_id = base::RandomString(64);
+  std::string host_ip("192.168.1.188");
+  boost::uint16_t host_port = 8888;
+  std::string local_ip("192.168.1.187");
+  boost::uint16_t local_port = 7777;
+  std::string rendezvous_ip("81.149.64.82");
+  boost::uint16_t rendezvous_port = 5555;
+  std::string public_key = base::RandomString(64);
+  float rtt = 32;
+  boost::uint16_t rank = 5;
+  boost::uint32_t space = 3232;
+  base::PDRoutingTableTuple tuple_to_store(kademlia_id, local_ip, local_port,
+      rendezvous_ip, rendezvous_port, public_key, rtt, rank, space);
+  base::PDRoutingTableHandler rt_handler;
+  ASSERT_EQ(2, rt_handler.ContactLocal(kademlia_id));
+  ASSERT_EQ(0, rt_handler.AddTuple(tuple_to_store));
+  ASSERT_EQ(2, rt_handler.ContactLocal(kademlia_id));
+  ASSERT_EQ(0, rt_handler.UpdateContactLocal(kademlia_id, local_ip, 0));
+  ASSERT_EQ(0, rt_handler.ContactLocal(kademlia_id));
+  ASSERT_EQ(0, rt_handler.UpdateLocalToUnknown(local_ip, local_port));
+  ASSERT_EQ(2, rt_handler.ContactLocal(kademlia_id));
   rt_handler.Clear();
 }
 

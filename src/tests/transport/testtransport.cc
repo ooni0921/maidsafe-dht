@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "protobuf/rpcmessage.pb.h"
 #include "transport/transportimpl.h"
 #include "maidsafe/config.h"
+#include "maidsafe/routingtable.h"
 
 class TransportNode {
  public:
@@ -62,12 +63,13 @@ void send_string(TransportNode* node, int port, int repeat,
     ip = std::string("127.0.0.1");
   }
   for (int i = 0; i < repeat; ++i) {
-    int send_res = node->tnode()->ConnectToSend(ip, port, "", 0, &id,
-        keep_conn);
+    int send_res = node->tnode()->ConnectToSend(ip, port, "", 0, "", 0,
+        keep_conn, &id);
     if (send_res == 1002) {
       // connection refused - wait 10 sec and resend
       boost::this_thread::sleep(boost::posix_time::seconds(10));
-      send_res = node->tnode()->ConnectToSend(ip, port, "", 0, &id, keep_conn);
+      send_res = node->tnode()->ConnectToSend(ip, port, "", 0, "", 0, keep_conn,
+          &id);
     }
     if (send_res == 0) {
       node->tnode()->Send(msg, id, true);
@@ -234,7 +236,8 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnother) {
   msg.SerializeToString(&sent_msg);
   ASSERT_EQ(1, node1.Send(msg, id, true));
   ASSERT_EQ(1, node1.Send(msg, id, false));
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, &id, false));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node1.Send(msg, id, true));
   while (msg_handler[1].msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -279,19 +282,22 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOne) {
   std::string ser_rpc_msg;
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs.push_back(ser_rpc_msg);
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node4, "", 0, &id, false));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node4, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(64 * 1024));
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs.push_back(ser_rpc_msg);
-  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node4, "", 0, &id, false));
+  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node4, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node2.Send(rpc_msg, id, true));
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(64 * 1024));
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs.push_back(ser_rpc_msg);
-  ASSERT_EQ(0, node3.ConnectToSend("127.0.0.1", lp_node4, "", 0, &id, false));
+  ASSERT_EQ(0, node3.ConnectToSend("127.0.0.1", lp_node4, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node3.Send(rpc_msg, id, true));
   boost::uint32_t now = base::get_epoch_time();
   while (msg_handler[3].msgs.size() < 3 && base::get_epoch_time() - now < 15)
@@ -360,19 +366,22 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToMany) {
   std::string ser_rpc_msg;
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs[0] = ser_rpc_msg;
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node4, "", 0, &id, false));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node4, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(64*1024));
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs[1] = ser_rpc_msg;
-  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node5, "", 0, &id, false));
+  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node5, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node2.Send(rpc_msg, id, true));
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(64*1024));
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs[2] = ser_rpc_msg;
-  ASSERT_EQ(0, node3.ConnectToSend("127.0.0.1", lp_node6, "", 0, &id, false));
+  ASSERT_EQ(0, node3.ConnectToSend("127.0.0.1", lp_node6, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node3.Send(rpc_msg, id, true));
   boost::uint32_t now = base::get_epoch_time();
   bool msgs_received[3] = {false, false, false};
@@ -438,19 +447,22 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromOneToMany) {
   std::string ser_rpc_msg;
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs[0] = ser_rpc_msg;
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, &id, false));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(64 * 1024));
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs[1] = ser_rpc_msg;
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node3, "", 0, &id, false));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node3, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(64 * 1024));
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs[2] = ser_rpc_msg;
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node4, "", 0, &id, false));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node4, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
 
   boost::uint32_t now = base::get_epoch_time();
@@ -490,7 +502,8 @@ TEST_F(TransportTest, BEH_TRANS_TimeoutForSendingToAWrongPeer) {
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
   rpc_msg.set_message_id(2000);
   rpc_msg.set_args(base::RandomString(64 * 1024));
-  ASSERT_NE(1, node1.ConnectToSend("127.0.0.1", 52002, "", 0, &id, false));
+  ASSERT_NE(1, node1.ConnectToSend("127.0.0.1", 52002, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(1, node1.Send(rpc_msg, id, true));
   node1.Stop();
 }
@@ -588,7 +601,8 @@ TEST_F(TransportTest, BEH_TRANS_GetRemotePeerAddress) {
   rpc_msg.set_args(base::RandomString(64 * 1024));
   std::string sent_msg;
   rpc_msg.SerializeToString(&sent_msg);
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, &id, false));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   while (msg_handler[1].msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -623,7 +637,8 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnotherBidirectional) {
   rpc_msg.set_args(base::RandomString(256 * 1024));
   std::string sent_msg;
   rpc_msg.SerializeToString(&sent_msg);
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, &id, true));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, "", 0, true,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   while (msg_handler[1].msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -682,19 +697,22 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOneBidirectional) {
   rpc_msg.SerializeToString(&ser_rpc_msg);
   std::list<std::string> sent_msgs;
   sent_msgs.push_back(ser_rpc_msg);
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node4, "", 0, &id, true));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node4, "", 0, "", 0, true,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(64 * 1024));
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs.push_back(ser_rpc_msg);
-  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node4, "", 0, &id, true));
+  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node4, "", 0, "", 0, true,
+      &id));
   ASSERT_EQ(0, node2.Send(rpc_msg, id, true));
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(64 * 1024));
   rpc_msg.SerializeToString(&ser_rpc_msg);
   sent_msgs.push_back(ser_rpc_msg);
-  ASSERT_EQ(0, node3.ConnectToSend("127.0.0.1", lp_node4, "", 0, &id, true));
+  ASSERT_EQ(0, node3.ConnectToSend("127.0.0.1", lp_node4, "", 0, "", 0, true,
+      &id));
   ASSERT_EQ(0, node3.Send(rpc_msg, id, true));
   // waiting for all messages to be delivered
   while (msg_handler[3].msgs.size() != 3)
@@ -768,7 +786,8 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageCloseAConnection) {
   rpc_msg.set_args(base::RandomString(256 * 1024));
   std::string sent_msg;
   rpc_msg.SerializeToString(&sent_msg);
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, &id, true));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, "", 0, true,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   while (msg_handler[1].msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -901,7 +920,8 @@ TEST_F(TransportTest, FUNC_TRANS_StartStopTransport) {
   rpc_msg.set_args(base::RandomString(256 * 1024));
   std::string sent_msg;
   rpc_msg.SerializeToString(&sent_msg);
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, &id, false));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   while (msg_handler[1].msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -921,7 +941,8 @@ TEST_F(TransportTest, FUNC_TRANS_StartStopTransport) {
     rpc_msg.clear_args();
     rpc_msg.set_args(base::RandomString(256 * 1024));
     rpc_msg.SerializeToString(&sent_msg);
-    ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, &id, false));
+    ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, "", 0, false,
+        &id));
     ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
     while (msg_handler[1].msgs.empty())
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -932,7 +953,8 @@ TEST_F(TransportTest, FUNC_TRANS_StartStopTransport) {
     rpc_msg.clear_args();
     rpc_msg.set_args(base::RandomString(256 * 1024));
     rpc_msg.SerializeToString(&sent_msg);
-    ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node1, "", 0, &id, false));
+    ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node1, "", 0, "", 0, false,
+        &id));
     ASSERT_EQ(0, node2.Send(rpc_msg, id, true));
     while (msg_handler[0].msgs.empty())
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -946,7 +968,8 @@ TEST_F(TransportTest, FUNC_TRANS_StartStopTransport) {
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(256 * 1024));
   rpc_msg.SerializeToString(&sent_msg);
-  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, &id, false));
+  ASSERT_EQ(0, node1.ConnectToSend("127.0.0.1", lp_node2, "", 0, "", 0, false,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   while (msg_handler[1].msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -990,7 +1013,7 @@ TEST_F(TransportTest, FUNC_TRANS_SendRespond) {
     std::string ser_rpc_msg;
     rpc_msg.SerializeToString(&ser_rpc_msg);
     msgs.push_back(ser_rpc_msg);
-    ASSERT_EQ(0, node2.ConnectToSend(ip, lp_node1, "", 0, &id, true));
+    ASSERT_EQ(0, node2.ConnectToSend(ip, lp_node1, "", 0, "", 0, true, &id));
     ASSERT_EQ(0, node2.Send(rpc_msg, id, true));
   }
   bool finished = false;
@@ -1072,7 +1095,7 @@ TEST_F(TransportTest, BEH_TRANS_SendMultipleMsgsSameConnection) {
   rpc_msg.set_args(base::RandomString(256 * 1024));
   std::string msg;
   rpc_msg.SerializeToString(&msg);
-  ASSERT_EQ(0, node1.ConnectToSend(ip, lp_node2, "", 0, &id, true));
+  ASSERT_EQ(0, node1.ConnectToSend(ip, lp_node2, "", 0, "", 0, true, &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   while (msg_handler2.msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -1143,8 +1166,8 @@ TEST_F(TransportTest, BEH_TRANS_SendViaRdz) {
   std::string sent_msg;
   rpc_msg.SerializeToString(&sent_msg);
   boost::uint32_t id;
-  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node1, "127.0.0.1", lp_node3,
-      &id, true));
+  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node1, "", 0, "127.0.0.1",
+      lp_node3, true, &id));
   ASSERT_EQ(0, node2.Send(rpc_msg, id, true));
   while (msg_handler1.msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -1172,7 +1195,8 @@ TEST_F(TransportTest, BEH_TRANS_NoNotificationForInvalidMsgs) {
                 _1, _2, _3),
     boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
   boost::uint32_t id;
-  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node1, "", 0, &id, true));
+  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node1, "", 0, "", 0, true,
+      &id));
   rpcprotocol::RpcMessage rpc_msg;
   ASSERT_EQ(1, node2.Send(rpc_msg, id, true));
   // sending an invalid message
@@ -1260,8 +1284,10 @@ TEST_F(TransportTest, BEH_TRANS_StartLocal) {
     FAIL() << "Can not get local address";
   }
   ASSERT_NE(loop_back, local_ip);
-  ASSERT_NE(0, node1.ConnectToSend(local_ip, lp_node2, "", 0, &id, true));
-  ASSERT_EQ(0, node1.ConnectToSend(loop_back, lp_node2, "", 0, &id, true));
+  ASSERT_NE(0, node1.ConnectToSend(local_ip, lp_node2, "", 0, "", 0, true,
+      &id));
+  ASSERT_EQ(0, node1.ConnectToSend(loop_back, lp_node2, "", 0, "", 0, true,
+      &id));
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
   rpc_msg.set_message_id(2000);
@@ -1299,8 +1325,10 @@ TEST_F(TransportTest, BEH_TRANS_StartStopLocal) {
     FAIL() << "Can not get local address";
   }
   ASSERT_NE(loop_back, local_ip);
-  ASSERT_NE(0, node1.ConnectToSend(local_ip, lp_node2, "", 0, &id, true));
-  ASSERT_EQ(0, node1.ConnectToSend(loop_back, lp_node2, "", 0, &id, true));
+  ASSERT_NE(0, node1.ConnectToSend(local_ip, lp_node2, "", 0, "", 0, true,
+      &id));
+  ASSERT_EQ(0, node1.ConnectToSend(loop_back, lp_node2, "", 0, "", 0, true,
+      &id));
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
   rpc_msg.set_message_id(2000);
@@ -1320,14 +1348,16 @@ TEST_F(TransportTest, BEH_TRANS_StartStopLocal) {
                 _1, _2, _3),
     boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
   lp_node2 = node2.listening_port();
-  ASSERT_EQ(0, node1.ConnectToSend(local_ip, lp_node2, "", 0, &id, true));
+  ASSERT_EQ(0, node1.ConnectToSend(local_ip, lp_node2, "", 0, "", 0, true,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   while (msg_handler2.msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_FALSE(msg_handler2.msgs.empty());
   ASSERT_EQ(msg, msg_handler2.msgs.front());
   msg_handler2.msgs.clear();
-  ASSERT_EQ(0, node1.ConnectToSend(loop_back, lp_node2, "", 0, &id, true));
+  ASSERT_EQ(0, node1.ConnectToSend(loop_back, lp_node2, "", 0, "", 0, true,
+      &id));
   ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
   while (msg_handler2.msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
@@ -1350,4 +1380,70 @@ TEST_F(TransportTest, BEH_TRANS_CheckPortAvailable) {
   ASSERT_TRUE(node2.IsPortAvailable(lp_node1+1));
   node1.Stop();
   ASSERT_TRUE(node2.IsPortAvailable(lp_node1));
+}
+
+TEST_F(TransportTest, BEH_TRANS_StartBadLocal) {
+  transport::Transport node1, node2;
+  MessageHandler msg_handler1, msg_handler2;
+  ASSERT_EQ(0, node1.Start(0,
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
+                _1, _2, _3),
+    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
+  ASSERT_EQ(0, node2.StartLocal(0,
+    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3),
+    boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
+  boost::uint16_t lp_node2 = node2.listening_port();
+  boost::uint32_t id;
+  std::string loop_back("127.0.0.1");
+
+  // Add node 2 to routing table as a local contact
+  std::string kademlia_id = base::RandomString(64);
+  std::string bad_local_ip("192.168.1.188");
+  boost::uint16_t bad_local_port = 8888;
+  std::string rv_ip("");
+  boost::uint16_t rv_port = 0;
+  std::string public_key = base::RandomString(64);
+  float rtt = 32;
+  boost::uint16_t rank = 5;
+  boost::uint32_t space = 3232;
+  base::PDRoutingTableTuple tuple_to_store(kademlia_id, bad_local_ip,
+      bad_local_port, rv_ip, rv_port, public_key, rtt, rank, space);
+
+  boost::shared_ptr<base::PDRoutingTableHandler> rt_handler =
+      base::PDRoutingTable::getInstance()[base::itos(node1.listening_port())];
+  ASSERT_EQ(2, rt_handler->ContactLocal(kademlia_id));
+  ASSERT_EQ(0, rt_handler->AddTuple(tuple_to_store));
+  ASSERT_EQ(0, rt_handler->UpdateContactLocal(kademlia_id, bad_local_ip, 0));
+  ASSERT_EQ(0, rt_handler->ContactLocal(kademlia_id));
+
+  std::string bad_remote_ip("192.168.1.189");
+  boost::uint16_t bad_remote_port = 8889;
+
+  ASSERT_NE(0, node1.ConnectToSend(bad_local_ip, bad_local_port, "", 0, "", 0,
+      true, &id));
+  // Ensure if we fail when passing local info, local status is set to unknown.
+  ASSERT_NE(0, node1.ConnectToSend(bad_remote_ip, bad_remote_port, bad_local_ip,
+      bad_local_port, "", 0, true, &id));
+  ASSERT_EQ(2, rt_handler->ContactLocal(kademlia_id));
+  // Set status to local again, and ensure that we can connect via remote ip/
+  // port if local fails and that status is set to unknown.
+  ASSERT_EQ(0, rt_handler->UpdateContactLocal(kademlia_id, bad_local_ip, 0));
+  ASSERT_EQ(0, node1.ConnectToSend(loop_back, lp_node2, bad_local_ip,
+      bad_local_port, "", 0, true, &id));
+  ASSERT_EQ(2, rt_handler->ContactLocal(kademlia_id));
+
+  rpcprotocol::RpcMessage rpc_msg;
+  rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
+  rpc_msg.set_message_id(2000);
+  rpc_msg.set_args(base::RandomString(256 * 1024));
+  std::string msg;
+  rpc_msg.SerializeToString(&msg);
+  ASSERT_EQ(0, node1.Send(rpc_msg, id, true));
+  while (msg_handler2.msgs.empty())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_FALSE(msg_handler2.msgs.empty());
+  ASSERT_EQ(msg, msg_handler2.msgs.front());
+  node1.Stop();
+  node2.Stop();
 }

@@ -740,7 +740,8 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
       if (callback_data.retry) {
         delete response;
         StoreResponse *resp = new StoreResponse;
-        UpdatePDRTContactToRemote(callback_data.remote_ctc.node_id());
+        UpdatePDRTContactToRemote(callback_data.remote_ctc.node_id(),
+            callback_data.remote_ctc.host_ip());
         callback_data.retry = false;
       // send RPC to this contact's remote address because local failed
         google::protobuf::Closure *done1 = google::protobuf::NewCallback<
@@ -1087,7 +1088,8 @@ void KNodeImpl::Ping_HandleResult(const PingResponse *response,
     if (callback_data.retry) {
       delete response;
       PingResponse *resp = new PingResponse;
-      UpdatePDRTContactToRemote(callback_data.remote_ctc.node_id());
+      UpdatePDRTContactToRemote(callback_data.remote_ctc.node_id(),
+          callback_data.remote_ctc.host_ip());
       callback_data.retry = false;
       google::protobuf::Closure *done = google::protobuf::NewCallback<
           KNodeImpl, const PingResponse*, PingCallbackArgs > (
@@ -1357,12 +1359,15 @@ connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
                     conn_type = REMOTE;
                   } else if (pchannel_manager_->CheckConnection(ip, port)) {
                     conn_type = LOCAL;
+                    base::PDRoutingTable::getInstance()[
+                        base::itos(host_port_)]->UpdateContactLocal(id, ip,
+                        static_cast<int>(conn_type));
                   } else {
                     conn_type = REMOTE;
+                    base::PDRoutingTable::getInstance()[
+                        base::itos(host_port_)]->UpdateContactLocal(id, ext_ip,
+                        static_cast<int>(conn_type));
                   }
-                  base::PDRoutingTable::getInstance()[
-                      base::itos(host_port_)]->UpdateContactLocal(id,
-                      static_cast<int>(conn_type));
                   break;
   }
   return conn_type;
@@ -1393,9 +1398,10 @@ void KNodeImpl::UnMapUPnP() {
   upnp_mapped_port_ = 0;
 }
 
-void KNodeImpl::UpdatePDRTContactToRemote(const std::string &node_id) {
-  base::PDRoutingTable::getInstance()[base::itos(
-      host_port_)]->UpdateContactLocal(node_id, static_cast<int>(REMOTE));
+void KNodeImpl::UpdatePDRTContactToRemote(const std::string &node_id,
+                                          const std::string &host_ip) {
+  base::PDRoutingTable::getInstance()[base::itos(host_port_)]->
+      UpdateContactLocal(node_id, host_ip, static_cast<int>(REMOTE));
 }
 
 ContactInfo KNodeImpl::contact_info() const {
@@ -1663,7 +1669,8 @@ void KNodeImpl::SearchIteration_ExtendShortList(const FindResponse *response,
         delete response;
         delete callback_data.rpc_ctrler;
         callback_data.rpc_ctrler = NULL;
-        UpdatePDRTContactToRemote(callback_data.remote_ctc.node_id());
+        UpdatePDRTContactToRemote(callback_data.remote_ctc.node_id(),
+            callback_data.remote_ctc.host_ip());
         SendFindRpc(callback_data.remote_ctc, callback_data.data, REMOTE);
         return;
       }

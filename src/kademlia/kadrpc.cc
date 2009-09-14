@@ -51,7 +51,7 @@ void KadRpcs::FindNode(const std::string &key, const std::string &ip,
   args.set_key(key);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, rv_ip,
+  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, "", 0, rv_ip,
       rv_port);
   KademliaService::Stub service(&channel);
   service.FindNode(ctler, &args, resp, cb);
@@ -65,7 +65,7 @@ void KadRpcs::FindValue(const std::string &key, const std::string &ip,
   args.set_key(key);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, rv_ip,
+  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, "", 0, rv_ip,
       rv_port);
   KademliaService::Stub service(&channel);
   service.FindValue(ctler, &args, resp, cb);
@@ -80,7 +80,7 @@ void KadRpcs::Ping(const std::string &ip, const boost::uint16_t &port,
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   ctler->set_timeout(kRpcPingTimeout);
-  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, rv_ip,
+  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, "", 0, rv_ip,
       rv_port);
   KademliaService::Stub service(&channel);
   service.Ping(ctler, &args, resp, cb);
@@ -104,7 +104,7 @@ void KadRpcs::Store(const std::string &key, const SignedValue &value,
   args.set_signed_request(signed_request);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, rv_ip,
+  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, "", 0, rv_ip,
       rv_port);
   KademliaService::Stub service(&channel);
   service.Store(ctler, &args, resp, cb);
@@ -123,7 +123,7 @@ void KadRpcs::Store(const std::string &key, const std::string &value,
   args.set_publish(publish);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, rv_ip,
+  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, "", 0, rv_ip,
       rv_port);
   KademliaService::Stub service(&channel);
   service.Store(ctler, &args, resp, cb);
@@ -140,7 +140,7 @@ void KadRpcs::Downlist(const std::vector<std::string> downlist,
   rpcprotocol::Controller controller;
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, rv_ip,
+  rpcprotocol::Channel channel(pchannel_manager_.get(), ip, port, "", 0, rv_ip,
       rv_port);
   KademliaService::Stub service(&channel);
   service.Downlist(ctler, &args, resp, cb);
@@ -158,7 +158,7 @@ void KadRpcs::NatDetection(const std::string &newcomer,
   args.set_type(type);
   args.set_sender_id(sender_id);
   rpcprotocol::Channel channel(pchannel_manager_.get(), remote_ip, remote_port,
-      rv_ip, rv_port);
+      "", 0, rv_ip, rv_port);
   if (type == 2)
     ctler->set_timeout(18);
   KademliaService::Stub service(&channel);
@@ -176,7 +176,7 @@ void KadRpcs::NatDetectionPing(const std::string &remote_ip,
   rpcprotocol::Controller controller;
   controller.set_timeout(kRpcPingTimeout);
   rpcprotocol::Channel channel(pchannel_manager_.get(), remote_ip, remote_port,
-      rv_ip, rv_port);
+      "", 0, rv_ip, rv_port);
   KademliaService::Stub service(&channel);
   service.NatDetectionPing(ctler, &args, resp, cb);
 }
@@ -192,7 +192,7 @@ void KadRpcs::Bootstrap(const std::string &local_id,
   args.set_newcomer_local_port(local_port);
   ctler->set_timeout(20);
   rpcprotocol::Channel channel(pchannel_manager_.get(), remote_ip, remote_port,
-      "", 0);
+      "", 0, "", 0);
   KademliaService::Stub service(&channel);
   service.Bootstrap(ctler, &args, resp, cb);
 }
