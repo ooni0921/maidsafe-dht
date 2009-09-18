@@ -231,6 +231,8 @@ void KNodeImpl::Join_Bootstrapping_Iteration_Client(
     AddContact(bootstrap_node, 0.0, false);
     host_ip_ = result_msg.newcomer_ext_ip();
     host_port_ = result_msg.newcomer_ext_port();
+    DLOG(INFO) << "external address " << host_ip_ << ":" << host_port_
+        << std::endl;
     pchannel_manager_->ptransport()->StartPingRendezvous(false,
         bootstrap_node.host_ip(), bootstrap_node.host_port());
     kadrpcs_.set_info(contact_info());
@@ -393,7 +395,7 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
     Contact bootstrap_candidate = cached_nodes.back();
     cached_nodes.pop_back();
     args->cached_nodes = cached_nodes;
-    if (port_forwarded_ || got_external_address) {
+    if (port_forwarded_ || got_external_address || type_ == CLIENT) {
       args->dir_connected = true;
       Bootstrap(bootstrap_candidate.host_ip(), bootstrap_candidate.host_port(),
           boost::bind(&KNodeImpl::Join_Bootstrapping_Iteration_Client, this, _1,
