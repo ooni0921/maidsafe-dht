@@ -1963,14 +1963,13 @@ static void SetFunctionPointers()
 #if CRYPTOPP_INTEGER_SSE2
 	if (HasSSE2())
 	{
-
-//#if _MSC_VER != 1200 || defined(NDEBUG)
+#if _MSC_VER != 1200 || defined(NDEBUG)
 		if (IsP4())
 		{
 			s_pAdd = &SSE2_Add;
 			s_pSub = &SSE2_Sub;
 		}
-//#endif
+#endif
 
 		s_recursionLimit = 32;
 
@@ -2519,7 +2518,7 @@ static inline void AtomicDivide(word *Q, const word *A, const word *B)
 	DWord q = DivideFourWordsByTwo<word, DWord>(T, DWord(A[0], A[1]), DWord(A[2], A[3]), DWord(B[0], B[1]));
 	Q[0] = q.GetLowHalf();
 	Q[1] = q.GetHighHalf();
-/*
+
 #ifndef NDEBUG
 	if (B[0] || B[1])
 	{
@@ -2531,7 +2530,6 @@ static inline void AtomicDivide(word *Q, const word *A, const word *B)
 		assert(memcmp(P, A, 4*WORD_SIZE)==0);
 	}
 #endif
-*/
 }
 
 // for use by Divide(), corrects the underestimated quotient {Q1,Q0}
@@ -2824,7 +2822,7 @@ bool Integer::IsConvertableToLong() const
 
 signed long Integer::ConvertToLong() const
 {
-	//assert(IsConvertableToLong());
+	assert(IsConvertableToLong());
 
 	unsigned long value = (unsigned long)reg[0];
 	value += SafeLeftShift<WORD_BITS, unsigned long>((unsigned long)reg[1]);
