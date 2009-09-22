@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem/fstream.hpp>
 #include <boost/progress.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/lexical_cast.hpp>
 #include <gtest/gtest.h>
 #include <list>
 #include <string>
@@ -610,7 +611,7 @@ TEST_F(TransportTest, BEH_TRANS_GetRemotePeerAddress) {
   std::string peer_ip(inet_ntoa(((struct sockaddr_in *)&peer_addr)->sin_addr));
   boost::uint16_t peer_port =
     ntohs(((struct sockaddr_in *)&peer_addr)->sin_port);
-  ASSERT_EQ("127.0.0.1", peer_ip);
+  ASSERT_EQ(std::string("127.0.0.1"), peer_ip);
   ASSERT_EQ(lp_node1, peer_port);
   node1.Stop();
   node2.Stop();
@@ -1213,17 +1214,19 @@ TEST_F(TransportTest, BEH_TRANS_NoNotificationForInvalidMsgs) {
   bool blockng = true;
   UDT::setsockopt(skt, 0, UDT_RCVSYN, &blockng, sizeof(blockng));
   UDT::setsockopt(skt, 0, UDT_RCVSYN, &blockng, sizeof(blockng));
-  ASSERT_EQ(0, getaddrinfo("127.0.0.1", base::itos(lp_node1).c_str(),
-      &addrinfo_hints, &peer_addr));
-  ASSERT_NE(UDT::ERROR, UDT::connect(skt, peer_addr->ai_addr,
+  ASSERT_EQ(0, getaddrinfo("127.0.0.1", boost::lexical_cast<std::string>(
+      lp_node1).c_str(), &addrinfo_hints, &peer_addr));
+  EXPECT_NE(UDT::ERROR, UDT::connect(skt, peer_addr->ai_addr,
       peer_addr->ai_addrlen));
   std::string msg = base::RandomString(50);
   int64_t msg_size = msg.size();
-  ASSERT_NE(UDT::ERROR, UDT::send(skt, reinterpret_cast<char*>(&msg_size),
+  EXPECT_NE(UDT::ERROR, UDT::send(skt, reinterpret_cast<char*>(&msg_size),
       sizeof(int64_t), 0));
-  ASSERT_NE(UDT::ERROR, UDT::send(skt, msg.c_str(), msg_size, 0));
+  EXPECT_NE(UDT::ERROR, UDT::send(skt, msg.c_str(), msg_size, 0));
 
   boost::this_thread::sleep(boost::posix_time::seconds(3));
+  freeaddrinfo(addrinfo_res);
+  freeaddrinfo(peer_addr);
   UDT::close(skt);
   node1.Stop();
   node2.Stop();
@@ -1246,6 +1249,8 @@ TEST_F(TransportTest, BEH_TRANS_CheckConnection) {
                 _1, _2, _3),
     boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
   boost::uint16_t lp_node2 = node2.listening_port();
+  ASSERT_FALSE(node1.CheckConnection("", "127.0.0.1", lp_node2));
+  ASSERT_FALSE(node1.CheckConnection("127.0.0.1", "", lp_node2));
   std::vector<std::string> local_ips = base::get_local_addresses();
   if (local_ips.size() > 0) {
     std::string server_addr = "127.0.0.1";
@@ -1375,7 +1380,7 @@ TEST_F(TransportTest, BEH_TRANS_CheckPortAvailable) {
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
                 _1, _2, _3),
     boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
-  boost::uint16_t lp_node1 = node1.listening_port();
+  boost::uint16_t lp_node1(node1.listening_port());
   ASSERT_FALSE(node2.IsPortAvailable(lp_node1));
   ASSERT_TRUE(node2.IsPortAvailable(lp_node1+1));
   node1.Stop();

@@ -27,6 +27,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread.hpp>
 #include <boost/tokenizer.hpp>
+#include <boost/lexical_cast.hpp>
 #include "tests/demo/commands.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -241,7 +242,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
     } else if (!ReadFile(args[1], &content)){
       *wait_for_cb = false;
     } else {
-      boost::uint32_t ttl = base::stoi(args[2]);
+      boost::uint32_t ttl = boost::lexical_cast<boost::uint32_t>(args[2]);
       std::string key;
       if (args[0].size() != 128 || !base::decode_from_hex(args[0], &key))
         key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
@@ -348,14 +349,14 @@ void Commands::Store50Values(const std::string &prefix) {
   for (int i = 0; i < 50; i++) {
     arrived = false;
     key = "";
-    key = cryobj_.Hash(prefix + base::itos(i), "", crypto::STRING_STRING,
-        false);
+    key = cryobj_.Hash(prefix + boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false);
     value = "";
     for (int j = 0; j < 1024*10; j++)
-      value += prefix + base::itos(i);
+      value += prefix + boost::lexical_cast<std::string>(i);
       node_->StoreValue(key, value, 1040*60, boost::bind(
-            &Commands::Store50Callback, this, _1, prefix + base::itos(i),
-            &arrived));
+            &Commands::Store50Callback, this, _1, prefix +
+            boost::lexical_cast<std::string>(i), &arrived));
       while (!arrived)
         boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   }

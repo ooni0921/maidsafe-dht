@@ -36,11 +36,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace {
 
-class UtilsTest : public testing::Test { };
-
 }  // namespace
 
-TEST_F(UtilsTest, BEH_BASE_TidyPath) {
+TEST(UtilsTest, BEH_BASE_TidyPath) {
   const std::string dirty_path_ = "/dirty/dirty/boy";
   ASSERT_EQ("dirty/dirty/boy", base::TidyPath(dirty_path_)) <<
             "Failed to tidy path.";
@@ -73,7 +71,7 @@ TEST_F(UtilsTest, BEH_BASE_TidyPath) {
             "Changed path which was already tidy.";
 }
 
-TEST_F(UtilsTest, BEH_BASE_IntegersAndStrings) {
+TEST(UtilsTest, BEH_BASE_IntegersAndStrings) {
   std::string p_str, n_str, l_str, ul_str, ull_str;
 
   int p = 1234567890;
@@ -108,7 +106,7 @@ TEST_F(UtilsTest, BEH_BASE_IntegersAndStrings) {
             "string -> int -> string failed failed for uint32_t.";
 }
 
-TEST_F(UtilsTest, BEH_BASE_RandomString) {
+TEST(UtilsTest, BEH_BASE_RandomString) {
   unsigned int length = 4096;
   std::string first = base::RandomString(length);
   std::string second = base::RandomString(length);
@@ -136,7 +134,7 @@ TEST_F(UtilsTest, BEH_BASE_RandomString) {
   }
 }
 
-TEST_F(UtilsTest, BEH_BASE_HexEncodeDecode) {
+TEST(UtilsTest, BEH_BASE_HexEncodeDecode) {
   const std::string str("Hello world! And hello nurse!!");
   std::string encoded("");
   ASSERT_TRUE(base::encode_to_hex(str, &encoded)) << "Encoding failed.";
@@ -153,13 +151,13 @@ TEST_F(UtilsTest, BEH_BASE_HexEncodeDecode) {
 }
 
 
-TEST_F(UtilsTest, BEH_BASE_BoostAndAscii) {
+TEST(UtilsTest, BEH_BASE_BoostAndAscii) {
   std::string dotted("132.248.59.1");
   ASSERT_EQ(dotted, base::inet_btoa(base::inet_atob(dotted))) <<
             "ASCII -> Boost IPv4 -> ASCII failed.";
 }
 
-TEST_F(UtilsTest, BEH_BASE_TimeFunctions) {
+TEST(UtilsTest, BEH_BASE_TimeFunctions) {
   boost::uint64_t s, ms, ns;
   ms = base::get_epoch_milliseconds();
   ns = base::get_epoch_nanoseconds();
@@ -173,7 +171,7 @@ TEST_F(UtilsTest, BEH_BASE_TimeFunctions) {
   ASSERT_NEAR(ms*1000000, ns, 250000000) << "ms vs. ns failed.";
 }
 
-TEST_F(UtilsTest, BEH_BASE_NextTransactionId) {
+TEST(UtilsTest, BEH_BASE_NextTransactionId) {
   boost::uint32_t id1 = base::generate_next_transaction_id(0);
   boost::uint32_t id2 = base::generate_next_transaction_id(0);
 
@@ -189,7 +187,7 @@ TEST_F(UtilsTest, BEH_BASE_NextTransactionId) {
             "Transaction id2 came back different from 1: " << id2;
 }
 
-TEST_F(UtilsTest, BEH_BASE_DecimalAndAscii) {
+TEST(UtilsTest, BEH_BASE_DecimalAndAscii) {
   std::string dotted("121.12.121.1");
   char *ipbuf = new char[32];
   boost::uint32_t n = base::inet_aton(dotted.c_str());
@@ -201,7 +199,7 @@ TEST_F(UtilsTest, BEH_BASE_DecimalAndAscii) {
   delete []ipbuf;
 }
 
-TEST_F(UtilsTest, BEH_BASE_NetworkInterfaces) {
+TEST(UtilsTest, BEH_BASE_NetworkInterfaces) {
   std::vector<base::device_struct> alldevices;
   base::get_net_interfaces(&alldevices);
   ASSERT_NE(static_cast<boost::uint32_t>(0), alldevices.size());
@@ -211,7 +209,7 @@ TEST_F(UtilsTest, BEH_BASE_NetworkInterfaces) {
   }
 }
 
-TEST_F(UtilsTest, BEH_BASE_NameValidation) {
+TEST(UtilsTest, BEH_BASE_NameValidation) {
   std::string back_slash("hola\\mundo");
   std::string forward_slash("hola/mundo");
   std::string colon("hola:mundo");
@@ -239,7 +237,7 @@ TEST_F(UtilsTest, BEH_BASE_NameValidation) {
   ASSERT_FALSE(base::ValidateName(pipe)) << "Error with back pipes";
 }
 
-TEST_F(UtilsTest, BEH_BASE_RandomNumberGen) {
+TEST(UtilsTest, BEH_BASE_RandomNumberGen) {
   unsigned int urandnum1 = base::random_32bit_uinteger();
   unsigned int urandnum2 = base::random_32bit_uinteger();
   ASSERT_NE(urandnum1, urandnum2);
@@ -248,7 +246,7 @@ TEST_F(UtilsTest, BEH_BASE_RandomNumberGen) {
   ASSERT_NE(randnum1, randnum2);
 }
 
-TEST_F(UtilsTest, BEH_BASE_TestStrToLwr) {
+TEST(UtilsTest, BEH_BASE_TestStrToLwr) {
   std::string all_upper("HELLO WORLD");
   std::string result = base::StrToLwr(all_upper);
   ASSERT_EQ("hello world", result);

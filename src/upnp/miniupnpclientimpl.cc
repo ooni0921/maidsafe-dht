@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "upnp/miniupnpclientimpl.h"
 #include <boost/bind.hpp>
 #include <boost/assert.hpp>
+#include <boost/lexical_cast.hpp>
 #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/utils.h"
 #include "libupnp/miniwget.h"
@@ -80,8 +81,8 @@ bool UpnpIgdClientImpl::AddPortMapping(const PortMapping &mapping) {
     pm = &port_mappings_.back();
   }
 
-  std::string ext_port = base::itos(mapping.external_port);
-  std::string int_port = base::itos(mapping.internal_port);
+  std::string extPort = boost::lexical_cast<std::string>(mapping.external_port);
+  std::string intPort = boost::lexical_cast<std::string>(mapping.internal_port);
   std::string proto = (mapping.protocol == kTcp ? "TCP" : "UDP");
 
 #ifdef DEBUG
@@ -97,7 +98,7 @@ bool UpnpIgdClientImpl::AddPortMapping(const PortMapping &mapping) {
 
     int res = UPNP_AddPortMapping(upnp_urls_.controlURL,
                                   igd_data_.servicetype,
-                                  ext_port.c_str(), int_port.c_str(),
+                                  extPort.c_str(), intPort.c_str(),
                                   ip_addr.to_string().c_str(),
                                   kClientName,
                                   proto.c_str(),
@@ -111,7 +112,7 @@ bool UpnpIgdClientImpl::AddPortMapping(const PortMapping &mapping) {
 #ifdef DEBUG
       printf("Error adding UPnP port mapping (%s %s): %d\n",
              proto.c_str(),
-             ext_port.c_str(),
+             extPort.c_str(),
              res);
 #endif
     }
@@ -139,7 +140,7 @@ bool UpnpIgdClientImpl::DeletePortMapping(const int &port,
   if (PortMappingExists(port, protocol, it_pm)) {
     bool ok = true;
     if ((*it_pm).enabled) {
-      std::string ext_port = base::itos(port);
+      std::string ext_port = boost::lexical_cast<std::string>(port);
       std::string proto = (protocol == kTcp ? "TCP" : "UDP");
 
       int res = UPNP_DeletePortMapping(upnp_urls_.controlURL,

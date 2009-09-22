@@ -55,16 +55,21 @@ void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
     if (data.controller != NULL) {
       knode_->AddContact(sender, data.controller->rtt(), false);
     } else {
-      printf("Bootstrap_NatDetectionRv data.controller = NULL\n");
       knode_->AddContact(sender, 0.0, false);
     }
-    delete data.controller;
-    data.controller = NULL;
+    delete response;
+    if (data.controller != NULL) {
+      delete data.controller;
+      data.controller = NULL;
+    }
     data.done->Run();
   } else {
     data.ex_contacts.push_back(data.node_c);
-    delete data.controller;
-    data.controller = NULL;
+    if (data.controller != NULL) {
+      delete data.controller;
+      data.controller = NULL;
+    }
+    delete response;
     SendNatDetection(data);
   }
 }
@@ -83,7 +88,6 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
       if (data.controller != NULL) {
         knode_->AddContact(sender, data.controller->rtt(), false);
       } else {
-        printf("Bootstrap_NatDetection data.controller = NULL\n");
         knode_->AddContact(sender, 0.0, false);
       }
       delete data.controller;
@@ -109,6 +113,7 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
     data.ex_contacts.push_back(data.node_c);
     SendNatDetection(data);
   }
+  delete response;
 }
 
 void KadService::Ping(google::protobuf::RpcController *controller,
@@ -332,6 +337,7 @@ void KadService::Bootstrap_NatDetectionPing(
     data.response->set_result(kRpcResultFailure);
   }
   delete data.controller;
+  delete response;
   data.done->Run();
 }
 
@@ -351,7 +357,7 @@ void KadService::NatDetection(google::protobuf::RpcController *,
       if (node_a.ParseFromString(request->newcomer())) {
         NatDetectionPingResponse *resp = new NatDetectionPingResponse;
         struct NatDetectionPingData data = {request->sender_id(), response,
-                                            done, NULL};
+            done, NULL};
         data.controller = new rpcprotocol::Controller;
         google::protobuf::Closure *done =
             google::protobuf::NewCallback<KadService,
@@ -415,7 +421,8 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
       const BootstrapRequest *request, BootstrapResponse *response,
       google::protobuf::Closure *done) {
   if (!request->IsInitialized()) {
-    delete controller;
+    response->set_result(kRpcResultFailure);
+    done->Run();
     return;
   }
   // Checking if it is a client to return its external ip/port
@@ -464,8 +471,9 @@ void KadService::SendNatDetection(struct NatDetectionData data) {
   std::vector<Contact> random_contacts;
   knode_->GetRandomContacts(1, data.ex_contacts, &random_contacts);
   if (random_contacts.size() != 1) {
-    if (data.ex_contacts.size() > 1)
+    if (data.ex_contacts.size() > 1) {
       data.response->set_result(kRpcResultFailure);
+    }
     data.done->Run();
   } else {
     Contact node_c = random_contacts.front();

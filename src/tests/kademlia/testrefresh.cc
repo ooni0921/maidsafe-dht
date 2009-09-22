@@ -59,7 +59,7 @@ class TestRefresh : public testing::Test {
       ch_managers.push_back(boost::shared_ptr<rpcprotocol::ChannelManager>(
           new rpcprotocol::ChannelManager()));
       std::string datadir = test_dir + std::string("/datastore") +
-          base::itos(i);
+          boost::lexical_cast<std::string>(i);
       boost::filesystem::create_directories(datadir);
       nodes.push_back(boost::shared_ptr<KNode>(new KNode(ch_managers[i], VAULT,
           testK, kAlpha, kBeta, testRefresh, "", "", false, false)));
@@ -271,7 +271,7 @@ class TestRefreshSignedValues : public testing::Test {
       ch_managers.push_back(boost::shared_ptr<rpcprotocol::ChannelManager>(
           new rpcprotocol::ChannelManager()));
       std::string datadir = test_dir + std::string("/datastore") +
-          base::itos(i);
+          boost::lexical_cast<std::string>(i);
       boost::filesystem::create_directories(datadir);
       nodes.push_back(boost::shared_ptr<KNode>(new KNode(ch_managers[i], VAULT,
           testK, kAlpha, kBeta, testRefresh, keys.private_key(),
@@ -481,7 +481,11 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
 
   boost::this_thread::sleep(boost::posix_time::seconds(testRefresh+8));
   std::vector<std::string> values;
-  EXPECT_TRUE(node->FindValueLocal(key, &values));
+  if (!node->FindValueLocal(key, &values)) {
+    node->Leave();
+    ch_manager->StopTransport();
+    FAIL();
+  }
   EXPECT_EQ(ser_sig_value, values[0]);
   EXPECT_NE(0, node->KeyExpireTime(key, ser_sig_value));
   EXPECT_NE(0, node->KeyLastRefreshTime(key, ser_sig_value));

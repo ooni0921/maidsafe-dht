@@ -148,7 +148,7 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
   }
   DLOG(INFO) << pmanager_->external_port() << " --- Sending rpc " <<
       msg.method() << " to " << remote_ip_ << ":" << remote_port_ <<
-      "conn_id = " << conn_id << " -- rpc_id = " << msg.message_id() <<
+      " conn_id = " << conn_id << " -- rpc_id = " << msg.message_id() <<
       std::endl;
 }
 

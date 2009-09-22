@@ -235,12 +235,13 @@ class Transport {
       const bool &keep_connection, boost::uint32_t *conn_id);
   int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t &conn_id,
       const bool &new_skt);
-  int Start(uint16_t port, boost::function<void(const rpcprotocol::RpcMessage&,
+  int Start(const boost::uint16_t &port,
+      boost::function<void(const rpcprotocol::RpcMessage&,
         const boost::uint32_t&, const float &)> on_message,
       boost::function<void(const bool&, const std::string&,
         const boost::uint16_t&)> notify_dead_server,
       boost::function<void(const boost::uint32_t&, const bool&)> on_send);
-  int StartLocal(const uint16_t &port, boost::function <void(
+  int StartLocal(const boost::uint16_t &port, boost::function <void(
         const rpcprotocol::RpcMessage&, const boost::uint32_t&, const float &)>
         on_message,
       boost::function<void(const boost::uint32_t&, const bool&)> on_send);

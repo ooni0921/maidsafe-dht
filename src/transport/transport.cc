@@ -45,13 +45,13 @@ int Transport::Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t
   return pimpl_->Send(data, conn_id, new_skt);
 }
 
-int Transport::Start(uint16_t port,
-                     boost::function<void(const rpcprotocol::RpcMessage&,
-                         const boost::uint32_t&, const float &)> on_message,
-                     boost::function<void(const bool&, const std::string&,
-                         const boost::uint16_t&)> notify_dead_server,
-                     boost::function<void(const boost::uint32_t&,
-                         const bool&)> on_send) {
+int Transport::Start(const boost::uint16_t &port,
+      boost::function<void(const rpcprotocol::RpcMessage&,
+        const boost::uint32_t&, const float &)> on_message,
+      boost::function<void(const bool&, const std::string&,
+        const boost::uint16_t&)> notify_dead_server,
+      boost::function<void(const boost::uint32_t&,
+        const bool&)> on_send) {
   return pimpl_->Start(port, on_message, notify_dead_server, on_send);
 }
 

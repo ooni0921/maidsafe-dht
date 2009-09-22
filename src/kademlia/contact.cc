@@ -25,6 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <boost/lexical_cast.hpp>
 #include "maidsafe/maidsafe-dht.h"
 #include "protobuf/contact_info.pb.h"
 
@@ -136,20 +137,20 @@ std::string Contact::ToString() const {
   }
   std::string ser_contact, enc_id;
   base::encode_to_hex(node_id_, &enc_id);
-  std::string port(base::itos(host_port_));
+  std::string port(boost::lexical_cast<std::string>(host_port_));
   ser_contact = "Node_id: " + enc_id + "\n";
   std::string dec_ip(base::inet_btoa(host_ip_));
   ser_contact += ("IP address: " + dec_ip + ":" + port + "\n");
 
   if (local_ip_ != "") {
     std::string dec_lip(base::inet_btoa(local_ip_));
-    std::string lport(base::itos(local_port_));
+    std::string lport(boost::lexical_cast<std::string>(local_port_));
     ser_contact += ("Local IP address: " + dec_lip + ":" + lport + "\n");
   }
 
   if (rendezvous_ip_ != "") {
     std::string dec_rip(base::inet_btoa(rendezvous_ip_));
-    std::string rport(base::itos(rendezvous_port_));
+    std::string rport(boost::lexical_cast<std::string>(rendezvous_port_));
     ser_contact += ("RV IP address: " + dec_rip + ":" + rport + "\n");
   }
   return ser_contact;

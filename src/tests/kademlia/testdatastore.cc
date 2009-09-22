@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/lexical_cast.hpp>
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
@@ -354,8 +355,8 @@ TEST_F(DataStoreTest, FUNC_KAD_GetValuesToRefresh) {
   std::vector<kad::refresh_value> refvalues;
   std::vector<std::string> keys, values;
   for (unsigned int i = 0; i < 6; i++) {
-    keys.push_back(cry_obj_.Hash(base::itos(i), "", crypto::STRING_STRING,
-      false));
+    keys.push_back(cry_obj_.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false));
     values.push_back(base::RandomString(500));
   }
   boost::uint32_t ttl = 3600*24;
@@ -409,8 +410,8 @@ TEST_F(DataStoreTest, FUNC_KAD_ExpiredValuesNotRefreshed) {
   std::vector<kad::refresh_value> refvalues;
   std::vector<std::string> keys, values;
   for (unsigned int i = 0; i < 3; i++) {
-    keys.push_back(cry_obj_.Hash(base::itos(i), "", crypto::STRING_STRING,
-      false));
+    keys.push_back(cry_obj_.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false));
     values.push_back(base::RandomString(500));
   }
   boost::uint32_t ttl = 3600*24;
@@ -442,7 +443,7 @@ TEST_F(DataStoreTest, FUNC_KAD_DeleteExpiredValues) {
   std::vector<boost::uint32_t> ttl;
   // creating 10 key/values
   for (int i = 0; i < 10; i++) {
-    keys.push_back(base::itos(i));
+    keys.push_back(boost::lexical_cast<std::string>(i));
     values.push_back(base::RandomString(100));
     ttl.push_back(i+5);  // TTL = i + 5 seconds
   }
@@ -487,8 +488,8 @@ TEST_F(DataStoreTest, BEH_KAD_ClearDataStore) {
   std::set<std::string> keys;
   // creating 10 key/values
   for (int i = 0; i < 10; i++) {
-    std::string key = cry_obj_.Hash(base::itos(i), "", crypto::STRING_STRING,
-      false);
+    std::string key = cry_obj_.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false);
     test_ds_->StoreItem(key, base::RandomString(100), 3600*24, false);
   }
   test_ds_->Keys(&keys);

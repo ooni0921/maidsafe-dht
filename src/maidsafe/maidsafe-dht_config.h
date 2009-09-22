@@ -253,7 +253,7 @@ std::string inet_atob(const std::string &dec_ip);
 std::string inet_btoa(const std::string &ipv4);
 
 // Generate a (transaction) id between 1 & 2147483646 inclusive.
-boost::uint32_t generate_next_transaction_id(boost::uint32_t id);
+boost::uint32_t generate_next_transaction_id(const boost::uint32_t &id);
 
 // Convert an internet network address into dotted string format.
 void inet_ntoa(boost::uint32_t addr, char *ipbuf);

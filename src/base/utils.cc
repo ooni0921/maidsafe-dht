@@ -93,7 +93,7 @@ boost::int32_t stoi_l(std::string value) {
 }
 
 std::string itos(int value) {
-  std::stringstream out;
+  std::ostringstream out;
   out << value;
   return out.str();
 }
@@ -220,7 +220,7 @@ boost::uint64_t get_epoch_nanoseconds() {
   return static_cast<boost::uint64_t>((t-start).total_nanoseconds());
 }
 
-boost::uint32_t generate_next_transaction_id(boost::uint32_t id) {
+boost::uint32_t generate_next_transaction_id(const boost::uint32_t &id) {
   boost::uint32_t next_id;
   boost::uint32_t max_id = 2147483646;
   if (id == 0) {
@@ -431,25 +431,47 @@ bool get_local_address(boost::asio::ip::address *local_address) {
 }
 
 int32_t random_32bit_integer() {
-  CryptoPP::AutoSeededRandomPool rng;
-  CryptoPP::Integer rand_num(rng, 32);
-  if (!rand_num.IsConvertableToLong()) {
-    return  std::numeric_limits<int32_t>::max() +
-      static_cast<boost::int32_t>(rand_num.AbsoluteValue().ConvertToLong());
-  } else {
-    return static_cast<int32_t>(rand_num.AbsoluteValue().ConvertToLong());
+  int32_t result;
+  bool success = false;
+  while (!success) {
+    try {
+      CryptoPP::AutoSeededRandomPool rng;
+      CryptoPP::Integer rand_num(rng, 32);
+      if (!rand_num.IsConvertableToLong()) {
+        result = std::numeric_limits<int32_t>::max() +
+          static_cast<int32_t>(rand_num.AbsoluteValue().ConvertToLong());
+      } else {
+        result =  static_cast<int32_t>(
+            rand_num.AbsoluteValue().ConvertToLong());
+      }
+      success = true;
+    }
+    catch(...) {
+    }
   }
+  return result;
 }
 
 uint32_t random_32bit_uinteger() {
-  CryptoPP::AutoSeededRandomPool rng;
-  CryptoPP::Integer rand_num(rng, 32);
-  if (!rand_num.IsConvertableToLong()) {
-    return std::numeric_limits<uint32_t>::max() +
-      static_cast<boost::uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-  } else {
-    return static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+  uint32_t result;
+  bool success = false;
+  while (!success) {
+    try {
+      CryptoPP::AutoSeededRandomPool rng;
+      CryptoPP::Integer rand_num(rng, 32);
+      if (!rand_num.IsConvertableToLong()) {
+        result = std::numeric_limits<uint32_t>::max() +
+          static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+      } else {
+        result = static_cast<uint32_t>(
+            rand_num.AbsoluteValue().ConvertToLong());
+      }
+      success = true;
+    }
+    catch(...) {
+    }
   }
+  return result;
 }
 
 std::vector<std::string> get_local_addresses() {

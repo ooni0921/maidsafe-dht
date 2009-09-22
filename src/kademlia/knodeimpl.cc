@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kademlia/knodeimpl.h"
 #include <boost/assert.hpp>
 #include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
 #include <google/protobuf/descriptor.h>
 #include <iostream>  // NOLINT Fraser - required for handling .kadconfig file
 #include <fstream>  // NOLINT
@@ -597,7 +598,8 @@ void KNodeImpl::Leave() {
       addcontacts_routine_->join();
       SaveBootstrapContacts();
       prouting_table_->Clear();
-      base::PDRoutingTable::getInstance()[base::itos(host_port_)]->Clear();
+      base::PDRoutingTable::getInstance()[boost::lexical_cast<std::string>(
+          host_port_)]->Clear();
     }
     stopping_ = false;
   }
@@ -1214,7 +1216,7 @@ int KNodeImpl::AddContact(Contact new_contact, const float & rtt,
                                     rtt,
                                     0,
                                     0);
-    base::PDRoutingTable::getInstance()[base::itos(
+    base::PDRoutingTable::getInstance()[boost::lexical_cast<std::string>(
         host_port_)]->AddTuple(tuple);
     if (result == 2) {
       {
@@ -1348,7 +1350,7 @@ connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
   if (ip == "" || port == 0)
     return REMOTE;
   int result = base::PDRoutingTable::getInstance()[
-      base::itos(host_port_)]->ContactLocal(id);
+      boost::lexical_cast<std::string>(host_port_)]->ContactLocal(id);
   connect_to_node conn_type;
   std::string ext_ip_dec;
   switch (result) {

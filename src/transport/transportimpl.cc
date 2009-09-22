@@ -37,7 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace transport {
 TransportImpl::TransportImpl() : stop_(true), message_notifier_(),
     rendezvous_notifier_(), accept_routine_(), recv_routine_(), send_routine_(),
-    ping_rendz_routine_(), handle_msgs_routine_(), listening_socket_(),
+    ping_rendz_routine_(), handle_msgs_routine_(), listening_socket_(0),
     peer_address_(), listening_port_(0), my_rendezvous_port_(0),
     my_rendezvous_ip_(""), incoming_sockets_(), outgoing_queue_(),
     incoming_msgs_queue_(), send_mutex_(), ping_rendez_mutex_(), recv_mutex_(),
@@ -49,8 +49,12 @@ TransportImpl::TransportImpl() : stop_(true), message_notifier_(),
   UDT::startup();
 }
 
+TransportImpl::~TransportImpl() {
+  if (!stop_)
+    Stop();
+}
 
-int TransportImpl::Start(uint16_t port,
+int TransportImpl::Start(const boost::uint16_t &port,
     boost::function<void(const rpcprotocol::RpcMessage&, const boost::uint32_t&,
     const float&)> on_message, boost::function<void(const bool&,
     const std::string&, const boost::uint16_t&)> notify_dead_server,
@@ -75,7 +79,8 @@ int TransportImpl::Start(uint16_t port,
   if (UDT::ERROR == UDT::bind(listening_socket_, addrinfo_res_->ai_addr,
       addrinfo_res_->ai_addrlen)) {
     DLOG(WARNING) << "(" << listening_port_ << ") UDT bind error: " <<
-        UDT::getlasterror().getErrorMessage();
+        UDT::getlasterror().getErrorMessage() << std::endl;
+    freeaddrinfo(addrinfo_res_);
     return 1;
   }
   // Modify the port to reflect the port UDT has chosen
@@ -85,15 +90,18 @@ int TransportImpl::Start(uint16_t port,
     UDT::getsockname(listening_socket_, (struct sockaddr *)&name, &namelen);
     listening_port_ = ntohs(name.sin_port);
     std::string service = boost::lexical_cast<std::string>(listening_port_);
+    freeaddrinfo(addrinfo_res_);
     if (0 != getaddrinfo(NULL, service.c_str(), &addrinfo_hints_,
-        &addrinfo_res_)) {
+      &addrinfo_res_)) {
+      freeaddrinfo(addrinfo_res_);
       return 1;
     }
   }
-  // freeaddrinfo(res);
+
   if (UDT::ERROR == UDT::listen(listening_socket_, 20)) {
     LOG(ERROR) << "Failed to start listening port "<< listening_port_ << ": " <<
-        UDT::getlasterror().getErrorMessage();
+        UDT::getlasterror().getErrorMessage() << std::endl;
+    freeaddrinfo(addrinfo_res_);
     return 1;
   }
   stop_ = false;
@@ -112,6 +120,7 @@ int TransportImpl::Start(uint16_t port,
     stop_ = true;
     int result;
     result = UDT::close(listening_socket_);
+    freeaddrinfo(addrinfo_res_);
     return 1;
   }
   message_notifier_ = on_message;
@@ -246,7 +255,7 @@ void TransportImpl::Stop() {
   freeaddrinfo(addrinfo_res_);
   DLOG(INFO) << "(" << listening_port_ << ") Accepted connections: " <<
       accepted_connections_ << ". Msgs Sent: " << msgs_sent_ << ". Msgs Recv "
-      << last_id_;
+      << last_id_ << std::endl;
 }
 
 void TransportImpl::ReceiveHandler() {
@@ -334,7 +343,7 @@ void TransportImpl::ReceiveHandler() {
             UDT::TRACEINFO perf;
             if (UDT::ERROR == UDT::perfmon((*it).second.u, &perf)) {
               DLOG(ERROR) << "UDT permon error: " <<
-                  UDT::getlasterror().getErrorMessage();
+                  UDT::getlasterror().getErrorMessage() << std::endl;
             } else {
               (*it).second.accum_RTT += perf.msRTT;
               (*it).second.observations++;
@@ -356,11 +365,11 @@ void TransportImpl::ReceiveHandler() {
                   IncomingMessages msg(connection_id);
                   msg.msg = t_msg.rpc_msg();
                   DLOG(INFO) << "(" << listening_port_ << ") message for id "
-                      << connection_id << " arrived";
+                      << connection_id << " arrived" << std::endl;
                   UDT::TRACEINFO perf;
                   if (UDT::ERROR == UDT::perfmon((*it).second.u, &perf)) {
                     DLOG(ERROR) << "UDT permon error: " <<
-                        UDT::getlasterror().getErrorMessage();
+                        UDT::getlasterror().getErrorMessage() << std::endl;
                   } else {
                     msg.rtt = perf.msRTT;
                     if ((*it).second.observations != 0) {
@@ -379,11 +388,11 @@ void TransportImpl::ReceiveHandler() {
                   msg_hdl_cond_.notify_one();
                 } else {
                   LOG(WARNING) << "( " << listening_port_ <<
-                      ") Invalid Message received" << std::endl << std::endl;
+                      ") Invalid Message received" << std::endl;
                 }
               } else {
                 LOG(WARNING) << "( " << listening_port_ <<
-                    ") Invalid Message received" << std::endl << std::endl;
+                    ") Invalid Message received" << std::endl;
               }
             }
           }
@@ -497,7 +506,7 @@ void TransportImpl::SendHandle() {
                   CUDTException::EASYNCSND) {
               DLOG(ERROR) << "(" << listening_port_ <<
                   ") Error sending message size: " <<
-                  UDT::getlasterror().getErrorMessage();
+                  UDT::getlasterror().getErrorMessage() << std::endl;
               send_notifier_(it->conn_id, false);
               outgoing_queue_.erase(it);
               break;
@@ -517,7 +526,7 @@ void TransportImpl::SendHandle() {
                   CUDTException::EASYNCSND) {
               DLOG(ERROR) << "(" << listening_port_ <<
                   ") Error sending message data: " <<
-                  UDT::getlasterror().getErrorMessage();
+                  UDT::getlasterror().getErrorMessage() << std::endl;
               send_notifier_(it->conn_id, false);
               outgoing_queue_.erase(it);
               break;
@@ -701,7 +710,7 @@ void TransportImpl::AcceptConnHandler() {
         continue;
       } else {
         DLOG(ERROR) << "(" << listening_port_ << ") UDT::accept error: " <<
-            UDT::getlasterror().getErrorMessage();
+            UDT::getlasterror().getErrorMessage() << std::endl;
         return;
       }
     }
@@ -769,31 +778,48 @@ int TransportImpl::Send(const rpcprotocol::RpcMessage &data,
 
 bool TransportImpl::CheckConnection(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port) {
-  struct addrinfo hints, *local, *remote;
+  struct addrinfo hints, *local;
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_flags = AI_PASSIVE;
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
-  if (0 != getaddrinfo(local_ip.c_str(), "0", &hints, &local))
+  if (0 != getaddrinfo(local_ip.c_str(), "0", &hints, &local)) {
+    LOG(ERROR) << "Invalid local address " << local_ip << std::endl;
     return false;
+  }
 
   UDTSOCKET skt = UDT::socket(local->ai_family, local->ai_socktype,
                               local->ai_protocol);
   if (UDT::ERROR == UDT::bind(skt, local->ai_addr, local->ai_addrlen)) {
-    DLOG(ERROR) << "(" << listening_port_ << ") UDT Bind error: " <<
-        UDT::getlasterror().getErrorMessage();
+    LOG(ERROR) << "(" << listening_port_ << ") UDT Bind error: " <<
+        UDT::getlasterror().getErrorMessage() << std::endl;
     return false;
   }
 
-  std::string str_remote_port = boost::lexical_cast<std::string>(remote_port);
-  if (0 != getaddrinfo(remote_ip.c_str(), str_remote_port.c_str(),
-      &hints, &remote)) {
-    DLOG(ERROR) << "Invalid remote address " << remote_ip << ":"<< remote_port;
+  freeaddrinfo(local);
+  sockaddr_in remote_addr;
+  remote_addr.sin_family = AF_INET;
+  remote_addr.sin_port = htons(remote_port);
+#ifndef WIN32
+  if (inet_pton(AF_INET, remote_ip.c_str(), &remote_addr.sin_addr) <= 0) {
+    DLOG(ERROR) << "Invalid remote address " << remote_ip << ":"<< remote_port
+        << std::endl;
     return false;
   }
-  if (UDT::ERROR == UDT::connect(skt, remote->ai_addr, remote->ai_addrlen)) {
+#else
+  if (INADDR_NONE == (remote_addr.sin_addr.s_addr =
+      net_addr(remote_ip.c_str()))) {
+    DLOG(ERROR) << "Invalid remote address " << remote_ip << ":"<< remote_port
+        << std::endl;
+    return false;
+  }
+#endif
+
+  if (UDT::ERROR == UDT::connect(skt,
+      reinterpret_cast<sockaddr*>(&remote_addr), sizeof(remote_addr))) {
     DLOG(ERROR) << "(" << listening_port_ << ") UDT connect to " << remote_ip
-        << ":" << remote_port <<" -- " << UDT::getlasterror().getErrorMessage();
+        << ":" << remote_port <<" -- " << UDT::getlasterror().getErrorMessage()
+        << std::endl;
     return false;
   }
   UDT::close(skt);
@@ -836,7 +862,7 @@ int TransportImpl::ConnectToSend(const std::string &remote_ip,
       int conn_result = Connect(&skt, remote_ip, remote_port, false);
       if (conn_result != 0) {
         DLOG(ERROR) << "(" << listening_port_ << ") Transport::ConnectToSend "
-            << "failed to connect to remote port" << remote_port;
+            << "failed to connect to remote port" << remote_port << std::endl;
         UDT::close(skt);
         return conn_result;
       }
@@ -846,7 +872,8 @@ int TransportImpl::ConnectToSend(const std::string &remote_ip,
     int conn_result = Connect(&rend_skt, rendezvous_ip, rendezvous_port, false);
     if (conn_result != 0) {
       DLOG(ERROR) << "(" << listening_port_ << ") Transport::ConnectToSend " <<
-          "failed to connect to rendezvouz port " << rendezvous_port;
+          "failed to connect to rendezvouz port " << rendezvous_port <<
+          std::endl;
       UDT::close(rend_skt);
       return conn_result;
     }
@@ -882,7 +909,7 @@ int TransportImpl::ConnectToSend(const std::string &remote_ip,
     }
     if (!connected) {
       DLOG(ERROR) << "(" << listening_port_ << ") Transport::ConnectToSend " <<
-          "failed to connect to remote port " << remote_port;
+          "failed to connect to remote port " << remote_port << std::endl;
       UDT::close(skt);
       return conn_result;
     }
@@ -900,9 +927,9 @@ int TransportImpl::ConnectToSend(const std::string &remote_ip,
   return 0;
 }
 
-int TransportImpl::StartLocal(const uint16_t &port, boost::function <void(
-        const rpcprotocol::RpcMessage&, const boost::uint32_t&, const float &)>
-        on_message,
+int TransportImpl::StartLocal(const boost::uint16_t &port,
+      boost::function <void(const rpcprotocol::RpcMessage&,
+        const boost::uint32_t&, const float &)> on_message,
       boost::function<void(const boost::uint32_t&, const bool&)> on_send) {
   if (!stop_)
     return 1;
@@ -925,6 +952,7 @@ int TransportImpl::StartLocal(const uint16_t &port, boost::function <void(
       addrinfo_res_->ai_addrlen)) {
     LOG(ERROR) << "Error binding listening socket" <<
         UDT::getlasterror().getErrorMessage() << std::endl;
+    freeaddrinfo(addrinfo_res_);
     return 1;
   }
   // Modify the port to reflect the port UDT has chosen
@@ -933,9 +961,13 @@ int TransportImpl::StartLocal(const uint16_t &port, boost::function <void(
   if (listening_port_ == 0) {
     UDT::getsockname(listening_socket_, (struct sockaddr *)&name, &namelen);
     listening_port_ = ntohs(name.sin_port);
+        UDT::getsockname(listening_socket_, (struct sockaddr *)&name, &namelen);
+    listening_port_ = ntohs(name.sin_port);
     std::string service = boost::lexical_cast<std::string>(listening_port_);
+    freeaddrinfo(addrinfo_res_);
     if (0 != getaddrinfo(NULL, service.c_str(), &addrinfo_hints_,
-        &addrinfo_res_)) {
+      &addrinfo_res_)) {
+      freeaddrinfo(addrinfo_res_);
       return 1;
     }
   }
@@ -943,6 +975,7 @@ int TransportImpl::StartLocal(const uint16_t &port, boost::function <void(
   if (UDT::ERROR == UDT::listen(listening_socket_, 20)) {
     LOG(ERROR) << "Failed to start the listening socket " << listening_socket_
         << " : " << UDT::getlasterror().getErrorMessage() << std::endl;
+    freeaddrinfo(addrinfo_res_);
     return 1;
   }
   stop_ = false;
@@ -959,6 +992,7 @@ int TransportImpl::StartLocal(const uint16_t &port, boost::function <void(
     stop_ = true;
     int result;
     result = UDT::close(listening_socket_);
+    freeaddrinfo(addrinfo_res_);
     return 1;
   }
   message_notifier_ = on_message;

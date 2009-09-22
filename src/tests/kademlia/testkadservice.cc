@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 #include "kademlia/kadservice.h"
 #include "kademlia/knodeimpl.h"
 #include "maidsafe/alternativestore.h"
@@ -255,7 +256,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
       character = "a";
     for (int j = 0; j < 126; ++j)
       hex_id += character;
-    hex_id += base::itos(i+10);
+    hex_id += boost::lexical_cast<std::string>(i+10);
     std::string id("");
     base::decode_from_hex(hex_id, &id);
     if (i < K)
@@ -302,7 +303,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   // Populate datastore & search for existing key
   std::vector<std::string> values;
   for (int i = 0; i < 100; ++i) {
-    values.push_back("Value"+base::itos(i));
+    values.push_back("Value"+boost::lexical_cast<std::string>(i));
     SignedValue sig_value;
     sig_value.set_value(values[i]);
     sig_value.set_value_signature(crypto_.AsymSign(values[i], "", private_key,
@@ -371,7 +372,8 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
     std::string hex_id;
     while (!unique) {
       int r = rand();  // NOLINT (Fraser)
-      hex_id = crypto_.Hash(base::itos(r), "", crypto::STRING_STRING, true);
+      hex_id = crypto_.Hash(boost::lexical_cast<std::string>(r), "",
+          crypto::STRING_STRING, true);
       if (hex_id[0] == 'a')
         hex_id.replace(0, 1, "0");
       unique = true;
@@ -420,7 +422,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
       character = "a";
     for (int j = 0; j < 126; ++j)
       hex_id += character;
-    hex_id += base::itos(i+10);
+    hex_id += boost::lexical_cast<std::string>(i+10);
     std::string id("");
     base::decode_from_hex(hex_id, &id);
     std::string ip("127.0.0.6");
@@ -725,7 +727,7 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   // Set up details of 10 nodes and add 7 of these to the routing table.
   std::vector<Contact> contacts;
   for (int i = 0; i < 10; ++i) {
-    std::string character = base::itos(i);
+    std::string character = boost::lexical_cast<std::string>(i);
     std::string hex_id, id;
     for (int j = 0; j < 128; ++j)
       hex_id += character;
@@ -863,7 +865,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValueAltStore) {
       character = "a";
     for (int j = 0; j < 126; ++j)
       hex_id += character;
-    hex_id += base::itos(i+10);
+    hex_id += boost::lexical_cast<std::string>(i+10);
     std::string id("");
     base::decode_from_hex(hex_id, &id);
     if (i < K)
@@ -910,7 +912,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValueAltStore) {
   // Populate datastore & search for existing key
   std::vector<std::string> values;
   for (int i = 0; i < 100; ++i) {
-    values.push_back("Value"+base::itos(i));
+    values.push_back("Value"+boost::lexical_cast<std::string>(i));
     SignedValue sig_value;
     sig_value.set_value(values[i]);
     sig_value.set_value_signature(crypto_.AsymSign(values[i], "", private_key,

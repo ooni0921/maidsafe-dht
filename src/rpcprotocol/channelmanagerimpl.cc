@@ -47,6 +47,12 @@ ChannelManagerImpl::~ChannelManagerImpl() {
     StopTransport();
   }
   channels_.clear();
+  std::map<boost::uint32_t, PendingReq>::iterator it;
+  for (it = pending_req_.begin(); it != pending_req_.end(); it++) {
+    delete it->second.args;
+    delete it->second.callback;
+    delete it->second.ctrl;
+  }
   pending_req_.clear();
   pending_timeout_.clear();
 }
@@ -298,6 +304,12 @@ void ChannelManagerImpl::ClearChannels() {
 void ChannelManagerImpl::ClearCallLaters() {
   {
     boost::mutex::scoped_lock guard(req_mutex_);
+    std::map<boost::uint32_t, PendingReq>::iterator it;
+    for (it = pending_req_.begin(); it != pending_req_.end(); it++) {
+      delete it->second.args;
+      delete it->second.callback;
+      delete it->second.ctrl;
+    }
     pending_req_.clear();
   }
   ptimer_->CancelAll();

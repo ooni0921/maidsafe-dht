@@ -26,6 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
+#include <boost/lexical_cast.hpp>
 #include "maidsafe/config.h"
 #include "kademlia/kbucket.h"
 #include "kademlia/kadutils.h"
@@ -116,8 +117,8 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Get_Contact) {
   std::string holder_id = kad::vault_random_id();
   kad::RoutingTable routingtable(holder_id);
   int id = rand();  // NOLINT
-  std::string contact_id = cry_obj.Hash(base::itos(id), "",
-    crypto::STRING_STRING, false);
+  std::string contact_id = cry_obj.Hash(boost::lexical_cast<std::string>(id),
+    "", crypto::STRING_STRING, false);
   std::string ip = "127.0.0.1";
   unsigned short port = 8888;
   kad::Contact contact(contact_id, ip, port, ip, port);
@@ -132,8 +133,8 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Contact) {
   std::string holder_id = kad::vault_random_id();
   kad::RoutingTable routingtable(holder_id);
   int id = rand();  // NOLINT
-  std::string contact_id = cry_obj.Hash(base::itos(id), "",
-    crypto::STRING_STRING, false);
+  std::string contact_id = cry_obj.Hash(boost::lexical_cast<std::string>(id),
+      "", crypto::STRING_STRING, false);
   std::string ip("127.0.0.1");
   unsigned short port = 8888;
   kad::Contact contact(contact_id, ip, port, ip, port);
@@ -155,8 +156,8 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Add_Contact) {
   std::string holder_id = kad::vault_random_id();
   kad::RoutingTable routingtable(holder_id);
   int id = rand();  // NOLINT
-  std::string contact_id = cry_obj.Hash(base::itos(id), "",
-    crypto::STRING_STRING, false);
+  std::string contact_id = cry_obj.Hash(boost::lexical_cast<std::string>(id),
+    "", crypto::STRING_STRING, false);
   std::string ip("127.0.0.1");
   unsigned short port = 8888;
   kad::Contact contact(contact_id, ip, port, ip, port);
@@ -179,16 +180,16 @@ TEST_F(TestRoutingTable, BEH_KAD_SplitKBucket) {
   std::string ip("127.0.0.1");
   unsigned short port = 8880;
   for (int i = 0; i < kad::K+1; i++) {
-    contact_id = cry_obj.Hash(base::itos(id[i]), "", crypto::STRING_STRING,
-        false);
+    contact_id = cry_obj.Hash(boost::lexical_cast<std::string>(id[i]), "",
+        crypto::STRING_STRING, false);
     port++;
     kad::Contact contact(contact_id, ip, port, ip, port);
     contacts[i] = contact;
     ASSERT_EQ(0, routingtable.AddContact(contact));
   }
   for (int i = 0; i < kad::K+1; i++) {
-    contact_id = cry_obj.Hash(base::itos(id[i]), "", crypto::STRING_STRING,
-        false);
+    contact_id = cry_obj.Hash(boost::lexical_cast<std::string>(id[i]), "",
+        crypto::STRING_STRING, false);
     kad::Contact rec_contact;
     ASSERT_TRUE(routingtable.GetContact(contact_id, &rec_contact));
     ASSERT_TRUE(contacts[i] == rec_contact);

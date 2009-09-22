@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/progress.hpp>
+#include <boost/lexical_cast.hpp>
 #include <cryptopp/integer.h>
 #include <cryptopp/osrng.h>
 
@@ -144,7 +145,7 @@ class Env: public testing::Environment {
       channel_managers_.push_back(channel_manager_local_);
 
       std::string db_local_ = test_dir_ + std::string("/datastore") +
-          base::itos(i);
+          boost::lexical_cast<std::string>(i);
       boost::filesystem::create_directories(db_local_);
       dbs_.push_back(db_local_);
 
@@ -233,7 +234,7 @@ class Env: public testing::Environment {
     for (it = ports_.begin(); it != ports_.end(); it++) {
       // Deleting the DBs in the app dir
       fs::path db_dir(get_app_directory());
-      db_dir /= base::itos(*it);
+      db_dir /= boost::lexical_cast<std::string>(*it);
       try {
         if (fs::exists(db_dir))
           fs::remove_all(db_dir);
@@ -263,7 +264,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   boost::shared_ptr<rpcprotocol::ChannelManager>
       channel_manager_local_(new rpcprotocol::ChannelManager());
   std::string db_local = test_dir_ + std::string("/datastore") +
-      base::itos(kNetworkSize + 1);
+      boost::lexical_cast<std::string>(kNetworkSize + 1);
   boost::filesystem::create_directories(db_local);
   std::string config_file = db_local + "/.kadconfig";
   base::KadConfig conf;
@@ -934,7 +935,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
 TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
   cb_.Reset();
   std::string db_local = test_dir_ + std::string("/datastore") +
-      base::itos(kNetworkSize + 2);
+      boost::lexical_cast<std::string>(kNetworkSize + 2);
   std::string kconf_file = db_local + "/.kadconfig";
   boost::filesystem::create_directories(db_local);
   base::KadConfig kad_config;

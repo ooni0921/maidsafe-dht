@@ -26,6 +26,7 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <fstream>
 #include "maidsafe/config.h"
@@ -255,7 +256,8 @@ int main(int argc, char **argv) {
     }
     // setting kadconfig file if it was not in the options
     if (kadconfigpath == "") {
-      kadconfigpath = "KnodeInfo" + base::itos(chmanager->external_port());
+      kadconfigpath = "KnodeInfo" + boost::lexical_cast<std::string>(
+         chmanager->external_port());
       boost::filesystem::create_directories(kadconfigpath);
       kadconfigpath += "/.kadconfig";
     }

@@ -26,7 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
-
+#include <boost/lexical_cast.hpp>
 #include "kademlia/kbucket.h"
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -82,7 +82,8 @@ TEST_F(TestKbucket, BEH_KAD_AddContactGetContact) {
   unsigned short port = 8880;
   for (int i = 0; i < K; ++i) {
     ASSERT_EQ(i, kbucket.Size());
-    id[i] = cry_obj.Hash(base::itos(i), "", crypto::STRING_STRING, false);
+    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false);
     ++port;
     Contact contact(id[i], ip, port, ip, port);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
@@ -122,7 +123,8 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
   std::string ip("127.0.0.1");
   unsigned short port[kad::K - 1];
   for (int i = 0; i < kad::K - 1; ++i) {
-    id[i] = cry_obj.Hash(base::itos(i), "", crypto::STRING_STRING, false);
+    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false);
     port[i] = 8880 + i;
     Contact contact(id[i], ip, port[i], ip, port[i]);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
@@ -176,7 +178,8 @@ TEST_F(TestKbucket, BEH_KAD_DeleteContact) {
   std::string ip("127.0.0.1");
   unsigned short port = 8880;
   for (int i = 0; i < kad::K - 1; ++i) {
-    id[i] = cry_obj.Hash(base::itos(i), "", crypto::STRING_STRING, false);
+    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false);
     ++port;
     Contact contact(id[i], ip, port, ip, port);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
@@ -226,7 +229,8 @@ TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
   std::string ip = "127.0.0.1";
   unsigned short port[K];
   for (int i = 0; i < K; ++i) {
-    id[i] = cry_obj.Hash(base::itos(i), "", crypto::STRING_STRING, false);
+    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false);
     port[i] = 8880 + i;
     Contact contact(id[i], ip, port[i], ip, port[i]);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
@@ -257,7 +261,8 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   std::string id[kad::K - 1], ip("127.0.0.1");
   unsigned short port[kad::K - 1];
   for (int i = 0; i < kad::K - 1; ++i) {
-    id[i] = cry_obj.Hash(base::itos(i), "", crypto::STRING_STRING, false);
+    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false);
     port[i] = 8880 + i;
     Contact contact(id[i], ip, port[i], ip, port[i]);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
@@ -329,7 +334,8 @@ TEST_F(TestKbucket, BEH_KAD_GetLastSeenContact) {
   rec = kbucket.LastSeenContact();
   ASSERT_TRUE(empty == rec);
   for (int i = 0; i < kad::K - 1; ++i) {
-    id[i] = cry_obj.Hash(base::itos(i), "", crypto::STRING_STRING, false);
+    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false);
     port[i] = 8880 + i;
     Contact contact(id[i], ip, port[i], ip, port[i]);
     Contact firstinput(id[0], ip, port[0], ip, port[0]);

@@ -99,7 +99,7 @@ class TestKnodes : public testing::Test {
           boost::bind(&MessageHandler::OnDeadRendezvousServer,
           msg_handlers_[i].get(), _1, _2, _3));
       datastore_dir_[i] = test_dir_ + "/Datastore" +
-          base::itos(ch_managers_[i]->external_port());
+          boost::lexical_cast<std::string>(ch_managers_[i]->external_port());
       boost::filesystem::create_directories(
           boost::filesystem::path(datastore_dir_[i]));
       nodes_[i].reset(new KNode(ch_managers_[i], VAULT, "", "", false, false));
@@ -326,8 +326,9 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
 
   // Getting info from base routing table to check rtt
   base::PDRoutingTableTuple tuple;
-  ASSERT_EQ(0, base::PDRoutingTable::getInstance()[base::itos(nodes_[0]->
-      host_port())]->GetTupleInfo(nodes_[1]->node_id(), &tuple));
+  ASSERT_EQ(0, base::PDRoutingTable::getInstance()[
+      boost::lexical_cast<std::string>(nodes_[0]->host_port())]->
+      GetTupleInfo(nodes_[1]->node_id(), &tuple));
   ASSERT_EQ(nodes_[1]->node_id(), tuple.kademlia_id_);
   ASSERT_EQ(nodes_[1]->host_ip(), tuple.host_ip_);
   ASSERT_EQ(nodes_[1]->host_port(), tuple.host_port_);
