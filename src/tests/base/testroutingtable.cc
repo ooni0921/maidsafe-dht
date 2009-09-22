@@ -228,17 +228,17 @@ TEST(PDRoutingTableTest, BEH_BASE_MultipleHandlers) {
   boost::uint32_t space = 55555;
   base::PDRoutingTableTuple tuple_to_store1(kademlia_id1, host_ip, host_port,
       rendezvous_ip, rendezvous_port, public_key, rtt, rank, space);
-  ASSERT_EQ(0, base::PDRoutingTable::getInstance()[dbname1]->AddTuple(
+  ASSERT_EQ(0, (*base::PDRoutingTable::getInstance())[dbname1]->AddTuple(
       tuple_to_store1));
   base::PDRoutingTableTuple tuple_to_store2(kademlia_id2, host_ip, host_port-1,
       rendezvous_ip, rendezvous_port-1, public_key, rtt-100, rank-2, space);
-  ASSERT_EQ(0, base::PDRoutingTable::getInstance()[dbname2]->AddTuple(
+  ASSERT_EQ(0, (*base::PDRoutingTable::getInstance())[dbname2]->AddTuple(
       tuple_to_store2));
 
   base::PDRoutingTableTuple rec_tuple_1, rec_tuple_2;
-  ASSERT_EQ(1, base::PDRoutingTable::getInstance()[dbname1]->GetTupleInfo(
+  ASSERT_EQ(1, (*base::PDRoutingTable::getInstance())[dbname1]->GetTupleInfo(
       kademlia_id2, &rec_tuple_1));
-  ASSERT_EQ(0, base::PDRoutingTable::getInstance()[dbname1]->GetTupleInfo(
+  ASSERT_EQ(0, (*base::PDRoutingTable::getInstance())[dbname1]->GetTupleInfo(
       kademlia_id1, &rec_tuple_1));
   ASSERT_EQ(tuple_to_store1.kademlia_id(), rec_tuple_1.kademlia_id());
   ASSERT_EQ(tuple_to_store1.rendezvous_ip(), rec_tuple_1.rendezvous_ip());
@@ -248,9 +248,9 @@ TEST(PDRoutingTableTest, BEH_BASE_MultipleHandlers) {
   ASSERT_EQ(tuple_to_store1.rank(), rec_tuple_1.rank());
   ASSERT_EQ(tuple_to_store1.space(), rec_tuple_1.space());
 
-  ASSERT_EQ(1, base::PDRoutingTable::getInstance()[dbname2]->GetTupleInfo(
+  ASSERT_EQ(1, (*base::PDRoutingTable::getInstance())[dbname2]->GetTupleInfo(
       kademlia_id1, &rec_tuple_2));
-  ASSERT_EQ(0, base::PDRoutingTable::getInstance()[dbname2]->GetTupleInfo(
+  ASSERT_EQ(0, (*base::PDRoutingTable::getInstance())[dbname2]->GetTupleInfo(
       kademlia_id2, &rec_tuple_2));
   ASSERT_EQ(tuple_to_store2.kademlia_id(), rec_tuple_2.kademlia_id());
   ASSERT_EQ(tuple_to_store2.rendezvous_ip(), rec_tuple_2.rendezvous_ip());

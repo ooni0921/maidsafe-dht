@@ -855,7 +855,7 @@ int TransportImpl::ConnectToSend(const std::string &remote_ip,
             " with udp error " << conn_result << std::endl;
         UDT::close(skt);
         remote = true;
-        base::PDRoutingTable::getInstance()[base::itos(listening_port_)]->
+        (*base::PDRoutingTable::getInstance())[base::itos(listening_port_)]->
             UpdateLocalToUnknown(local_ip, local_port);
       }
     }

@@ -174,9 +174,10 @@ class PDRoutingTableHandler {
 
 class PDRoutingTable {
  public:
-  static PDRoutingTable& getInstance();
+  static PDRoutingTable* getInstance();
   boost::shared_ptr<PDRoutingTableHandler> operator[] (const std::string &name);
  private:
+  static PDRoutingTable *single;
   PDRoutingTable() : pdroutingtablehdls_() {}
   explicit PDRoutingTable(PDRoutingTable const&);
   void operator=(PDRoutingTable const&);

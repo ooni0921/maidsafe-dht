@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/routingtable.h"
 #include <boost/filesystem.hpp>
+#include <iostream>
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace base {
@@ -62,7 +63,9 @@ int PDRoutingTableHandler::GetClosestRtt(
 }
 
 int PDRoutingTableHandler::AddTuple(base::PDRoutingTableTuple tuple) {
+  std::cout << "PDRoutingTableHandler::AddTuple -- waiting for lock" << std::endl;
   boost::mutex::scoped_lock guard(mutex_);
+  std::cout << "PDRoutingTableHandler::AddTuple -- got lock" << std::endl;
   routingtable::index<t_key>::type& key_indx = routingtable_.get<t_key>();
   routingtable::index<t_key>::type::iterator it =
       key_indx.find(tuple.kademlia_id());
@@ -226,21 +229,33 @@ int PDRoutingTableHandler::UpdateLocalToUnknown(const std::string &ip,
   return 0;
 }
 
-PDRoutingTable& PDRoutingTable::getInstance() {
-  static PDRoutingTable instance;
-  return instance;
+PDRoutingTable* PDRoutingTable::single = 0;
+boost::mutex pdrt_mutex;
+
+PDRoutingTable* PDRoutingTable::getInstance() {
+  std::cout << "PDRoutingTable::getInstance" << std::endl;
+  if (single == 0) {
+    boost::mutex::scoped_lock lock(pdrt_mutex);
+    if (single == 0)
+      single = new PDRoutingTable();
+  }
+  std::cout << "returning instance of PDRoutingTable" << std::endl;
+  return single;
 }
 
 boost::shared_ptr<PDRoutingTableHandler> PDRoutingTable::operator[] (
     const std::string &name) {
+  std::cout << "PDRoutingTable operator []" << std::endl;
   std::map<std::string, boost::shared_ptr<PDRoutingTableHandler> >::iterator it;
   it = pdroutingtablehdls_.find(name);
   if (it == pdroutingtablehdls_.end()) {
     pdroutingtablehdls_.insert(std::pair<std::string,
         boost::shared_ptr<PDRoutingTableHandler> >(name,
         boost::shared_ptr<PDRoutingTableHandler>(new PDRoutingTableHandler)));
+    std::cout << "Returning new instance of PDRoutingTableHandler" << std::endl;
     return pdroutingtablehdls_[name];
   }
+  std::cout << "Returning instace of PDRoutingTableHandler" << std::endl;
   return it->second;
 }
 }  // namespace base

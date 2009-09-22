@@ -52,7 +52,6 @@ void Observer4(bool b) {
   printf("Variable 4 has changed to %s.\n", b ? "TRUE" : "FALSE");
 }
 
-
 TEST(OnlineControllerTest, BEH_BASE_SingletonAddress) {
   base::OnlineController *olc1 = base::OnlineController::instance();
   base::OnlineController *olc2 = base::OnlineController::instance();
@@ -218,26 +217,31 @@ TEST(OnlineControllerTest, BEH_BASE_MultipleObserverRegistration) {
 }
 
 TEST(OnlineControllerTest, BEH_BASE_GroupedObserverRegistration) {
+  printf("Zeroth.\n");
   base::OnlineController *olc = base::OnlineController::instance();
 
   ASSERT_EQ(0, olc->ObserversCount());
   ASSERT_EQ(0, olc->ObserversInGroupCount(0));
   ASSERT_EQ(0, olc->ObserversInGroupCount(1));
   ASSERT_EQ(0, olc->ObserversInGroupCount(2));
+  printf("After first group count.\n");
 
   ASSERT_FALSE(olc->Online(0));
   ASSERT_FALSE(olc->Online(1));
   ASSERT_FALSE(olc->Online(2));
+  printf("After first online check.\n");
 
   olc->RegisterObserver(0, boost::bind(&Observer1, _1));
   olc->RegisterObserver(0, boost::bind(&Observer2, _1));
   boost::uint16_t id3 = olc->RegisterObserver(0, boost::bind(&Observer3, _1));
   olc->RegisterObserver(1, boost::bind(&Observer4, _1));
+  printf("After registering some observers %d.\n", id3);
 
   ASSERT_EQ(4, olc->ObserversCount());
   ASSERT_EQ(3, olc->ObserversInGroupCount(0));
   ASSERT_EQ(1, olc->ObserversInGroupCount(1));
   ASSERT_EQ(0, olc->ObserversInGroupCount(2));
+  printf("After second group count.\n");
 
   olc->SetAllOnline(true);
   ASSERT_TRUE(olc->Online(0));
@@ -247,6 +251,7 @@ TEST(OnlineControllerTest, BEH_BASE_GroupedObserverRegistration) {
   ASSERT_TRUE(o2);
   ASSERT_TRUE(o3);
   ASSERT_TRUE(o4);
+  printf("After second online check.\n");
 
   olc->SetOnline(0, false);
   ASSERT_FALSE(olc->Online(0));
@@ -256,12 +261,14 @@ TEST(OnlineControllerTest, BEH_BASE_GroupedObserverRegistration) {
   ASSERT_FALSE(o2);
   ASSERT_FALSE(o3);
   ASSERT_TRUE(o4);
+  printf("After third online check.\n");
 
   olc->UnregisterObserver(id3);
   ASSERT_EQ(3, olc->ObserversCount());
   ASSERT_EQ(2, olc->ObserversInGroupCount(0));
   ASSERT_EQ(1, olc->ObserversInGroupCount(1));
   ASSERT_EQ(0, olc->ObserversInGroupCount(2));
+  printf("After unregistering observer 3.\n");
 
   olc->SetOnline(0, true);
   ASSERT_TRUE(olc->Online(0));
@@ -271,12 +278,15 @@ TEST(OnlineControllerTest, BEH_BASE_GroupedObserverRegistration) {
   ASSERT_TRUE(o2);
   ASSERT_FALSE(o3);
   ASSERT_TRUE(o4);
+  printf("After fourth online check.\n");
 
   olc->UnregisterGroup(0);
+  printf("After call to unregister\n");
   ASSERT_EQ(1, olc->ObserversCount());
   ASSERT_EQ(0, olc->ObserversInGroupCount(0));
   ASSERT_EQ(1, olc->ObserversInGroupCount(1));
   ASSERT_EQ(0, olc->ObserversInGroupCount(2));
+  printf("After unregistering observer 0.\n");
 
   olc->SetAllOnline(false);
   ASSERT_FALSE(olc->Online(0));
@@ -286,17 +296,20 @@ TEST(OnlineControllerTest, BEH_BASE_GroupedObserverRegistration) {
   ASSERT_TRUE(o2);
   ASSERT_FALSE(o3);
   ASSERT_FALSE(o4);
+  printf("After fifth online check.\n");
 
   olc->UnregisterAll();
   ASSERT_EQ(0, olc->ObserversCount());
   ASSERT_EQ(0, olc->ObserversInGroupCount(0));
   ASSERT_EQ(0, olc->ObserversInGroupCount(1));
   ASSERT_EQ(0, olc->ObserversInGroupCount(2));
+  printf("After unregistering all observers.\n");
 
   olc->SetOnline(0, true);
   ASSERT_TRUE(olc->Online(0));
   olc->Reset();
   ASSERT_FALSE(olc->Online(0));
+  printf("After last online check.\n");
 
   olc = NULL;
 }

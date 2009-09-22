@@ -326,9 +326,8 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
 
   // Getting info from base routing table to check rtt
   base::PDRoutingTableTuple tuple;
-  ASSERT_EQ(0, base::PDRoutingTable::getInstance()[
-      boost::lexical_cast<std::string>(nodes_[0]->host_port())]->
-      GetTupleInfo(nodes_[1]->node_id(), &tuple));
+  ASSERT_EQ(0, (*base::PDRoutingTable::getInstance())[base::itos(nodes_[0]->
+      host_port())]->GetTupleInfo(nodes_[1]->node_id(), &tuple));
   ASSERT_EQ(nodes_[1]->node_id(), tuple.kademlia_id_);
   ASSERT_EQ(nodes_[1]->host_ip(), tuple.host_ip_);
   ASSERT_EQ(nodes_[1]->host_port(), tuple.host_port_);

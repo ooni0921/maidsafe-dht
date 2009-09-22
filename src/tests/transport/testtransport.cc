@@ -1416,7 +1416,8 @@ TEST_F(TransportTest, BEH_TRANS_StartBadLocal) {
       bad_local_port, rv_ip, rv_port, public_key, rtt, rank, space);
 
   boost::shared_ptr<base::PDRoutingTableHandler> rt_handler =
-      base::PDRoutingTable::getInstance()[base::itos(node1.listening_port())];
+      (*base::PDRoutingTable::getInstance())[
+      base::itos(node1.listening_port())];
   ASSERT_EQ(2, rt_handler->ContactLocal(kademlia_id));
   ASSERT_EQ(0, rt_handler->AddTuple(tuple_to_store));
   ASSERT_EQ(0, rt_handler->UpdateContactLocal(kademlia_id, bad_local_ip, 0));

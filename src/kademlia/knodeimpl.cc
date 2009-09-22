@@ -598,8 +598,7 @@ void KNodeImpl::Leave() {
       addcontacts_routine_->join();
       SaveBootstrapContacts();
       prouting_table_->Clear();
-      base::PDRoutingTable::getInstance()[boost::lexical_cast<std::string>(
-          host_port_)]->Clear();
+      (*base::PDRoutingTable::getInstance())[base::itos(host_port_)]->Clear();
     }
     stopping_ = false;
   }
@@ -1216,7 +1215,7 @@ int KNodeImpl::AddContact(Contact new_contact, const float & rtt,
                                     rtt,
                                     0,
                                     0);
-    base::PDRoutingTable::getInstance()[boost::lexical_cast<std::string>(
+    (*base::PDRoutingTable::getInstance())[base::itos(
         host_port_)]->AddTuple(tuple);
     if (result == 2) {
       {
@@ -1349,7 +1348,7 @@ connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
       const std::string &ip, const uint16_t &port, const std::string &ext_ip) {
   if (ip == "" || port == 0)
     return REMOTE;
-  int result = base::PDRoutingTable::getInstance()[
+  int result = (*base::PDRoutingTable::getInstance())[
       boost::lexical_cast<std::string>(host_port_)]->ContactLocal(id);
   connect_to_node conn_type;
   std::string ext_ip_dec;
@@ -1363,12 +1362,12 @@ connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
                     conn_type = REMOTE;
                   } else if (pchannel_manager_->CheckConnection(ip, port)) {
                     conn_type = LOCAL;
-                    base::PDRoutingTable::getInstance()[
+                    (*base::PDRoutingTable::getInstance())[
                         base::itos(host_port_)]->UpdateContactLocal(id, ip,
                         static_cast<int>(conn_type));
                   } else {
                     conn_type = REMOTE;
-                    base::PDRoutingTable::getInstance()[
+                    (*base::PDRoutingTable::getInstance())[
                         base::itos(host_port_)]->UpdateContactLocal(id, ext_ip,
                         static_cast<int>(conn_type));
                   }
@@ -1404,7 +1403,7 @@ void KNodeImpl::UnMapUPnP() {
 
 void KNodeImpl::UpdatePDRTContactToRemote(const std::string &node_id,
                                           const std::string &host_ip) {
-  base::PDRoutingTable::getInstance()[base::itos(host_port_)]->
+  (*base::PDRoutingTable::getInstance())[base::itos(host_port_)]->
       UpdateContactLocal(node_id, host_ip, static_cast<int>(REMOTE));
 }
 
