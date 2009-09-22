@@ -800,6 +800,7 @@ bool TransportImpl::CheckConnection(const std::string &local_ip,
   sockaddr_in remote_addr;
   remote_addr.sin_family = AF_INET;
   remote_addr.sin_port = htons(remote_port);
+
 #ifndef WIN32
   if (inet_pton(AF_INET, remote_ip.c_str(), &remote_addr.sin_addr) <= 0) {
     DLOG(ERROR) << "Invalid remote address " << remote_ip << ":"<< remote_port
@@ -808,7 +809,7 @@ bool TransportImpl::CheckConnection(const std::string &local_ip,
   }
 #else
   if (INADDR_NONE == (remote_addr.sin_addr.s_addr =
-      net_addr(remote_ip.c_str()))) {
+      inet_addr(remote_ip.c_str()))) {
     DLOG(ERROR) << "Invalid remote address " << remote_ip << ":"<< remote_port
         << std::endl;
     return false;
