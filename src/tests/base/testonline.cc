@@ -54,6 +54,7 @@ void Observer4(bool b) {
 
 TEST(OnlineControllerTest, BEH_BASE_SingletonAddress) {
   base::OnlineController *olc1 = base::OnlineController::instance();
+  olc1->Reset();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
   olc1 = olc2 = NULL;
@@ -61,6 +62,7 @@ TEST(OnlineControllerTest, BEH_BASE_SingletonAddress) {
 
 TEST(OnlineControllerTest, BEH_BASE_OnlineReset) {
   base::OnlineController *olc1 = base::OnlineController::instance();
+  olc1->Reset();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
   ASSERT_FALSE(olc1->Online(0));
@@ -79,6 +81,7 @@ TEST(OnlineControllerTest, BEH_BASE_OnlineReset) {
 
 TEST(OnlineControllerTest, BEH_BASE_SetGetOnline) {
   base::OnlineController *olc1 = base::OnlineController::instance();
+  olc1->Reset();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
   ASSERT_FALSE(olc1->Online(0));
@@ -106,6 +109,7 @@ TEST(OnlineControllerTest, BEH_BASE_SetGetOnline) {
 
 TEST(OnlineControllerTest, BEH_BASE_ThreadedSetGetOnline) {
   base::OnlineController *olc1 = base::OnlineController::instance();
+  olc1->Reset();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
   ASSERT_FALSE(olc1->Online(0));
@@ -137,6 +141,7 @@ TEST(OnlineControllerTest, BEH_BASE_ThreadedSetGetOnline) {
 
 TEST(OnlineControllerTest, BEH_BASE_ObserverRegistration) {
   base::OnlineController *olc1 = base::OnlineController::instance();
+  olc1->Reset();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
   ASSERT_FALSE(olc1->Online(0));
@@ -174,6 +179,7 @@ TEST(OnlineControllerTest, BEH_BASE_ObserverRegistration) {
 
 TEST(OnlineControllerTest, BEH_BASE_MultipleObserverRegistration) {
   base::OnlineController *olc1 = base::OnlineController::instance();
+  olc1->Reset();
   base::OnlineController *olc2 = base::OnlineController::instance();
   ASSERT_EQ(olc1, olc2);
   ASSERT_FALSE(olc1->Online(0));
@@ -219,6 +225,7 @@ TEST(OnlineControllerTest, BEH_BASE_MultipleObserverRegistration) {
 TEST(OnlineControllerTest, BEH_BASE_GroupedObserverRegistration) {
   printf("Zeroth.\n");
   base::OnlineController *olc = base::OnlineController::instance();
+  olc->Reset();
 
   ASSERT_EQ(0, olc->ObserversCount());
   ASSERT_EQ(0, olc->ObserversInGroupCount(0));

@@ -64,12 +64,17 @@ bool OnlineController::UnregisterObserver(boost::uint16_t id) {
 }
 
 void OnlineController::UnregisterGroup(const boost::uint16_t &group) {
+  bool finished = false;
   boost::mutex::scoped_lock loch(ol_mutex_);
-  for (std::map<boost::uint16_t, GroupedObserver>::iterator it =
-       observers_.begin(); it != observers_.end(); ++it) {
-    if ((*it).second.first == group) {
-      observers_.erase(it);
-      it = observers_.begin();
+  while (!finished) {
+    finished = true;
+    for (std::map<boost::uint16_t, GroupedObserver>::iterator it =
+         observers_.begin(); it != observers_.end(); ++it) {
+      if ((*it).second.first == group) {
+        observers_.erase(it);
+        finished = false;
+        break;
+      }
     }
   }
 }
