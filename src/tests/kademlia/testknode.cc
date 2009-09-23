@@ -42,7 +42,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <list>
 #include <set>
 
-#include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"

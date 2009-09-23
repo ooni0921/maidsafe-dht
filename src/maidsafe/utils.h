@@ -41,6 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 #include <string>
 #include <vector>
+#include "boost/mp_math/mp_int.hpp"  // NB - This is NOT an accepted boost lib.
 
 namespace base {
 
@@ -78,5 +79,18 @@ std::string StrToLwr(const std::string &string_);
 bool ValidateName(const std::string &str);
 
 }  // namespace base
+
+namespace kad {
+typedef boost::mp_math::mp_int<> BigInt;
+
+BigInt StrToBigInt(const std::string &key);
+// kademlia distance the input of the kademlia keys must not be encoded
+BigInt kademlia_distance(const std::string &key_one,
+                         const std::string &key_two);
+std::string random_kademlia_id(const BigInt &min_range,
+                               const BigInt &max_range);
+std::string client_node_id();
+std::string vault_random_id();
+}  // namespace kad
 
 #endif  // MAIDSAFE_UTILS_H_

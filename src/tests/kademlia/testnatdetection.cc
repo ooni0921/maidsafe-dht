@@ -32,7 +32,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
 #include "kademlia/kadservice.h"
-#include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"

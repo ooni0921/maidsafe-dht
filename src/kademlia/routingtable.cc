@@ -28,7 +28,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 #include "kademlia/routingtable.h"
 #include "kademlia/kbucket.h"
-#include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace kad {
