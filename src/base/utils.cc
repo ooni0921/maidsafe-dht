@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <limits>
 #include "base/config.h"
+#include "kademlia/knodeimpl.h"
 #include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/utils.h"
 
@@ -545,5 +546,19 @@ std::string vault_random_id() {
   max_range--;
   return random_kademlia_id(min_range, max_range);
 }
+
+void InsertKadContact(const std::string &key,
+                      const Contact &new_contact,
+                      std::vector<Contact> *contacts) {
+  std::list<kad::Contact> contact_list(contacts->begin(), contacts->end());
+  contact_list.push_back(new_contact);
+  SortContactList(&contact_list, key);
+  contacts->clear();
+  for (std::list<Contact>::iterator it = contact_list.begin();
+       it != contact_list.end(); ++it) {
+    contacts->push_back(*it);
+  }
+}
+
 }  // namespace kad
 

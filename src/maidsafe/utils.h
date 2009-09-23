@@ -81,6 +81,9 @@ bool ValidateName(const std::string &str);
 }  // namespace base
 
 namespace kad {
+
+class Contact;
+
 typedef boost::mp_math::mp_int<> BigInt;
 
 BigInt StrToBigInt(const std::string &key);
@@ -91,6 +94,12 @@ std::string random_kademlia_id(const BigInt &min_range,
                                const BigInt &max_range);
 std::string client_node_id();
 std::string vault_random_id();
+
+// Add a kad Contact and sort the vector by kademlia distance to key.
+void InsertKadContact(const std::string &key,
+                      const Contact &new_contact,
+                      std::vector<Contact> *contacts);
+
 }  // namespace kad
 
 #endif  // MAIDSAFE_UTILS_H_
