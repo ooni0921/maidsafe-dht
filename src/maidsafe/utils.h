@@ -41,7 +41,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 #include <string>
 #include <vector>
-#include "boost/mp_math/mp_int.hpp"  // NB - This is NOT an accepted boost lib.
+
+// Forward declaration
+namespace kad {
+class Contact;
+}  // namespace kad
 
 namespace base {
 
@@ -78,28 +82,10 @@ std::string StrToLwr(const std::string &string_);
 // Check for disallowed characters for filenames.
 bool ValidateName(const std::string &str);
 
-}  // namespace base
-
-namespace kad {
-
-class Contact;
-
-typedef boost::mp_math::mp_int<> BigInt;
-
-BigInt StrToBigInt(const std::string &key);
-// kademlia distance the input of the kademlia keys must not be encoded
-BigInt kademlia_distance(const std::string &key_one,
-                         const std::string &key_two);
-std::string random_kademlia_id(const BigInt &min_range,
-                               const BigInt &max_range);
-std::string client_node_id();
-std::string vault_random_id();
-
-// Add a kad Contact and sort the vector by kademlia distance to key.
+// Add a kad Contact to the vector & sort ascending by kademlia distance to key.
 void InsertKadContact(const std::string &key,
-                      const Contact &new_contact,
-                      std::vector<Contact> *contacts);
-
-}  // namespace kad
+                      const kad::Contact &new_contact,
+                      std::vector<kad::Contact> *contacts);
+}  // namespace base
 
 #endif  // MAIDSAFE_UTILS_H_

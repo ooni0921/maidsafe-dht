@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/config.h"
 #include "kademlia/kadservice.h"
 #include "kademlia/kadrpc.h"
+#include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
 #include "maidsafe/alternativestore.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -301,10 +302,15 @@ bool KadService::ValidateSignedRequest(const std::string &public_key,
     return true;
   crypto::Crypto checker;
   checker.set_symm_algorithm(crypto::AES_256);
-  checker.set_hash_algorithm(crypto::SHA_512);
-  return checker.AsymCheckSig(checker.Hash(public_key + signed_public_key +
+  if (checker.AsymCheckSig(public_key, signed_public_key, public_key,
+                           crypto::STRING_STRING)) {
+    checker.set_hash_algorithm(crypto::SHA_512);
+    return checker.AsymCheckSig(checker.Hash(public_key + signed_public_key +
       key, "", crypto::STRING_STRING, true), signed_request, public_key,
       crypto::STRING_STRING);
+  } else {
+    return false;
+  }
 }
 
 bool KadService::GetSender(const ContactInfo &sender_info, Contact *sender) {

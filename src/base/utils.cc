@@ -492,73 +492,18 @@ std::vector<std::string> get_local_addresses() {
   }
   return addresses;
 }
-}  // namespace base
-
-namespace kad {
-BigInt StrToBigInt(const std::string &key) {
-  std::string enc_key;
-  base::encode_to_hex(key, &enc_key);
-  enc_key = "0x" + enc_key;
-  BigInt value(enc_key);
-  return value;
-}
-
-BigInt kademlia_distance(const std::string &key_one,
-    const std::string &key_two) {
-  BigInt value_one = StrToBigInt(key_one);
-  BigInt value_two = StrToBigInt(key_two);
-  return value_one ^ value_two;
-}
-
-std::string random_kademlia_id(const BigInt &min_range,
-    const BigInt &max_range) {
-  boost::mt19937 gen;
-  gen.seed(static_cast<unsigned int>(base::random_32bit_uinteger()\
-    ^static_cast<unsigned int>(std::time(0))));
-  boost::mp_math::uniform_mp_int<> big_random(0, max_range - min_range);
-  BigInt rand_num = big_random(gen);
-  rand_num = rand_num % (max_range - min_range) + min_range;
-  if (rand_num >= max_range)
-    rand_num = max_range - 1;
-  if (rand_num < min_range)
-    rand_num = min_range;
-  std::ostringstream os;
-  os.setf(std::ios_base::hex, std::ios_base::basefield);
-  os << rand_num;
-  std::string result;
-  std::string temp = os.str();
-  if (temp.size() < 2 * kKeySizeBytes) {
-    temp = std::string(2 * kKeySizeBytes - temp.size(), '0') + temp;
-  }
-  base::decode_from_hex(temp, &result);
-  return result;
-}
-
-std::string client_node_id() {
-  std::string id(kKeySizeBytes, '\0');
-  return id;
-}
-
-std::string vault_random_id() {
-  BigInt min_range(0);
-  BigInt max_range(2);
-  max_range.pow2(kKeySizeBytes*8);
-  max_range--;
-  return random_kademlia_id(min_range, max_range);
-}
 
 void InsertKadContact(const std::string &key,
-                      const Contact &new_contact,
-                      std::vector<Contact> *contacts) {
+                      const kad::Contact &new_contact,
+                      std::vector<kad::Contact> *contacts) {
   std::list<kad::Contact> contact_list(contacts->begin(), contacts->end());
   contact_list.push_back(new_contact);
   SortContactList(&contact_list, key);
   contacts->clear();
-  for (std::list<Contact>::iterator it = contact_list.begin();
+  for (std::list<kad::Contact>::iterator it = contact_list.begin();
        it != contact_list.end(); ++it) {
     contacts->push_back(*it);
   }
 }
 
-}  // namespace kad
-
+}  // namespace base

@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 
+#include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace kad {

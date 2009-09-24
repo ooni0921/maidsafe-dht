@@ -26,6 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
+#include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe-dht.h"
 
 bool InRange(const std::string &key, const kad::BigInt &min_range,
@@ -154,7 +155,7 @@ TEST(KadUtilsTest, BEH_KAD_InsertKadContact) {
 //  for (int i = 0; i < 10; ++i)
 //    printf("ID %i - %s\n", i, contacts.at(i).node_id().c_str());
 //  printf("\n");
-  kad::InsertKadContact(key, new_contact, &contacts);
+  base::InsertKadContact(key, new_contact, &contacts);
   ASSERT_EQ(size_t(11), contacts.size());
 //  for (int i = 0; i < 11; ++i) {
 //    printf("ID %i - %s\n", i, contacts.at(i).node_id().c_str());

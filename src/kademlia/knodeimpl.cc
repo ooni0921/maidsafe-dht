@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>  // NOLINT
 #include <vector>
 #include "base/config.h"
+#include "kademlia/kadutils.h"
 #include "kademlia/kadservice.h"
 #include "maidsafe/alternativestore.h"
 #include "maidsafe/maidsafe-dht.h"
