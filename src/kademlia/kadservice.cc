@@ -302,15 +302,10 @@ bool KadService::ValidateSignedRequest(const std::string &public_key,
     return true;
   crypto::Crypto checker;
   checker.set_symm_algorithm(crypto::AES_256);
-  if (checker.AsymCheckSig(public_key, signed_public_key, public_key,
-                           crypto::STRING_STRING)) {
-    checker.set_hash_algorithm(crypto::SHA_512);
-    return checker.AsymCheckSig(checker.Hash(public_key + signed_public_key +
-      key, "", crypto::STRING_STRING, true), signed_request, public_key,
+  checker.set_hash_algorithm(crypto::SHA_512);
+  return checker.AsymCheckSig(checker.Hash(public_key + signed_public_key + key,
+      "", crypto::STRING_STRING, true), signed_request, public_key,
       crypto::STRING_STRING);
-  } else {
-    return false;
-  }
 }
 
 bool KadService::GetSender(const ContactInfo &sender_info, Contact *sender) {
