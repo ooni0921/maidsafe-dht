@@ -13,9 +13,7 @@
 /api.h/1.23/Thu Jun 18 22:58:48 2009//
 /core.h/1.30/Thu Jun 18 22:58:48 2009//
 /api.cpp/1.76/Result of merge+Wed Sep  9 15:54:11 2009//
-/buffer.cpp/1.32/Wed Sep  9 15:54:11 2009//
 /cache.cpp/1.2/Wed Sep  9 15:54:11 2009//
-/channel.cpp/1.11/Wed Sep  9 15:54:11 2009//
 /common.h/1.13/Result of merge+Wed Sep  9 15:54:13 2009//
 /packet.cpp/1.10/Wed Sep  9 15:54:13 2009//
 /queue.cpp/1.44/Wed Sep  9 15:54:13 2009//
@@ -24,4 +22,6 @@
 /common.cpp/1.23/Result of merge//
 /core.cpp/1.106/Mon Sep 14 22:39:38 2009//
 /udt.h/1.31/Result of merge//
+/buffer.cpp/1.33/Fri Sep 25 17:41:22 2009//
+/channel.cpp/1.12/Fri Sep 25 17:41:23 2009//
 D

@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 05/05/2009
+   Yunhong Gu, last updated 09/25/2009
 *****************************************************************************/
 
 #include <cstring>
@@ -540,6 +540,13 @@ bool CRcvBuffer::scanMsg(int& p, int& q, bool& passack)
    //skip all bad msgs at the beginning
    while (m_iStartPos != m_iLastAckPos)
    {
+      if (NULL == m_pUnit[m_iStartPos])
+      {
+         if (++ m_iStartPos == m_iSize)
+            m_iStartPos = 0;
+         continue;
+      }
+
       if ((1 == m_pUnit[m_iStartPos]->m_iFlag) && (m_pUnit[m_iStartPos]->m_Packet.getMsgBoundary() > 1))
          break;
 
