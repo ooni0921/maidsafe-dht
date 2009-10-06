@@ -119,6 +119,11 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
 void KadService::Ping(google::protobuf::RpcController *controller,
       const PingRequest *request, PingResponse *response,
       google::protobuf::Closure *done) {
+  if (!knode_->is_joined()) {
+    response->set_result(kRpcResultFailure);
+    done->Run();
+    return;
+  }
   Contact sender;
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
@@ -143,6 +148,11 @@ void KadService::Ping(google::protobuf::RpcController *controller,
 void KadService::FindNode(google::protobuf::RpcController *controller,
       const FindRequest *request, FindResponse *response,
       google::protobuf::Closure *done) {
+  if (!knode_->is_joined()) {
+    response->set_result(kRpcResultFailure);
+    done->Run();
+    return;
+  }
   Contact sender;
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
@@ -185,6 +195,11 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
 void KadService::FindValue(google::protobuf::RpcController *controller,
       const FindRequest *request, FindResponse *response,
       google::protobuf::Closure *done) {
+  if (!knode_->is_joined()) {
+    response->set_result(kRpcResultFailure);
+    done->Run();
+    return;
+  }
   Contact sender;
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
@@ -237,6 +252,11 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
 void KadService::Store(google::protobuf::RpcController *controller,
       const StoreRequest *request, StoreResponse *response,
       google::protobuf::Closure *done) {
+  if (!knode_->is_joined()) {
+    response->set_result(kRpcResultFailure);
+    done->Run();
+    return;
+  }
   Contact sender;
   rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
         (controller);
@@ -264,6 +284,11 @@ void KadService::Store(google::protobuf::RpcController *controller,
 void KadService::Downlist(google::protobuf::RpcController *controller,
       const DownlistRequest *request, DownlistResponse *response,
       google::protobuf::Closure *done) {
+  if (!knode_->is_joined()) {
+    response->set_result(kRpcResultFailure);
+    done->Run();
+    return;
+  }
   Contact sender;
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
@@ -412,10 +437,10 @@ void KadService::NatDetectionPing(google::protobuf::RpcController *controller,
   done->Run();
 }
 
-void KadService::Bootstrap(google::protobuf::RpcController *controller,
+void KadService::Bootstrap(google::protobuf::RpcController *,
       const BootstrapRequest *request, BootstrapResponse *response,
       google::protobuf::Closure *done) {
-  if (!request->IsInitialized()) {
+  if (!request->IsInitialized() || !knode_->is_joined()) {
     response->set_result(kRpcResultFailure);
     done->Run();
     return;

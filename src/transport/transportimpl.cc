@@ -863,7 +863,7 @@ int TransportImpl::ConnectToSend(const std::string &remote_ip,
       int conn_result = Connect(&skt, remote_ip, remote_port, false);
       if (conn_result != 0) {
         DLOG(ERROR) << "(" << listening_port_ << ") Transport::ConnectToSend "
-            << "failed to connect to remote port" << remote_port << std::endl;
+            << "failed to connect to remote port " << remote_port << std::endl;
         UDT::close(skt);
         return conn_result;
       }

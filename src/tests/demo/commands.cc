@@ -352,7 +352,7 @@ void Commands::Store50Values(const std::string &prefix) {
     key = cryobj_.Hash(prefix + boost::lexical_cast<std::string>(i), "",
         crypto::STRING_STRING, false);
     value = "";
-    for (int j = 0; j < 1024*10; j++)
+    for (int j = 0; j < 1024*100; j++)
       value += prefix + boost::lexical_cast<std::string>(i);
       node_->StoreValue(key, value, 1040*60, boost::bind(
             &Commands::Store50Callback, this, _1, prefix +

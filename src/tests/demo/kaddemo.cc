@@ -132,6 +132,7 @@ int main(int argc, char **argv) {
     std::string logpath, kadconfigpath, bs_ip, bs_id, ext_ip, configfile,
         bs_local_ip;
     boost::uint16_t bs_port, bs_local_port, port(0), ext_port;
+    int refresh_time;
     bool first_node = false;
     po::options_description desc("Options");
     desc.add_options()
@@ -156,6 +157,8 @@ int main(int argc, char **argv) {
           "Node's external ip.  Use only when it is the first node in the network.")
       ("noconsole", po::bool_switch(),
         "Do not have access to kademlia functions (store/load/ping) after node startup.")
+      ("refresh_time,r", po::value(&refresh_time),
+          "Time in minutes to refresh values and kbuckets.")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -179,8 +182,15 @@ int main(int argc, char **argv) {
     conflicting_options(vm, "bs_id", "externalip");
     conflicting_options(vm, "verbose", "logfilepath");
 
-    if(vm.count("externalip"))
+    if (vm.count("externalip"))
       first_node = true;
+
+    if (vm.count("refresh_time")) {
+      refresh_time = vm["refresh_time"].as<int>();
+      refresh_time = refresh_time * 60;
+    } else {
+      refresh_time = kad::kRefreshTime;
+    }
 
     // checking if path of kadconfigfile exists
     if (vm.count("kadconfigfile")) {
@@ -247,7 +257,8 @@ int main(int argc, char **argv) {
       type = kad::CLIENT;
     else
       type = kad::VAULT;
-    kad::KNode node(chmanager, type, "", "", vm["port_fw"].as<bool>(),
+    kad::KNode node(chmanager, type, kad::K, kad::kAlpha, kad::kBeta,
+        refresh_time, "", "", vm["port_fw"].as<bool>(),
         vm["upnp"].as<bool>());
     if (0 != chmanager->StartTransport(port, boost::bind(
           &kad::KNode::HandleDeadRendezvousServer, &node, _1))) {

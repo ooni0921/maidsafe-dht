@@ -276,7 +276,7 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
       AddReqToTimer(req_id, timeout);
     } else {
       DLOG(INFO) << external_port_ << "Request " << req_id <<
-          "times out.  Connection ID: " << connection_id << std::endl;
+          " times out.  Connection ID: " << connection_id << std::endl;
       // call back without modifying the response
       google::protobuf::Closure* done = (*it).second.callback;
       (*it).second.ctrl->SetFailed(kTimeOut);

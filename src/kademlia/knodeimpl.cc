@@ -487,8 +487,7 @@ void KNodeImpl::Join(const std::string &node_id,
 
   // Set kad_config_path_
   kad_config_path_ = fs::path(kad_config_file, fs::native);
-  boost::shared_ptr<RoutingTable> rtng_table_(new RoutingTable(node_id_));
-  prouting_table_ = rtng_table_;
+  prouting_table_.reset(new RoutingTable(node_id_));
   Join_RefreshNode(cb, got_external_address);
 }
 
@@ -1300,6 +1299,8 @@ void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
   if (stopping_)
     return;
   if (dead_server) {
+    DLOG(WARNING) << "(" << local_host_port_ << ") -- Failed to ping RV server"
+      << std::endl;
     Leave();
     stopping_ = false;
     Join(node_id_, kad_config_path_.string(),
@@ -1316,21 +1317,22 @@ void KNodeImpl::ReBootstrapping_Callback(const std::string &result) {
       local_result.result() == kRpcResultFailure) {
     // TODO(David): who should we inform if after trying to bootstrap again
     // because the rendezvous server died, the bootstrap operation fails?
+    DLOG(WARNING) << "(" << local_host_port_ << ") -- Failed to rejoin ..."
+        << " Retrying."<< std::endl;
     is_joined_ = false;
     stopping_ = false;
     Join(node_id_, kad_config_path_.string(),
          boost::bind(&KNodeImpl::ReBootstrapping_Callback, this, _1));
   } else {
+    DLOG(INFO) << "(" << local_host_port_ << ") Rejoining successful."
+        << std::endl;
     is_joined_ = true;
   }
 }
 
 void KNodeImpl::RegisterKadService() {
-  boost::shared_ptr<KadService> remote_service_(new KadService(this));
-  premote_service_ = remote_service_;
-  boost::shared_ptr<rpcprotocol::Channel>
-      svc_channel_(new rpcprotocol::Channel(pchannel_manager_.get()));
-  pservice_channel_ = svc_channel_;
+  premote_service_.reset(new KadService(this));
+  pservice_channel_.reset(new rpcprotocol::Channel(pchannel_manager_.get()));
   pservice_channel_->SetService(premote_service_.get());
   pchannel_manager_->RegisterChannel(
       premote_service_->GetDescriptor()->name(), pservice_channel_.get());
@@ -2123,7 +2125,7 @@ void KNodeImpl::RefreshValue(const std::string &key,
   }
 }
 
-void KNodeImpl::RefreshValueCallback(const std::string &result,
+void KNodeImpl::RefreshValueCallback(const std::string &,
       const std::string &key, const std::string &value,
       const boost::uint32_t &ttl, boost::shared_ptr<int> refreshes_done,
       const int &total_refreshes) {
