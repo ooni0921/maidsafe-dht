@@ -42,7 +42,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/config.h"
 #include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/utils.h"
-#include "protobuf/rsa_key_pair.pb.h"
 
 namespace crypto {
 
@@ -564,37 +563,23 @@ std::string Crypto::Uncompress(const std::string &input,
 }
 
 void RsaKeyPair::GenerateKeys(unsigned int keySize) {
-  crypto::RsaKeyPairCollection rsa_key_pair_collection;
-  std::string file = "KeyPairs.kp";
-  std::fstream input(file.c_str(), std::ios::in | std::ios::binary);
-  rsa_key_pair_collection.ParseFromIstream(&input);
-//  printf("No. of keys: %i\n", rsa_key_pair_collection.rsa_key_pair_size());
-  if (rsa_key_pair_collection.rsa_key_pair_size() > 0) {
-    uint32_t index = base::random_32bit_uinteger();
-//    printf("Index %i\n", index);
-    index = index % rsa_key_pair_collection.rsa_key_pair_size();
-//    printf("Chose index %i\n", index);
-    set_private_key(rsa_key_pair_collection.rsa_key_pair(index).private_key());
-    set_public_key(rsa_key_pair_collection.rsa_key_pair(index).public_key());
-  } else {
-    // CryptoPP::AutoSeededRandomPool rand_pool;
-    CryptoPP::RandomPool rand_pool;
-    std::string seed = base::RandomString(keySize);
-    rand_pool.IncorporateEntropy(reinterpret_cast<const byte *>(seed.c_str()),
-                                                                seed.size());
+  // CryptoPP::AutoSeededRandomPool rand_pool;
+  CryptoPP::RandomPool rand_pool;
+  std::string seed = base::RandomString(keySize);
+  rand_pool.IncorporateEntropy(reinterpret_cast<const byte *>(seed.c_str()),
+                                                              seed.size());
 
-    CryptoPP::RSAES_OAEP_SHA_Decryptor priv(rand_pool, keySize);  // 256 bytes
-  //  CryptoPP::HexEncoder privKey(new CryptoPP::StringSink(private_key_), false);
-    CryptoPP::StringSink privKey(private_key_);
-    priv.DEREncode(privKey);
-    privKey.MessageEnd();
+  CryptoPP::RSAES_OAEP_SHA_Decryptor priv(rand_pool, keySize);  // 256 bytes
+//  CryptoPP::HexEncoder privKey(new CryptoPP::StringSink(private_key_), false);
+  CryptoPP::StringSink privKey(private_key_);
+  priv.DEREncode(privKey);
+  privKey.MessageEnd();
 
-    CryptoPP::RSAES_OAEP_SHA_Encryptor pub(priv);
-  //  CryptoPP::HexEncoder pubKey(new CryptoPP::StringSink(public_key_), false);
-    CryptoPP::StringSink pubKey(public_key_);
-    pub.DEREncode(pubKey);
-    pubKey.MessageEnd();
-  }
+  CryptoPP::RSAES_OAEP_SHA_Encryptor pub(priv);
+//  CryptoPP::HexEncoder pubKey(new CryptoPP::StringSink(public_key_), false);
+  CryptoPP::StringSink pubKey(public_key_);
+  pub.DEREncode(pubKey);
+  pubKey.MessageEnd();
 }
 
 }  // namespace crypto
