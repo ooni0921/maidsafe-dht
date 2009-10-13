@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
 #include "maidsafe/alternativestore.h"
-#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/knode.h"
 #include "rpcprotocol/channelimpl.h"
 #include "protobuf/signed_kadvalue.pb.h"
 

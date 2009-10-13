@@ -134,26 +134,18 @@ int ChannelManagerImpl::StartTransport(boost::uint16_t port,
         (base::random_32bit_uinteger() % (kMaxPort - kMinPort + 1)) + kMinPort;
   current_request_id_ =
       base::generate_next_transaction_id(current_request_id_)+(port*100);
-  // iterate once through ports 5000 to 65535 until success, starting at random
-  // port above
-  boost::uint16_t count_(0);
-  boost::uint16_t try_port_ = port;
-  while (count_ <= (kMaxPort - kMinPort + 1)) {
-    if (0 == ptransport_->Start(try_port_,
-        boost::bind(&ChannelManagerImpl::MessageArrive, this, _1, _2, _3),
-        notify_dead_server, boost::bind(&ChannelManagerImpl::RequestSent,
-        this, _1, _2))) {
-      start_res_ = 0;
-      is_started_ = true;
-      external_port_ = ptransport_->listening_port();
-      online_status_id_ = base::OnlineController::instance()->RegisterObserver(
-          external_port_, boost::bind(&ChannelManagerImpl::OnlineStatusChanged,
-          this, _1));
-      break;
-    }
-    count_++;
-    try_port_ = ((port + count_) % (kMaxPort - kMinPort + 1)) + kMinPort;
+  if (0 == ptransport_->Start(port,
+      boost::bind(&ChannelManagerImpl::MessageArrive, this, _1, _2, _3),
+      notify_dead_server, boost::bind(&ChannelManagerImpl::RequestSent,
+      this, _1, _2))) {
+    start_res_ = 0;
+    is_started_ = true;
+    external_port_ = ptransport_->listening_port();
+    online_status_id_ = base::OnlineController::instance()->RegisterObserver(
+        external_port_, boost::bind(&ChannelManagerImpl::OnlineStatusChanged,
+        this, _1));
   }
+
   return start_res_;
 }
 
@@ -271,7 +263,7 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
     if (ptransport_->HasReceivedData(connection_id, &size_rec)) {
       it->second.size_rec = size_rec;
       req_mutex_.unlock();
-      DLOG(INFO) << external_port_ << "Reseting timeout for RPC ID: " <<
+      DLOG(INFO) << external_port_ << " -- Reseting timeout for RPC ID: " <<
           req_id << ". Connection ID: " << connection_id << std::endl;
       AddReqToTimer(req_id, timeout);
     } else {
@@ -372,6 +364,15 @@ int ChannelManagerImpl::StartLocalTransport(const boost::uint16_t &port) {
     is_started_ = true;
   }
   return result;
+}
+
+void ChannelManagerImpl::StartPingServer(const bool &dir_connected,
+      const std::string &server_ip, const boost::uint16_t &server_port) {
+  ptransport_->StartPingRendezvous(dir_connected, server_ip, server_port);
+}
+
+void ChannelManagerImpl::StopPingServer() {
+  ptransport_->StopPingRendezvous();
 }
 
 void ChannelManagerImpl::OnlineStatusChanged(const bool &online) {

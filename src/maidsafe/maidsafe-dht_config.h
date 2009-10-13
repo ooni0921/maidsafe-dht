@@ -204,7 +204,6 @@ class Contact {
   boost::uint16_t local_port_;
 };
 
-class ContactInfo;
 }  // namespace kad
 
 

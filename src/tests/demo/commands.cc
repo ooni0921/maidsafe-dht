@@ -239,9 +239,12 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
     } else {
       boost::uint32_t ttl = boost::lexical_cast<boost::uint32_t>(args[2]);
-      std::string key = base::DecodeFromHex(args[0]);
-      if (args[0].size() != 128)
-        key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
+      std::string key;
+      if (args[0].size() != 128) {
+        key = base::DecodeFromHex(args[0]);
+        if (key.size()*2 != std::string(args[0]).size())
+          key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
+      }
       node_->StoreValue(key, content, ttl*60, boost::bind(
           &Commands::StoreCallback, this, _1, key, ttl));
       *wait_for_cb = true;
@@ -252,9 +255,12 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       printf("Invalid number of arguments for storevalue command\n");
     } else {
       boost::uint32_t ttl = base::stoi(args[2]);
-      std::string key = base::DecodeFromHex(args[0]);
-      if (args[0].size() != 128)
-        key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
+      std::string key;
+      if (args[0].size() != 128) {
+        key = base::DecodeFromHex(args[0]);
+        if (key.size()*2 != args[0].size())
+          key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
+      }
       node_->StoreValue(key, args[1], ttl*60, boost::bind(
           &Commands::StoreCallback, this, _1, key, ttl));
       *wait_for_cb = true;
@@ -264,9 +270,12 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for findvalue command\n");
     } else {
-      std::string key = base::DecodeFromHex(args[0]);
-      if (args[0].size() != 128)
-        key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
+      std::string key;
+      if (args[0].size() != 128) {
+        key = base::DecodeFromHex(args[0]);
+        if (key.size()*2 != args[0].size())
+          key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
+      }
       node_->FindValue(key, false,
           boost::bind(&Commands::FindValueCallback, this, _1, key, false, ""));
       *wait_for_cb = true;
@@ -276,9 +285,12 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for findfile command\n");
     } else {
-      std::string key = base::DecodeFromHex(args[0]);
-      if (args[0].size() != 128)
-        key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
+     std::string key;
+      if (args[0].size() != 128) {
+        key = base::DecodeFromHex(args[0]);
+        if (key.size()*2 != args[0].size())
+          key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
+      }
       node_->FindValue(key, false,
           boost::bind(&Commands::FindValueCallback, this, _1, key, true,
           args[1]));
@@ -290,7 +302,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       printf("Invalid number of arguments for findnode command\n");
     } else {
       std::string key = base::DecodeFromHex(args[0]);
-      if (args[0].size() == 128) {
+      if (args[0].size() == 128 && key.size()*2 == args[0].size()) {
         node_->FindNode(key, boost::bind(&Commands::FindNodeCallback, this, _1,
             key), false);
         *wait_for_cb = true;
@@ -305,7 +317,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       printf("Invalid number of arguments for pingnode command\n");
     } else {
       std::string key = base::DecodeFromHex(args[0]);
-      if (args[0].size() == 128) {
+      if (args[0].size() == 128 && key.size()*2 == args[0].size()) {
         node_->Ping(key, boost::bind(&Commands::PingCallback, this, _1,
             key));
         *wait_for_cb = true;

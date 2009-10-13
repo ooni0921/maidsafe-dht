@@ -32,12 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <vector>
-#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/channel.h"
 #include "protobuf/kademlia_service.pb.h"
-
-namespace rpcprotocol {
-class ChannelManager;
-}
 
 namespace kad {
 // different RPCs have different timeouts, normally it is 5 seconds

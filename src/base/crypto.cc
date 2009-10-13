@@ -564,19 +564,19 @@ std::string Crypto::Uncompress(const std::string &input,
 
 void RsaKeyPair::GenerateKeys(unsigned int keySize) {
   // CryptoPP::AutoSeededRandomPool rand_pool;
+  private_key_ = "";
+  public_key_ = "";
   CryptoPP::RandomPool rand_pool;
   std::string seed = base::RandomString(keySize);
   rand_pool.IncorporateEntropy(reinterpret_cast<const byte *>(seed.c_str()),
                                                               seed.size());
 
   CryptoPP::RSAES_OAEP_SHA_Decryptor priv(rand_pool, keySize);  // 256 bytes
-//  CryptoPP::HexEncoder privKey(new CryptoPP::StringSink(private_key_), false);
   CryptoPP::StringSink privKey(private_key_);
   priv.DEREncode(privKey);
   privKey.MessageEnd();
 
   CryptoPP::RSAES_OAEP_SHA_Encryptor pub(priv);
-//  CryptoPP::HexEncoder pubKey(new CryptoPP::StringSink(public_key_), false);
   CryptoPP::StringSink pubKey(public_key_);
   pub.DEREncode(pubKey);
   pubKey.MessageEnd();

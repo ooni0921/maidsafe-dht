@@ -26,7 +26,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "kademlia/kbucket.h"
-#include "maidsafe/maidsafe-dht_config.h"
 
 
 namespace kad {

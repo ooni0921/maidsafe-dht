@@ -418,6 +418,8 @@ maidsafe/utils.h maidsafe/crypto.h maidsafe/routingtable.h
 maidsafe/alternativestore.h protobuf/signed_kadvalue.pb.h
 protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h
 protobuf/general_messages.pb.h maidsafe/online.h maidsafe/config.h
+maidsafe/transport.h maidsafe/channel.h maidsafe/channelmanager.h
+maidsafe/knode.h
         DESTINATION /usr/include/maidsafe)
 install(TARGETS maidsafe-dht
         ARCHIVE

@@ -28,7 +28,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/tokenizer.hpp>
 #include <google/protobuf/descriptor.h>
 #include <typeinfo>
-#include "maidsafe/maidsafe-dht.h"
 #include "protobuf/rpcmessage.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 #include "rpcprotocol/channelimpl.h"

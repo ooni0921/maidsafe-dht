@@ -26,7 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <boost/lexical_cast.hpp>
-#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/contact_info.pb.h"
 
 namespace kad {

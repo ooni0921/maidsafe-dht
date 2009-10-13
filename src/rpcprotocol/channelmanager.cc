@@ -25,9 +25,8 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/channelmanager.h"
 #include "protobuf/general_messages.pb.h"
-#include "protobuf/kademlia_service_messages.pb.h"
 #include "rpcprotocol/channelmanagerimpl.h"
 
 namespace rpcprotocol {
@@ -110,7 +109,7 @@ bool ChannelManager::CheckLocalAddress(const std::string &local_ip,
 
 void ChannelManager::AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout) {
-  return pimpl_->AddTimeOutRequest(connection_id, req_id, timeout);
+  pimpl_->AddTimeOutRequest(connection_id, req_id, timeout);
 }
 
 void ChannelManager::AddChannelId(boost::uint32_t *id) {
@@ -122,11 +121,19 @@ void ChannelManager::RemoveChannelId(const boost::uint32_t &id) {
 }
 
 int ChannelManager::StartLocalTransport(const boost::uint16_t &port) {
-  pimpl_->StartLocalTransport(port);
+  return pimpl_->StartLocalTransport(port);
 }
 
 void ChannelManager::OnlineStatusChanged(const bool &online) {
   pimpl_->OnlineStatusChanged(online);
 }
 
+void ChannelManager::StartPingServer(const bool &dir_connected,
+    const std::string &server_ip, const boost::uint16_t &server_port) {
+  pimpl_->StartPingServer(dir_connected, server_ip, server_port);
+}
+
+void ChannelManager::StopPingServer() {
+  pimpl_->StopPingServer();
+}
 }  // namespace rpcprotocol

@@ -93,6 +93,9 @@ class ChannelManagerImpl {
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout);
   void OnlineStatusChanged(const bool &online);
+  void StartPingServer(const bool &dir_connected, const std::string &server_ip,
+    const boost::uint16_t &server_port);
+  void StopPingServer();
  private:
   void TimerHandler(const boost::uint32_t &req_id);
   void RequestSent(const boost::uint32_t &connection_id, const bool &success);

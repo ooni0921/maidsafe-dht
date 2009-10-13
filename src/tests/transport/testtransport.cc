@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <list>
 #include <string>
-#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/transport.h"
 #include "protobuf/rpcmessage.pb.h"
 #include "transport/transportimpl.h"
 #include "maidsafe/config.h"

@@ -38,11 +38,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kademlia/kadutils.h"
 #include "kademlia/kadservice.h"
 #include "maidsafe/alternativestore.h"
-#include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/utils.h"
+#include "maidsafe/channelmanager.h"
 #include "protobuf/contact_info.pb.h"
 #include "protobuf/signed_kadvalue.pb.h"
 #include "maidsafe/config.h"
+#include "maidsafe/online.h"
 
 namespace fs = boost::filesystem;
 
@@ -234,8 +235,8 @@ void KNodeImpl::Join_Bootstrapping_Iteration_Client(
     host_port_ = result_msg.newcomer_ext_port();
     DLOG(INFO) << "external address " << host_ip_ << ":" << host_port_
         << std::endl;
-    pchannel_manager_->ptransport()->StartPingRendezvous(false,
-        bootstrap_node.host_ip(), bootstrap_node.host_port());
+    pchannel_manager_->StartPingServer(false, bootstrap_node.host_ip(),
+        bootstrap_node.host_port());
     kadrpcs_.set_info(contact_info());
     args->is_callbacked = true;
     StartSearchIteration(node_id_, BOOTSTRAP, args->cb);
@@ -322,8 +323,8 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
       }
     }
 
-    pchannel_manager_->ptransport()->StartPingRendezvous(false,
-        bootstrap_node.host_ip(), bootstrap_node.host_port());
+    pchannel_manager_->StartPingServer(false, bootstrap_node.host_ip(),
+        bootstrap_node.host_port());
     kadrpcs_.set_info(contact_info());
     args->is_callbacked = true;
     StartSearchIteration(node_id_, BOOTSTRAP, args->cb);
@@ -357,8 +358,7 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
       local_result.set_result(kRpcResultSuccess);
       is_joined_ = true;
       // since it is a 1 network node, so it has no rendezvous server to ping
-      pchannel_manager_->ptransport()->StartPingRendezvous(true, rv_ip_,
-          rv_port_);
+      pchannel_manager_->StartPingServer(true, rv_ip_, rv_port_);
       addcontacts_routine_.reset(new boost::thread(&KNodeImpl::CheckAddContacts,
           this));
       if (!refresh_routine_started_) {
@@ -461,8 +461,8 @@ void KNodeImpl::Join(const std::string &node_id,
     return;
   }
   if (host_port_ == 0)
-    host_port_ = pchannel_manager_->ptransport()->listening_port();
-  local_host_port_ = pchannel_manager_->ptransport()->listening_port();
+    host_port_ = pchannel_manager_->external_port();
+  local_host_port_ = pchannel_manager_->external_port();
   // Adding the services
   RegisterKadService();
 
@@ -526,7 +526,7 @@ void KNodeImpl::Join(const std::string &node_id,
     cb(local_result_str);
     return;
   }
-  local_host_port_ = pchannel_manager_->ptransport()->listening_port();
+  local_host_port_ = pchannel_manager_->external_port();
 
   if (use_upnp_) {
     UPnPMap(local_host_port_);
@@ -559,8 +559,7 @@ void KNodeImpl::Join(const std::string &node_id,
 
   is_joined_ = true;
   // since it is a 1 network node, so it has no rendezvous server to ping
-  pchannel_manager_->ptransport()->StartPingRendezvous(true, rv_ip_,
-      rv_port_);
+  pchannel_manager_->StartPingServer(true, rv_ip_, rv_port_);
   addcontacts_routine_.reset(new boost::thread(&KNodeImpl::CheckAddContacts,
       this));
   if (!refresh_routine_started_) {
@@ -594,7 +593,7 @@ void KNodeImpl::Leave() {
       is_joined_ = false;
       ptimer_->CancelAll();
       pchannel_manager_->ClearCallLaters();
-      pchannel_manager_->ptransport()->StopPingRendezvous();
+      pchannel_manager_->StopPingServer();
       UnRegisterKadService();
       pdata_store_->Clear();
       add_ctc_cond_.notify_one();
@@ -818,8 +817,7 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
     // Continues...
     // send RPC to this contact
     ++callback_data.data->index;
-    if (callback_data.data->index >=
-        static_cast<int>(callback_data.data->closest_nodes.size()))
+    if (callback_data.data->index >= callback_data.data->closest_nodes.size())
       return;  // all requested were sent out, wait for the result
     Contact next_node =
         callback_data.data->closest_nodes[callback_data.data->index];
@@ -1302,6 +1300,30 @@ void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
   if (dead_server) {
     DLOG(WARNING) << "(" << local_host_port_ << ") -- Failed to ping RV server"
       << std::endl;
+    if (rv_ip_ == "" && rv_port_ == 0) {
+      // node has no rendezvous server, it does not need to rejoin, just finding
+      // out if it is offline by trying to connect with one of its contacts
+      std::vector<Contact> ctcs, ex_ctcs;
+      for (int i = 0; i < prouting_table_->KbucketSize(); i++) {
+        std::vector<Contact> tmp_ctcs;
+        prouting_table_->GetContacts(i, &tmp_ctcs, ex_ctcs);
+        for (unsigned int j = 0; j < tmp_ctcs.size(); j++)
+          if (tmp_ctcs[j].rendezvous_ip() == "" &&
+              tmp_ctcs[j].rendezvous_port() == 0)
+            ctcs.push_back(tmp_ctcs[j]);
+      }
+      for (unsigned int i = 0; i < ctcs.size(); i++) {
+        // checking connection
+        if (pchannel_manager_->CheckConnection(ctcs[i].host_ip(),
+            ctcs[i].host_port())) {
+          pchannel_manager_->StartPingServer(false, ctcs[i].host_ip(),
+              ctcs[i].host_port());
+          return;
+        }
+      }
+    }
+    // setting status to be offline
+    base::OnlineController::instance()->SetOnline(local_host_port_, false);
     Leave();
     stopping_ = false;
     Join(node_id_, kad_config_path_.string(),
@@ -1443,6 +1465,9 @@ void KNodeImpl::CheckToInsert(const Contact &new_contact) {
   int index = prouting_table_->KBucketIndex(new_contact.node_id());
   Contact last_seen;
   last_seen = prouting_table_->GetLastSeenContact(index);
+  DLOG(INFO) << "Pinging last seen node in routing table to try to insert " <<
+    "to try to insert contact with endpoint " << new_contact.host_ip() << ":"
+    << new_contact.host_port() << std::endl;
   Ping(last_seen, boost::bind(&KNodeImpl::CheckToInsert_Callback, this, _1,
     new_contact.node_id(), new_contact));
 }
@@ -1460,7 +1485,7 @@ void KNodeImpl::CheckToInsert_Callback(const std::string &result,
 }
 
 void KNodeImpl::StopRvPing() {
-  pchannel_manager_->ptransport()->StopPingRendezvous();
+  pchannel_manager_->StopPingServer();
 }
 
 void KNodeImpl::CheckAddContacts() {
@@ -2096,7 +2121,7 @@ bool KNodeImpl::HasRSAKeys() {
 
 boost::uint32_t KNodeImpl::KeyValueTTL(const std::string &key,
       const std::string &value) const {
-  pdata_store_->TimeToLive(key, value);
+  return pdata_store_->TimeToLive(key, value);
 }
 
 void KNodeImpl::RefreshValue(const std::string &key,

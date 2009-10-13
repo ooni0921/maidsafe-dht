@@ -34,12 +34,61 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * notice is removed.                                                          *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
+#ifndef MAIDSAFE_CHANNELMANAGER_H_
+#define MAIDSAFE_CHANNELMANAGER_H_
 
-#include "maidsafe/transport.h"
-#include "maidsafe/channel.h"
-#include "maidsafe/channelmanager.h"
-#include "maidsafe/knode.h"
+#include <string>
+#include "maidsafe/maidsafe-dht_config.h"
 
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+#if MAIDSAFE_DHT_VERSION < 12
+#error This API is not compatible with the installed library.
+#error Please update the maidsafe-dht library.
+#endif
+
+// RPC
+namespace rpcprotocol {
+
+class RpcMessage;
+
+// Ensure that a one-to-one relationship is maintained between channelmanager &
+// knode.
+class ChannelManager {
+ public:
+  ChannelManager();
+  ~ChannelManager();
+  void RegisterChannel(const std::string &service_name, Channel* channel);
+  void UnRegisterChannel(const std::string &service_name);
+  void ClearChannels();
+  void ClearCallLaters();
+  int StartTransport(boost::uint16_t port,
+      boost::function<void(const bool&, const std::string&,
+                           const boost::uint16_t&)> notify_dead_server);
+  int StartLocalTransport(const boost::uint16_t &port);
+  int StopTransport();
+  void CleanUpTransport();
+  void MessageArrive(const RpcMessage &msg,
+      const boost::uint32_t &connection_id, const float &rtt);
+  boost::uint32_t CreateNewId();
+  void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
+  bool DeletePendingRequest(const boost::uint32_t &req_id);
+  void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
+  boost::shared_ptr<transport::Transport> ptransport();
+  boost::uint16_t external_port() const;
+  std::string external_ip() const;
+  bool CheckConnection(const std::string &ip, const uint16_t &port);
+  bool CheckLocalAddress(const std::string &local_ip,
+      const std::string &remote_ip, const uint16_t &remote_port);
+  void AddTimeOutRequest(const boost::uint32_t &connection_id,
+    const boost::uint32_t &req_id, const int &timeout);
+  void AddChannelId(boost::uint32_t *id);
+  void RemoveChannelId(const boost::uint32_t &id);
+  void OnlineStatusChanged(const bool &online);
+  void StartPingServer(const bool &dir_connected, const std::string &server_ip,
+    const boost::uint16_t &server_port);
+  void StopPingServer();
+ private:
+  boost::shared_ptr<ChannelManagerImpl> pimpl_;
+};
+}  // namespace rpcprotocol
+
+#endif  // MAIDSAFE_CHANNELMANAGER_H_

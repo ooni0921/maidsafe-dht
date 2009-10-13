@@ -26,7 +26,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "kademlia/kadrpc.h"
-#include "rpcprotocol/channelimpl.h"
 
 namespace kad {
 

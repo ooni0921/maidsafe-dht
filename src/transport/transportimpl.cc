@@ -29,7 +29,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/lexical_cast.hpp>
 #include <exception>
 #include "transport/transportimpl.h"
-#include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/config.h"
 #include "maidsafe/online.h"
 
@@ -309,18 +308,18 @@ void TransportImpl::ReceiveHandler() {
                 reinterpret_cast<char*>(&size), sizeof(size), 0)) {
               if (UDT::getlasterror().getErrorCode() !=
                   CUDTException::EASYNCRCV) {
-                result = UDT::close((*it).second.u);
-                incoming_sockets_.erase(it);
-                break;
+                UDT::close((*it).second.u);
+                dead_connections_ids.push_back((*it).first);
+                continue;
               }
               continue;
             }
             if (size > 0) {
               (*it).second.expect_size = size;
             } else {
-              result = UDT::close((*it).second.u);
-              incoming_sockets_.erase(it);
-              break;
+              UDT::close((*it).second.u);
+              dead_connections_ids.push_back((*it).first);
+              continue;
             }
           } else {
             if ((*it).second.data == NULL)
@@ -333,9 +332,9 @@ void TransportImpl::ReceiveHandler() {
                 0))) {
               if (UDT::getlasterror().getErrorCode() !=
                   CUDTException::EASYNCRCV) {
-                result = UDT::close((*it).second.u);
-                incoming_sockets_.erase(it);
-                break;
+                UDT::close((*it).second.u);
+                dead_connections_ids.push_back((*it).first);
+                continue;
               }
               continue;
             }

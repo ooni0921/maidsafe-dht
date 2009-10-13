@@ -29,7 +29,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ctime>
 
 #include "kademlia/kadutils.h"
-#include "maidsafe/maidsafe-dht.h"
 
 namespace kad {
 BigInt StrToBigInt(const std::string &key) {

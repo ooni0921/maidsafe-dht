@@ -34,12 +34,59 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * notice is removed.                                                          *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
+#ifndef MAIDSAFE_CHANNEL_H_
+#define MAIDSAFE_CHANNEL_H_
 
-#include "maidsafe/transport.h"
-#include "maidsafe/channel.h"
-#include "maidsafe/channelmanager.h"
-#include "maidsafe/knode.h"
+#include <string>
+#include "maidsafe/maidsafe-dht_config.h"
 
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+#if MAIDSAFE_DHT_VERSION < 12
+#error This API is not compatible with the installed library.
+#error Please update the maidsafe-dht library.
+#endif
+
+// RPC
+namespace rpcprotocol {
+
+class Controller : public google::protobuf::RpcController {
+ public:
+  Controller();
+  ~Controller();
+  void SetFailed(const std::string &failure);
+  void Reset();
+  bool Failed() const;
+  std::string ErrorText() const;
+  void StartCancel();
+  bool IsCanceled() const;
+  void NotifyOnCancel(google::protobuf::Closure*);
+  void set_timeout(const int &seconds);
+  void set_rtt(const float &rtt);
+  void set_req_id(const boost::uint32_t &id);
+  int timeout() const;
+  float rtt() const;
+  boost::uint32_t req_id() const;
+ private:
+  boost::shared_ptr<ControllerImpl> controller_pimpl_;
+};
+
+class Channel : public google::protobuf::RpcChannel {
+ public:
+  explicit Channel(rpcprotocol::ChannelManager *channelmanager);
+  Channel(rpcprotocol::ChannelManager *channelmanager,
+      const std::string &remote_ip, const boost::uint16_t &remote_port,
+      const std::string &local_ip, const boost::uint16_t &local_port,
+      const std::string &rv_ip, const boost::uint16_t &rv_port);
+  ~Channel();
+  void CallMethod(const google::protobuf::MethodDescriptor *method,
+      google::protobuf::RpcController *controller,
+      const google::protobuf::Message *request,
+      google::protobuf::Message *response, google::protobuf::Closure *done);
+  void SetService(google::protobuf::Service* service);
+  void HandleRequest(const RpcMessage &request,
+      const boost::uint32_t &connection_id, const float &rtt);
+ private:
+  boost::shared_ptr<ChannelImpl> pimpl_;
+};
+}  // namespace rpcprotocol
+
+#endif  // MAIDSAFE_CHANNEL_H_
