@@ -465,11 +465,13 @@ void KNodeImpl::Join(const std::string &node_id,
   local_host_port_ = pchannel_manager_->ptransport()->listening_port();
   // Adding the services
   RegisterKadService();
-  std::string dec_id;
-  if (!base::decode_from_hex(node_id, &dec_id))
+
+  std::string dec_id = base::DecodeFromHex(node_id);
+  if (dec_id.size() * 2 != node_id.size())
     node_id_ = node_id;
   else
     node_id_ = dec_id;
+// TODO(Fraser#5#): 2009-10-13 - Replace check above with safer test
   if (type_ == CLIENT) {
     fake_client_node_id_ = client_node_id();
   }
@@ -510,11 +512,13 @@ void KNodeImpl::Join(const std::string &node_id,
   }
 
   RegisterKadService();
-  std::string dec_id;
-  if (!base::decode_from_hex(node_id, &dec_id))
+
+  std::string dec_id = base::DecodeFromHex(node_id);
+  if (dec_id.size() * 2 != node_id.size())
     node_id_ = node_id;
   else
     node_id_ = dec_id;
+// TODO(Fraser#5#): 2009-10-13 - Replace check above with safer test
   if (type_ == CLIENT) {
     // Client nodes can not start a network on their own
     local_result.set_result(kRpcResultFailure);
@@ -632,9 +636,8 @@ void KNodeImpl::SaveBootstrapContacts() {
     std::string node0_id;
     if (!bootstrapping_nodes_.empty()) {
       node0_id = bootstrapping_nodes_[0].node_id();
-      std::string hex_id;
       base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-      base::encode_to_hex(bootstrapping_nodes_[0].node_id(), &hex_id);
+      std::string hex_id = base::EncodeToHex(bootstrapping_nodes_[0].node_id());
       kad_contact->set_node_id(hex_id);
       std::string dec_ext_ip(base::inet_btoa(
           bootstrapping_nodes_[0].host_ip()));
@@ -650,8 +653,7 @@ void KNodeImpl::SaveBootstrapContacts() {
     std::vector<Contact>::iterator it;
     for (it = bs_contacts.begin(); it < bs_contacts.end(); ++it) {
       if (it->node_id() != node0_id) {
-        std::string hex_id;
-        base::encode_to_hex(it->node_id(), &hex_id);
+        std::string hex_id = base::EncodeToHex(it->node_id());
         base::KadConfig::Contact *kad_contact = kad_config.add_contact();
         kad_contact->set_node_id(hex_id);
         std::string dec_ext_ip(base::inet_btoa(it->host_ip()));
@@ -704,8 +706,7 @@ int KNodeImpl::LoadBootstrapContacts() {
   }
   bootstrapping_nodes_.clear();
   for (int i = 0; i < kad_config.contact_size(); ++i) {
-    std::string dec_id;
-    base::decode_from_hex(kad_config.contact(i).node_id(), &dec_id);
+    std::string dec_id = base::DecodeFromHex(kad_config.contact(i).node_id());
     Contact bootstrap_contact(dec_id, kad_config.contact(i).ip(),
         static_cast<uint16_t>(kad_config.contact(i).port()),
         kad_config.contact(i).local_ip(), kad_config.contact(i).local_port());

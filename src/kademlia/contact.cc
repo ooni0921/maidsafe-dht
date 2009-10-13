@@ -135,10 +135,9 @@ std::string Contact::ToString() const {
   if (node_id_ == "" && host_port_ == 0 && host_ip_ == "") {
     return "Empty contact.\n";
   }
-  std::string ser_contact, enc_id;
-  base::encode_to_hex(node_id_, &enc_id);
+  std::string enc_id = base::EncodeToHex(node_id_);
   std::string port(boost::lexical_cast<std::string>(host_port_));
-  ser_contact = "Node_id: " + enc_id + "\n";
+  std::string ser_contact = "Node_id: " + enc_id + "\n";
   std::string dec_ip(base::inet_btoa(host_ip_));
   ser_contact += ("IP address: " + dec_ip + ":" + port + "\n");
 

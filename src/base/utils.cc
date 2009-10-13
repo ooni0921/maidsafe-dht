@@ -168,17 +168,18 @@ std::string RandomString(int length) {
   return str;
 }
 
-bool encode_to_hex(const std::string &non_hex_in, std::string *hex_out) {
-  CryptoPP::StringSource(non_hex_in, true,
-      new CryptoPP::HexEncoder(new CryptoPP::StringSink(*hex_out), false));
-  return (hex_out->size() == non_hex_in.size()*2);
+std::string EncodeToHex(const std::string &non_hex_input) {
+  std::string hex_output;
+  CryptoPP::StringSource(non_hex_input, true,
+      new CryptoPP::HexEncoder(new CryptoPP::StringSink(hex_output), false));
+  return hex_output;
 }
 
-bool decode_from_hex(const std::string &hex_in, std::string *non_hex_out) {
-  CryptoPP::StringSource(hex_in, true,
-      new CryptoPP::HexDecoder(new CryptoPP::StringSink(*non_hex_out)));
-  return (static_cast<int>(non_hex_out->size() * 2) ==
-      static_cast<int>(hex_in.size()));
+std::string DecodeFromHex(const std::string &hex_input) {
+  std::string non_hex_output;
+  CryptoPP::StringSource(hex_input, true,
+      new CryptoPP::HexDecoder(new CryptoPP::StringSink(non_hex_output)));
+  return non_hex_output;
 }
 
 std::string inet_atob(const std::string &dec_ip) {

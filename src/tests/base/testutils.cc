@@ -136,20 +136,12 @@ TEST(UtilsTest, BEH_BASE_RandomString) {
 
 TEST(UtilsTest, BEH_BASE_HexEncodeDecode) {
   const std::string str("Hello world! And hello nurse!!");
-  std::string encoded("");
-  ASSERT_TRUE(base::encode_to_hex(str, &encoded)) << "Encoding failed.";
-
-  std::string decoded("");
-  ASSERT_TRUE(base::decode_from_hex(encoded, &decoded)) << "Decoding failed.";
-
+  std::string encoded = base::EncodeToHex(str);
+  ASSERT_EQ(str.size() * 2, encoded.size()) << "Encoding failed.";
+  std::string decoded = base::DecodeFromHex(encoded);
+  ASSERT_EQ(encoded.size(), decoded.size() * 2) << "Decoding failed.";
   ASSERT_EQ(str, decoded) << "encoded -> decoded failed.";
-
-  ASSERT_FALSE(base::decode_from_hex(str, &decoded))
-      << "Decoding passed when it should have failed.";
-  ASSERT_FALSE(base::encode_to_hex(decoded, &encoded))
-      << "Encoding passed when it should have failed.";
 }
-
 
 TEST(UtilsTest, BEH_BASE_BoostAndAscii) {
   std::string dotted("132.248.59.1");

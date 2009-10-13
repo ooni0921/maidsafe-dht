@@ -83,8 +83,7 @@ class TestRefresh : public testing::Test {
       std::string kconfig_file1 = datadirs[i] + "/.kadconfig";
       base::KadConfig kad_config1;
       base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-      std::string hex_id;
-      base::encode_to_hex(nodes[0]->node_id(), &hex_id);
+      std::string hex_id = base::EncodeToHex(nodes[0]->node_id());
       kad_contact->set_node_id(hex_id);
       kad_contact->set_ip(nodes[0]->host_ip());
       kad_contact->set_port(nodes[0]->host_port());
@@ -213,8 +212,7 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
   std::string kconfig_file1 = local_dir + "/.kadconfig";
   base::KadConfig kad_config1;
   base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-  std::string hex_id;
-  base::encode_to_hex(nodes[0]->node_id(), &hex_id);
+  std::string hex_id = base::EncodeToHex(nodes[0]->node_id());
   kad_contact->set_node_id(hex_id);
   kad_contact->set_ip(nodes[0]->host_ip());
   kad_contact->set_port(nodes[0]->host_port());
@@ -296,8 +294,7 @@ class TestRefreshSignedValues : public testing::Test {
       std::string kconfig_file1 = datadirs[i] + "/.kadconfig";
       base::KadConfig kad_config1;
       base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-      std::string hex_id;
-      base::encode_to_hex(nodes[0]->node_id(), &hex_id);
+      std::string hex_id = base::EncodeToHex(nodes[0]->node_id());
       kad_contact->set_node_id(hex_id);
       kad_contact->set_ip(nodes[0]->host_ip());
       kad_contact->set_port(nodes[0]->host_port());
@@ -459,8 +456,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   std::string kconfig_file1 = local_dir + "/.kadconfig";
   base::KadConfig kad_config1;
   base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-  std::string hex_id;
-  base::encode_to_hex(nodes[0]->node_id(), &hex_id);
+  std::string hex_id = base::EncodeToHex(nodes[0]->node_id());
   kad_contact->set_node_id(hex_id);
   kad_contact->set_ip(nodes[0]->host_ip());
   kad_contact->set_port(nodes[0]->host_port());

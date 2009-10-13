@@ -64,9 +64,7 @@ TEST_F(TestKbucket, BEH_KAD_IsInRange) {
   std::string enc_id;
   for (int i = 0; i < kKeySizeBytes * 2; ++i)
     enc_id += "b";
-  id = "";
-  base::decode_from_hex(enc_id, &id);
-  ASSERT_FALSE(kbucket2.KeyInRange(id));
+  ASSERT_FALSE(kbucket2.KeyInRange(base::DecodeFromHex(enc_id)));
 }
 
 TEST_F(TestKbucket, BEH_KAD_AddContactGetContact) {

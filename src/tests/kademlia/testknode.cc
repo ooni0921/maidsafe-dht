@@ -174,8 +174,7 @@ class Env: public testing::Environment {
     node_ids_.push_back(knodes_[0]->node_id());
     base::KadConfig kad_config;
     base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-    std::string hex_id1;
-    base::encode_to_hex(knodes_[0]->node_id(), &hex_id1);
+    std::string hex_id1 = base::EncodeToHex(knodes_[0]->node_id());
     kad_contact->set_node_id(hex_id1);
     kad_contact->set_ip(knodes_[0]->host_ip());
     kad_contact->set_port(knodes_[0]->host_port());
@@ -268,8 +267,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   std::string config_file = db_local + "/.kadconfig";
   base::KadConfig conf;
   base::KadConfig::Contact *ctc = conf.add_contact();
-  std::string hex_id;
-  base::encode_to_hex(knodes_[0]->node_id(), &hex_id);
+  std::string hex_id = base::EncodeToHex(knodes_[0]->node_id());
   ctc->set_node_id(hex_id);
   ctc->set_ip(knodes_[0]->host_ip());
   ctc->set_port(knodes_[0]->host_port());
@@ -808,8 +806,7 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
     if (i != r_node) {
       kad::Contact test_contact;
       if (knodes_[i]->GetContact(r_node_id, &test_contact)) {
-        std::string enc_id;
-        base::encode_to_hex(knodes_[i]->node_id(), &enc_id);
+        std::string enc_id = base::EncodeToHex(knodes_[i]->node_id());
         sum_1++;
       } else {
         if (test_contact.failed_rpc() > kad::kFailedRpc)
@@ -939,8 +936,7 @@ TEST_F(KNodeTest, FUNC_KAD_RebootstrapNode) {
   boost::filesystem::create_directories(db_local);
   base::KadConfig kad_config;
   base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-  std::string hex_id;
-  base::encode_to_hex(knodes_[4]->node_id(), &hex_id);
+  std::string hex_id = base::EncodeToHex(knodes_[4]->node_id());
   kad_contact->set_node_id(hex_id);
   kad_contact->set_ip(knodes_[4]->host_ip());
   kad_contact->set_port(knodes_[4]->host_port());

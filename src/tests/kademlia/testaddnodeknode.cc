@@ -169,30 +169,26 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   Contact last_seen;
   std::string ip = "127.0.0.1";
   for (int i = 1 ; i < K-2; i++) {
-    std::string id("");
-    base::decode_from_hex(bucket2ids[i], &id);
+    std::string id = base::DecodeFromHex(bucket2ids[i]);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     if (i == 1) last_seen = contact;
     port++;
   }
   for (int i = 0; i < 3; i++) {
-    std::string id;
-    base::decode_from_hex(bucket1ids[i], &id);
+    std::string id = base::DecodeFromHex(bucket1ids[i]);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     port++;
   }
   for (int i = K-2; i < K+1; i++) {
-    std::string id;
-    base::decode_from_hex(bucket2ids[i], &id);
+    std::string id = base::DecodeFromHex(bucket2ids[i]);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     port++;
   }
-  id = "";
   port++;
-  base::decode_from_hex(bucket2ids[0], &id);
+  id = base::DecodeFromHex(bucket2ids[0]);
   Contact contact(id, ip, port, ip, port);
   ASSERT_EQ(2, nodes_[0]->AddContact(contact, 0.0, false));
 
@@ -238,8 +234,7 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   // routing table
   base::KadConfig kad_config1;
   base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-  std::string hex_id;
-  base::encode_to_hex(nodes_[0]->node_id(), &hex_id);
+  std::string hex_id = base::EncodeToHex(nodes_[0]->node_id());
   kad_contact->set_node_id(hex_id);
   kad_contact->set_ip(nodes_[0]->host_ip());
   kad_contact->set_port(nodes_[0]->host_port());
@@ -283,29 +278,25 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
 
   std::string ip = "127.0.0.1";
   for (int i = 1 ; i < K-3; i++) {
-    std::string id;
-    base::decode_from_hex(bucket2ids[i], &id);
+    std::string id = base::DecodeFromHex(bucket2ids[i]);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     port++;
   }
   for (int i = 0; i < 3; i++) {
-    std::string id;
-    base::decode_from_hex(bucket1ids[i], &id);
+    std::string id = base::DecodeFromHex(bucket1ids[i]);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     port++;
   }
   for (int i = K-3; i < K; i++) {
-    std::string id;
-    base::decode_from_hex(bucket2ids[i], &id);
+    std::string id = base::DecodeFromHex(bucket2ids[i]);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0]->AddContact(contact, 0.0, false));
     port++;
   }
-  id = "";
   port++;
-  base::decode_from_hex(bucket2ids[0], &id);
+  id = base::DecodeFromHex(bucket2ids[0]);
   Contact contact(id, ip, port, ip, port);
   ASSERT_EQ(2, nodes_[0]->AddContact(contact, 0.0, false));
 

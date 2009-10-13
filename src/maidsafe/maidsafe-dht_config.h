@@ -57,7 +57,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/asio.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/function.hpp>
-#include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/shared_ptr.hpp>
 #include <google/protobuf/service.h>
@@ -88,7 +87,7 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 #include "maidsafe/routingtable.h"
 #include "maidsafe/utils.h"
 
-#define MAIDSAFE_DHT_VERSION 11
+#define MAIDSAFE_DHT_VERSION 12
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *
@@ -222,9 +221,6 @@ typedef boost::function<void(const std::string&)> callback_func_type;
 typedef boost::function<void(const std::string&, const std::string &)>
     rpc_callback_func;
 
-typedef boost::recursive_mutex::scoped_lock pd_scoped_lock;
-// TODO(Fraser#5#): 2009-05-16 - remove this typedef & associated .hpp #include
-
 // Convert from int to string.
 std::string itos(int value);
 
@@ -232,10 +228,10 @@ std::string itos(int value);
 int stoi(std::string value);
 
 // Encode a string to hex.
-bool encode_to_hex(const std::string &non_hex_in, std::string *hex_out);
+std::string EncodeToHex(const std::string &non_hex_input);
 
 // Decode a string from hex.
-bool decode_from_hex(const std::string &hex_in, std::string *non_hex_out);
+std::string DecodeFromHex(const std::string &hex_input);
 
 // Return the number of seconds since 1st January 1970.
 boost::uint32_t get_epoch_time();

@@ -106,7 +106,7 @@ class NatDetectionTest: public testing::Test {
     std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
-    base::decode_from_hex(hex_id, &node_idA_);
+    node_idA_ = base::DecodeFromHex(hex_id);
     ASSERT_EQ(0, channel_managerA_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
         knodeimpl1_.get(), _1)));
@@ -131,7 +131,7 @@ class NatDetectionTest: public testing::Test {
     // Node B.
     hex_id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    base::decode_from_hex(hex_id, &node_idB_);
+    node_idB_ = base::DecodeFromHex(hex_id);
     ASSERT_EQ(0, channel_managerB_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
         knodeimpl2_.get(), _1)));
@@ -153,7 +153,7 @@ class NatDetectionTest: public testing::Test {
     // Node C.
     hex_id = "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
              "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-    base::decode_from_hex(hex_id, &node_idC_);
+    node_idC_ = base::DecodeFromHex(hex_id);
     ASSERT_EQ(0, channel_managerC_->StartTransport(0,
         boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
         knodeimpl3_.get(), _1)));
@@ -178,7 +178,7 @@ class NatDetectionTest: public testing::Test {
     // Set up another contact
     hex_id = "22222222222222222222222222222222222222222222222222222222222222222"
              "222222222222222222222222222222222222222222222222222222222222222";
-    base::decode_from_hex(hex_id, &remote_node_id_);
+    remote_node_id_ = base::DecodeFromHex(hex_id);
     remote_contact_.set_node_id(remote_node_id_);
     remote_contact_.set_ip("127.0.0.5");
     remote_contact_.set_port(5555);

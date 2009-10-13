@@ -62,8 +62,7 @@ void Commands::Run() {
 void Commands::StoreCallback(const std::string &result,
     const std::string &key, const boost::uint32_t &ttl) {
   kad::StoreResponse msg;
-  std::string enc_key;
-  base::encode_to_hex(key, &enc_key);
+  std::string enc_key = base::EncodeToHex(key);
   if (!msg.ParseFromString(result)) {
     printf("ERROR. Invalid response. Kademlia Store Value key %s\n",
         enc_key.c_str());
@@ -82,8 +81,7 @@ void Commands::StoreCallback(const std::string &result,
 
 void Commands::PingCallback(const std::string &result, const std::string &id) {
   kad::PingResponse msg;
-  std::string enc_id;
-  base::encode_to_hex(id, &enc_id);
+  std::string enc_id = base::EncodeToHex(id);
   if (!msg.ParseFromString(result)) {
     printf("ERROR. Invalid response. Kademlia Ping Node to node with id %s\n",
         enc_id.c_str());
@@ -101,8 +99,7 @@ void Commands::PingCallback(const std::string &result, const std::string &id) {
 void Commands::FindNodeCallback(const std::string &result,
       const std::string &id) {
   kad::FindNodeResult msg;
-  std::string enc_id;
-  base::encode_to_hex(id, &enc_id);
+  std::string enc_id = base::EncodeToHex(id);
   if (!msg.ParseFromString(result)) {
     printf("ERROR. Invalid Response. Kademlia Find Node to node with id %s\n",
         enc_id.c_str());
@@ -126,8 +123,7 @@ void Commands::FindValueCallback(const std::string &result,
        const std::string &key, const bool &write_to_file,
        const std::string &path) {
   kad::FindResponse msg;
-  std::string enc_key;
-  base::encode_to_hex(key, &enc_key);
+  std::string enc_key = base::EncodeToHex(key);
   if (!msg.ParseFromString(result)) {
     printf("ERROR.  Invalid response. Kademlia Load Value key %s\n",
         enc_key.c_str());
@@ -243,8 +239,8 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
     } else {
       boost::uint32_t ttl = boost::lexical_cast<boost::uint32_t>(args[2]);
-      std::string key;
-      if (args[0].size() != 128 || !base::decode_from_hex(args[0], &key))
+      std::string key = base::DecodeFromHex(args[0]);
+      if (args[0].size() != 128)
         key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
       node_->StoreValue(key, content, ttl*60, boost::bind(
           &Commands::StoreCallback, this, _1, key, ttl));
@@ -256,8 +252,8 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       printf("Invalid number of arguments for storevalue command\n");
     } else {
       boost::uint32_t ttl = base::stoi(args[2]);
-      std::string key;
-      if (args[0].size() != 128 || !base::decode_from_hex(args[0], &key))
+      std::string key = base::DecodeFromHex(args[0]);
+      if (args[0].size() != 128)
         key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
       node_->StoreValue(key, args[1], ttl*60, boost::bind(
           &Commands::StoreCallback, this, _1, key, ttl));
@@ -268,8 +264,8 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for findvalue command\n");
     } else {
-      std::string key;
-      if (args[0].size() != 128 || !base::decode_from_hex(args[0], &key))
+      std::string key = base::DecodeFromHex(args[0]);
+      if (args[0].size() != 128)
         key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
       node_->FindValue(key, false,
           boost::bind(&Commands::FindValueCallback, this, _1, key, false, ""));
@@ -280,8 +276,8 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for findfile command\n");
     } else {
-      std::string key;
-      if (args[0].size() != 128 || !base::decode_from_hex(args[0], &key))
+      std::string key = base::DecodeFromHex(args[0]);
+      if (args[0].size() != 128)
         key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
       node_->FindValue(key, false,
           boost::bind(&Commands::FindValueCallback, this, _1, key, true,
@@ -293,8 +289,8 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for findnode command\n");
     } else {
-      std::string key;
-      if (args[0].size() == 128 && base::decode_from_hex(args[0], &key)) {
+      std::string key = base::DecodeFromHex(args[0]);
+      if (args[0].size() == 128) {
         node_->FindNode(key, boost::bind(&Commands::FindNodeCallback, this, _1,
             key), false);
         *wait_for_cb = true;
@@ -308,8 +304,8 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for pingnode command\n");
     } else {
-      std::string key;
-      if (args[0].size() == 128 && base::decode_from_hex(args[0], &key)) {
+      std::string key = base::DecodeFromHex(args[0]);
+      if (args[0].size() == 128) {
         node_->Ping(key, boost::bind(&Commands::PingCallback, this, _1,
             key));
         *wait_for_cb = true;
