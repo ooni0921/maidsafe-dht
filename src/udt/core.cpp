@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 09/13/2009
+   Yunhong Gu, last updated 10/10/2009
 *****************************************************************************/
 
 #ifndef WIN32
@@ -1378,8 +1378,8 @@ void CUDT::sample(CPerfMon* perf, bool clear)
       if (WAIT_OBJECT_0 == WaitForSingleObject(m_ConnectionLock, 0))
    #endif
    {
-      perf->byteAvailSndBuf = (NULL == m_pSndBuffer) ? 0 : m_iSndBufSize - m_pSndBuffer->getCurrBufSize();
-      perf->byteAvailRcvBuf = (NULL == m_pRcvBuffer) ? 0 : m_pRcvBuffer->getAvailBufSize();
+      perf->byteAvailSndBuf = (NULL == m_pSndBuffer) ? 0 : (m_iSndBufSize - m_pSndBuffer->getCurrBufSize()) * m_iMSS;
+      perf->byteAvailRcvBuf = (NULL == m_pRcvBuffer) ? 0 : m_pRcvBuffer->getAvailBufSize() * m_iMSS;
 
       #ifndef WIN32
          pthread_mutex_unlock(&m_ConnectionLock);
@@ -1953,6 +1953,13 @@ void CUDT::processCtrl(CPacket& ctrlpkt)
       m_pRcvBuffer->dropMsg(ctrlpkt.getMsgSeq());
       m_pRcvLossList->remove(*(int32_t*)ctrlpkt.m_pcData, *(int32_t*)(ctrlpkt.m_pcData + 4));
 
+      // move forward with current recv seq no.
+      if ((CSeqNo::seqcmp(*(int32_t*)ctrlpkt.m_pcData, CSeqNo::incseq(m_iRcvCurrSeqNo)) <= 0)
+         && (CSeqNo::seqcmp(*(int32_t*)(ctrlpkt.m_pcData + 4), m_iRcvCurrSeqNo) > 0))
+      {
+         m_iRcvCurrSeqNo = *(int32_t*)(ctrlpkt.m_pcData + 4);
+      }
+
       break;
 
    case 32767: //0x7FFF - reserved and user defined messages
@@ -2002,6 +2009,10 @@ int CUDT::packData(CPacket& packet, uint64_t& ts)
 
          // only one msg drop request is necessary
          m_pSndLossList->remove(seqpair[1]);
+
+         // skip all dropped packets
+         if (CSeqNo::seqcmp(const_cast<int32_t&>(m_iSndCurrSeqNo), CSeqNo::incseq(seqpair[1])) < 0)
+             m_iSndCurrSeqNo = CSeqNo::incseq(seqpair[1]);
 
          return 0;
       }

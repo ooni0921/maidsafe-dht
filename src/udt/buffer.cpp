@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 09/25/2009
+   Yunhong Gu, last updated 10/10/2009
 *****************************************************************************/
 
 #include <cstring>
@@ -51,7 +51,7 @@ m_pFirstBlock(NULL),
 m_pCurrBlock(NULL),
 m_pLastBlock(NULL),
 m_pBuffer(NULL),
-m_iNextMsgNo(0),
+m_iNextMsgNo(1),
 m_iSize(size),
 m_iMSS(mss),
 m_iCount(0)
@@ -68,6 +68,7 @@ m_iCount(0)
    for (int i = 1; i < m_iSize; ++ i)
    {
       pb->m_pNext = new Block;
+      pb->m_iMsgNo = 0;
       pb = pb->m_pNext;
    }
    pb->m_pNext = m_pBlock;
@@ -230,9 +231,14 @@ int CSndBuffer::readData(char** data, const int offset, int32_t& msgno, int& msg
 
       msglen = 1;
       p = p->m_pNext;
+      bool move = false;
       while (msgno == (p->m_iMsgNo & 0x1FFFFFFF))
       {
+         if (p == m_pCurrBlock)
+            move = true;
          p = p->m_pNext;
+         if (move)
+            m_pCurrBlock = p;
          msglen ++;
       }
 
@@ -458,6 +464,8 @@ void CRcvBuffer::ackData(const int& len)
 {
    m_iLastAckPos = (m_iLastAckPos + len) % m_iSize;
    m_iMaxPos -= len;
+   if (m_iMaxPos < 0)
+      m_iMaxPos = 0;
 
    CTimer::triggerEvent();
 }
@@ -548,7 +556,28 @@ bool CRcvBuffer::scanMsg(int& p, int& q, bool& passack)
       }
 
       if ((1 == m_pUnit[m_iStartPos]->m_iFlag) && (m_pUnit[m_iStartPos]->m_Packet.getMsgBoundary() > 1))
-         break;
+      {
+         bool good = true;
+
+         // look ahead for the whole message
+         for (int i = m_iStartPos; i != m_iLastAckPos;)
+         {
+            if ((NULL == m_pUnit[i]) || (1 != m_pUnit[i]->m_iFlag))
+            {
+               good = false;
+               break;
+            }
+
+            if ((m_pUnit[i]->m_Packet.getMsgBoundary() == 1) || (m_pUnit[i]->m_Packet.getMsgBoundary() == 3))
+               break;
+
+            if (++ i == m_iSize)
+               i = 0;
+         }
+
+         if (good)
+            break;
+      }
 
       CUnit* tmp = m_pUnit[m_iStartPos];
       m_pUnit[m_iStartPos] = NULL;
