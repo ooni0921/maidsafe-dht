@@ -80,8 +80,10 @@ TEST_F(CryptoTest, BEH_BASE_SecurePasswordGeneration) {
 TEST_F(CryptoTest, BEH_BASE_SetGetAlgorithm) {
   ct.set_hash_algorithm(crypto::SHA_1);
   ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_1) << "Hash algorithm wrong";
+  /*
   ct.set_hash_algorithm(crypto::SHA_224);
   ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_224) << "Hash algorithm wrong";
+  */
   ct.set_hash_algorithm(crypto::SHA_256);
   ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_256) << "Hash algorithm wrong";
   ct.set_hash_algorithm(crypto::SHA_384);

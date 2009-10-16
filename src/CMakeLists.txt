@@ -42,7 +42,7 @@ ELSE()
 ENDIF()
 
 IF(NOT BOOST_VERSION)
-   SET(BOOST_VERSION "1_40" CACHE INTERNAL "Set boost version i.e. 1_40 (use an underscore)" FORCE)
+ SET(BOOST_VERSION "1_40" CACHE INTERNAL "Set boost version i.e. 1_40 (use an underscore)" FORCE)
 ENDIF(NOT BOOST_VERSION)
 MESSAGE ("================================================================================")
 MESSAGE ("")
@@ -61,7 +61,7 @@ IF(NOT BOOST_INCLUDES)
 	IF(WIN32)
     SET(BOOST_INCLUDES "c:\\usr\\include\\boost${BOOST_VERSION}" CACHE INTERNAL "Set location of BOOST headers eg c:\\usr\\include\\boost${BOOST_VERSION}" FORCE)
 	ELSE()
-    SET(BOOST_INCLUDES "/usr/include/boost/" CACHE INTERNAL "Set location of BOOST headers eg /usr/include/boost/" FORCE)
+    SET(BOOST_INCLUDES "/usr/include/boost${BOOST_VERSION}" CACHE INTERNAL "Set location of BOOST headers eg /usr/include/boost/" FORCE)
 	ENDIF()
 ENDIF(NOT BOOST_INCLUDES)
 MESSAGE ("================================================================================")
@@ -77,7 +77,11 @@ MESSAGE ("======================================================================
 MESSAGE ("")
 IF(CMAKE_COMPILER_IS_GNUCC)
   IF(NOT GCC_VERSION)
-    SET(GCC_VERSION "gcc43" CACHE INTERNAL "Set GCC version e.g. gcc44 (for GCC version 4.4.x)" FORCE)
+    IF(APPLE)
+      SET(GCC_VERSION "xgcc40" CACHE INTERNAL "Set GCC version e.g. gcc44 (for GCC version 4.4.x)" FORCE)
+    ELSE(APPLE)
+      SET(GCC_VERSION "gcc43" CACHE INTERNAL "Set GCC version e.g. gcc44 (for GCC version 4.4.x)" FORCE)
+    ENDIF(APPLE)
   ENDIF(NOT GCC_VERSION)
   IF(${GCC_VERSION} MATCHES "none")
     MESSAGE ("GCC version is not set.")
@@ -228,12 +232,12 @@ add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DI
 #BUILDS
 IF (APPLE)
 	SET(SYS_LIB 
-boost_thread-xgcc40-mt${BOOST_VERSION}.a 
+/usr/lib/libboost_thread-xgcc40-mt${BOOST_VERSION}.a 
 /usr/lib/libprotobuf.a 
-boost_system-xgcc40-mt${BOOST_VERSION}.a
-boost_filesystem-xgcc40-mt${BOOST_VERSION}.a
-boost_regex-xgcc40-mt${BOOST_VERSION}.a
-boost_date_time-xgcc40-mt${BOOST_VERSION}.a
+/usr/lib/libboost_system-xgcc40-mt${BOOST_VERSION}.a
+/usr/lib/libboost_filesystem-xgcc40-mt${BOOST_VERSION}.a
+/usr/lib/libboost_regex-xgcc40-mt${BOOST_VERSION}.a
+/usr/lib/libboost_date_time-xgcc40-mt${BOOST_VERSION}.a
 dl 
 pthread
 )
@@ -297,12 +301,18 @@ TARGET_LINK_LIBRARIES(kaddemo maidsafe-dht ${DEMO_LIBS})
 # COMPILER FLAGS  - here after all targets declared                              #
 ##################################################################################
 IF (APPLE)
-  SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10  -D_FILE_OFFSET_BITS=64")
+  SET(CMAKE_AR "/usr/bin/libtool")
+  SET(CMAKE_CXX_CREATE_STATIC_LIBRARY 
+      "<CMAKE_AR> -static -o <TARGET> <LINK_FLAGS> <OBJECTS> " 
+      "<CMAKE_RANLIB> <TARGET>")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_DARWIN_C_SOURCE")
+  SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10  -D_FILE_OFFSET_BITS=64 -DCRYPTOPP_DISABLE_ASM")
   SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0 -pg -fprofile-arcs -ftest-coverage" )
   SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized ")
   SET(MAIDSAFE_DHT_CXX_FLAGS "-w")
-  SET(TARGET_PROPERTIES_DEBUG TESTbase TESTknode TESTkademlia TESTtransport TESTrealmaidsafe TESTrealkademlia  LINK_FLAGS -fprofile-arcs -ftest-coverage)
+  # SET(TARGET_PROPERTIES_DEBUG TESTbase TESTknode TESTkademlia TESTtransport TESTrealmaidsafe TESTrealkademlia  LINK_FLAGS -fprofile-arcs -ftest-coverage)
   SET(UDT_CXX_FLAGS "-fPIC -Wall -DOSX -finline-functions -O3")
+  SET_SOURCE_FILES_PROPERTIES(${CRYPTOPP} PROPERTIES COMPILE_FLAGS "-DNDEBUG -g -O2 -DCRYPTOPP_DISABLE_ASM -pipe")
 ELSEIF (UNIX AND NOT APPLE)
   SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wall -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wfloat-equal -Wlong-long  -Wredundant-decls -Wstrict-overflow=5   -Wunused-function  -Wunused-label  -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -pg -fprofile-arcs -ftest-coverage")

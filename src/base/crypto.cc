@@ -179,10 +179,10 @@ std::string Crypto::Hash(const std::string &input,
       CryptoPP::SHA1 hash;
       return HashFunc(input, output, ot, hex, hash);
     }
-    case SHA_224: {
-      CryptoPP::SHA224 hash;
-      return HashFunc(input, output, ot, hex, hash);
-    }
+//    case SHA_224: {
+//      CryptoPP::SHA224 hash;
+//      return HashFunc(input, output, ot, hex, hash);
+//    }
     case SHA_256: {
       CryptoPP::SHA256 hash;
       return HashFunc(input, output, ot, hex, hash);

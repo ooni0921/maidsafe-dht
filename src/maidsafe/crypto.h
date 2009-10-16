@@ -35,7 +35,7 @@ const int AES256_KeySize = 32;  // size in bytes
 const int AES256_IVSize = 16;   // in bytes
 
 enum operationtype {FILE_FILE, STRING_FILE, FILE_STRING, STRING_STRING };
-enum hashtype {SHA_512, SHA_1, SHA_224, SHA_256, SHA_384};
+enum hashtype {SHA_512, SHA_1, /*SHA_224, */SHA_256, SHA_384};
 enum symmtype {AES_256};
 enum obfuscationtype {XOR};
 
