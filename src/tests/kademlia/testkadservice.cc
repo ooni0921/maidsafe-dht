@@ -26,7 +26,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
-#include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include "kademlia/kadservice.h"
 #include "kademlia/knodeimpl.h"
@@ -36,8 +35,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "tests/kademlia/fake_callbacks.h"
 #include "protobuf/signed_kadvalue.pb.h"
 #include "maidsafe/config.h"
-
-namespace fs = boost::filesystem;
 
 inline void CreateRSAKeys(std::string *pub_key, std::string *priv_key) {
   crypto::RsaKeyPair kp;
@@ -60,7 +57,7 @@ inline void CreateSignedRequest(const std::string &pub_key,
 class DummyAltStore : public base::AlternativeStore {
  public:
   DummyAltStore() : keys_() {}
-  bool Has(const std::string &key) { return keys_.find(key) != keys_.end(); }
+  bool Has(const std::string &key) { return keys_.find(key) != keys_.end();}
   void Store(const std::string &key) { keys_.insert(key); }
  private:
   std::set<std::string> keys_;
@@ -75,37 +72,20 @@ class Callback {
 
 class KadServicesTest: public testing::Test {
  protected:
-  KadServicesTest() : kad_config_file_(""),
-      channel_manager_(new rpcprotocol::ChannelManager), knodeimpl_(),
-      cb_(), contact_(), crypto_(), node_id_(""), remote_node_id_(""),
-      service_(), datastore_(), routingtable_(), test_dir_("") {
-    test_dir_ = std::string("KadServicesTest") +
-                boost::lexical_cast<std::string>(base::random_32bit_uinteger());
-    try {
-      if (fs::exists(test_dir_))
-        fs::remove_all(test_dir_);
-      fs::create_directories(test_dir_);
-    }
-    catch(const std::exception &e) {
-      LOG(ERROR) << "filesystem exception: " << e.what() << std::endl;
-    }
+  KadServicesTest() : channel_manager_(new rpcprotocol::ChannelManager),
+      contact_(), crypto_(), node_id_(""), service_(), datastore_(),
+      routingtable_() {
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
-    std::string datastore("/datastore");
-    datastore = test_dir_ + datastore;
     std::string priv_key, pub_key;
     CreateRSAKeys(&pub_key, &priv_key);
-    knodeimpl_ = boost::shared_ptr<KNodeImpl>
-        (new KNodeImpl(channel_manager_, VAULT, priv_key, pub_key, false,
-        false));
     std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
     node_id_ = base::DecodeFromHex(hex_id);
     hex_id = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
              "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
-    remote_node_id_ = base::DecodeFromHex(hex_id);
-    contact_.set_node_id(remote_node_id_);
+    contact_.set_node_id(base::DecodeFromHex(hex_id));
     contact_.set_ip("127.0.0.1");
     contact_.set_port(1234);
     contact_.set_local_ip("127.0.0.2");
@@ -114,78 +94,77 @@ class KadServicesTest: public testing::Test {
     contact_.set_rv_port(1236);
   }
 
-  virtual ~KadServicesTest() {
-    try {
-      if (fs::exists(test_dir_))
-        fs::remove_all(test_dir_);
-    }
-    catch(const std::exception &e) {
-      LOG(ERROR) << "filesystem exception: " << e.what() << std::endl;
-    }
-  }
-
   virtual void SetUp() {
-    EXPECT_EQ(0, channel_manager_->StartTransport(0,
-        boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
-        knodeimpl_.get(), _1)));
-    cb_.Reset();
-    kad_config_file_ = test_dir_ + std::string("/.kadconfig");
-    boost::asio::ip::address local_ip;
-    ASSERT_TRUE(base::get_local_address(&local_ip));
-    knodeimpl_->Join(node_id_, kad_config_file_,
-        local_ip.to_string(), channel_manager_->ptransport()->listening_port(),
-        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
-    wait_result(&cb_);
-    ASSERT_EQ(kRpcResultSuccess, cb_.result());
-    ASSERT_TRUE(knodeimpl_->is_joined());
-    cb_.Reset();
-    service_ = knodeimpl_->premote_service_;
-    datastore_ = knodeimpl_->pdata_store_;
-    routingtable_ = knodeimpl_->prouting_table_;
+    datastore_.reset(new DataStore(kRefreshTime));
+    routingtable_.reset(new RoutingTable(node_id_));
+    service_.reset(new KadService(NatRpcs(channel_manager_), datastore_, true,
+        boost::bind(&KadServicesTest::AddCtc, this, _1, _2, _3),
+        boost::bind(&KadServicesTest::GetRandCtcs, this, _1, _2, _3),
+        boost::bind(&KadServicesTest::GetCtc, this, _1, _2),
+        boost::bind(&KadServicesTest::GetKCtcs, this, _1, _2, _3),
+        boost::bind(&KadServicesTest::Ping, this, _1, _2)));
+    ContactInfo node_info;
+    node_info.set_node_id(node_id_);
+    node_info.set_ip("127.0.0.1");
+    node_info.set_port(1234);
+    node_info.set_local_ip("127.0.0.1");
+    node_info.set_local_port(1234);
+    service_->set_node_info(node_info);
+    service_->set_node_joined(true);
   }
 
-  virtual void TearDown() {
-    cb_.Reset();
-    knodeimpl_->Leave();
-    EXPECT_FALSE(knodeimpl_->is_joined());
-    knodeimpl_.reset();
-    service_.reset();
-    datastore_.reset();
-    routingtable_.reset();
-    channel_manager_->StopTransport();
-    channel_manager_->CleanUpTransport();
-    channel_manager_.reset();
-  }
-  std::string kad_config_file_;
   boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
-  boost::shared_ptr<KNodeImpl> knodeimpl_;
-  GeneralKadCallback cb_;
   ContactInfo contact_;
   crypto::Crypto crypto_;
   std::string node_id_;
-  std::string remote_node_id_;
   boost::shared_ptr<KadService> service_;
   boost::shared_ptr<DataStore> datastore_;
   boost::shared_ptr<RoutingTable> routingtable_;
-  std::string test_dir_;
  private:
-  KadServicesTest(const KadServicesTest&);
-  KadServicesTest &operator=(const KadServicesTest&);
+  int AddCtc(Contact ctc, const float&, const bool &only_db) {
+    if (!only_db)
+      return routingtable_->AddContact(ctc);
+    return -1;
+  }
+  bool GetCtc(const std::string &id, Contact *ctc) {
+    return routingtable_->GetContact(id, ctc);
+  }
+  void GetRandCtcs(const int &count, const std::vector<Contact> &ex_ctcs,
+      std::vector<Contact> *ctcs) {
+    ctcs->clear();
+    std::vector<Contact> all_contacts;
+    int kbuckets = routingtable_->KbucketSize();
+    for (int i = 0; i < kbuckets; ++i) {
+      std::vector<kad::Contact> contacts_i;
+      routingtable_->GetContacts(i, &contacts_i, ex_ctcs);
+      for (int j = 0; j < static_cast<int>(contacts_i.size()); ++j)
+        all_contacts.push_back(contacts_i[j]);
+    }
+    if (static_cast<int>(all_contacts.size()) < count+1) {
+      *ctcs = all_contacts;
+      return;
+    }
+    std::vector<Contact> temp_vector(count);
+    base::random_sample_n(all_contacts.begin(), all_contacts.end(),
+      temp_vector.begin(), count);
+    *ctcs = temp_vector;
+  }
+  void GetKCtcs(const std::string &key, std::vector<Contact> *ctcs,
+      const std::vector<Contact> &ex_ctcs) {
+    routingtable_->FindCloseNodes(key, K, ctcs, ex_ctcs);
+  }
+  void Ping(const Contact &ctc, base::callback_func_type cb) {
+    boost::thread thrd(boost::bind(&KadServicesTest::ExePingCb, this,
+        ctc.node_id(), cb));
+  }
+  void ExePingCb(const std::string &id, base::callback_func_type cb) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    routingtable_->RemoveContact(id, true);
+    PingResponse resp;
+    resp.set_result(kRpcResultFailure);
+    cb(resp.SerializeAsString());
+  }
 };
-
-TEST_F(KadServicesTest, BEH_KAD_ServicesValidateSignedRequest) {
-  std::string public_key("A"), private_key("B"), key("C");
-  std::string signed_public_key, signed_request;
-  CreateSignedRequest(public_key, private_key, key, &signed_public_key,
-                      &signed_request);
-  EXPECT_FALSE(service_->ValidateSignedRequest(public_key, signed_public_key,
-                                               signed_request, key));
-  CreateRSAKeys(&public_key, &private_key);
-  CreateSignedRequest(public_key, private_key, key, &signed_public_key,
-                      &signed_request);
-  EXPECT_TRUE(service_->ValidateSignedRequest(public_key, signed_public_key,
-                                              signed_request, key));
-}
 
 TEST_F(KadServicesTest, BEH_KAD_ServicesPing) {
   // Check failure with ping set incorrectly.
@@ -204,7 +183,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesPing) {
   EXPECT_FALSE(ping_response.has_echo());
   EXPECT_EQ(node_id_, ping_response.node_id());
   Contact contactback;
-  EXPECT_FALSE(routingtable_->GetContact(remote_node_id_, &contactback));
+  EXPECT_FALSE(routingtable_->GetContact(contact_.node_id(), &contactback));
   // Check success.
   ping_request.set_ping("ping");
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
@@ -215,7 +194,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesPing) {
   EXPECT_EQ(kRpcResultSuccess, ping_response.result());
   EXPECT_EQ("pong", ping_response.echo());
   EXPECT_EQ(node_id_, ping_response.node_id());
-  EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
+  EXPECT_TRUE(routingtable_->GetContact(contact_.node_id(), &contactback));
 }
 
 TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
@@ -244,7 +223,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_, find_value_response.node_id());
   Contact contactback;
-  EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
+  EXPECT_TRUE(routingtable_->GetContact(contact_.node_id(), &contactback));
   // Populate routing table & datastore & search for non-existant key.  Ensure k
   // contacts have IDs close to key being searched for.
   std::vector<std::string> ids;
@@ -357,7 +336,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   EXPECT_FALSE(find_node_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_, find_node_response.node_id());
   Contact contactback;
-  EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
+  EXPECT_TRUE(routingtable_->GetContact(contact_.node_id(), &contactback));
   // Populate routing table with a few random contacts (< K), ensure they are
   // not close to id to be searched for later, and ensure they are all
   // returned from the search.  Use one of these to search for later.
@@ -538,7 +517,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   ASSERT_TRUE(datastore_->LoadItem(key, &values));
   EXPECT_EQ(ser_sig_value1, values[0]);
   Contact contactback;
-  EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
+  EXPECT_TRUE(routingtable_->GetContact(contact_.node_id(), &contactback));
 
   // Store value2
   // Allow thread to sleep so that second value has a different last published
@@ -630,6 +609,7 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   CreateRSAKeys(&public_key, &private_key);
   CreateSignedRequest(public_key, private_key, key, &signed_public_key,
       &signed_request);
+
   store_request.clear_value();
   SignedValue *sig_value = store_request.mutable_sig_value();
   sig_value->set_value(value);
@@ -637,9 +617,20 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
       crypto::STRING_STRING));
   std::string ser_sig_value = sig_value->SerializeAsString();
 
-  store_request.set_public_key(public_key);
+  store_request.set_public_key("public_key");
   store_request.set_signed_public_key(signed_public_key);
   store_request.set_signed_request(signed_request);
+  google::protobuf::Closure *done6 = google::protobuf::NewCallback<Callback>
+      (&cb_obj, &Callback::CallbackFunction);
+  service_->Store(&controller, &store_request, &store_response, done6);
+  EXPECT_EQ(kRpcResultFailure, store_response.result());
+  EXPECT_EQ(node_id_, store_response.node_id());
+  store_response.Clear();
+  values.clear();
+  EXPECT_FALSE(datastore_->LoadItem(key, &values));
+
+  store_request.clear_public_key();
+  store_request.set_public_key(public_key);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   service_->Store(&controller, &store_request, &store_response, done2);
@@ -741,7 +732,7 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   Contact ctc;
   for (int i = 7; i < 10; ++i) {
     std::string dead_node;
-    ASSERT_FALSE(knodeimpl_->GetContact(contacts[i].node_id(), &ctc));
+    ASSERT_FALSE(routingtable_->GetContact(contacts[i].node_id(), &ctc));
     if (contacts[i].SerialiseToString(&dead_node))
       downlist_request.add_downlist(dead_node);
   }
@@ -760,7 +751,7 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   // Check downlist works for one we have.
   downlist_request.clear_downlist();
   std::string dead_node;
-  ASSERT_TRUE(knodeimpl_->GetContact(contacts[5].node_id(), &ctc));
+  ASSERT_TRUE(routingtable_->GetContact(contacts[5].node_id(), &ctc));
   if (contacts[5].SerialiseToString(&dead_node))
     downlist_request.add_downlist(dead_node);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
@@ -825,7 +816,7 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
 
 TEST_F(KadServicesTest, BEH_KAD_ServicesFindValueAltStore) {
   DummyAltStore dummy_alt_store;
-  knodeimpl_->SetAlternativeStore(&dummy_alt_store);
+  service_->set_alternative_store(&dummy_alt_store);
   // Search in empty alt store, routing table and datastore
   rpcprotocol::Controller controller;
   FindRequest find_value_request;
@@ -848,7 +839,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValueAltStore) {
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_, find_value_response.node_id());
   Contact contactback;
-  EXPECT_TRUE(routingtable_->GetContact(remote_node_id_, &contactback));
+  EXPECT_TRUE(routingtable_->GetContact(contact_.node_id(), &contactback));
   // Populate routing table & datastore & search for non-existant key.  Ensure k
   // contacts have IDs close to key being searched for.
   std::vector<std::string> ids;
@@ -947,6 +938,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValueAltStore) {
   find_value_response.Clear();
   service_->FindValue(&controller, &find_value_request, &find_value_response,
       done4);
+
   EXPECT_TRUE(find_value_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_value_response.result());
   EXPECT_EQ(0, find_value_response.closest_nodes_size());

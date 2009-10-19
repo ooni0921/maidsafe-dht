@@ -26,6 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "kademlia/kadrpc.h"
+#include "maidsafe/channel.h"
 
 namespace kad {
 
@@ -143,41 +144,6 @@ void KadRpcs::Downlist(const std::vector<std::string> downlist,
       rv_port);
   KademliaService::Stub service(&channel);
   service.Downlist(ctler, &args, resp, cb);
-}
-
-void KadRpcs::NatDetection(const std::string &newcomer,
-      const std::string &bootstrap_node, const boost::uint32_t type,
-      const std::string &sender_id, const std::string &remote_ip,
-      const boost::uint16_t &remote_port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port, NatDetectionResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb) {
-  NatDetectionRequest args;
-  args.set_newcomer(newcomer);
-  args.set_bootstrap_node(bootstrap_node);
-  args.set_type(type);
-  args.set_sender_id(sender_id);
-  rpcprotocol::Channel channel(pchannel_manager_.get(), remote_ip, remote_port,
-      "", 0, rv_ip, rv_port);
-  if (type == 2)
-    ctler->set_timeout(18);
-  KademliaService::Stub service(&channel);
-  service.NatDetection(ctler, &args, resp, cb);
-}
-
-void KadRpcs::NatDetectionPing(const std::string &remote_ip,
-    const boost::uint16_t &remote_port, const std::string &rv_ip,
-    const boost::uint16_t &rv_port, NatDetectionPingResponse *resp,
-    rpcprotocol::Controller *ctler, google::protobuf::Closure *cb) {
-  NatDetectionPingRequest args;
-  args.set_ping("nat_detection_ping");
-  ContactInfo *sender_info = args.mutable_sender_info();
-  *sender_info = info_;
-  rpcprotocol::Controller controller;
-  controller.set_timeout(kRpcPingTimeout);
-  rpcprotocol::Channel channel(pchannel_manager_.get(), remote_ip, remote_port,
-      "", 0, rv_ip, rv_port);
-  KademliaService::Stub service(&channel);
-  service.NatDetectionPing(ctler, &args, resp, cb);
 }
 
 void KadRpcs::Bootstrap(const std::string &local_id,

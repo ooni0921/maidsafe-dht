@@ -48,15 +48,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/singleton.h"
 #include "kademlia/datastore.h"
 #include "kademlia/kadrpc.h"
+#include "kademlia/natrpc.h"
 #include "kademlia/routingtable.h"
+#include "kademlia/kadservice.h"
 #include "maidsafe/maidsafe-dht_config.h"
+#include "maidsafe/channel.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service.pb.h"
 #include "upnp/upnpclient.h"
 
 namespace kad {
-class KadService;
-
 class ContactInfo;
 
 struct LookupContact;
@@ -278,12 +279,11 @@ class KNodeImpl {
       const std::string &value) const;
   inline void SetAlternativeStore(base::AlternativeStore* alt_store) {
     alternative_store_ = alt_store;
+    premote_service_->set_alternative_store(alternative_store_);
   }
   inline base::AlternativeStore *alternative_store() {
     return alternative_store_;
   }
-  friend class KadServicesTest;
-  friend class NatDetectionTest;
  private:
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
@@ -357,6 +357,7 @@ class KNodeImpl {
   base::AlternativeStore *alternative_store_;
   boost::shared_ptr<KadService> premote_service_;
   KadRpcs kadrpcs_;
+  NatRpcs natrpcs_;
   volatile bool is_joined_;
   boost::shared_ptr<RoutingTable> prouting_table_;
   std::string node_id_, host_ip_, fake_client_node_id_;

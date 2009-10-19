@@ -98,7 +98,6 @@ message NatDetectionResponse {
 
 message NatDetectionPingRequest {
   required bytes ping = 1;
-  required ContactInfo sender_info = 2;
 };
 
 message NatDetectionPingResponse {

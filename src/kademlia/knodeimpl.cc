@@ -36,10 +36,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "base/config.h"
 #include "kademlia/kadutils.h"
-#include "kademlia/kadservice.h"
 #include "maidsafe/alternativestore.h"
 #include "maidsafe/utils.h"
 #include "maidsafe/channelmanager.h"
+#include "maidsafe/channel.h"
 #include "protobuf/contact_info.pb.h"
 #include "protobuf/signed_kadvalue.pb.h"
 #include "maidsafe/config.h"
@@ -133,15 +133,16 @@ KNodeImpl::KNodeImpl(
         ptimer_(new base::CallLaterTimer), pchannel_manager_(channel_manager),
         pservice_channel_(), pdata_store_(new DataStore(kRefreshTime)),
         alternative_store_(NULL), premote_service_(),
-        kadrpcs_(channel_manager), is_joined_(false), prouting_table_(),
-        node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
-        host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(), K_(K),
-        alpha_(kAlpha), beta_(kBeta), refresh_routine_started_(false),
-        kad_config_path_(""), local_host_ip_(""), local_host_port_(0),
-        stopping_(false), port_forwarded_(port_forwarded),
-        use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
-        add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
-        upnp_(), upnp_mapped_port_(0) {}
+        kadrpcs_(channel_manager), natrpcs_(channel_manager), is_joined_(false),
+        prouting_table_(), node_id_(""), host_ip_(""), fake_client_node_id_(""),
+        type_(type), host_port_(0), rv_ip_(""), rv_port_(0),
+        bootstrapping_nodes_(), K_(K), alpha_(kAlpha), beta_(kBeta),
+        refresh_routine_started_(false), kad_config_path_(""),
+        local_host_ip_(""), local_host_port_(0), stopping_(false),
+        port_forwarded_(port_forwarded), use_upnp_(use_upnp),
+        contacts_to_add_(), addcontacts_routine_(), add_ctc_cond_(),
+        private_key_(private_key), public_key_(public_key), upnp_(),
+        upnp_mapped_port_(0) {}
 
 KNodeImpl::KNodeImpl(
       boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
@@ -155,13 +156,13 @@ KNodeImpl::KNodeImpl(
         ptimer_(new base::CallLaterTimer),
         pchannel_manager_(channel_manager), pservice_channel_(),
         pdata_store_(new DataStore(refresh_time)), alternative_store_(NULL),
-        premote_service_(), kadrpcs_(channel_manager), is_joined_(false),
-        prouting_table_(), node_id_(""), host_ip_(""),
-        fake_client_node_id_(""), type_(type), host_port_(0), rv_ip_(""),
-        rv_port_(0), bootstrapping_nodes_(), K_(k), alpha_(alpha),
-        beta_(beta), refresh_routine_started_(false), kad_config_path_(""),
-        local_host_ip_(""), local_host_port_(0), stopping_(false),
-        port_forwarded_(port_forwarded), use_upnp_(use_upnp),
+        premote_service_(), kadrpcs_(channel_manager),
+        natrpcs_(channel_manager), is_joined_(false), prouting_table_(),
+        node_id_(""), host_ip_(""), fake_client_node_id_(""), type_(type),
+        host_port_(0), rv_ip_(""), rv_port_(0), bootstrapping_nodes_(), K_(k),
+        alpha_(alpha), beta_(beta), refresh_routine_started_(false),
+        kad_config_path_(""), local_host_ip_(""), local_host_port_(0),
+        stopping_(false), port_forwarded_(port_forwarded), use_upnp_(use_upnp),
         contacts_to_add_(), addcontacts_routine_(), add_ctc_cond_(),
         private_key_(private_key), public_key_(public_key), upnp_(),
         upnp_mapped_port_(0) {}
@@ -357,6 +358,8 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
     if (type_ != CLIENT) {
       local_result.set_result(kRpcResultSuccess);
       is_joined_ = true;
+      premote_service_->set_node_joined(true);
+      premote_service_->set_node_info(contact_info());
       // since it is a 1 network node, so it has no rendezvous server to ping
       pchannel_manager_->StartPingServer(true, rv_ip_, rv_port_);
       addcontacts_routine_.reset(new boost::thread(&KNodeImpl::CheckAddContacts,
@@ -558,6 +561,8 @@ void KNodeImpl::Join(const std::string &node_id,
   prouting_table_.reset(new RoutingTable(node_id_));
 
   is_joined_ = true;
+  premote_service_->set_node_joined(true);
+  premote_service_->set_node_info(contact_info());
   // since it is a 1 network node, so it has no rendezvous server to ping
   pchannel_manager_->StartPingServer(true, rv_ip_, rv_port_);
   addcontacts_routine_.reset(new boost::thread(&KNodeImpl::CheckAddContacts,
@@ -591,6 +596,7 @@ void KNodeImpl::Leave() {
     {
       boost::mutex::scoped_lock gaurd(leave_mutex_);
       is_joined_ = false;
+      premote_service_->set_node_joined(false);
       ptimer_->CancelAll();
       pchannel_manager_->ClearCallLaters();
       pchannel_manager_->StopPingServer();
@@ -1213,8 +1219,8 @@ int KNodeImpl::AddContact(Contact new_contact, const float & rtt,
                                     rtt,
                                     0,
                                     0);
-    (*base::PDRoutingTable::getInstance())[base::itos(
-        host_port_)]->AddTuple(tuple);
+    (*base::PDRoutingTable::getInstance())[boost::lexical_cast<std::string>
+        (host_port_)]->AddTuple(tuple);
     if (result == 2) {
       {
         boost::mutex::scoped_lock gaurd(pendingcts_mutex_);
@@ -1227,6 +1233,8 @@ int KNodeImpl::AddContact(Contact new_contact, const float & rtt,
 }
 
 void KNodeImpl::RemoveContact(const std::string &node_id) {
+  (*base::PDRoutingTable::getInstance())[boost::lexical_cast<std::string>
+      (host_port_)]->DeleteTupleByKadId(node_id);
   boost::mutex::scoped_lock gaurd(routingtable_mutex_);
   prouting_table_->RemoveContact(node_id, false);
 }
@@ -1291,7 +1299,6 @@ void KNodeImpl::GetRandomContacts(const int &count,
   base::random_sample_n(all_contacts.begin(), all_contacts.end(),
     temp_vector.begin(), count);
   *contacts = temp_vector;
-  return;
 }
 
 void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
@@ -1350,11 +1357,21 @@ void KNodeImpl::ReBootstrapping_Callback(const std::string &result) {
     DLOG(INFO) << "(" << local_host_port_ << ") Rejoining successful."
         << std::endl;
     is_joined_ = true;
+    premote_service_->set_node_joined(true);
+    premote_service_->set_node_info(contact_info());
   }
 }
 
 void KNodeImpl::RegisterKadService() {
-  premote_service_.reset(new KadService(this));
+  premote_service_.reset(new KadService(natrpcs_, pdata_store_, HasRSAKeys(),
+      boost::bind(&KNodeImpl::AddContact, this, _1, _2, _3),
+//      boost::bind(&KNodeImpl::RemoveContact, this, _1),
+      boost::bind(&KNodeImpl::GetRandomContacts, this, _1, _2, _3),
+      boost::bind(&KNodeImpl::GetContact, this, _1, _2),
+      boost::bind(&KNodeImpl::FindKClosestNodes, this, _1, _2, _3),
+      boost::bind(static_cast < void (KNodeImpl::*)(const Contact&,
+          base::callback_func_type) > (&KNodeImpl::Ping), this, _1, _2)));
+  premote_service_->set_node_info(contact_info());
   pservice_channel_.reset(new rpcprotocol::Channel(pchannel_manager_.get()));
   pservice_channel_->SetService(premote_service_.get());
   pchannel_manager_->RegisterChannel(
@@ -1972,6 +1989,8 @@ void KNodeImpl::SearchIteration_Callback(
       result.set_result(kRpcResultSuccess);
       if (!is_joined_) {
         is_joined_ = true;
+        premote_service_->set_node_joined(true);
+        premote_service_->set_node_info(contact_info());
         addcontacts_routine_.reset(new boost::thread(
             &KNodeImpl::CheckAddContacts, this));
         // start a schedule to delete expired key/value pairs only once

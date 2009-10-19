@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // which node 2 uses to test direct-connection status of node 1.
 
 #include <gtest/gtest.h>
+#include <google/protobuf/descriptor.h>
 #include <boost/filesystem.hpp>
 #include "kademlia/kadservice.h"
 #include "kademlia/knodeimpl.h"
@@ -55,122 +56,114 @@ class Callback {
 
 class NatDetectionTest: public testing::Test {
  protected:
-  NatDetectionTest() : kad_config_fileA_("NatDetectionTest/A/.kadconfig"),
-      kad_config_fileB_("NatDetectionTest/B/.kadconfig"),
-      kad_config_fileC_("NatDetectionTest/C/.kadconfig"),
-      channel_managerA_(new rpcprotocol::ChannelManager),
+  NatDetectionTest() : channel_managerA_(new rpcprotocol::ChannelManager),
       channel_managerB_(new rpcprotocol::ChannelManager),
-      channel_managerC_(new rpcprotocol::ChannelManager),
-      knodeimpl1_(new KNodeImpl(channel_managerA_, VAULT, "", "", false,
-      false)), knodeimpl2_(new KNodeImpl(channel_managerB_, VAULT, "", "",
-      false, false)), knodeimpl3_(new KNodeImpl(channel_managerC_, VAULT, "",
-      "", false, false)), cb_(), contactA_(), contactB_(), contactC_(),
-      remote_contact_(), contact_strA_(""), contact_strB_(""),
-      contact_strC_(""), node_idA_(""), node_idB_(""), node_idC_(""),
-      remote_node_id_(""), serviceA_(), serviceB_(), serviceC_(), datastoreA_(),
-      datastoreB_(), datastoreC_(), routingtableA_(), routingtableB_(),
-      routingtableC_(), test_dir_() {
-    test_dir_ = std::string("NatDetectionTest") +
-                boost::lexical_cast<std::string>(base::random_32bit_uinteger());
-    std::string dirs;
-    try {
-      if (fs::exists(test_dir_))
-        fs::remove_all(test_dir_);
-      dirs = test_dir_ + std::string("/A");
-      fs::create_directories(dirs);
-      dirs = test_dir_ + std::string("/B");
-      fs::create_directories(dirs);
-      dirs = test_dir_ + std::string("/C");
-      fs::create_directories(dirs);
-    }
-    catch(const std::exception &e) {
-      LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
-    }
-    dirs = test_dir_ + std::string("/A/datastore");
-    dirs = test_dir_ + std::string("/B/datastore");
-    dirs = test_dir_ + std::string("/C/datastore");
-  }
-
-  virtual ~NatDetectionTest() {
-    try {
-      if (fs::exists(test_dir_))
-        fs::remove_all(test_dir_);
-    }
-    catch(const std::exception &e) {
-      LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
-    }
-  }
+      channel_managerC_(new rpcprotocol::ChannelManager), contactA_(),
+      contactB_(), contactC_(), remote_contact_(), contact_strA_(""),
+      contact_strB_(""), contact_strC_(""), remote_node_id_(""), serviceA_(),
+      serviceB_(), serviceC_(), datastoreA_(), datastoreB_(), datastoreC_(),
+      routingtableA_(), routingtableB_(), routingtableC_(), channelA_(),
+      channelB_(), channelC_() {}
 
   virtual void SetUp() {
     // Node A.
     std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01";
-    node_idA_ = base::DecodeFromHex(hex_id);
     ASSERT_EQ(0, channel_managerA_->StartTransport(0,
-        boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
-        knodeimpl1_.get(), _1)));
-    cb_.Reset();
+        boost::bind(&NatDetectionTest::HandleDeadRVServer, this, _1)));
     boost::asio::ip::address local_ip;
     ASSERT_TRUE(base::get_local_address(&local_ip));
-    knodeimpl1_->Join(node_idA_, kad_config_fileA_,
-        local_ip.to_string(), channel_managerA_->ptransport()->listening_port(),
-        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
-    wait_result(&cb_);
-    ASSERT_EQ(kRpcResultSuccess, cb_.result());
-    ASSERT_TRUE(knodeimpl1_->is_joined());
-    serviceA_ = knodeimpl1_->premote_service_;
-    datastoreA_ = knodeimpl1_->pdata_store_;
-    routingtableA_ = knodeimpl1_->prouting_table_;
-    contactA_ = Contact(knodeimpl1_->node_id(), knodeimpl1_->host_ip(),
-                        knodeimpl1_->host_port(), knodeimpl1_->local_host_ip(),
-                        knodeimpl1_->local_host_port(), knodeimpl1_->rv_ip(),
-                        knodeimpl1_->rv_port());
+
+    contactA_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
+        channel_managerA_->external_port(), local_ip.to_string(),
+        channel_managerA_->external_port());
     contactA_.SerialiseToString(&contact_strA_);
+
+    datastoreA_.reset(new DataStore(kRefreshTime));
+    routingtableA_.reset(new RoutingTable(contactA_.node_id()));
+    serviceA_.reset(new KadService(NatRpcs(channel_managerA_), datastoreA_,
+        false, boost::bind(&NatDetectionTest::AddCtc, this, _1, _2, _3, 1),
+        boost::bind(&NatDetectionTest::GetRandCtcs, this, _1, _2, _3, 1),
+        boost::bind(&NatDetectionTest::GetCtc, this, _1, _2, 1),
+        boost::bind(&NatDetectionTest::GetKCtcs, this, _1, _2, _3, 1),
+        boost::bind(&NatDetectionTest::Ping, this, _1, _2)));
+    ContactInfo node_info;
+    node_info.set_node_id(contactA_.node_id());
+    node_info.set_ip(contactA_.host_ip());
+    node_info.set_port(contactA_.host_port());
+    node_info.set_local_ip(contactA_.local_ip());
+    node_info.set_local_port(contactA_.local_port());
+    serviceA_->set_node_info(node_info);
+    serviceA_->set_node_joined(true);
+    node_info.Clear();
+    channelA_.reset(new rpcprotocol::Channel(channel_managerA_.get()));
+    channelA_->SetService(serviceA_.get());
+    channel_managerA_->RegisterChannel(serviceA_->GetDescriptor()->name(),
+        channelA_.get());
 
     // Node B.
     hex_id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    node_idB_ = base::DecodeFromHex(hex_id);
     ASSERT_EQ(0, channel_managerB_->StartTransport(0,
-        boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
-        knodeimpl2_.get(), _1)));
-    cb_.Reset();
-    knodeimpl2_->Join(node_idB_, kad_config_fileB_,
-        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
-    wait_result(&cb_);
-    ASSERT_EQ(kRpcResultSuccess, cb_.result());
-    ASSERT_TRUE(knodeimpl2_->is_joined());
-    serviceB_ = knodeimpl2_->premote_service_;
-    datastoreB_ = knodeimpl2_->pdata_store_;
-    routingtableB_ = knodeimpl2_->prouting_table_;
-    contactB_ = Contact(knodeimpl2_->node_id(), knodeimpl2_->host_ip(),
-                        knodeimpl2_->host_port(), knodeimpl2_->local_host_ip(),
-                        knodeimpl2_->local_host_port(), knodeimpl2_->rv_ip(),
-                        knodeimpl2_->rv_port());
+        boost::bind(&NatDetectionTest::HandleDeadRVServer, this, _1)));
+
+    contactB_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
+        channel_managerB_->external_port(), local_ip.to_string(),
+        channel_managerB_->external_port());
     contactB_.SerialiseToString(&contact_strB_);
+
+    datastoreB_.reset(new DataStore(kRefreshTime));
+    routingtableB_.reset(new RoutingTable(contactB_.node_id()));
+    serviceB_.reset(new KadService(NatRpcs(channel_managerB_), datastoreB_,
+        false, boost::bind(&NatDetectionTest::AddCtc, this, _1, _2, _3, 2),
+        boost::bind(&NatDetectionTest::GetRandCtcs, this, _1, _2, _3, 2),
+        boost::bind(&NatDetectionTest::GetCtc, this, _1, _2, 2),
+        boost::bind(&NatDetectionTest::GetKCtcs, this, _1, _2, _3, 2),
+        boost::bind(&NatDetectionTest::Ping, this, _1, _2)));
+    node_info.set_node_id(contactB_.node_id());
+    node_info.set_ip(contactB_.host_ip());
+    node_info.set_port(contactB_.host_port());
+    node_info.set_local_ip(contactB_.local_ip());
+    node_info.set_local_port(contactB_.local_port());
+    serviceB_->set_node_info(node_info);
+    serviceB_->set_node_joined(true);
+    node_info.Clear();
+    channelB_.reset(new rpcprotocol::Channel(channel_managerB_.get()));
+    channelB_->SetService(serviceB_.get());
+    channel_managerB_->RegisterChannel(serviceB_->GetDescriptor()->name(),
+        channelB_.get());
 
     // Node C.
     hex_id = "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
              "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-    node_idC_ = base::DecodeFromHex(hex_id);
     ASSERT_EQ(0, channel_managerC_->StartTransport(0,
-        boost::bind(&kad::KNodeImpl::HandleDeadRendezvousServer,
-        knodeimpl3_.get(), _1)));
-    cb_.Reset();
-    knodeimpl3_->Join(node_idC_, kad_config_fileC_,
-        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
-    wait_result(&cb_);
-    ASSERT_EQ(kRpcResultSuccess, cb_.result());
-    ASSERT_TRUE(knodeimpl3_->is_joined());
-    serviceC_ = knodeimpl3_->premote_service_;
-    datastoreC_ = knodeimpl3_->pdata_store_;
-    routingtableC_ = knodeimpl3_->prouting_table_;
-    contactC_ = Contact(knodeimpl3_->node_id(), knodeimpl3_->host_ip(),
-                        knodeimpl3_->host_port(), knodeimpl3_->local_host_ip(),
-                        knodeimpl3_->local_host_port(), knodeimpl3_->rv_ip(),
-                        knodeimpl3_->rv_port());
+        boost::bind(&NatDetectionTest::HandleDeadRVServer, this, _1)));
+    contactC_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
+        channel_managerC_->external_port(), local_ip.to_string(),
+        channel_managerC_->external_port());
     contactC_.SerialiseToString(&contact_strC_);
+
+    datastoreC_.reset(new DataStore(kRefreshTime));
+    routingtableC_.reset(new RoutingTable(contactC_.node_id()));
+    serviceC_.reset(new KadService(NatRpcs(channel_managerC_), datastoreC_,
+        false, boost::bind(&NatDetectionTest::AddCtc, this, _1, _2, _3, 3),
+        boost::bind(&NatDetectionTest::GetRandCtcs, this, _1, _2, _3, 3),
+        boost::bind(&NatDetectionTest::GetCtc, this, _1, _2, 3),
+        boost::bind(&NatDetectionTest::GetKCtcs, this, _1, _2, _3, 3),
+        boost::bind(&NatDetectionTest::Ping, this, _1, _2)));
+    node_info.set_node_id(contactC_.node_id());
+    node_info.set_ip(contactC_.host_ip());
+    node_info.set_port(contactC_.host_port());
+    node_info.set_local_ip(contactC_.local_ip());
+    node_info.set_local_port(contactC_.local_port());
+    serviceC_->set_node_info(node_info);
+    serviceC_->set_node_joined(true);
+    node_info.Clear();
+    channelC_.reset(new rpcprotocol::Channel(channel_managerC_.get()));
+    channelC_->SetService(serviceC_.get());
+    channel_managerC_->RegisterChannel(serviceC_->GetDescriptor()->name(),
+        channelC_.get());
 
     // Add node C's details to node B's routing table
     ASSERT_EQ(routingtableB_->AddContact(contactC_), 0);
@@ -189,46 +182,121 @@ class NatDetectionTest: public testing::Test {
   }
 
   virtual void TearDown() {
-    cb_.Reset();
-    knodeimpl1_->Leave();
-    EXPECT_FALSE(knodeimpl1_->is_joined());
+    channel_managerA_->UnRegisterChannel(serviceA_->GetDescriptor()->name());
+    channelA_.reset();
+    channel_managerB_->UnRegisterChannel(serviceB_->GetDescriptor()->name());
+    channelB_.reset();
+    channel_managerC_->UnRegisterChannel(serviceC_->GetDescriptor()->name());
+    channelC_.reset();
     channel_managerA_->StopTransport();
-    cb_.Reset();
-    knodeimpl2_->Leave();
-    EXPECT_FALSE(knodeimpl2_->is_joined());
     channel_managerB_->StopTransport();
-    cb_.Reset();
-    knodeimpl3_->Leave();
-    EXPECT_FALSE(knodeimpl3_->is_joined());
     channel_managerC_->StopTransport();
     channel_managerC_->CleanUpTransport();
   }
 
-  std::string kad_config_fileA_, kad_config_fileB_, kad_config_fileC_;
-  boost::shared_ptr<rpcprotocol::ChannelManager> channel_managerA_;
-  boost::shared_ptr<rpcprotocol::ChannelManager> channel_managerB_;
-  boost::shared_ptr<rpcprotocol::ChannelManager> channel_managerC_;
-  boost::shared_ptr<KNodeImpl> knodeimpl1_, knodeimpl2_, knodeimpl3_;
-  GeneralKadCallback cb_;
+  boost::shared_ptr<rpcprotocol::ChannelManager> channel_managerA_,
+      channel_managerB_, channel_managerC_;
   Contact contactA_, contactB_, contactC_;
   ContactInfo remote_contact_;
   std::string contact_strA_, contact_strB_, contact_strC_;
-  std::string node_idA_, node_idB_, node_idC_, remote_node_id_;
+  std::string remote_node_id_;
   boost::shared_ptr<KadService> serviceA_, serviceB_, serviceC_;
   boost::shared_ptr<DataStore> datastoreA_, datastoreB_, datastoreC_;
   boost::shared_ptr<RoutingTable>routingtableA_, routingtableB_, routingtableC_;
-  std::string test_dir_;
+  boost::shared_ptr<rpcprotocol::Channel> channelA_, channelB_, channelC_;
  private:
-  NatDetectionTest(const NatDetectionTest&);
-  NatDetectionTest &operator=(const NatDetectionTest&);
+  int AddCtc(Contact ctc, const float&, const bool &only_db, const int &rt_id) {
+    int result = -1;
+    if (!only_db) {
+      switch (rt_id) {
+        case 1: result = routingtableA_->AddContact(ctc);
+                break;
+        case 2: result = routingtableB_->AddContact(ctc);
+                break;
+        case 3: result = routingtableC_->AddContact(ctc);
+                break;
+        default: result = -1;
+      }
+    }
+    return result;
+  }
+  bool GetCtc(const std::string &id, Contact *ctc, const int &rt_id) {
+    bool result;
+    switch (rt_id) {
+      case 1: result = routingtableA_->GetContact(id, ctc);
+              break;
+      case 2: result = routingtableB_->GetContact(id, ctc);
+              break;
+      case 3: result = routingtableC_->GetContact(id, ctc);
+              break;
+      default: result = false;
+    }
+    return result;
+  }
+  void GetRandCtcs(const int &count, const std::vector<Contact> &ex_ctcs,
+      std::vector<Contact> *ctcs, const int &rt_id) {
+    ctcs->clear();
+    std::vector<Contact> all_contacts;
+    int kbuckets;
+    switch (rt_id) {
+      case 1: kbuckets = routingtableA_->KbucketSize();
+              break;
+      case 2: kbuckets = routingtableB_->KbucketSize();
+              break;
+      case 3: kbuckets = routingtableC_->KbucketSize();
+              break;
+      default: kbuckets = 0;
+    }
+    for (int i = 0; i < kbuckets; ++i) {
+      std::vector<kad::Contact> contacts_i;
+      switch (rt_id) {
+        case 1: routingtableA_->GetContacts(i, &contacts_i, ex_ctcs);
+                break;
+        case 2: routingtableB_->GetContacts(i, &contacts_i, ex_ctcs);
+                break;
+        case 3: routingtableC_->GetContacts(i, &contacts_i, ex_ctcs);
+                break;
+      }
+      for (int j = 0; j < static_cast<int>(contacts_i.size()); ++j)
+        all_contacts.push_back(contacts_i[j]);
+    }
+    if (static_cast<int>(all_contacts.size()) < count+1) {
+      *ctcs = all_contacts;
+      return;
+    }
+    std::vector<Contact> temp_vector(count);
+    base::random_sample_n(all_contacts.begin(), all_contacts.end(),
+      temp_vector.begin(), count);
+    *ctcs = temp_vector;
+  }
+  void GetKCtcs(const std::string &key, std::vector<Contact> *ctcs,
+      const std::vector<Contact> &ex_ctcs, const int &rt_id) {
+    switch (rt_id) {
+      case 1: routingtableA_->FindCloseNodes(key, K, ctcs, ex_ctcs);
+              break;
+      case 2: routingtableB_->FindCloseNodes(key, K, ctcs, ex_ctcs);
+              break;
+      case 3: routingtableC_->FindCloseNodes(key, K, ctcs, ex_ctcs);
+              break;
+    }
+  }
+  void Ping(const Contact &ctc, base::callback_func_type cb) {
+    boost::thread thrd(boost::bind(&NatDetectionTest::ExePingCb, this,
+        ctc.node_id(), cb));
+  }
+  void ExePingCb(const std::string &id, base::callback_func_type cb) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    PingResponse resp;
+    resp.set_result(kRpcResultFailure);
+    cb(resp.SerializeAsString());
+  }
+  void HandleDeadRVServer(const bool&) {}
 };
 
 TEST_F(NatDetectionTest, BEH_KAD_NatDetPing) {
   rpcprotocol::Controller controller;
   NatDetectionPingRequest *nd_ping_request = new NatDetectionPingRequest;
   nd_ping_request->set_ping("doink");
-  ContactInfo *sender_info = nd_ping_request->mutable_sender_info();
-  *sender_info = remote_contact_;
   NatDetectionPingResponse nd_ping_response;
   Callback cb_obj;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<Callback>
@@ -238,15 +306,13 @@ TEST_F(NatDetectionTest, BEH_KAD_NatDetPing) {
   EXPECT_TRUE(nd_ping_response.IsInitialized());
   EXPECT_EQ(kRpcResultFailure, nd_ping_response.result());
   EXPECT_FALSE(nd_ping_response.has_echo());
-  EXPECT_EQ(node_idA_, nd_ping_response.node_id());
+  EXPECT_EQ(contactA_.node_id(), nd_ping_response.node_id());
   Contact contactback;
   EXPECT_FALSE(routingtableA_->GetContact(remote_node_id_, &contactback));
   // Check success.
   delete nd_ping_request;
   nd_ping_request = new NatDetectionPingRequest;
   nd_ping_request->set_ping("nat_detection_ping");
-  sender_info = nd_ping_request->mutable_sender_info();
-  *sender_info = remote_contact_;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   nd_ping_response.Clear();
@@ -255,8 +321,7 @@ TEST_F(NatDetectionTest, BEH_KAD_NatDetPing) {
   EXPECT_TRUE(nd_ping_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, nd_ping_response.result());
   EXPECT_EQ("pong", nd_ping_response.echo());
-  EXPECT_EQ(node_idA_, nd_ping_response.node_id());
-  EXPECT_TRUE(routingtableA_->GetContact(remote_node_id_, &contactback));
+  EXPECT_EQ(contactA_.node_id(), nd_ping_response.node_id());
   delete nd_ping_request;
 }
 
@@ -287,7 +352,7 @@ TEST_F(NatDetectionTest, BEH_KAD_SendNatDet) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_EQ(kRpcResultSuccess, response.result());
   Contact contactback;
-  EXPECT_TRUE(routingtableB_->GetContact(node_idA_, &contactback));
+  EXPECT_TRUE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
 }
 
 TEST_F(NatDetectionTest, BEH_KAD_BootstrapNatDetRv) {
@@ -319,9 +384,9 @@ TEST_F(NatDetectionTest, BEH_KAD_BootstrapNatDetRv) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_EQ(3, response.nat_type());
   Contact contactback;
-  EXPECT_TRUE(routingtableB_->GetContact(node_idA_, &contactback));
-  routingtableB_->RemoveContact(node_idA_, false);
-  EXPECT_FALSE(routingtableB_->GetContact(node_idA_, &contactback));
+  EXPECT_TRUE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
+  routingtableB_->RemoveContact(contactA_.node_id(), false);
+  EXPECT_FALSE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
 
   nd_response = new NatDetectionResponse;
   response.Clear();
@@ -334,7 +399,7 @@ TEST_F(NatDetectionTest, BEH_KAD_BootstrapNatDetRv) {
   while (!response.has_nat_type())
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_EQ(2, response.nat_type());
-  EXPECT_TRUE(routingtableB_->GetContact(node_idA_, &contactback));
+  EXPECT_TRUE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
 }
 
 TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
@@ -354,7 +419,7 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   EXPECT_EQ("", response.result());
   EXPECT_EQ(0, response.nat_type());
   Contact contactback;
-  EXPECT_FALSE(routingtableC_->GetContact(node_idA_, &contactback));
+  EXPECT_FALSE(routingtableC_->GetContact(contactA_.node_id(), &contactback));
 
 //   If NatDetectionResponse is uninitialised, NAT type can't be asserted, so
 //   node B calls new NatDetection rpc and should identify NAT type as 1.
@@ -370,9 +435,9 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
 
   EXPECT_EQ(1, response.nat_type());
-  EXPECT_TRUE(routingtableB_->GetContact(node_idA_, &contactback));
-  routingtableB_->RemoveContact(node_idA_, false);
-  EXPECT_FALSE(routingtableB_->GetContact(node_idA_, &contactback));
+  EXPECT_TRUE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
+  routingtableB_->RemoveContact(contactA_.node_id(), false);
+  EXPECT_FALSE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
 
   // If NatDetectionResponse is failure, NAT type can't be asserted, so node B
   // calls new NatDetection rpc and should identify NAT type as 1.
@@ -388,9 +453,9 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   while (!response.has_nat_type())
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_EQ(1, response.nat_type());
-  EXPECT_TRUE(routingtableB_->GetContact(node_idA_, &contactback));
-  routingtableB_->RemoveContact(node_idA_, false);
-  EXPECT_FALSE(routingtableB_->GetContact(node_idA_, &contactback));
+  EXPECT_TRUE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
+  routingtableB_->RemoveContact(contactA_.node_id(), false);
+  EXPECT_FALSE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
 
   // If NatDetectionResponse is success, NAT type is 1.
   nd_response = new NatDetectionResponse;
@@ -405,9 +470,9 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   while (!response.has_nat_type())
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_EQ(1, response.nat_type());
-  EXPECT_TRUE(routingtableB_->GetContact(node_idA_, &contactback));
-  routingtableB_->RemoveContact(node_idA_, false);
-  EXPECT_FALSE(routingtableB_->GetContact(node_idA_, &contactback));
+  EXPECT_TRUE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
+  routingtableB_->RemoveContact(contactA_.node_id(), false);
+  EXPECT_FALSE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
 
   // If NatDetectionResponse is failure, NAT type can't be asserted, so node B
   // calls new NatDetection rpc.  If node C is switched off, this should fail.
@@ -420,14 +485,13 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
       (&cb_obj, &Callback::CallbackFunction);
   struct NatDetectionData nd_data5 = {contactA_, contact_strB_, contactC_,
       &response, done5, ctrl5, ex_contacts};
-  knodeimpl3_->Leave();
-  ASSERT_FALSE(knodeimpl3_->is_joined());
+
+  channel_managerC_->UnRegisterChannel(serviceC_->GetDescriptor()->name());
   serviceB_->Bootstrap_NatDetection(nd_response, nd_data5);
   while (!response.IsInitialized())
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
   EXPECT_EQ(kad::kRpcResultFailure, response.result());
-  EXPECT_FALSE(routingtableB_->GetContact(node_idA_, &contactback));
-  channel_managerB_->StopTransport();
+  EXPECT_FALSE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
 }
 
 TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {
@@ -444,14 +508,14 @@ TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {
   EXPECT_TRUE(nd_response.IsInitialized());
   EXPECT_EQ(kRpcResultFailure, nd_response.result());
   Contact contactback;
-  EXPECT_FALSE(routingtableA_->GetContact(node_idC_, &contactback));
-  EXPECT_FALSE(routingtableC_->GetContact(node_idA_, &contactback));
+  EXPECT_FALSE(routingtableA_->GetContact(contactC_.node_id(), &contactback));
+  EXPECT_FALSE(routingtableC_->GetContact(contactA_.node_id(), &contactback));
 
   // With request incorrectly initialised, fail.
   nd_request.set_newcomer(contact_strA_);
   nd_request.set_bootstrap_node(contact_strB_);
   nd_request.set_type(11);
-  nd_request.set_sender_id(node_idA_);
+  nd_request.set_sender_id(contactA_.node_id());
   nd_response.Clear();
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -461,14 +525,14 @@ TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_TRUE(nd_response.IsInitialized());
   EXPECT_EQ(kRpcResultFailure, nd_response.result());
-  EXPECT_FALSE(routingtableA_->GetContact(node_idC_, &contactback));
-  EXPECT_FALSE(routingtableC_->GetContact(node_idA_, &contactback));
+  EXPECT_FALSE(routingtableA_->GetContact(contactC_.node_id(), &contactback));
+  EXPECT_FALSE(routingtableC_->GetContact(contactA_.node_id(), &contactback));
 
   // With request type == 1, node C tries to ping node A.
   nd_request.set_newcomer(contact_strA_);
   nd_request.set_bootstrap_node(contact_strB_);
   nd_request.set_type(1);
-  nd_request.set_sender_id(node_idA_);
+  nd_request.set_sender_id(contactA_.node_id());
   nd_response.Clear();
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -478,18 +542,17 @@ TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_TRUE(nd_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, nd_response.result());
-  EXPECT_TRUE(routingtableA_->GetContact(node_idC_, &contactback));
   // Node C hasn't added A's details as there weren't enough to warrant addition
   // at the nat detection ping stage.
-  EXPECT_FALSE(routingtableC_->GetContact(node_idA_, &contactback));
-  routingtableA_->RemoveContact(node_idC_, false);
-  EXPECT_FALSE(routingtableA_->GetContact(node_idC_, &contactback));
+  EXPECT_FALSE(routingtableC_->GetContact(contactA_.node_id(), &contactback));
+  routingtableA_->RemoveContact(contactC_.node_id(), false);
+  EXPECT_FALSE(routingtableA_->GetContact(contactC_.node_id(), &contactback));
 
   // With request type == 2, node C tries to rendezvouz with node A via node B.
   nd_request.set_newcomer(contact_strA_);
   nd_request.set_bootstrap_node(contact_strB_);
   nd_request.set_type(2);
-  nd_request.set_sender_id(node_idA_);
+  nd_request.set_sender_id(contactA_.node_id());
   nd_response.Clear();
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -499,10 +562,9 @@ TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_TRUE(nd_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, nd_response.result());
-  EXPECT_TRUE(routingtableA_->GetContact(node_idC_, &contactback));
   // Node C hasn't added A's details as there weren't enough to warrant addition
   // at the nat detection ping stage.
-  EXPECT_FALSE(routingtableC_->GetContact(node_idA_, &contactback));
+  EXPECT_FALSE(routingtableC_->GetContact(contactA_.node_id(), &contactback));
 }
 
 TEST_F(NatDetectionTest, BEH_KAD_FullBootstrap) {
@@ -510,39 +572,16 @@ TEST_F(NatDetectionTest, BEH_KAD_FullBootstrap) {
   BootstrapRequest request;
   BootstrapResponse response;
   Callback cb_obj;
-//  google::protobuf::Closure *done1 = google::protobuf::NewCallback<Callback>
-//      (&cb_obj, &Callback::CallbackFunction);
-//  rpcprotocol::Controller controller1;
-//  serviceB_->Bootstrap(&controller1, &request, &response, done1);
-//  while (!response.IsInitialized())
-//    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-//  EXPECT_EQ(kad::kRpcResultFailure, response.result());
-//  Contact contactback;
-//  EXPECT_FALSE(routingtableA_->GetContact(node_idC_, &contactback));
-//  EXPECT_FALSE(routingtableC_->GetContact(node_idA_, &contactback));
 
   // Check for id == client_node_id
   request.set_newcomer_id(client_node_id());
-  request.set_newcomer_local_ip(knodeimpl1_->local_host_ip());
-  request.set_newcomer_local_port(knodeimpl1_->local_host_port());
-  request.set_newcomer_ext_ip(knodeimpl1_->host_ip());
-  request.set_newcomer_ext_port(knodeimpl1_->host_port());
-//  response.Clear();
-//  google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
-//      (&cb_obj, &Callback::CallbackFunction);
-//  rpcprotocol::Controller controller2;
-//  serviceB_->Bootstrap(&controller2, &request, &response, done2);
-//  while (!response.IsInitialized())
-//    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-//  EXPECT_EQ(kRpcResultSuccess, response.result());
-//  EXPECT_EQ(node_idB_, response.bootstrap_id());
-//  EXPECT_EQ(knodeimpl1_->host_ip(), response.newcomer_ext_ip());
-//  EXPECT_EQ(knodeimpl1_->host_port(), response.newcomer_ext_port());
-//  EXPECT_FALSE(routingtableA_->GetContact(node_idC_, &contactback));
-//  EXPECT_FALSE(routingtableC_->GetContact(node_idA_, &contactback));
+  request.set_newcomer_local_ip(contactA_.local_ip());
+  request.set_newcomer_local_port(contactA_.local_port());
+  request.set_newcomer_ext_ip(contactA_.host_ip());
+  request.set_newcomer_ext_port(contactA_.host_port());
 
   // Check for normal id
-  request.set_newcomer_id(knodeimpl1_->node_id());
+  request.set_newcomer_id(contactA_.node_id());
   response.Clear();
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -551,9 +590,9 @@ TEST_F(NatDetectionTest, BEH_KAD_FullBootstrap) {
   while (!response.has_nat_type())
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_EQ(kRpcResultSuccess, response.result());
-  EXPECT_EQ(node_idB_, response.bootstrap_id());
-  EXPECT_EQ(knodeimpl1_->host_ip(), response.newcomer_ext_ip());
-  EXPECT_EQ(knodeimpl1_->host_port(), response.newcomer_ext_port());
+  EXPECT_EQ(contactB_.node_id(), response.bootstrap_id());
+  EXPECT_EQ(contactA_.host_ip(), response.newcomer_ext_ip());
+  EXPECT_EQ(contactA_.host_port(), response.newcomer_ext_port());
   EXPECT_EQ(1, response.nat_type());
 }
 

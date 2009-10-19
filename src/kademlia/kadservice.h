@@ -33,12 +33,24 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gtest/gtest_prod.h"
 #include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/kademlia_service.pb.h"
+#include "kademlia/natrpc.h"
 
 namespace kad {
-class KNodeImpl;
+class DataStore;
+class Contact;
+
+typedef boost::function< int(Contact, const float&, const bool&) >  // NOLINT
+    add_contact_function;
+typedef boost::function< void(const int&, const std::vector<Contact>&,
+    std::vector<Contact>*) > get_random_contacts_function;
+typedef boost::function< bool(const std::string&, Contact*) >  // NOLINT
+    get_contact_function;
+typedef boost::function< void(const std::string&, std::vector<Contact>*,
+    const std::vector<Contact>&) > get_closestK_function;
+typedef boost::function< void(const Contact&, base::callback_func_type) >
+    ping_function;
 
 struct NatDetectionData {
-  // std::string sender_id;
   Contact newcomer;
   std::string bootstrap_node;
   Contact node_c;
@@ -57,7 +69,10 @@ struct NatDetectionPingData {
 
 class KadService : public KademliaService {
  public:
-  explicit KadService(KNodeImpl *knode);
+  KadService(const NatRpcs &nat_rpcs, boost::shared_ptr<DataStore> datastore,
+      const bool &hasRSAkeys, add_contact_function add_cts,
+      get_random_contacts_function rand_cts, get_contact_function get_ctc,
+      get_closestK_function get_kcts, ping_function ping);
   virtual void Ping(google::protobuf::RpcController *controller,
       const PingRequest *request, PingResponse *response,
       google::protobuf::Closure *done);
@@ -83,9 +98,17 @@ class KadService : public KademliaService {
   virtual void Bootstrap(google::protobuf::RpcController *controller,
       const BootstrapRequest *request, BootstrapResponse *response,
       google::protobuf::Closure *done);
+  inline void set_node_joined(const bool &joined) {
+    node_joined_ = joined;
+  }
+  inline void set_node_info(const ContactInfo &info) {
+    node_info_ = info;
+  }
+  inline void set_alternative_store(base::AlternativeStore* alt_store) {
+    alternative_store_ = alt_store;
+  }
   friend class NatDetectionTest;
  private:
-  FRIEND_TEST(KadServicesTest, BEH_KAD_ServicesValidateSignedRequest);
   FRIEND_TEST(NatDetectionTest, BEH_KAD_SendNatDet);
   FRIEND_TEST(NatDetectionTest, BEH_KAD_BootstrapNatDetRv);
   FRIEND_TEST(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet);
@@ -93,7 +116,6 @@ class KadService : public KademliaService {
       &signed_public_key, const std::string &signed_request, const std::string
       &key);
   bool GetSender(const ContactInfo &sender_info, Contact *sender);
-  void RpcDownlist_Remove(const std::string &ser_response, Contact dead_node);
   void Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
       struct NatDetectionData data);
   void Bootstrap_NatDetection(const NatDetectionResponse *response,
@@ -113,8 +135,18 @@ class KadService : public KademliaService {
       const SignedValue &value, Contact sender, const boost::uint32_t &ttl,
       const bool &publish, StoreResponse *response,
       rpcprotocol::Controller *ctrl);
-  KNodeImpl *knode_;
-  // boost::shared_ptr<base::PDRoutingTableHandler> routingtable_;
+  bool CanStoreSignedValueHashable(const std::string &key,
+      const std::string &value, bool *hashable);
+  NatRpcs nat_rpcs_;
+  boost::shared_ptr<DataStore> pdatastore_;
+  bool node_joined_, node_hasRSAkeys_;
+  ContactInfo node_info_;
+  base::AlternativeStore *alternative_store_;
+  add_contact_function add_contact_;
+  get_random_contacts_function get_random_contacts_;
+  get_contact_function get_contact_;
+  get_closestK_function get_closestK_contacts_;
+  ping_function ping_;
   KadService(const KadService&);
   KadService& operator=(const KadService&);
 };

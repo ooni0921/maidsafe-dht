@@ -1695,24 +1695,16 @@ class NatDetectionPingRequest : public ::google::protobuf::Message {
   inline void set_ping(const void* value, size_t size);
   inline ::std::string* mutable_ping();
   
-  // required .kad.ContactInfo sender_info = 2;
-  inline bool has_sender_info() const;
-  inline void clear_sender_info();
-  static const int kSenderInfoFieldNumber = 2;
-  inline const ::kad::ContactInfo& sender_info() const;
-  inline ::kad::ContactInfo* mutable_sender_info();
-  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
   
   ::std::string* ping_;
   static const ::std::string _default_ping_;
-  ::kad::ContactInfo* sender_info_;
   friend void  protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(1 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -3667,23 +3659,6 @@ inline ::std::string* NatDetectionPingRequest::mutable_ping() {
     ping_ = new ::std::string;
   }
   return ping_;
-}
-
-// required .kad.ContactInfo sender_info = 2;
-inline bool NatDetectionPingRequest::has_sender_info() const {
-  return _has_bit(1);
-}
-inline void NatDetectionPingRequest::clear_sender_info() {
-  if (sender_info_ != NULL) sender_info_->::kad::ContactInfo::Clear();
-  _clear_bit(1);
-}
-inline const ::kad::ContactInfo& NatDetectionPingRequest::sender_info() const {
-  return sender_info_ != NULL ? *sender_info_ : *default_instance_->sender_info_;
-}
-inline ::kad::ContactInfo* NatDetectionPingRequest::mutable_sender_info() {
-  _set_bit(1);
-  if (sender_info_ == NULL) sender_info_ = new ::kad::ContactInfo;
-  return sender_info_;
 }
 
 // -------------------------------------------------------------------

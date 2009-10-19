@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <vector>
-#include "maidsafe/channel.h"
+#include "maidsafe/channelmanager.h"
 #include "protobuf/kademlia_service.pb.h"
 
 namespace kad {
@@ -73,16 +73,16 @@ class KadRpcs {
       const std::string &rv_ip, const boost::uint16_t &rv_port,
       DownlistResponse *resp, rpcprotocol::Controller *ctler,
       google::protobuf::Closure *cb);
-  void NatDetection(const std::string &newcomer,
-      const std::string &bootstrap_node, const boost::uint32_t type,
-      const std::string &sender_id, const std::string &remote_ip,
-      const boost::uint16_t &remote_port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port, NatDetectionResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
-  void NatDetectionPing(const std::string &remote_ip,
-      const boost::uint16_t &remote_port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port, NatDetectionPingResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
+//  void NatDetection(const std::string &newcomer,
+//      const std::string &bootstrap_node, const boost::uint32_t type,
+//      const std::string &sender_id, const std::string &remote_ip,
+//      const boost::uint16_t &remote_port, const std::string &rv_ip,
+//      const boost::uint16_t &rv_port, NatDetectionResponse *resp,
+//      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
+//  void NatDetectionPing(const std::string &remote_ip,
+//      const boost::uint16_t &remote_port, const std::string &rv_ip,
+//      const boost::uint16_t &rv_port, NatDetectionPingResponse *resp,
+//      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
   void Bootstrap(const std::string &local_id, const std::string &local_ip,
       const boost::uint16_t &local_port, const std::string &remote_ip,
       const boost::uint16_t &remote_port, BootstrapResponse *resp,

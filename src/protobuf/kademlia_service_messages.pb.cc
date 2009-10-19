@@ -299,9 +299,8 @@ void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(NatDetectionResponse));
   NatDetectionPingRequest_descriptor_ = file->message_type(13);
-  static const int NatDetectionPingRequest_offsets_[2] = {
+  static const int NatDetectionPingRequest_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(NatDetectionPingRequest, ping_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(NatDetectionPingRequest, sender_info_),
   };
   NatDetectionPingRequest_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -454,11 +453,10 @@ void protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto() {
     "t_type\030\005 \001(\005\"`\n\023NatDetectionRequest\022\020\n\010n"
     "ewcomer\030\001 \002(\014\022\026\n\016bootstrap_node\030\002 \002(\014\022\014\n"
     "\004type\030\003 \002(\005\022\021\n\tsender_id\030\004 \002(\014\"&\n\024NatDet"
-    "ectionResponse\022\016\n\006result\030\001 \002(\014\"N\n\027NatDet"
-    "ectionPingRequest\022\014\n\004ping\030\001 \002(\014\022%\n\013sende"
-    "r_info\030\002 \002(\0132\020.kad.ContactInfo\"I\n\030NatDet"
-    "ectionPingResponse\022\016\n\006result\030\001 \002(\014\022\014\n\004ec"
-    "ho\030\002 \001(\014\022\017\n\007node_id\030\003 \001(\014", 1585);
+    "ectionResponse\022\016\n\006result\030\001 \002(\014\"\'\n\027NatDet"
+    "ectionPingRequest\022\014\n\004ping\030\001 \002(\014\"I\n\030NatDe"
+    "tectionPingResponse\022\016\n\006result\030\001 \002(\014\022\014\n\004e"
+    "cho\030\002 \001(\014\022\017\n\007node_id\030\003 \001(\014", 1546);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "kademlia_service_messages.proto", &protobuf_RegisterTypes);
   PingRequest::default_instance_ = new PingRequest();
@@ -4907,27 +4905,23 @@ const ::google::protobuf::Reflection* NatDetectionResponse::GetReflection() cons
 const ::std::string NatDetectionPingRequest::_default_ping_;
 #ifndef _MSC_VER
 const int NatDetectionPingRequest::kPingFieldNumber;
-const int NatDetectionPingRequest::kSenderInfoFieldNumber;
 #endif  // !_MSC_VER
 
 NatDetectionPingRequest::NatDetectionPingRequest()
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    ping_(const_cast< ::std::string*>(&_default_ping_)),
-    sender_info_(NULL) {
+    ping_(const_cast< ::std::string*>(&_default_ping_)) {
   SharedCtor();
 }
 
-void NatDetectionPingRequest::InitAsDefaultInstance() {  sender_info_ = const_cast< ::kad::ContactInfo*>(&::kad::ContactInfo::default_instance());
-}
+void NatDetectionPingRequest::InitAsDefaultInstance() {}
 
 NatDetectionPingRequest::NatDetectionPingRequest(const NatDetectionPingRequest& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
-    ping_(const_cast< ::std::string*>(&_default_ping_)),
-    sender_info_(NULL) {
+    ping_(const_cast< ::std::string*>(&_default_ping_)) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -4935,7 +4929,6 @@ NatDetectionPingRequest::NatDetectionPingRequest(const NatDetectionPingRequest& 
 void NatDetectionPingRequest::SharedCtor() {
   _cached_size_ = 0;
   ping_ = const_cast< ::std::string*>(&_default_ping_);
-  sender_info_ = NULL;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -4948,7 +4941,6 @@ void NatDetectionPingRequest::SharedDtor() {
     delete ping_;
   }
   if (this != default_instance_) {
-    delete sender_info_;
   }
 }
 
@@ -4974,9 +4966,6 @@ void NatDetectionPingRequest::Clear() {
         ping_->clear();
       }
     }
-    if (_has_bit(1)) {
-      if (sender_info_ != NULL) sender_info_->::kad::ContactInfo::Clear();
-    }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
@@ -4995,19 +4984,6 @@ bool NatDetectionPingRequest::MergePartialFromCodedStream(
           goto handle_uninterpreted;
         }
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_ping()));
-        if (input->ExpectTag(18)) goto parse_sender_info;
-        break;
-      }
-      
-      // required .kad.ContactInfo sender_info = 2;
-      case 2: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
-          goto handle_uninterpreted;
-        }
-       parse_sender_info:
-        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
-             input, mutable_sender_info()));
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -5041,11 +5017,6 @@ void NatDetectionPingRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(1, this->ping(), output);
   }
   
-  // required .kad.ContactInfo sender_info = 2;
-  if (_has_bit(1)) {
-    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(2, this->sender_info(), output);
-  }
-  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -5057,11 +5028,6 @@ void NatDetectionPingRequest::SerializeWithCachedSizes(
   // required bytes ping = 1;
   if (_has_bit(0)) {
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->ping(), target);
-  }
-  
-  // required .kad.ContactInfo sender_info = 2;
-  if (_has_bit(1)) {
-    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(2, this->sender_info(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -5079,13 +5045,6 @@ int NatDetectionPingRequest::ByteSize() const {
     if (has_ping()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->ping());
-    }
-    
-    // required .kad.ContactInfo sender_info = 2;
-    if (has_sender_info()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
-          this->sender_info());
     }
     
   }
@@ -5116,9 +5075,6 @@ void NatDetectionPingRequest::MergeFrom(const NatDetectionPingRequest& from) {
     if (from._has_bit(0)) {
       set_ping(from.ping());
     }
-    if (from._has_bit(1)) {
-      mutable_sender_info()->::kad::ContactInfo::MergeFrom(from.sender_info());
-    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -5138,7 +5094,6 @@ void NatDetectionPingRequest::CopyFrom(const NatDetectionPingRequest& from) {
 void NatDetectionPingRequest::Swap(NatDetectionPingRequest* other) {
   if (other != this) {
     std::swap(ping_, other->ping_);
-    std::swap(sender_info_, other->sender_info_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -5146,11 +5101,8 @@ void NatDetectionPingRequest::Swap(NatDetectionPingRequest* other) {
 }
 
 bool NatDetectionPingRequest::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
+  if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
   
-  if (has_sender_info()) {
-    if (!this->sender_info().IsInitialized()) return false;
-  }
   return true;
 }
 

@@ -161,6 +161,7 @@ int ChannelManagerImpl::StopTransport() {
   {
     boost::mutex::scoped_lock lock(channels_ids_mutex_);
     while (!channels_ids_.empty()) {
+      printf("channels are not empty\n");
       bool wait_result = delete_channels_cond_.timed_wait(lock,
           boost::posix_time::seconds(10));
       if (!wait_result)
