@@ -114,6 +114,7 @@ class KNode {
       const std::string &ip, const uint16_t &port, const std::string &ext_ip);
   void UpdatePDRTContactToRemote(const std::string &node_id,
                                  const std::string &host_ip);
+  void LogRTInfo();
   ContactInfo contact_info() const;
   void StopRvPing();
   std::string node_id() const;

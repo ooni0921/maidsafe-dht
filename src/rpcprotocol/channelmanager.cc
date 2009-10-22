@@ -72,11 +72,6 @@ void ChannelManager::CleanUpTransport() {
   pimpl_->CleanUpTransport();
 }
 
-void ChannelManager::MessageArrive(const RpcMessage &msg,
-      const boost::uint32_t &connection_id, const float &rtt) {
-  pimpl_->MessageArrive(msg, connection_id, rtt);
-}
-
 void ChannelManager::UnRegisterChannel(const std::string &service_name) {
   pimpl_->UnRegisterChannel(service_name);
 }
@@ -93,8 +88,8 @@ boost::shared_ptr<transport::Transport> ChannelManager::ptransport() {
   return pimpl_->ptransport();
 }
 
-boost::uint16_t ChannelManager::external_port() const {
-  return pimpl_->external_port();
+boost::uint16_t ChannelManager::local_port() const {
+  return pimpl_->local_port();
 }
 
 bool ChannelManager::CheckConnection(const std::string &ip,
@@ -122,10 +117,6 @@ void ChannelManager::RemoveChannelId(const boost::uint32_t &id) {
 
 int ChannelManager::StartLocalTransport(const boost::uint16_t &port) {
   return pimpl_->StartLocalTransport(port);
-}
-
-void ChannelManager::OnlineStatusChanged(const bool &online) {
-  pimpl_->OnlineStatusChanged(online);
 }
 
 void ChannelManager::StartPingServer(const bool &dir_connected,

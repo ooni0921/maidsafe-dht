@@ -185,7 +185,6 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_UpdateTuple) {
 TEST(PDRoutingTableHandlerTest, BEH_BASE_UpdateToUnknown) {
   std::string kademlia_id = base::RandomString(64);
   std::string host_ip("192.168.1.188");
-  boost::uint16_t host_port = 8888;
   std::string local_ip("192.168.1.187");
   boost::uint16_t local_port = 7777;
   std::string rendezvous_ip("81.149.64.82");
@@ -205,6 +204,78 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_UpdateToUnknown) {
   ASSERT_EQ(0, rt_handler.UpdateLocalToUnknown(local_ip, local_port));
   ASSERT_EQ(2, rt_handler.ContactLocal(kademlia_id));
   rt_handler.Clear();
+}
+
+TEST(PDRoutingTableHandlerTest, BEH_BASE_GetClosestRtt) {
+  std::vector<base::PDRoutingTableTuple> tuples;
+  tuples.push_back(base::PDRoutingTableTuple("id1", "192.168.1.188", 8888, "",
+      0, "", 35.55, 1, 3232));
+  tuples.push_back(base::PDRoutingTableTuple("id2", "192.168.1.186", 8889, "",
+      0, "", 24.95, 1, 3232));
+  tuples.push_back(base::PDRoutingTableTuple("id3", "192.168.1.188", 8890, "",
+      0, "", 64.8, 1, 3232));
+  tuples.push_back(base::PDRoutingTableTuple("id4", "192.168.1.187", 8891, "",
+      0, "", 35.44, 1, 3232));
+  tuples.push_back(base::PDRoutingTableTuple("id5", "192.168.1.190", 8892, "",
+      0, "", 48.69, 1, 3232));
+  base::PDRoutingTableHandler rt_handler;
+  float rtt = 30;
+  std::set<std::string> ex_ids;
+  base::PDRoutingTableTuple rec_tuple;
+  ASSERT_EQ(1, rt_handler.GetClosestRtt(rtt, ex_ids, &rec_tuple));
+  for (unsigned int n = 0; n < tuples.size(); n++)
+    ASSERT_EQ(0, rt_handler.AddTuple(tuples[n]));
+  ASSERT_EQ(0, rt_handler.GetClosestRtt(rtt, ex_ids, &rec_tuple));
+  ASSERT_EQ(tuples[1].kademlia_id_, rec_tuple.kademlia_id_);
+  ASSERT_EQ(tuples[1].host_ip_, rec_tuple.host_ip_);
+  ASSERT_EQ(tuples[1].rendezvous_ip_, rec_tuple.rendezvous_ip_);
+  ASSERT_EQ(tuples[1].rendezvous_port_, rec_tuple.rendezvous_port_);
+  ASSERT_EQ(tuples[1].rank_, rec_tuple.rank_);
+  ASSERT_EQ(tuples[1].rtt_, rec_tuple.rtt_);
+  ASSERT_EQ(tuples[1].space_, rec_tuple.space_);
+
+  float distance = rtt - rec_tuple.rtt_;
+  if (distance < 0)
+    distance = distance * -1;
+
+  for (unsigned int n = 0; n < tuples.size(); n++) {
+    float tmp_distance = rtt - tuples[n].rtt_;
+    if (tmp_distance < 0)
+      tmp_distance = tmp_distance * -1;
+    ASSERT_LE(distance, tmp_distance);
+  }
+
+  ex_ids.insert(rec_tuple.kademlia_id_);
+  ASSERT_EQ(0, rt_handler.GetClosestRtt(rtt, ex_ids, &rec_tuple));
+  ASSERT_EQ(tuples[3].kademlia_id_, rec_tuple.kademlia_id_);
+  ASSERT_EQ(tuples[3].host_ip_, rec_tuple.host_ip_);
+  ASSERT_EQ(tuples[3].rendezvous_ip_, rec_tuple.rendezvous_ip_);
+  ASSERT_EQ(tuples[3].rendezvous_port_, rec_tuple.rendezvous_port_);
+  ASSERT_EQ(tuples[3].rank_, rec_tuple.rank_);
+  ASSERT_EQ(tuples[3].rtt_, rec_tuple.rtt_);
+  ASSERT_EQ(tuples[3].space_, rec_tuple.space_);
+  distance = rtt - rec_tuple.rtt_;
+  if (distance < 0)
+    distance = distance * -1;
+
+  for (unsigned int n = 0; n < tuples.size(); n++) {
+    if (ex_ids.find(tuples[n].kademlia_id_) == ex_ids.end()) {
+      float tmp_distance = rtt - tuples[n].rtt_;
+      if (tmp_distance < 0)
+        tmp_distance = tmp_distance * -1;
+      ASSERT_LE(distance, tmp_distance);
+    }
+  }
+
+  rtt = tuples[4].rtt_;
+  ASSERT_EQ(0, rt_handler.GetClosestRtt(rtt, ex_ids, &rec_tuple));
+  ASSERT_EQ(tuples[4].kademlia_id_, rec_tuple.kademlia_id_);
+  ASSERT_EQ(tuples[4].host_ip_, rec_tuple.host_ip_);
+  ASSERT_EQ(tuples[4].rendezvous_ip_, rec_tuple.rendezvous_ip_);
+  ASSERT_EQ(tuples[4].rendezvous_port_, rec_tuple.rendezvous_port_);
+  ASSERT_EQ(tuples[4].rank_, rec_tuple.rank_);
+  ASSERT_EQ(tuples[4].rtt_, rec_tuple.rtt_);
+  ASSERT_EQ(tuples[4].space_, rec_tuple.space_);
 }
 
 TEST(PDRoutingTableTest, BEH_BASE_MultipleHandlers) {

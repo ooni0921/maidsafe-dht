@@ -44,7 +44,7 @@ class Contact;
 
 class RoutingTable {
  public:
-  explicit RoutingTable(const std::string &holder_id);
+  explicit RoutingTable(const std::string &holder_id, const int &K = kad::K);
   ~RoutingTable();
   // Add the given contact to the correct k-bucket; if it already
   // exists, its status will be updated
@@ -109,6 +109,7 @@ class RoutingTable {
   int brother_bucket_of_holder_;
   // Upper limit of address space.
   BigInt address_space_upper_address_;
+  int K_;
 };
 }  // namespace kad
 #endif  // KADEMLIA_ROUTINGTABLE_H_

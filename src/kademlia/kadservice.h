@@ -107,7 +107,6 @@ class KadService : public KademliaService {
   inline void set_alternative_store(base::AlternativeStore* alt_store) {
     alternative_store_ = alt_store;
   }
-  friend class NatDetectionTest;
  private:
   FRIEND_TEST(NatDetectionTest, BEH_KAD_SendNatDet);
   FRIEND_TEST(NatDetectionTest, BEH_KAD_BootstrapNatDetRv);

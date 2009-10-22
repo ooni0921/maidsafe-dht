@@ -76,8 +76,8 @@ class NatDetectionTest: public testing::Test {
     ASSERT_TRUE(base::get_local_address(&local_ip));
 
     contactA_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
-        channel_managerA_->external_port(), local_ip.to_string(),
-        channel_managerA_->external_port());
+        channel_managerA_->local_port(), local_ip.to_string(),
+        channel_managerA_->local_port());
     contactA_.SerialiseToString(&contact_strA_);
 
     datastoreA_.reset(new DataStore(kRefreshTime));
@@ -109,8 +109,8 @@ class NatDetectionTest: public testing::Test {
         boost::bind(&NatDetectionTest::HandleDeadRVServer, this, _1)));
 
     contactB_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
-        channel_managerB_->external_port(), local_ip.to_string(),
-        channel_managerB_->external_port());
+        channel_managerB_->local_port(), local_ip.to_string(),
+        channel_managerB_->local_port());
     contactB_.SerialiseToString(&contact_strB_);
 
     datastoreB_.reset(new DataStore(kRefreshTime));
@@ -140,8 +140,8 @@ class NatDetectionTest: public testing::Test {
     ASSERT_EQ(0, channel_managerC_->StartTransport(0,
         boost::bind(&NatDetectionTest::HandleDeadRVServer, this, _1)));
     contactC_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
-        channel_managerC_->external_port(), local_ip.to_string(),
-        channel_managerC_->external_port());
+        channel_managerC_->local_port(), local_ip.to_string(),
+        channel_managerC_->local_port());
     contactC_.SerialiseToString(&contact_strC_);
 
     datastoreC_.reset(new DataStore(kRefreshTime));
@@ -284,7 +284,7 @@ class NatDetectionTest: public testing::Test {
     boost::thread thrd(boost::bind(&NatDetectionTest::ExePingCb, this,
         ctc.node_id(), cb));
   }
-  void ExePingCb(const std::string &id, base::callback_func_type cb) {
+  void ExePingCb(const std::string&, base::callback_func_type cb) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     PingResponse resp;
     resp.set_result(kRpcResultFailure);

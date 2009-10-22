@@ -240,5 +240,4 @@ void KNode::SetAlternativeStore(base::AlternativeStore* alternative_store) {
 base::AlternativeStore *KNode::alternative_store() {
   return pimpl_->alternative_store();
 }
-
 }  // namespace kad

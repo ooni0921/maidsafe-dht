@@ -66,15 +66,14 @@ class ChannelManager {
   int StartLocalTransport(const boost::uint16_t &port);
   int StopTransport();
   void CleanUpTransport();
-  void MessageArrive(const RpcMessage &msg,
-      const boost::uint32_t &connection_id, const float &rtt);
+//  void MessageArrive(const RpcMessage &msg,
+//      const boost::uint32_t &connection_id, const float &rtt);
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
   bool DeletePendingRequest(const boost::uint32_t &req_id);
   void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
   boost::shared_ptr<transport::Transport> ptransport();
-  boost::uint16_t external_port() const;
-  std::string external_ip() const;
+  boost::uint16_t local_port() const;
   bool CheckConnection(const std::string &ip, const uint16_t &port);
   bool CheckLocalAddress(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port);
@@ -82,7 +81,6 @@ class ChannelManager {
     const boost::uint32_t &req_id, const int &timeout);
   void AddChannelId(boost::uint32_t *id);
   void RemoveChannelId(const boost::uint32_t &id);
-  void OnlineStatusChanged(const bool &online);
   void StartPingServer(const bool &dir_connected, const std::string &server_ip,
     const boost::uint16_t &server_port);
   void StopPingServer();

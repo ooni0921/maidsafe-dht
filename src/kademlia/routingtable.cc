@@ -31,15 +31,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 
-RoutingTable::RoutingTable(const std::string &holder_id)
+RoutingTable::RoutingTable(const std::string &holder_id, const int &K)
       : k_buckets_(), bucket_upper_address_(), holder_id_(holder_id),
         bucket_of_holder_(0), brother_bucket_of_holder_(-1),
-        address_space_upper_address_("2") {
+        address_space_upper_address_("2"), K_(K) {
   BigInt min_range(0);
   address_space_upper_address_.pow2(kKeySizeBytes*8);
   address_space_upper_address_--;
   boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
-      address_space_upper_address_));
+      address_space_upper_address_, K_));
   k_buckets_.push_back(kbucket);
   bucket_upper_address_.insert(std::pair<BigInt, int>
       (address_space_upper_address_, 0));
@@ -123,12 +123,12 @@ void RoutingTable::SplitKbucket(const int &index) {
   BigInt range_min_kb_right = split_point;
   BigInt range_max_kb_right = k_buckets_[index]->range_max();
   boost::shared_ptr<KBucket> kb_left(new KBucket
-      (range_min_kb_left, range_max_kb_left));
+      (range_min_kb_left, range_max_kb_left, K_));
   boost::shared_ptr<KBucket> kb_right(new KBucket
-      (range_min_kb_right, range_max_kb_right));
+      (range_min_kb_right, range_max_kb_right, K_));
   // Getting all contacts of the kbucket to be split
   std::vector<Contact> contacts, ex_contacts;
-  k_buckets_[index]->GetContacts(K, ex_contacts, &contacts);
+  k_buckets_[index]->GetContacts(K_, ex_contacts, &contacts);
   for (int i = contacts.size()-1; i > -1; --i) {
     Contact contact = contacts[i];
     KBucketExitCode exitcode;
@@ -197,7 +197,7 @@ void RoutingTable::FindCloseNodes(const std::string &key, int count,
   // Start for loop at 1, as we have already added contacts from closest bucket.
   for (boost::uint32_t index_no = 1; index_no < indices.size(); ++index_no) {
     std::vector<Contact> contacts;
-    k_buckets_[indices[index_no]]->GetContacts(K, exclude_contacts, &contacts);
+    k_buckets_[indices[index_no]]->GetContacts(K_, exclude_contacts, &contacts);
     if (0 != SortContactsByDistance(key, &contacts))
       continue;
     boost::uint32_t iter(0);
@@ -238,7 +238,7 @@ bool RoutingTable::GetContacts(const int &index,
   if (index > static_cast<int>(k_buckets_.size()))
     return false;
   contacts->clear();
-  k_buckets_[index]->GetContacts(K, exclude_contacts, contacts);
+  k_buckets_[index]->GetContacts(K_, exclude_contacts, contacts);
   return true;
 }
 
@@ -249,7 +249,7 @@ void RoutingTable::Clear() {
   address_space_upper_address_.pow2(kKeySizeBytes*8);
   address_space_upper_address_--;
   boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
-      address_space_upper_address_));
+      address_space_upper_address_, K_));
   k_buckets_.push_back(kbucket);
   bucket_upper_address_.insert(std::pair<BigInt, int>
       (address_space_upper_address_, 0));
@@ -325,12 +325,13 @@ bool get_least_useful_contact(std::list<ContactWithTargetPeer> l,
 int RoutingTable::ForceKAcceptNewPeer(const Contact &new_contact) {
   // Calculate how many k closest neighbours belong to the brother bucket of
   // the peer
-  int v = K - k_buckets_[bucket_of_holder_]->Size();
+  int v = K_ - k_buckets_[bucket_of_holder_]->Size();
   if (v == 0)
     return 1;
   // Getting all contacts of the brother kbucket of the peer
   std::vector<Contact> contacts, ex_contacts;
-  k_buckets_[brother_bucket_of_holder_]->GetContacts(K, ex_contacts, &contacts);
+  k_buckets_[brother_bucket_of_holder_]->GetContacts(K_, ex_contacts,
+      &contacts);
   std::list<detail::ContactWithTargetPeer> candidates_for_l;
   for (boost::uint16_t i = 0; i < contacts.size(); ++i) {
     detail::ContactWithTargetPeer entry = {contacts[i], holder_id_};

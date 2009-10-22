@@ -57,10 +57,7 @@ std::string random_kademlia_id(const BigInt &min_range,
     rand_num = max_range - 1;
   if (rand_num < min_range)
     rand_num = min_range;
-  std::ostringstream os;
-  os.setf(std::ios_base::hex, std::ios_base::basefield);
-  os << rand_num;
-  std::string temp = os.str();
+  std::string temp = rand_num.to_string<std::string>(std::ios_base::hex);
   if (temp.size() < 2 * kKeySizeBytes) {
     temp = std::string(2 * kKeySizeBytes - temp.size(), '0') + temp;
   }

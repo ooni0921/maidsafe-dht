@@ -46,18 +46,44 @@ int PDRoutingTableHandler::GetTupleInfo(const std::string &host_ip,
     const boost::uint16_t &host_port, PDRoutingTableTuple *tuple) {
   boost::mutex::scoped_lock guard(mutex_);
   routingtable::iterator it = routingtable_.find(boost::make_tuple(host_ip,
-                                                                   host_port));
+      host_port));
   if (it == routingtable_.end())
     return 1;
   *tuple = *it;
   return 0;
 }
 
-int PDRoutingTableHandler::GetClosestRtt(
-    const float &ideal_rtt,
-    const std::set<std::string> &exclude_ids) {
+int PDRoutingTableHandler::GetClosestRtt(const float &rtt,
+    const std::set<std::string> &exclude_ids, PDRoutingTableTuple *tuple) {
   boost::mutex::scoped_lock guard(mutex_);
   routingtable::index<t_rtt>::type& rtt_indx = routingtable_.get<t_rtt>();
+  routingtable::index<t_rtt>::type::iterator indx0 = rtt_indx.lower_bound(rtt);
+  routingtable::index<t_rtt>::type::iterator indx1 = rtt_indx.upper_bound(rtt);
+  bool found_closest = false;
+  float distance_ideal = -1;
+  std::set<std::string>::iterator set_it;
+  while (indx0 != rtt_indx.end() && !found_closest) {
+    set_it = exclude_ids.find(indx0->kademlia_id_);
+    if (set_it == exclude_ids.end()) {
+      found_closest = true;
+      distance_ideal = indx0->rtt_ - rtt;
+      *tuple = *indx0;
+    }
+    ++indx0;
+  }
+  found_closest = false;
+  while (indx1 != rtt_indx.begin() && !found_closest) {
+    --indx1;
+    set_it = exclude_ids.find(indx1->kademlia_id_);
+    if (set_it == exclude_ids.end()) {
+      found_closest = true;
+      if (distance_ideal < 0.0 || distance_ideal > (rtt - indx1->rtt_))
+        *tuple = *indx1;
+    }
+  }
+  if (distance_ideal < 0.0)
+  // couldn't find a tuple with rtt close to ideal_rtt
+    return 1;
   return 0;
 }
 
@@ -70,7 +96,7 @@ int PDRoutingTableHandler::AddTuple(base::PDRoutingTableTuple tuple) {
     key_indx.insert(tuple);
   } else {
     tuple.ctc_local_ = it->ctc_local_;
-    if (tuple.rtt_ == 0)
+    if (!(tuple.rtt_ > 0) && !(tuple.rtt_ < 0))
       tuple.rtt_ = it->rtt_;
     key_indx.replace(it, tuple);
   }

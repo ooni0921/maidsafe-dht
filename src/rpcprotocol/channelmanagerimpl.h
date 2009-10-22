@@ -76,8 +76,8 @@ class ChannelManagerImpl {
   int StartLocalTransport(const boost::uint16_t &port);
   int StopTransport();
   void CleanUpTransport();
-  void MessageArrive(const RpcMessage &msg,
-      const boost::uint32_t &connection_id, const float &rtt);
+//  void MessageArrive(const RpcMessage &msg,
+//      const boost::uint32_t &connection_id, const float &rtt);
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
   bool DeletePendingRequest(const boost::uint32_t &req_id);
@@ -85,20 +85,22 @@ class ChannelManagerImpl {
   inline boost::shared_ptr<transport::Transport> ptransport() {
     return ptransport_;
   }
-  boost::uint16_t external_port() const {return external_port_;}
-  std::string external_ip() const {return external_ip_;}
+  boost::uint16_t local_port() const {return local_port_;}
+//  std::string external_ip() const {return external_ip_;}
   bool CheckConnection(const std::string &ip, const uint16_t &port);
   bool CheckLocalAddress(const std::string &local_ip,
     const std::string &remote_ip, const uint16_t &remote_port);
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout);
-  void OnlineStatusChanged(const bool &online);
   void StartPingServer(const bool &dir_connected, const std::string &server_ip,
     const boost::uint16_t &server_port);
   void StopPingServer();
  private:
   void TimerHandler(const boost::uint32_t &req_id);
   void RequestSent(const boost::uint32_t &connection_id, const bool &success);
+  void OnlineStatusChanged(const bool &online);
+  void MessageArrive(const RpcMessage &msg,
+      const boost::uint32_t &connection_id, const float &rtt);
   boost::shared_ptr<transport::Transport> ptransport_;
   bool is_started_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
@@ -109,8 +111,8 @@ class ChannelManagerImpl {
   std::map<boost::uint32_t, PendingReq> pending_req_;
   ChannelManagerImpl(const ChannelManagerImpl&);
   ChannelManagerImpl& operator=(const ChannelManagerImpl&);
-  boost::uint16_t external_port_;
-  std::string external_ip_;
+  boost::uint16_t local_port_;
+//  std::string external_ip_;
   std::map<boost::uint32_t, PendingTimeOut> pending_timeout_;
   std::set<boost::uint32_t> channels_ids_;
   boost::condition_variable delete_channels_cond_;

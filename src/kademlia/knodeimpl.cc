@@ -464,8 +464,8 @@ void KNodeImpl::Join(const std::string &node_id,
     return;
   }
   if (host_port_ == 0)
-    host_port_ = pchannel_manager_->external_port();
-  local_host_port_ = pchannel_manager_->external_port();
+    host_port_ = pchannel_manager_->local_port();
+  local_host_port_ = pchannel_manager_->local_port();
   // Adding the services
   RegisterKadService();
 
@@ -492,7 +492,7 @@ void KNodeImpl::Join(const std::string &node_id,
 
   // Set kad_config_path_
   kad_config_path_ = fs::path(kad_config_file, fs::native);
-  prouting_table_.reset(new RoutingTable(node_id_));
+  prouting_table_.reset(new RoutingTable(node_id_, K_));
   Join_RefreshNode(cb, got_external_address);
 }
 
@@ -529,7 +529,7 @@ void KNodeImpl::Join(const std::string &node_id,
     cb(local_result_str);
     return;
   }
-  local_host_port_ = pchannel_manager_->external_port();
+  local_host_port_ = pchannel_manager_->local_port();
 
   if (use_upnp_) {
     UPnPMap(local_host_port_);
@@ -558,7 +558,7 @@ void KNodeImpl::Join(const std::string &node_id,
   rv_port_ = 0;
   // Set kad_config_path_
   kad_config_path_ = fs::path(kad_config_file, fs::native);
-  prouting_table_.reset(new RoutingTable(node_id_));
+  prouting_table_.reset(new RoutingTable(node_id_, K_));
 
   is_joined_ = true;
   premote_service_->set_node_joined(true);
@@ -1221,7 +1221,7 @@ int KNodeImpl::AddContact(Contact new_contact, const float & rtt,
                                     0);
     (*base::PDRoutingTable::getInstance())[boost::lexical_cast<std::string>
         (host_port_)]->AddTuple(tuple);
-    if (result == 2) {
+    if (result == 2 && is_joined_) {
       {
         boost::mutex::scoped_lock gaurd(pendingcts_mutex_);
         contacts_to_add_.push_back(new_contact);
@@ -1483,8 +1483,7 @@ void KNodeImpl::CheckToInsert(const Contact &new_contact) {
   Contact last_seen;
   last_seen = prouting_table_->GetLastSeenContact(index);
   DLOG(INFO) << "Pinging last seen node in routing table to try to insert " <<
-    "to try to insert contact with endpoint " << new_contact.host_ip() << ":"
-    << new_contact.host_port() << std::endl;
+    "to try to insert contact\n" << new_contact.ToString();
   Ping(last_seen, boost::bind(&KNodeImpl::CheckToInsert_Callback, this, _1,
     new_contact.node_id(), new_contact));
 }

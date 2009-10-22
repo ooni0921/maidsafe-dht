@@ -43,7 +43,8 @@ class KBucket {
  public:
   // The lower and upper boundary for the range in the 160-bit ID
   // space covered by this k-bucket
-  KBucket(const BigInt &range_min, const BigInt &range_max);
+  KBucket(const BigInt &range_min, const BigInt &range_max,
+      const int &K = kad::K);
   ~KBucket();
   // add a new contact to the k-bucket
   KBucketExitCode AddContact(const Contact &new_contact);
@@ -74,6 +75,7 @@ class KBucket {
   std::list<Contact> contacts_;
   BigInt range_min_;
   BigInt range_max_;
+  int K_;
 };
 }  // namespace kad
 

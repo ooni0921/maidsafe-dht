@@ -99,7 +99,7 @@ class TestKnodes : public testing::Test {
           boost::bind(&MessageHandler::OnDeadRendezvousServer,
           msg_handlers_[i].get(), _1, _2, _3));
       datastore_dir_[i] = test_dir_ + "/Datastore" +
-          boost::lexical_cast<std::string>(ch_managers_[i]->external_port());
+          boost::lexical_cast<std::string>(ch_managers_[i]->local_port());
       boost::filesystem::create_directories(
           boost::filesystem::path(datastore_dir_[i]));
       nodes_[i].reset(new KNode(ch_managers_[i], VAULT, "", "", false, false));

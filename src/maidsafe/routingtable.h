@@ -138,32 +138,30 @@ class PDRoutingTableHandler {
     routingtable_.clear();
   }
   int GetTupleInfo(const std::string &kademlia_id, PDRoutingTableTuple *tuple);
-  int GetTupleInfo(const std::string &host_ip,
-                   const boost::uint16_t &host_port,
-                   PDRoutingTableTuple *tuple);
-  int GetClosestRtt(const float &ideal_rtt,
-                    const std::set<std::string> &exclude_ids);
+  int GetTupleInfo(const std::string &host_ip, const boost::uint16_t &host_port,
+      PDRoutingTableTuple *tuple);
+  int GetClosestRtt(const float &rtt, const std::set<std::string> &exclude_ids,
+      PDRoutingTableTuple *tuple);
   int AddTuple(base::PDRoutingTableTuple tuple);
   int DeleteTupleByKadId(const std::string &kademlia_id);
   int UpdateHostIp(const std::string &kademlia_id,
-    const std::string &new_host_ip);
+      const std::string &new_host_ip);
   int UpdateHostPort(const std::string &kademlia_id,
-    const boost::uint16_t &new_host_port);
+      const boost::uint16_t &new_host_port);
   int UpdateRendezvousIp(const std::string &kademlia_id,
-    const std::string &new_rv_ip);
+      const std::string &new_rv_ip);
   int UpdateRendezvousPort(const std::string &kademlia_id,
-    const boost::uint16_t &new_rv_port);
+      const boost::uint16_t &new_rv_port);
   int UpdatePublicKey(const std::string &kademlia_id,
-    const std::string &new_public_key);
-  int UpdateRtt(const std::string &kademlia_id,
-    const float &new_rtt);
+      const std::string &new_public_key);
+  int UpdateRtt(const std::string &kademlia_id, const float &new_rtt);
   int UpdateRank(const std::string &kademlia_id,
-    const boost::uint16_t &new_rank);
+      const boost::uint16_t &new_rank);
   int UpdateSpace(const std::string &kademlia_id,
-    const boost::uint32_t &new_space);
+      const boost::uint32_t &new_space);
   int ContactLocal(const std::string &kademlia_id);
   int UpdateContactLocal(const std::string &kademlia_id,
-    const std::string &host_ip, const int &new_contact_local);
+      const std::string &host_ip, const int &new_contact_local);
   int UpdateLocalToUnknown(const std::string &ip, const boost::uint16_t &port);
  private:
 //  PDRoutingTableHandler(const PDRoutingTableHandler&);

@@ -32,25 +32,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstdlib>
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
-
-namespace {
-
-class RSAKeysTest : public testing::Test {
- protected:
-  RSAKeysTest() : rsakp() {}
-  crypto::RsaKeyPair rsakp;
-};
-
-class CryptoTest : public testing::Test {
- protected:
-  CryptoTest() : ct() {}
-  crypto::Crypto ct;
-};
-
-}  // namespace
-
 // Obfuscation tests
-TEST_F(CryptoTest, BEH_BASE_ObfuscatDiffSizes) {
+TEST(CryptoTest, BEH_BASE_ObfuscatDiffSizes) {
+  crypto::Crypto ct;
   std::string obfuscated = ct.Obfuscate(base::RandomString(1024),
                            base::RandomString(1234), crypto::XOR);
   // To be checked, empty string means error = operation not performed because
@@ -58,7 +42,8 @@ TEST_F(CryptoTest, BEH_BASE_ObfuscatDiffSizes) {
   ASSERT_EQ(obfuscated, "");
 }
 
-TEST_F(CryptoTest, BEH_BASE_Obfuscation) {
+TEST(CryptoTest, BEH_BASE_Obfuscation) {
+  crypto::Crypto ct;
   std::string str1 = base::RandomString(1024);
   std::string str2 = base::RandomString(1024);
   std::string obfuscated = ct.Obfuscate(str1, str2, crypto::XOR);
@@ -69,7 +54,8 @@ TEST_F(CryptoTest, BEH_BASE_Obfuscation) {
 }
 
 //  Password generation
-TEST_F(CryptoTest, BEH_BASE_SecurePasswordGeneration) {
+TEST(CryptoTest, BEH_BASE_SecurePasswordGeneration) {
+  crypto::Crypto ct;
   ASSERT_EQ("", ct.SecurePassword("", 100));
   ASSERT_EQ("", ct.SecurePassword("abcdef", 0));
   ASSERT_NE(ct.SecurePassword("oreja80", 1000), "") << "Password empty";
@@ -77,7 +63,8 @@ TEST_F(CryptoTest, BEH_BASE_SecurePasswordGeneration) {
 }
 
 //  Hashing
-TEST_F(CryptoTest, BEH_BASE_SetGetAlgorithm) {
+TEST(CryptoTest, BEH_BASE_SetGetAlgorithm) {
+  crypto::Crypto ct;
   ct.set_hash_algorithm(crypto::SHA_1);
   ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_1) << "Hash algorithm wrong";
   /*
@@ -92,7 +79,8 @@ TEST_F(CryptoTest, BEH_BASE_SetGetAlgorithm) {
   ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_512) << "Hash algorithm wrong";
 }
 
-TEST_F(CryptoTest, FUNC_BASE_Hash) {
+TEST(CryptoTest, FUNC_BASE_Hash) {
+  crypto::Crypto ct;
   // input files
   std::string input1("input1");
   input1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
@@ -273,12 +261,14 @@ TEST_F(CryptoTest, FUNC_BASE_Hash) {
 }
 
 //  Symmetric Encryption
-TEST_F(CryptoTest, BEH_BASE_SetSymmAlgorithm) {
+TEST(CryptoTest, BEH_BASE_SetSymmAlgorithm) {
+  crypto::Crypto ct;
   ct.set_symm_algorithm(crypto::AES_256);
   ASSERT_EQ(ct.symm_algorithm(), crypto::AES_256) << "GetSymmAlgorithm Failed";
 }
 
-TEST_F(CryptoTest, FUNC_BASE_SymmEncrypt) {
+TEST(CryptoTest, FUNC_BASE_SymmEncrypt) {
+  crypto::Crypto ct;
   std::string key = "some key";
   std::string data = base::RandomString(10*1024*1024);
   // input file
@@ -351,7 +341,8 @@ TEST_F(CryptoTest, FUNC_BASE_SymmEncrypt) {
 }
 
 //  Asymmetric Encryption
-TEST_F(CryptoTest, BEH_BASE_AsymEncrypt) {
+TEST(CryptoTest, BEH_BASE_AsymEncrypt) {
+  crypto::Crypto ct;
   std::string data = base::RandomString(100);
   // input file
   std::string input1("input1");
@@ -429,7 +420,8 @@ TEST_F(CryptoTest, BEH_BASE_AsymEncrypt) {
   // TODO(Team#5#): 2009-06-30 - Check maximum size of data we can encrypt
 }
 
-TEST_F(CryptoTest, BEH_BASE_AsymSign) {
+TEST(CryptoTest, BEH_BASE_AsymSign) {
+  crypto::Crypto ct;
   std::string data = base::RandomString(10*1024);
   ASSERT_EQ("", ct.AsymSign(data , "", base::RandomString(2048),
             crypto::STRING_STRING)) << "Tried to sign with a string that "
@@ -467,7 +459,8 @@ TEST_F(CryptoTest, BEH_BASE_AsymSign) {
 }
 
 //  Compression
-TEST_F(CryptoTest, BEH_BASE_Compress) {
+TEST(CryptoTest, BEH_BASE_Compress) {
+  crypto::Crypto ct;
   std::string data = "Deep in the mists of time in a previous millennium, when "
       "life was simpler and people had time, compassion and warmth for each "
       "other; when courage, fortitude and strength were the watchwords of the "
@@ -552,25 +545,29 @@ TEST_F(CryptoTest, BEH_BASE_Compress) {
 }
 
 //  RSA Key Pairs
-TEST_F(RSAKeysTest, BEH_BASE_SetPublicKey) {
+TEST(RSAKeysTest, BEH_BASE_SetPublicKey) {
+  crypto::RsaKeyPair rsakp;
   std::string pub_key = base::RandomString(4096);
   rsakp.set_public_key(pub_key);
   ASSERT_EQ(rsakp.public_key(), pub_key) << "GetPublicKey Failed";
 }
 
-TEST_F(RSAKeysTest, BEH_BASE_SetPrivateKey) {
+TEST(RSAKeysTest, BEH_BASE_SetPrivateKey) {
+  crypto::RsaKeyPair rsakp;
   std::string pri_key = base::RandomString(4096);
   rsakp.set_private_key(pri_key);
   ASSERT_EQ(rsakp.private_key(), pri_key) << "GetPrivateKey Failed";
 }
 
-TEST_F(RSAKeysTest, BEH_BASE_KeyGeneration) {
+TEST(RSAKeysTest, BEH_BASE_KeyGeneration) {
+  crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(4096);
   ASSERT_NE("", rsakp.private_key()) << "Key generation Failed";
   ASSERT_NE("", rsakp.public_key()) << "Key generation Failed";
 }
 
-TEST_F(RSAKeysTest, BEH_BASE_ClearKeys) {
+TEST(RSAKeysTest, BEH_BASE_ClearKeys) {
+  crypto::RsaKeyPair rsakp;
   rsakp.GenerateKeys(4096);
   EXPECT_NE("", rsakp.private_key());
   EXPECT_NE("", rsakp.public_key());

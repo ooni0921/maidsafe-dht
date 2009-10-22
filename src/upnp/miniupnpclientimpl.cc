@@ -151,10 +151,8 @@ bool UpnpIgdClientImpl::DeletePortMapping(const int &port,
 
 #ifdef DEBUG
       if (res != UPNPCOMMAND_SUCCESS) {
-        printf("Error deleting UPnP port mapping (%s %d): %d\n",
-               proto.c_str(),
-               ext_port.c_str(),
-               res);
+        printf("Error deleting UPnP port mapping (%s %d): %d\n", proto.c_str(),
+            port, res);
       }
 #endif
 

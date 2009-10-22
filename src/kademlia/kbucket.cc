@@ -30,9 +30,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 
-KBucket::KBucket(const BigInt &range_min, const BigInt &range_max)
+KBucket::KBucket(const BigInt &range_min, const BigInt &range_max, const int &K)
     : last_accessed_(0), contacts_(), range_min_(range_min),
-    range_max_(range_max) {}
+    range_max_(range_max), K_(K) {}
 
 KBucket::~KBucket() {
   contacts_.clear();
@@ -76,7 +76,7 @@ KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
     contacts_.erase(it);
   }
 
-  if (static_cast<boost::uint16_t>(contacts_.size()) == K)
+  if (static_cast<boost::uint16_t>(contacts_.size()) == K_)
     return FULL;
 
   contacts_.push_front(new_contact_local);
