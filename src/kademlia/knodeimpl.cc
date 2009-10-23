@@ -1372,6 +1372,7 @@ void KNodeImpl::RegisterKadService() {
       boost::bind(static_cast < void (KNodeImpl::*)(const Contact&,
           base::callback_func_type) > (&KNodeImpl::Ping), this, _1, _2)));
   premote_service_->set_node_info(contact_info());
+  premote_service_->set_alternative_store(alternative_store_);
   pservice_channel_.reset(new rpcprotocol::Channel(pchannel_manager_.get()));
   pservice_channel_->SetService(premote_service_.get());
   pchannel_manager_->RegisterChannel(

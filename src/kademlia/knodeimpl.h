@@ -279,7 +279,8 @@ class KNodeImpl {
       const std::string &value) const;
   inline void SetAlternativeStore(base::AlternativeStore* alt_store) {
     alternative_store_ = alt_store;
-    premote_service_->set_alternative_store(alternative_store_);
+    if (premote_service_.get() != NULL)
+      premote_service_->set_alternative_store(alternative_store_);
   }
   inline base::AlternativeStore *alternative_store() {
     return alternative_store_;
