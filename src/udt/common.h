@@ -200,17 +200,16 @@ private:
 // decseq: decrease the seq# by 1
 // incseq: increase the seq# by a given offset
 
-
 class CSeqNo
 {
 public:
-   inline static int seqcmp(const int32_t& seq1, const int32_t& seq2)
+   inline static const int seqcmp(const int32_t& seq1, const int32_t& seq2)
    {return (abs(seq1 - seq2) < m_iSeqNoTH) ? (seq1 - seq2) : (seq2 - seq1);}
 
    inline static const int seqlen(const int32_t& seq1, const int32_t& seq2)
    {return (seq1 <= seq2) ? (seq2 - seq1 + 1) : (seq2 - seq1 + m_iMaxSeqNo + 2);}
 
-   inline static int seqoff(const int32_t& seq1, const int32_t& seq2)
+   inline static const int seqoff(const int32_t& seq1, const int32_t& seq2)
    {
       if (abs(seq1 - seq2) < m_iSeqNoTH)
          return seq2 - seq1;
@@ -256,13 +255,13 @@ public:
 class CMsgNo
 {
 public:
-   inline static int msgcmp(const int32_t& msgno1, const int32_t& msgno2)
+   inline static const int msgcmp(const int32_t& msgno1, const int32_t& msgno2)
    {return (abs(msgno1 - msgno2) < m_iMsgNoTH) ? (msgno1 - msgno2) : (msgno2 - msgno1);}
 
    inline static const int msglen(const int32_t& msgno1, const int32_t& msgno2)
    {return (msgno1 <= msgno2) ? (msgno2 - msgno1 + 1) : (msgno2 - msgno1 + m_iMaxMsgNo + 2);}
 
-   inline static int msgoff(const int32_t& msgno1, const int32_t& msgno2)
+   inline static const int msgoff(const int32_t& msgno1, const int32_t& msgno2)
    {
       if (abs(msgno1 - msgno2) < m_iMsgNoTH)
          return msgno2 - msgno1;
