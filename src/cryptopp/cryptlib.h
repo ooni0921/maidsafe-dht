@@ -321,7 +321,7 @@ DOCUMENTED_NAMESPACE_END
 class CRYPTOPP_DLL NullNameValuePairs : public NameValuePairs
 {
 public:
-	bool GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const {return false;}
+	bool GetVoidValue(const char *, const std::type_info &, void *) const {return false;}
 };
 
 //! _
@@ -406,7 +406,7 @@ public:
 	//! returns maximal length of IVs accepted by this object
 	virtual unsigned int MaxIVLength() const {return IVSize();}
 	//! resynchronize with an IV. ivLength=-1 means use IVSize()
-	virtual void Resynchronize(const byte *iv, int ivLength=-1) {throw NotImplemented(GetAlgorithm().AlgorithmName() + ": this object doesn't support resynchronization");}
+	virtual void Resynchronize(const byte *, int =-1) {throw NotImplemented(GetAlgorithm().AlgorithmName() + ": this object doesn't support resynchronization");}
 	//! get a secure IV for the next message
 	/*! This method should be called after you finish encrypting one message and are ready to start the next one.
 		After calling it, you must call SetKey() or Resynchronize() before using this object again. 
@@ -517,7 +517,7 @@ public:
 	//! returns whether this cipher supports random access
 	virtual bool IsRandomAccess() const =0;
 	//! for random access ciphers, seek to an absolute position
-	virtual void Seek(lword n)
+	virtual void Seek(lword)
 	{
 		assert(!IsRandomAccess());
 		throw NotImplemented("StreamTransformation: this object doesn't support random access");
@@ -667,7 +667,7 @@ public:
 
 protected:
 	const Algorithm & GetAlgorithm() const {return *static_cast<const MessageAuthenticationCode *>(this);}
-	virtual void UncheckedSpecifyDataLengths(lword headerLength, lword messageLength, lword footerLength) {}
+	virtual void UncheckedSpecifyDataLengths(lword, lword, lword) {}
 };
 
 #ifdef CRYPTOPP_MAINTAIN_BACKWARDS_COMPATIBILITY
@@ -681,7 +681,7 @@ class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE RandomNumberGenerator : public Algorithm
 {
 public:
 	//! update RNG state with additional unpredictable values
-	virtual void IncorporateEntropy(const byte *input, size_t length) {throw NotImplemented("RandomNumberGenerator: IncorporateEntropy not implemented");}
+	virtual void IncorporateEntropy(const byte *, size_t) {throw NotImplemented("RandomNumberGenerator: IncorporateEntropy not implemented");}
 
 	//! returns true if IncorporateEntropy is implemented
 	virtual bool CanIncorporateEntropy() const {return false;}
@@ -843,9 +843,9 @@ public:
 
 	//!	\name SIGNALS
 	//@{
-		virtual void IsolatedInitialize(const NameValuePairs &parameters) {throw NotImplemented("BufferedTransformation: this object can't be reinitialized");}
+		virtual void IsolatedInitialize(const NameValuePairs &) {throw NotImplemented("BufferedTransformation: this object can't be reinitialized");}
 		virtual bool IsolatedFlush(bool hardFlush, bool blocking) =0;
-		virtual bool IsolatedMessageSeriesEnd(bool blocking) {return false;}
+		virtual bool IsolatedMessageSeriesEnd(bool) {return false;}
 
 		//! initialize or reinitialize this object
 		virtual void Initialize(const NameValuePairs &parameters=g_nullNameValuePairs, int propagation=-1);
@@ -867,7 +867,7 @@ public:
 
 		//! set propagation of automatically generated and transferred signals
 		/*! propagation == 0 means do not automaticly generate signals */
-		virtual void SetAutoSignalPropagation(int propagation) {}
+		virtual void SetAutoSignalPropagation(int) {}
 
 		//!
 		virtual int GetAutoSignalPropagation() const {return 0;}
@@ -1026,7 +1026,7 @@ public:
 		virtual const BufferedTransformation *AttachedTransformation() const
 			{return const_cast<BufferedTransformation *>(this)->AttachedTransformation();}
 		//! delete the current attachment chain and replace it with newAttachment
-		virtual void Detach(BufferedTransformation *newAttachment = 0)
+		virtual void Detach(BufferedTransformation * = 0)
 			{assert(!Attachable()); throw NotImplemented("BufferedTransformation: this object is not attachable");}
 		//! add newAttachment to the end of attachment chain
 		virtual void Attach(BufferedTransformation *newAttachment);
@@ -1075,14 +1075,14 @@ public:
 //	virtual std::vector<std::string> GetSupportedFormats(bool includeSaveOnly=false, bool includeLoadOnly=false);
 
 	//! save key into a BufferedTransformation
-	virtual void Save(BufferedTransformation &bt) const
+	virtual void Save(BufferedTransformation &) const
 		{throw NotImplemented("CryptoMaterial: this object does not support saving");}
 
 	//! load key from a BufferedTransformation
 	/*! \throws KeyingErr if decode fails
 		\note Generally does not check that the key is valid.
 			Call ValidateKey() or ThrowIfInvalidKey() to check that. */
-	virtual void Load(BufferedTransformation &bt)
+	virtual void Load(BufferedTransformation &)
 		{throw NotImplemented("CryptoMaterial: this object does not support loading");}
 
 	//! \return whether this object supports precomputation
@@ -1091,13 +1091,13 @@ public:
 	/*! The exact semantics of Precompute() is varies, but
 		typically it means calculate a table of n objects
 		that can be used later to speed up computation. */
-	virtual void Precompute(unsigned int n)
+	virtual void Precompute(unsigned int)
 		{assert(!SupportsPrecomputation()); throw NotImplemented("CryptoMaterial: this object does not support precomputation");}
 	//! retrieve previously saved precomputation
-	virtual void LoadPrecomputation(BufferedTransformation &storedPrecomputation)
+	virtual void LoadPrecomputation(BufferedTransformation &)
 		{assert(!SupportsPrecomputation()); throw NotImplemented("CryptoMaterial: this object does not support precomputation");}
 	//! save precomputation for later use
-	virtual void SavePrecomputation(BufferedTransformation &storedPrecomputation) const
+	virtual void SavePrecomputation(BufferedTransformation &) const
 		{assert(!SupportsPrecomputation()); throw NotImplemented("CryptoMaterial: this object does not support precomputation");}
 
 	// for internal library use
@@ -1117,7 +1117,7 @@ public:
 	//! generate a random key or crypto parameters
 	/*! \throws KeyingErr if algorithm parameters are invalid, or if a key can't be generated
 		(e.g., if this is a public key object) */
-	virtual void GenerateRandom(RandomNumberGenerator &rng, const NameValuePairs &params = g_nullNameValuePairs)
+	virtual void GenerateRandom(RandomNumberGenerator &, const NameValuePairs & = g_nullNameValuePairs)
 		{throw NotImplemented("GeneratableCryptoMaterial: this object does not support key/parameter generation");}
 
 	//! calls the above function with a NameValuePairs object that just specifies "KeySize"
@@ -1318,7 +1318,7 @@ public:
 	virtual size_t SignatureLength() const =0;
 
 	//! maximum signature length produced for a given length of recoverable message part
-	virtual size_t MaxSignatureLength(size_t recoverablePartLength = 0) const {return SignatureLength();}
+	virtual size_t MaxSignatureLength(size_t  = 0) const {return SignatureLength();}
 
 	//! length of longest message that can be recovered, or 0 if this signature scheme does not support message recovery
 	virtual size_t MaxRecoverableLength() const =0;
@@ -1351,7 +1351,7 @@ public:
 	unsigned int DigestSize() const
 		{throw NotImplemented("PK_MessageAccumulator: DigestSize() should not be called");}
 	//! should not be called on PK_MessageAccumulator
-	void TruncatedFinal(byte *digest, size_t digestSize) 
+	void TruncatedFinal(byte *, size_t) 
 		{throw NotImplemented("PK_MessageAccumulator: TruncatedFinal() should not be called");}
 };
 

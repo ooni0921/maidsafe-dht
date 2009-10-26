@@ -9,6 +9,7 @@
 #include "sha.h"
 #include "algparam.h"
 #include "fips140.h"
+
 #if !defined(NDEBUG) && !defined(CRYPTOPP_IS_DLL)
 #include "pssr.h"
 NAMESPACE_BEGIN(CryptoPP)
@@ -34,6 +35,7 @@ void RSA_TestInstantiations()
 }
 NAMESPACE_END
 #endif
+
 #ifndef CRYPTOPP_IMPORTS
 
 NAMESPACE_BEGIN(CryptoPP)

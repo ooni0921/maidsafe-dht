@@ -26,7 +26,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "maidsafe/crypto.h"
-
 #include <cryptopp/integer.h>
 #include <cryptopp/pwdbased.h>
 #include <cryptopp/sha.h>
@@ -38,7 +37,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cryptopp/modes.h>
 #include <cryptopp/rsa.h>
 #include <cryptopp/osrng.h>
-
 #include "maidsafe/config.h"
 #include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/utils.h"

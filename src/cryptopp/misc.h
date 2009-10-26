@@ -363,7 +363,7 @@ inline T1 RoundUpToMultipleOf(const T1 &n, const T2 &m)
 }
 
 template <class T>
-inline unsigned int GetAlignmentOf(T *dummy=NULL)	// VC60 workaround
+inline unsigned int GetAlignmentOf(T * =NULL)	// VC60 workaround
 {
 #ifdef CRYPTOPP_ALLOW_UNALIGNED_DATA_ACCESS
 	if (sizeof(T) < 16)

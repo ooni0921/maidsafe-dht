@@ -49,7 +49,7 @@ template <class T>
 class CRYPTOPP_NO_VTABLE Bufferless : public T
 {
 public:
-	bool IsolatedFlush(bool hardFlush, bool blocking) {return false;}
+	bool IsolatedFlush(bool, bool) {return false;}
 };
 
 //! _
@@ -59,7 +59,7 @@ class CRYPTOPP_NO_VTABLE Unflushable : public T
 public:
 	bool Flush(bool completeFlush, int propagation=-1, bool blocking=true)
 		{return ChannelFlush(DEFAULT_CHANNEL, completeFlush, propagation, blocking);}
-	bool IsolatedFlush(bool hardFlush, bool blocking)
+	bool IsolatedFlush(bool, bool)
 		{assert(false); return false;}
 	bool ChannelFlush(const std::string &channel, bool hardFlush, int propagation=-1, bool blocking=true)
 	{
@@ -85,12 +85,12 @@ public:
 		{InputRejected() : NotImplemented("BufferedTransformation: this object doesn't allow input") {}};
 
 	// shouldn't be calling these functions on this class
-	size_t Put2(const byte *begin, size_t length, int messageEnd, bool blocking)
+	size_t Put2(const byte *, size_t, int, bool)
 		{throw InputRejected();}
 	bool IsolatedFlush(bool, bool) {return false;}
 	bool IsolatedMessageSeriesEnd(bool) {throw InputRejected();}
 
-	size_t ChannelPut2(const std::string &channel, const byte *begin, size_t length, int messageEnd, bool blocking)
+	size_t ChannelPut2(const std::string &, const byte *, size_t, int, bool)
 		{throw InputRejected();}
 	bool ChannelMessageSeriesEnd(const std::string &, int, bool) {throw InputRejected();}
 };
@@ -103,7 +103,7 @@ public:
 	virtual bool Flush(bool hardFlush, int propagation=-1, bool blocking=true) =0;
 
 private:
-	bool IsolatedFlush(bool hardFlush, bool blocking) {assert(false); return false;}
+	bool IsolatedFlush(bool, bool) {assert(false); return false;}
 };
 
 //! _
@@ -114,7 +114,7 @@ public:
 	virtual void Initialize(const NameValuePairs &parameters=g_nullNameValuePairs, int propagation=-1) =0;
 
 private:
-	void IsolatedInitialize(const NameValuePairs &parameters) {assert(false);}
+	void IsolatedInitialize(const NameValuePairs &) {assert(false);}
 };
 
 //! _
@@ -189,9 +189,9 @@ protected:
 class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE Sink : public BufferedTransformation
 {
 public:
-	size_t TransferTo2(BufferedTransformation &target, lword &transferBytes, const std::string &channel=DEFAULT_CHANNEL, bool blocking=true)
+	size_t TransferTo2(BufferedTransformation &, lword &transferBytes, const std::string & =DEFAULT_CHANNEL, bool =true)
 		{transferBytes = 0; return 0;}
-	size_t CopyRangeTo2(BufferedTransformation &target, lword &begin, lword end=LWORD_MAX, const std::string &channel=DEFAULT_CHANNEL, bool blocking=true) const
+	size_t CopyRangeTo2(BufferedTransformation &, lword &, lword =LWORD_MAX, const std::string & =DEFAULT_CHANNEL, bool =true) const
 		{return 0;}
 };
 
@@ -199,8 +199,8 @@ class CRYPTOPP_DLL BitBucket : public Bufferless<Sink>
 {
 public:
 	std::string AlgorithmName() const {return "BitBucket";}
-	void IsolatedInitialize(const NameValuePairs &parameters) {}
-	size_t Put2(const byte *begin, size_t length, int messageEnd, bool blocking)
+	void IsolatedInitialize(const NameValuePairs &) {}
+	size_t Put2(const byte *, size_t, int, bool)
 		{return 0;}
 };
 
