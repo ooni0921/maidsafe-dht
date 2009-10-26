@@ -230,12 +230,24 @@ TEST(UtilsTest, BEH_BASE_NameValidation) {
 }
 
 TEST(UtilsTest, BEH_BASE_RandomNumberGen) {
-  unsigned int urandnum1 = base::random_32bit_uinteger();
-  unsigned int urandnum2 = base::random_32bit_uinteger();
-  ASSERT_NE(urandnum1, urandnum2);
-  int randnum1 = base::random_32bit_integer();
-  int randnum2 = base::random_32bit_integer();
-  ASSERT_NE(randnum1, randnum2);
+  int i = 1;
+  while (i < 10) {
+    unsigned int urandnum1 = base::random_32bit_uinteger();
+    unsigned int urandnum2 = base::random_32bit_uinteger();
+    ASSERT_NE(urandnum1, urandnum2);
+    ASSERT_NE(urandnum1, 0);
+    ASSERT_NE(urandnum2, 0);
+    ++i;
+  }
+  int j = 1;
+  while (j < 10) {
+    int randnum1 = base::random_32bit_integer();
+    int randnum2 = base::random_32bit_integer();
+    ASSERT_NE(randnum1, randnum2);
+    ASSERT_NE(randnum1, 0);
+    ASSERT_NE(randnum2, 0);
+    ++j;
+  }
 }
 
 TEST(UtilsTest, BEH_BASE_TestStrToLwr) {
