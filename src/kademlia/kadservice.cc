@@ -32,8 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kademlia/knodeimpl.h"
 #include "kademlia/datastore.h"
 #include "maidsafe/alternativestore.h"
-#include "maidsafe/knode.h"
-#include "maidsafe/channel.h"
+#include "maidsafe/knode-api.h"
+#include "maidsafe/channel-api.h"
 #include "protobuf/signed_kadvalue.pb.h"
 
 namespace kad {

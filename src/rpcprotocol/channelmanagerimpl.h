@@ -62,7 +62,7 @@ struct PendingTimeOut {
 
 class ChannelManagerImpl {
  public:
-  ChannelManagerImpl();
+  explicit ChannelManagerImpl(transport::Transport *ptransport);
   ~ChannelManagerImpl();
   void RegisterChannel(const std::string &service_name, Channel* channel);
   void UnRegisterChannel(const std::string &service_name);
@@ -70,38 +70,22 @@ class ChannelManagerImpl {
   void RemoveChannelId(const boost::uint32_t &id);
   void ClearChannels();
   void ClearCallLaters();
-  int StartTransport(boost::uint16_t port,
-      boost::function<void(const bool&, const std::string&,
-      const boost::uint16_t&)> notify_dead_server);
-  int StartLocalTransport(const boost::uint16_t &port);
-  int StopTransport();
-  void CleanUpTransport();
-//  void MessageArrive(const RpcMessage &msg,
-//      const boost::uint32_t &connection_id, const float &rtt);
+  int Start();
+  int Stop();
   boost::uint32_t CreateNewId();
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
   bool DeletePendingRequest(const boost::uint32_t &req_id);
   void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
-  inline boost::shared_ptr<transport::Transport> ptransport() {
-    return ptransport_;
-  }
-  boost::uint16_t local_port() const {return local_port_;}
-//  std::string external_ip() const {return external_ip_;}
-  bool CheckConnection(const std::string &ip, const uint16_t &port);
-  bool CheckLocalAddress(const std::string &local_ip,
-    const std::string &remote_ip, const uint16_t &remote_port);
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout);
-  void StartPingServer(const bool &dir_connected, const std::string &server_ip,
-    const boost::uint16_t &server_port);
-  void StopPingServer();
+  bool RegisterNotifiersToTransport();
  private:
   void TimerHandler(const boost::uint32_t &req_id);
   void RequestSent(const boost::uint32_t &connection_id, const bool &success);
   void OnlineStatusChanged(const bool &online);
   void MessageArrive(const RpcMessage &msg,
       const boost::uint32_t &connection_id, const float &rtt);
-  boost::shared_ptr<transport::Transport> ptransport_;
+  transport::Transport *ptransport_;
   bool is_started_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
   boost::mutex req_mutex_, channels_mutex_, id_mutex_, pend_timeout_mutex_,
@@ -111,8 +95,6 @@ class ChannelManagerImpl {
   std::map<boost::uint32_t, PendingReq> pending_req_;
   ChannelManagerImpl(const ChannelManagerImpl&);
   ChannelManagerImpl& operator=(const ChannelManagerImpl&);
-  boost::uint16_t local_port_;
-//  std::string external_ip_;
   std::map<boost::uint32_t, PendingTimeOut> pending_timeout_;
   std::set<boost::uint32_t> channels_ids_;
   boost::condition_variable delete_channels_cond_;

@@ -250,25 +250,29 @@ int main(int argc, char **argv) {
     google::InitGoogleLogging(argv[0]);
     // Starting transport on port
     port = vm["port"].as<boost::uint16_t>();
-    boost::shared_ptr<rpcprotocol::ChannelManager> chmanager(
-        new rpcprotocol::ChannelManager);
+    transport::Transport trans;
+    rpcprotocol::ChannelManager chmanager(&trans);
     kad::node_type type;
     if (vm["client"].as<bool>())
       type = kad::CLIENT;
     else
       type = kad::VAULT;
-    kad::KNode node(chmanager, type, kad::K, kad::kAlpha, kad::kBeta,
+    kad::KNode node(&chmanager, &trans, type, kad::K, kad::kAlpha, kad::kBeta,
         refresh_time, "", "", vm["port_fw"].as<bool>(),
         vm["upnp"].as<bool>());
-    if (0 != chmanager->StartTransport(port, boost::bind(
-          &kad::KNode::HandleDeadRendezvousServer, &node, _1))) {
+    if (!chmanager.RegisterNotifiersToTransport() ||
+        !trans.RegisterOnServerDown(boost::bind(
+        &kad::KNode::HandleDeadRendezvousServer, &node, _1))) {
+      return 1;
+    }
+    if (0 != trans.Start(port) || 0!= chmanager.Start()) {
       printf("Unable to start node on port %d\n", port);
       return 1;
     }
     // setting kadconfig file if it was not in the options
     if (kadconfigpath == "") {
       kadconfigpath = "KnodeInfo" + boost::lexical_cast<std::string>(
-         chmanager->local_port());
+         trans.listening_port());
       boost::filesystem::create_directories(kadconfigpath);
       kadconfigpath += "/.kadconfig";
     }
@@ -280,7 +284,8 @@ int main(int argc, char **argv) {
           vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>(),
           vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>())) {
         printf("unable to write kadconfig file to %s\n", kadconfigpath.c_str());
-        chmanager->StopTransport();
+        trans.Stop();
+        chmanager.Stop();
         return 1;
       }
     }
@@ -298,7 +303,8 @@ int main(int argc, char **argv) {
     // Checking result of callback
     if (!cb.success()) {
       printf("Failed to join node to the network\n");
-      chmanager->StopTransport();
+      trans.Stop();
+      chmanager.Stop();
       return 1;
     }
     // Printing Node Info
@@ -316,9 +322,10 @@ int main(int argc, char **argv) {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
     }
-    node.StopRvPing();
+    trans.StopPingRendezvous();
     node.Leave();
-    chmanager->StopTransport();
+    trans.Stop();
+    chmanager.Stop();
     printf("\nNode Stopped successfully\n");
   }
   catch(std::exception &e) {

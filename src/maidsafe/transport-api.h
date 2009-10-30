@@ -34,8 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * notice is removed.                                                          *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_CHANNEL_H_
-#define MAIDSAFE_CHANNEL_H_
+#ifndef MAIDSAFE_TRANSPORT_API_H_
+#define MAIDSAFE_TRANSPORT_API_H_
 
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
@@ -45,48 +45,50 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #error Please update the maidsafe-dht library.
 #endif
 
-// RPC
-namespace rpcprotocol {
+namespace transport {
 
-class Controller : public google::protobuf::RpcController {
+void CleanUp();
+
+class Transport {
  public:
-  Controller();
-  ~Controller();
-  void SetFailed(const std::string &failure);
-  void Reset();
-  bool Failed() const;
-  std::string ErrorText() const;
-  void StartCancel();
-  bool IsCanceled() const;
-  void NotifyOnCancel(google::protobuf::Closure*);
-  void set_timeout(const int &seconds);
-  void set_rtt(const float &rtt);
-  void set_req_id(const boost::uint32_t &id);
-  int timeout() const;
-  float rtt() const;
-  boost::uint32_t req_id() const;
+  Transport();
+  int ConnectToSend(const std::string &remote_ip, const uint16_t &remote_port,
+      const std::string &local_ip, const uint16_t &local_port,
+      const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
+      const bool &keep_connection, boost::uint32_t *conn_id);
+  int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t &conn_id,
+      const bool &new_skt);
+  int Send(const std::string &data, const boost::uint32_t &conn_id,
+      const bool &new_skt);
+  int Start(const boost::uint16_t &port);
+  int StartLocal(const boost::uint16_t &port);
+  bool RegisterOnRPCMessage(boost::function<void(const rpcprotocol::RpcMessage&,
+      const boost::uint32_t&, const float &)> on_rpcmessage);
+  bool RegisterOnMessage(boost::function<void(const std::string&,
+      const boost::uint32_t&, const float &)> on_message);
+  bool RegisterOnSend(boost::function<void(const boost::uint32_t&,
+      const bool&)> on_send);
+  bool RegisterOnServerDown(boost::function<void(const bool&,
+        const std::string&, const boost::uint16_t&)> on_server_down);
+  void CloseConnection(const boost::uint32_t &connection_id);
+  void Stop();
+  bool is_stopped() const;
+  struct sockaddr& peer_address();
+  bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr *addr);
+  bool ConnectionExists(const boost::uint32_t &connection_id);
+  bool HasReceivedData(const boost::uint32_t &connection_id, int64_t *size);
+  boost::uint16_t listening_port();
+  void StartPingRendezvous(const bool &directly_connected,
+      const std::string &my_rendezvous_ip, const boost::uint16_t
+      &my_rendezvous_port);
+  void StopPingRendezvous();
+  bool CanConnect(const std::string &ip, const uint16_t &port);
+  bool IsAddrUsable(const std::string &local_ip,
+      const std::string &remote_ip, const uint16_t &remote_port);
+  bool IsPortAvailable(const boost::uint16_t &port);
  private:
-  boost::shared_ptr<ControllerImpl> controller_pimpl_;
+  boost::shared_ptr<TransportImpl> pimpl_;
 };
+}  // namespace transport
 
-class Channel : public google::protobuf::RpcChannel {
- public:
-  explicit Channel(rpcprotocol::ChannelManager *channelmanager);
-  Channel(rpcprotocol::ChannelManager *channelmanager,
-      const std::string &remote_ip, const boost::uint16_t &remote_port,
-      const std::string &local_ip, const boost::uint16_t &local_port,
-      const std::string &rv_ip, const boost::uint16_t &rv_port);
-  ~Channel();
-  void CallMethod(const google::protobuf::MethodDescriptor *method,
-      google::protobuf::RpcController *controller,
-      const google::protobuf::Message *request,
-      google::protobuf::Message *response, google::protobuf::Closure *done);
-  void SetService(google::protobuf::Service* service);
-  void HandleRequest(const RpcMessage &request,
-      const boost::uint32_t &connection_id, const float &rtt);
- private:
-  boost::shared_ptr<ChannelImpl> pimpl_;
-};
-}  // namespace rpcprotocol
-
-#endif  // MAIDSAFE_CHANNEL_H_
+#endif  // MAIDSAFE_TRANSPORT_API_H_

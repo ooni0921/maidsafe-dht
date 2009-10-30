@@ -35,18 +35,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace rpcprotocol {
 
-class ControllerImpl : public google::protobuf::RpcController {
+class ControllerImpl {
  public:
   ControllerImpl() : timeout_(kRpcTimeout), rtt_(0.0), failure_(""),
       req_id_(0) {}
-  ~ControllerImpl() {}
-  virtual void SetFailed(const std::string &failure) { failure_ = failure; }
-  virtual void Reset();
-  virtual bool Failed() const;
-  virtual std::string ErrorText() const { return failure_; }
-  virtual void StartCancel() {}
-  virtual bool IsCanceled() const { return false; }
-  virtual void NotifyOnCancel(google::protobuf::Closure*) {}
+  void SetFailed(const std::string &failure) { failure_ = failure; }
+  void Reset();
+  bool Failed() const;
+  std::string ErrorText() const { return failure_; }
+  void StartCancel() {}
+  bool IsCanceled() const { return false; }
+  void NotifyOnCancel(google::protobuf::Closure*) {}
   // input is in seconds
   void set_timeout(const int &seconds) { timeout_ = seconds*1000; }
   int timeout() const { return timeout_; }
@@ -62,15 +61,17 @@ class ControllerImpl : public google::protobuf::RpcController {
   boost::uint32_t req_id_;
 };
 
-class ChannelImpl : public google::protobuf::RpcChannel {
+class ChannelImpl {
  public:
-  explicit ChannelImpl(rpcprotocol::ChannelManager *channelmanager);
   ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
-      const std::string &remote_ip, const boost::uint16_t &remote_port,
-      const std::string &local_ip, const boost::uint16_t &local_port,
-      const std::string &rv_ip, const boost::uint16_t &rv_port);
+      transport::Transport *ptransport);
+  ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
+      transport::Transport *ptransport, const std::string &remote_ip,
+      const boost::uint16_t &remote_port, const std::string &local_ip,
+      const boost::uint16_t &local_port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port);
   ~ChannelImpl();
-  virtual void CallMethod(const google::protobuf::MethodDescriptor *method,
+  void CallMethod(const google::protobuf::MethodDescriptor *method,
                           google::protobuf::RpcController *controller,
                           const google::protobuf::Message *request,
                           google::protobuf::Message *response,
@@ -81,7 +82,7 @@ class ChannelImpl : public google::protobuf::RpcChannel {
  private:
   void SendResponse(const google::protobuf::Message *response, RpcInfo info);
   std::string GetServiceName(const std::string &full_name);
-  boost::shared_ptr<transport::Transport> ptransport_;
+  transport::Transport *ptransport_;
   rpcprotocol::ChannelManager *pmanager_;
   google::protobuf::Service *pservice_;
   std::string remote_ip_, local_ip_, rv_ip_;

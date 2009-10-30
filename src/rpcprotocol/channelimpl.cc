@@ -55,21 +55,21 @@ struct RpcInfo {
   boost::uint32_t rpc_id, connection_id;
 };
 
-ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager)
-      : ptransport_(channelmanager->ptransport()), pmanager_(channelmanager),
-        pservice_(0), remote_ip_(""), local_ip_(""), rv_ip_(""),
-        remote_port_(0), local_port_(0), rv_port_(0), id_(0) {
+ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
+      transport::Transport *ptransport) : ptransport_(ptransport),
+        pmanager_(channelmanager), pservice_(0), remote_ip_(""), local_ip_(""),
+        rv_ip_(""), remote_port_(0), local_port_(0), rv_port_(0), id_(0) {
   pmanager_->AddChannelId(&id_);
 }
 
 ChannelImpl::ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
-      const std::string &remote_ip, const boost::uint16_t &remote_port,
-      const std::string &local_ip, const boost::uint16_t &local_port,
-      const std::string &rv_ip, const boost::uint16_t &rv_port)
-      : ptransport_(channelmanager->ptransport()), pmanager_(channelmanager),
-        pservice_(0), remote_ip_(""), local_ip_(""), rv_ip_(""),
-        remote_port_(remote_port), local_port_(local_port), rv_port_(rv_port),
-        id_(0) {
+      transport::Transport *ptransport, const std::string &remote_ip,
+      const boost::uint16_t &remote_port, const std::string &local_ip,
+      const boost::uint16_t &local_port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port) : ptransport_(ptransport),
+        pmanager_(channelmanager), pservice_(0), remote_ip_(""), local_ip_(""),
+        rv_ip_(""), remote_port_(remote_port), local_port_(local_port),
+        rv_port_(rv_port), id_(0) {
   // To send we need ip in decimal dotted format
   if (remote_ip.size() == 4)
     remote_ip_ = base::inet_btoa(remote_ip);
@@ -128,12 +128,12 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     pmanager_->AddPendingRequest(msg.message_id(), req);
     pmanager_->AddTimeOutRequest(conn_id, msg.message_id(), req.timeout);
     if (0 != ptransport_->Send(msg, conn_id, true)) {
-      DLOG(WARNING) << pmanager_->local_port() <<
+      DLOG(WARNING) << ptransport_->listening_port() <<
         " --- Failed to send request with id " << msg.message_id()
          << std::endl;
     }
   } else {
-    DLOG(WARNING) << pmanager_->local_port() <<
+    DLOG(WARNING) << ptransport_->listening_port() <<
         " --- Failed to connect to send rpc " << msg.method() << " to " <<
         remote_ip_ << ":" << remote_port_ << " with id " << msg.message_id()
         << std::endl;
@@ -145,7 +145,7 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     pmanager_->AddReqToTimer(msg.message_id(), req.timeout);
     return;
   }
-  DLOG(INFO) << pmanager_->local_port() << " --- Sending rpc " <<
+  DLOG(INFO) << ptransport_->listening_port() << " --- Sending rpc " <<
       msg.method() << " to " << remote_ip_ << ":" << remote_port_ <<
       " conn_id = " << conn_id << " -- rpc_id = " << msg.message_id() <<
       std::endl;
@@ -215,11 +215,11 @@ void ChannelImpl::SendResponse(const google::protobuf::Message *response,
   response->SerializeToString(&ser_response);
   response_msg.set_args(ser_response);
   if (0 != ptransport_->Send(response_msg, info.connection_id, false)) {
-    DLOG(WARNING) << pmanager_->local_port() <<
+    DLOG(WARNING) << ptransport_->listening_port() <<
         " Failed to send response to connection " << info.connection_id
          << std::endl;
   }
-  DLOG(INFO) << pmanager_->local_port() << " --- Response to req " <<
+  DLOG(INFO) << ptransport_->listening_port() << " --- Response to req " <<
       info.rpc_id << std::endl;
   delete response;
   delete info.ctrl;

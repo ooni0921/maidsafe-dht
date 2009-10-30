@@ -34,8 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * notice is removed.                                                          *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_TRANSPORT_H_
-#define MAIDSAFE_TRANSPORT_H_
+#ifndef MAIDSAFE_CHANNELMANAGER_API_H_
+#define MAIDSAFE_CHANNELMANAGER_API_H_
 
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
@@ -45,46 +45,35 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #error Please update the maidsafe-dht library.
 #endif
 
-namespace transport {
-class Transport {
- public:
-  Transport();
-  int ConnectToSend(const std::string &remote_ip, const uint16_t &remote_port,
-      const std::string &local_ip, const uint16_t &local_port,
-      const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
-      const bool &keep_connection, boost::uint32_t *conn_id);
-  int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t &conn_id,
-      const bool &new_skt);
-  int Start(const boost::uint16_t &port,
-      boost::function<void(const rpcprotocol::RpcMessage&,
-        const boost::uint32_t&, const float &)> on_message,
-      boost::function<void(const bool&, const std::string&,
-        const boost::uint16_t&)> notify_dead_server,
-      boost::function<void(const boost::uint32_t&, const bool&)> on_send);
-  int StartLocal(const boost::uint16_t &port, boost::function <void(
-        const rpcprotocol::RpcMessage&, const boost::uint32_t&, const float &)>
-        on_message,
-      boost::function<void(const boost::uint32_t&, const bool&)> on_send);
-  void CloseConnection(const boost::uint32_t &connection_id);
-  void Stop();
-  bool is_stopped() const;
-  struct sockaddr& peer_address();
-  bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr *addr);
-  bool ConnectionExists(const boost::uint32_t &connection_id);
-  bool HasReceivedData(const boost::uint32_t &connection_id, int64_t *size);
-  boost::uint16_t listening_port();
-  void StartPingRendezvous(const bool &directly_connected,
-      const std::string &my_rendezvous_ip, const boost::uint16_t
-      &my_rendezvous_port);
-  void StopPingRendezvous();
-  bool CanConnect(const std::string &ip, const uint16_t &port);
-  bool CheckConnection(const std::string &local_ip,
-      const std::string &remote_ip, const uint16_t &remote_port);
-  void CleanUp();
-  bool IsPortAvailable(const boost::uint16_t &port);
- private:
-  boost::shared_ptr<TransportImpl> pimpl_;
-};
-}  // namespace transport
+// RPC
+namespace rpcprotocol {
 
-#endif  // MAIDSAFE_TRANSPORT_H_
+class RpcMessage;
+
+// Ensure that a one-to-one relationship is maintained between channelmanager &
+// knode.
+class ChannelManager {
+ public:
+  explicit ChannelManager(transport::Transport *ptransport);
+  ~ChannelManager();
+  void RegisterChannel(const std::string &service_name, Channel* channel);
+  void UnRegisterChannel(const std::string &service_name);
+  void ClearChannels();
+  void ClearCallLaters();
+  int Start();
+  int Stop();
+  bool RegisterNotifiersToTransport();
+  boost::uint32_t CreateNewId();
+  void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
+  bool DeletePendingRequest(const boost::uint32_t &req_id);
+  void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
+  void AddTimeOutRequest(const boost::uint32_t &connection_id,
+    const boost::uint32_t &req_id, const int &timeout);
+  void AddChannelId(boost::uint32_t *id);
+  void RemoveChannelId(const boost::uint32_t &id);
+ private:
+  boost::shared_ptr<ChannelManagerImpl> pimpl_;
+};
+}  // namespace rpcprotocol
+
+#endif  // MAIDSAFE_CHANNELMANAGER_API_H_

@@ -34,8 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * notice is removed.                                                          *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_CHANNELMANAGER_H_
-#define MAIDSAFE_CHANNELMANAGER_H_
+#ifndef MAIDSAFE_CHANNEL_API_H_
+#define MAIDSAFE_CHANNEL_API_H_
 
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
@@ -48,45 +48,47 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // RPC
 namespace rpcprotocol {
 
-class RpcMessage;
-
-// Ensure that a one-to-one relationship is maintained between channelmanager &
-// knode.
-class ChannelManager {
+class Controller : public google::protobuf::RpcController {
  public:
-  ChannelManager();
-  ~ChannelManager();
-  void RegisterChannel(const std::string &service_name, Channel* channel);
-  void UnRegisterChannel(const std::string &service_name);
-  void ClearChannels();
-  void ClearCallLaters();
-  int StartTransport(boost::uint16_t port,
-      boost::function<void(const bool&, const std::string&,
-                           const boost::uint16_t&)> notify_dead_server);
-  int StartLocalTransport(const boost::uint16_t &port);
-  int StopTransport();
-  void CleanUpTransport();
-//  void MessageArrive(const RpcMessage &msg,
-//      const boost::uint32_t &connection_id, const float &rtt);
-  boost::uint32_t CreateNewId();
-  void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
-  bool DeletePendingRequest(const boost::uint32_t &req_id);
-  void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
-  boost::shared_ptr<transport::Transport> ptransport();
-  boost::uint16_t local_port() const;
-  bool CheckConnection(const std::string &ip, const uint16_t &port);
-  bool CheckLocalAddress(const std::string &local_ip,
-      const std::string &remote_ip, const uint16_t &remote_port);
-  void AddTimeOutRequest(const boost::uint32_t &connection_id,
-    const boost::uint32_t &req_id, const int &timeout);
-  void AddChannelId(boost::uint32_t *id);
-  void RemoveChannelId(const boost::uint32_t &id);
-  void StartPingServer(const bool &dir_connected, const std::string &server_ip,
-    const boost::uint16_t &server_port);
-  void StopPingServer();
+  Controller();
+  ~Controller();
+  void SetFailed(const std::string &failure);
+  void Reset();
+  bool Failed() const;
+  std::string ErrorText() const;
+  void StartCancel();
+  bool IsCanceled() const;
+  void NotifyOnCancel(google::protobuf::Closure*);
+  void set_timeout(const int &seconds);
+  void set_rtt(const float &rtt);
+  void set_req_id(const boost::uint32_t &id);
+  int timeout() const;
+  float rtt() const;
+  boost::uint32_t req_id() const;
  private:
-  boost::shared_ptr<ChannelManagerImpl> pimpl_;
+  boost::shared_ptr<ControllerImpl> controller_pimpl_;
+};
+
+class Channel : public google::protobuf::RpcChannel {
+ public:
+  Channel(rpcprotocol::ChannelManager *channelmanager,
+      transport::Transport *ptransport);
+  Channel(rpcprotocol::ChannelManager *channelmanager,
+      transport::Transport *ptransport, const std::string &remote_ip,
+      const boost::uint16_t &remote_port, const std::string &local_ip,
+      const boost::uint16_t &local_port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port);
+  ~Channel();
+  void CallMethod(const google::protobuf::MethodDescriptor *method,
+      google::protobuf::RpcController *controller,
+      const google::protobuf::Message *request,
+      google::protobuf::Message *response, google::protobuf::Closure *done);
+  void SetService(google::protobuf::Service* service);
+  void HandleRequest(const RpcMessage &request,
+      const boost::uint32_t &connection_id, const float &rtt);
+ private:
+  boost::shared_ptr<ChannelImpl> pimpl_;
 };
 }  // namespace rpcprotocol
 
-#endif  // MAIDSAFE_CHANNELMANAGER_H_
+#endif  // MAIDSAFE_CHANNEL_API_H_

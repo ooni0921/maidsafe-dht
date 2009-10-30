@@ -149,7 +149,7 @@ TEST(KadUtilsTest, BEH_KAD_InsertKadContact) {
 //  for (int i = 0; i < 10; ++i)
 //    printf("ID %i - %s\n", i, contacts.at(i).node_id().c_str());
 //  printf("\n");
-  base::InsertKadContact(key, new_contact, &contacts);
+  kad::InsertKadContact(key, new_contact, &contacts);
   ASSERT_EQ(size_t(11), contacts.size());
 //  for (int i = 0; i < 11; ++i) {
 //    printf("ID %i - %s\n", i, contacts.at(i).node_id().c_str());

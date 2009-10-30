@@ -46,9 +46,10 @@ namespace transport {
 
 struct IncomingMessages {
   explicit IncomingMessages(const boost::uint32_t &id)
-    : msg(), conn_id(id), rtt(0) {}
-  IncomingMessages() : msg(), conn_id() {}
+    : msg(), raw_data(""), conn_id(id), rtt(0) {}
+  IncomingMessages() : msg(), raw_data(""), conn_id() {}
   rpcprotocol::RpcMessage msg;
+  std::string raw_data;
   boost::uint32_t conn_id;
   double rtt;
 };
@@ -69,6 +70,7 @@ struct OutgoingData {
   boost::shared_array<char> data;
   bool sent_size;
   boost::uint32_t conn_id;
+  bool is_rpc;
 };
 
 class TransportImpl {
@@ -82,16 +84,18 @@ class TransportImpl {
       const bool &keep_connection, boost::uint32_t *conn_id);
   int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t &conn_id,
       const bool &new_skt);
-  int Start(const boost::uint16_t & port,
-      boost::function<void(const rpcprotocol::RpcMessage&,
-        const boost::uint32_t&, const float &)> on_message,
-      boost::function<void(const bool&, const std::string&,
-        const boost::uint16_t&)> notify_dead_server,
-      boost::function<void(const boost::uint32_t&, const bool&)> on_send);
-  int StartLocal(const boost::uint16_t &port, boost::function <void(
-        const rpcprotocol::RpcMessage&, const boost::uint32_t&, const float &)>
-        on_message,
-      boost::function<void(const boost::uint32_t&, const bool&)> on_send);
+  int Send(const std::string &data, const boost::uint32_t &conn_id,
+      const bool &new_skt);
+  int Start(const boost::uint16_t & port);
+  int StartLocal(const boost::uint16_t &port);
+  bool RegisterOnRPCMessage(boost::function<void(const rpcprotocol::RpcMessage&,
+      const boost::uint32_t&, const float &)> on_rpcmessage);
+  bool RegisterOnMessage(boost::function<void(const std::string&,
+      const boost::uint32_t&, const float &)> on_message);
+  bool RegisterOnSend(boost::function<void(const boost::uint32_t&,
+      const bool&)> on_send);
+  bool RegisterOnServerDown(boost::function<void(const bool&,
+        const std::string&, const boost::uint16_t&)> on_server_down);
   void CloseConnection(const boost::uint32_t &connection_id);
   void Stop();
   inline bool is_stopped() const { return stop_; }
@@ -104,9 +108,8 @@ class TransportImpl {
       &my_rendezvous_ip, const boost::uint16_t &my_rendezvous_port);
   void StopPingRendezvous();
   bool CanConnect(const std::string &ip, const uint16_t &port);
-  bool CheckConnection(const std::string &local_ip,
+  bool IsAddrUsable(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port);
-  void CleanUp();
   bool IsPortAvailable(const boost::uint16_t &port);
  private:
   TransportImpl& operator=(const TransportImpl&);
@@ -115,7 +118,7 @@ class TransportImpl {
   void AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id);
   void HandleRendezvousMsgs(const HolePunchingMsg &message);
   int Send(const std::string &data, DataType type,
-      const boost::uint32_t &conn_id, const bool &new_skt);
+      const boost::uint32_t &conn_id, const bool &new_skt, const bool &is_rpc);
   void SendHandle();
   int Connect(UDTSOCKET *skt, const std::string &peer_address,
       const uint16_t &peer_port, bool short_timeout);
@@ -125,9 +128,11 @@ class TransportImpl {
   void MessageHandler();
   volatile bool stop_;
   boost::function<void(const rpcprotocol::RpcMessage&, const boost::uint32_t&,
-      const float&)> message_notifier_;
+      const float&)> rpcmsg_notifier_;
+  boost::function<void(const std::string&, const boost::uint32_t&,
+      const float&)> msg_notifier_;
   boost::function<void(const bool&, const std::string&,
-      const boost::uint16_t&)> rendezvous_notifier_;
+      const boost::uint16_t&)> server_down_notifier_;
   boost::shared_ptr<boost::thread> accept_routine_, recv_routine_,
       send_routine_, ping_rendz_routine_, handle_msgs_routine_;
   UDTSOCKET listening_socket_;
@@ -144,8 +149,7 @@ class TransportImpl {
   boost::uint32_t current_id_;
   boost::condition_variable send_cond_, ping_rend_cond_, recv_cond_,
       msg_hdl_cond_;
-  bool ping_rendezvous_;
-  bool directly_connected_;
+  bool ping_rendezvous_, directly_connected_/*, handle_non_transport_msgs_*/;
   int accepted_connections_, msgs_sent_;
   boost::uint32_t last_id_;
   std::set<boost::uint32_t> data_arrived_;

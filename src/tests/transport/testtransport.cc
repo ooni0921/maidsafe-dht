@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <list>
 #include <string>
-#include "maidsafe/transport.h"
+#include "maidsafe/transport-api.h"
 #include "protobuf/rpcmessage.pb.h"
 #include "transport/transportimpl.h"
 #include "maidsafe/config.h"
@@ -86,9 +86,9 @@ void send_string(TransportNode* node, int port, int repeat,
 
 class MessageHandler {
  public:
-  MessageHandler(): msgs(), ids(), dead_server_(true), server_ip_(),
+  MessageHandler(): msgs(), raw_msgs(), ids(), dead_server_(true), server_ip_(),
     server_port_(0), node_(NULL), msgs_sent_(0) {}
-  void OnMessage(const rpcprotocol::RpcMessage &msg,
+  void OnRPCMessage(const rpcprotocol::RpcMessage &msg,
       const boost::uint32_t &conn_id, const float &rtt) {
     std::string message;
     msg.SerializeToString(&message);
@@ -98,6 +98,11 @@ class MessageHandler {
         << std::endl;
     if (node_ != NULL)
       node_->CloseConnection(conn_id);
+  }
+  void OnMessage(const std::string &msg, const boost::uint32_t &conn_id,
+      const float&) {
+    raw_msgs.push_back(msg);
+    raw_ids.push_back(conn_id);
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
     const boost::uint16_t &port) {
@@ -112,8 +117,8 @@ class MessageHandler {
     if (success)
       msgs_sent_++;
   }
-  std::list<std::string> msgs;
-  std::list<boost::uint32_t> ids;
+  std::list<std::string> msgs, raw_msgs;
+  std::list<boost::uint32_t> ids, raw_ids;
   bool dead_server_;
   std::string server_ip_;
   boost::uint16_t server_port_;
@@ -129,7 +134,7 @@ class MessageHandlerEchoReq {
   explicit MessageHandlerEchoReq(transport::Transport *node)
       : node_(node), msgs(), ids(), dead_server_(true), server_ip_(),
         server_port_(0), msgs_sent_(0) {}
-    void OnMessage(const rpcprotocol::RpcMessage &msg,
+    void OnRPCMessage(const rpcprotocol::RpcMessage &msg,
         const boost::uint32_t &conn_id, const float &rtt) {
     std::string message;
     msg.SerializeToString(&message);
@@ -173,7 +178,7 @@ class MessageHandlerEchoResp {
   explicit MessageHandlerEchoResp(transport::Transport *node)
       : node_(node), msgs(), ids(), dead_server_(true), server_ip_(),
         server_port_(0), msgs_sent_(0) {}
-    void OnMessage(const rpcprotocol::RpcMessage &msg,
+    void OnRPCMessage(const rpcprotocol::RpcMessage &msg,
         const boost::uint32_t &conn_id, const float &rtt) {
     std::string message;
     msg.SerializeToString(&message);
@@ -209,8 +214,7 @@ class MessageHandlerEchoResp {
 class TransportTest: public testing::Test {
  protected:
   virtual ~TransportTest() {
-    transport::Transport trans;
-    trans.CleanUp();
+    transport::CleanUp();
   }
 };
 
@@ -218,16 +222,22 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnother) {
   boost::uint32_t id = 0;
   transport::Transport node1, node2;
   MessageHandler msg_handler[2];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-    _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
   boost::uint16_t lp_node2 = node2.listening_port();
   rpcprotocol::RpcMessage msg;
   msg.set_rpc_type(rpcprotocol::REQUEST);
@@ -254,26 +264,38 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOne) {
   boost::uint32_t id;
   transport::Transport node1, node2, node3, node4;
   MessageHandler msg_handler[4];
-  node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2));
-  node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2));
-  node3.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[2], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
+  ASSERT_TRUE(node3.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[2], _1, _2, _3)));
+  ASSERT_TRUE(node3.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[2],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[2], _1, _2));
-  node4.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[3], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node3.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[2], _1, _2)));
+  ASSERT_EQ(0, node3.Start(0));
+  ASSERT_TRUE(node4.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[3], _1, _2, _3)));
+  ASSERT_TRUE(node4.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[3],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[3], _1, _2));
+    _1, _2, _3)));
+  ASSERT_TRUE(node4.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[3], _1, _2)));
+  ASSERT_EQ(0, node4.Start(0));
   boost::uint16_t lp_node4 = node4.listening_port();
   std::list<std::string> sent_msgs;
   rpcprotocol::RpcMessage rpc_msg;
@@ -326,38 +348,56 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToMany) {
   boost::uint32_t id;
   transport::Transport node1, node2, node3, node4, node5, node6;
   MessageHandler msg_handler[6];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
-  ASSERT_EQ(0, node3.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[2], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
+  ASSERT_TRUE(node3.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[2], _1, _2, _3)));
+  ASSERT_TRUE(node3.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[2],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[2], _1, _2)));
-  ASSERT_EQ(0, node4.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[3], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node3.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[2], _1, _2)));
+  ASSERT_EQ(0, node3.Start(0));
+  ASSERT_TRUE(node4.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[3], _1, _2, _3)));
+  ASSERT_TRUE(node4.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[3],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[3], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node4.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[3], _1, _2)));
+  ASSERT_EQ(0, node4.Start(0));
   boost::uint16_t lp_node4 = node4.listening_port();
-  ASSERT_EQ(0, node5.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[4], _1, _2, _3),
+  ASSERT_TRUE(node5.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[4], _1, _2, _3)));
+  ASSERT_TRUE(node5.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[4],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[4], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node5.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[4], _1, _2)));
+  ASSERT_EQ(0, node5.Start(0));
   boost::uint16_t lp_node5 = node5.listening_port();
-  ASSERT_EQ(0, node6.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[5], _1, _2, _3),
+  ASSERT_TRUE(node6.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[5], _1, _2, _3)));
+  ASSERT_TRUE(node6.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[5],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[5], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node6.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[5], _1, _2)));
+  ASSERT_EQ(0, node6.Start(0));
   boost::uint16_t lp_node6 = node6.listening_port();
   std::string sent_msgs[3];
   rpcprotocol::RpcMessage rpc_msg;
@@ -417,28 +457,40 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromOneToMany) {
   boost::uint32_t id;
   transport::Transport node1, node2, node3, node4;
   MessageHandler msg_handler[4];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
   boost::uint16_t lp_node2 = node2.listening_port();
-  ASSERT_EQ(0, node3.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[2], _1, _2, _3),
+  ASSERT_TRUE(node3.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[2], _1, _2, _3)));
+  ASSERT_TRUE(node3.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[2],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[2], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node3.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[2], _1, _2)));
+  ASSERT_EQ(0, node3.Start(0));
   boost::uint16_t lp_node3 = node3.listening_port();
-  ASSERT_EQ(0, node4.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[3], _1, _2, _3),
+  ASSERT_TRUE(node4.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[3], _1, _2, _3)));
+  ASSERT_TRUE(node4.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[3],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[3], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node4.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[3], _1, _2)));
+  ASSERT_EQ(0, node4.Start(0));
   boost::uint16_t lp_node4 = node4.listening_port();
   std::string sent_msgs[3];
   rpcprotocol::RpcMessage rpc_msg;
@@ -494,11 +546,14 @@ TEST_F(TransportTest, BEH_TRANS_TimeoutForSendingToAWrongPeer) {
   boost::uint32_t id;
   transport::Transport node1;
   MessageHandler msg_handler[1];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
   rpc_msg.set_message_id(2000);
@@ -528,11 +583,13 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
   rpc_msg.SerializeToString(&sent_msg);
   for (int i = 0; i < kNumNodes; ++i) {
     transport::Transport *trans = new transport::Transport;
-    ASSERT_EQ(0, trans->Start(0,
-      boost::bind(&MessageHandler::OnMessage, &msg_handler[i], _1, _2, _3),
-      boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[i],
-                  _1, _2, _3),
-      boost::bind(&MessageHandler::OnSend, &msg_handler[i], _1, _2)));
+    ASSERT_TRUE(trans->RegisterOnRPCMessage(boost::bind(
+      &MessageHandler::OnRPCMessage, &msg_handler[i], _1, _2, _3)));
+    ASSERT_TRUE(trans->RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+      &msg_handler[i], _1, _2)));
+    ASSERT_TRUE(trans->RegisterOnServerDown(boost::bind(
+      &MessageHandler::OnDeadRendezvousServer, &msg_handler[i], _1, _2, _3)));
+    ASSERT_EQ(0, trans->Start(0));
     ports[i] = trans->listening_port();
     if (i != 0) {
       TransportNode *tnode = new TransportNode(trans);
@@ -584,17 +641,23 @@ TEST_F(TransportTest, BEH_TRANS_GetRemotePeerAddress) {
   boost::uint32_t id;
   transport::Transport node1, node2;
   MessageHandler msg_handler[2];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
   boost::uint16_t lp_node1 = node1.listening_port();
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
   boost::uint16_t lp_node2 = node2.listening_port();
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
@@ -621,16 +684,22 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnotherBidirectional) {
   boost::uint32_t id;
   transport::Transport node1, node2;
   MessageHandler msg_handler[2];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
   boost::uint16_t lp_node2 = node2.listening_port();
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
@@ -669,26 +738,38 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOneBidirectional) {
   boost::uint32_t id;
   transport::Transport node1, node2, node3, node4;
   MessageHandler msg_handler[4];
-  node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2));
-  node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2));
-  node3.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[2], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
+  ASSERT_TRUE(node3.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[2], _1, _2, _3)));
+  ASSERT_TRUE(node3.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[2],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[2], _1, _2));
-  node4.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[3], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node3.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[2], _1, _2)));
+  ASSERT_EQ(0, node3.Start(0));
+  ASSERT_TRUE(node4.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[3], _1, _2, _3)));
+  ASSERT_TRUE(node4.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[3],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[3], _1, _2));
+    _1, _2, _3)));
+  ASSERT_TRUE(node4.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[3], _1, _2)));
+  ASSERT_EQ(0, node4.Start(0));
   boost::uint16_t lp_node4 = node4.listening_port();
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
@@ -770,16 +851,22 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageCloseAConnection) {
   boost::uint32_t id;
   transport::Transport node1, node2;
   MessageHandler msg_handler[2];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
   boost::uint16_t lp_node2 = node2.listening_port();
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
@@ -813,16 +900,22 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageCloseAConnection) {
 TEST_F(TransportTest, FUNC_TRANS_PingRendezvousServer) {
   transport::Transport node1, rendezvous_node;
   MessageHandler msg_handler[2];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
-  ASSERT_EQ(0, rendezvous_node.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(rendezvous_node.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(rendezvous_node.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(rendezvous_node.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, rendezvous_node.Start(0));
   boost::uint16_t lp_rvn = rendezvous_node.listening_port();
   node1.StartPingRendezvous(false, "127.0.0.1", lp_rvn);
   boost::this_thread::sleep(boost::posix_time::seconds(12));
@@ -836,16 +929,22 @@ TEST_F(TransportTest, FUNC_TRANS_PingRendezvousServer) {
 TEST_F(TransportTest, FUNC_TRANS_PingDeadRendezvousServer) {
   transport::Transport node1, rendezvous_node;
   MessageHandler msg_handler[2];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
-  ASSERT_EQ(0, rendezvous_node.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(rendezvous_node.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(rendezvous_node.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(rendezvous_node.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, rendezvous_node.Start(0));
   boost::uint16_t lp_rvn = rendezvous_node.listening_port();
   node1.StartPingRendezvous(false, "127.0.0.1", lp_rvn);
   boost::this_thread::sleep(boost::posix_time::seconds(12));
@@ -863,22 +962,31 @@ TEST_F(TransportTest, FUNC_TRANS_PingDeadRendezvousServer) {
 TEST_F(TransportTest, FUNC_TRANS_ReconnectToDifferentServer) {
   transport::Transport node1, rendezvous_node1, rendezvous_node2;
   MessageHandler msg_handler[3];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
-  ASSERT_EQ(0, rendezvous_node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(rendezvous_node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(rendezvous_node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(rendezvous_node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, rendezvous_node1.Start(0));
   boost::uint16_t lp_rvn1 = rendezvous_node1.listening_port();
-  ASSERT_EQ(0, rendezvous_node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[2], _1, _2, _3),
+  ASSERT_TRUE(rendezvous_node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[2], _1, _2, _3)));
+  ASSERT_TRUE(rendezvous_node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[2],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[2], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(rendezvous_node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[2], _1, _2)));
+  ASSERT_EQ(0, rendezvous_node2.Start(0));
   boost::uint16_t lp_rvn2 = rendezvous_node2.listening_port();
   node1.StartPingRendezvous(false, "127.0.0.1", lp_rvn1);
   boost::this_thread::sleep(boost::posix_time::seconds(12));
@@ -903,17 +1011,23 @@ TEST_F(TransportTest, FUNC_TRANS_StartStopTransport) {
   boost::uint32_t id;
   transport::Transport node1, node2;
   MessageHandler msg_handler[2];
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[0], _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[0], _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[0],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[0], _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
   boost::uint16_t lp_node1 = node1.listening_port();
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler[1], _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
   boost::uint16_t lp_node2 = node2.listening_port();
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
@@ -932,11 +1046,14 @@ TEST_F(TransportTest, FUNC_TRANS_StartStopTransport) {
   // A message was received by node2, now start and stop it 5 times
   for (int i = 0 ; i < 5; i++) {
     node2.Stop();
-    ASSERT_EQ(0, node2.Start(0,
-      boost::bind(&MessageHandler::OnMessage, &msg_handler[1], _1, _2, _3),
+    ASSERT_TRUE(node2.RegisterOnRPCMessage(
+      boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[1], _1, _2, _3)));
+    ASSERT_TRUE(node2.RegisterOnServerDown(
       boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
-                  _1, _2, _3),
-      boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
+      _1, _2, _3)));
+    ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+      &msg_handler[1], _1, _2)));
+    ASSERT_EQ(0, node2.Start(0));
     lp_node2 = node2.listening_port();
     // Sending another message
     rpc_msg.clear_args();
@@ -985,17 +1102,21 @@ TEST_F(TransportTest, FUNC_TRANS_SendRespond) {
   transport::Transport node1, node2;
   MessageHandlerEchoReq msg_handler1(&node1);
   MessageHandlerEchoResp msg_handler2(&node2);
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandlerEchoReq::OnMessage, &msg_handler1, _1, _2, _3),
-    boost::bind(&MessageHandlerEchoReq::OnDeadRendezvousServer, &msg_handler1,
-                _1, _2, _3),
-    boost::bind(&MessageHandlerEchoReq::OnSend, &msg_handler1, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(boost::bind(
+    &MessageHandlerEchoReq::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(
+    &MessageHandlerEchoReq::OnSend, &msg_handler1, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(boost::bind(
+    &MessageHandlerEchoReq::OnDeadRendezvousServer, &msg_handler1, _1, _2, _3)));
+  ASSERT_EQ(0, node1.Start(0));
   boost::uint16_t lp_node1 = node1.listening_port();
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandlerEchoResp::OnMessage, &msg_handler2, _1, _2, _3),
-    boost::bind(&MessageHandlerEchoResp::OnDeadRendezvousServer, &msg_handler2,
-                _1, _2, _3),
-    boost::bind(&MessageHandlerEchoResp::OnSend, &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(boost::bind(
+    &MessageHandlerEchoResp::OnRPCMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(
+    &MessageHandlerEchoResp::OnSend, &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(boost::bind(
+    &MessageHandlerEchoResp::OnDeadRendezvousServer, &msg_handler2, _1, _2, _3)));
+  ASSERT_EQ(0, node2.Start(0));
   std::vector<std::string> msgs;
   unsigned int msgs_sent = 12;
   boost::uint32_t id;
@@ -1053,34 +1174,39 @@ TEST_F(TransportTest, FUNC_TRANS_SendRespond) {
 
 TEST_F(TransportTest, BEH_TRANS_FailStartUsedport) {
   transport::Transport node1, node2;
-  MessageHandler msg_handler1, msg_handler2;
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
+  MessageHandler msg_handler1;
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
   boost::uint16_t lp_node1 = node1.listening_port();
-  ASSERT_EQ(1, node2.Start(lp_node1,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3),
-    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler2,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
+  ASSERT_EQ(1, node2.Start(lp_node1));
   node1.Stop();
 }
 
 TEST_F(TransportTest, BEH_TRANS_SendMultipleMsgsSameConnection) {
   transport::Transport node1, node2;
   MessageHandler msg_handler1, msg_handler2;
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler2,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler2, _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
   boost::uint16_t lp_node2 = node2.listening_port();
   boost::uint32_t id;
   boost::asio::ip::address local_address;
@@ -1142,22 +1268,31 @@ TEST_F(TransportTest, BEH_TRANS_SendMultipleMsgsSameConnection) {
 TEST_F(TransportTest, BEH_TRANS_SendViaRdz) {
   transport::Transport node1, node2, node3;
   MessageHandler msg_handler1, msg_handler2, msg_handler3;
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
   boost::uint16_t lp_node1 = node1.listening_port();
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3),
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler2,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
-  ASSERT_EQ(0, node3.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler3, _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler2, _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
+  ASSERT_TRUE(node3.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler3, _1, _2, _3)));
+  ASSERT_TRUE(node3.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler3,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler3, _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node3.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler3, _1, _2)));
+  ASSERT_EQ(0, node3.Start(0));
   boost::uint16_t lp_node3 = node3.listening_port();
   node1.StartPingRendezvous(false, "127.0.0.1", lp_node3);
   rpcprotocol::RpcMessage rpc_msg;
@@ -1184,82 +1319,116 @@ TEST_F(TransportTest, BEH_TRANS_NoNotificationForInvalidMsgs) {
   transport::Transport node1, node2;
   UDT::startup();
   MessageHandler msg_handler1, msg_handler2;
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
   boost::uint16_t lp_node1 = node1.listening_port();
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3),
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler2,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler2, _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
   boost::uint32_t id;
   ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node1, "", 0, "", 0, true,
       &id));
   rpcprotocol::RpcMessage rpc_msg;
   ASSERT_EQ(1, node2.Send(rpc_msg, id, true));
+  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node1, "", 0, "", 0, true,
+      &id));
+  ASSERT_EQ(1, node2.Send("", id, true));
   // sending an invalid message
-  struct addrinfo addrinfo_hints;
-  struct addrinfo* addrinfo_res, *peer_addr;
-  memset(&addrinfo_hints, 0, sizeof(struct addrinfo));
-  addrinfo_hints.ai_flags = AI_PASSIVE;
-  addrinfo_hints.ai_family = AF_INET;
-  addrinfo_hints.ai_socktype = SOCK_STREAM;
-  ASSERT_EQ(0, getaddrinfo(NULL, "0", &addrinfo_hints, &addrinfo_res));
-  UDTSOCKET skt = UDT::socket(addrinfo_res->ai_family,
-      addrinfo_res->ai_socktype, addrinfo_res->ai_protocol);
-
-  bool blockng = true;
-  UDT::setsockopt(skt, 0, UDT_RCVSYN, &blockng, sizeof(blockng));
-  UDT::setsockopt(skt, 0, UDT_RCVSYN, &blockng, sizeof(blockng));
-  ASSERT_EQ(0, getaddrinfo("127.0.0.1", boost::lexical_cast<std::string>(
-      lp_node1).c_str(), &addrinfo_hints, &peer_addr));
-  EXPECT_NE(UDT::ERROR, UDT::connect(skt, peer_addr->ai_addr,
-      peer_addr->ai_addrlen));
   std::string msg = base::RandomString(50);
-  int64_t msg_size = msg.size();
-  EXPECT_NE(UDT::ERROR, UDT::send(skt, reinterpret_cast<char*>(&msg_size),
-      sizeof(int64_t), 0));
-  EXPECT_NE(UDT::ERROR, UDT::send(skt, msg.c_str(), msg_size, 0));
-
+  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node1, "", 0, "", 0, true,
+      &id));
+  ASSERT_EQ(0, node2.Send(msg, id, true));
   boost::this_thread::sleep(boost::posix_time::seconds(3));
-  freeaddrinfo(addrinfo_res);
-  freeaddrinfo(peer_addr);
-  UDT::close(skt);
   node1.Stop();
   node2.Stop();
-  ASSERT_EQ(0, msg_handler2.msgs_sent_);
   ASSERT_TRUE(msg_handler1.msgs.empty());
   ASSERT_TRUE(msg_handler2.msgs.empty());
 }
 
-TEST_F(TransportTest, BEH_TRANS_CheckConnection) {
+TEST_F(TransportTest, BEH_TRANS_NotificationForInvalidMsgs) {
+  transport::Transport node1, node2;
+  UDT::startup();
+  MessageHandler msg_handler1, msg_handler2;
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_EQ(0, node1.Start(0));
+  boost::uint16_t lp_node1 = node1.listening_port();
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler2,
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node2.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_EQ(0, node2.Start(0));
+  boost::uint32_t id;
+  // sending an invalid message
+  std::string msg = base::RandomString(50);
+  ASSERT_EQ(0, node2.ConnectToSend("127.0.0.1", lp_node1, "", 0, "", 0, true,
+      &id));
+  ASSERT_EQ(0, node2.Send(msg, id, true));
+  while (msg_handler1.raw_msgs.empty())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  node1.Stop();
+  node2.Stop();
+  ASSERT_TRUE(msg_handler1.msgs.empty());
+  ASSERT_FALSE(msg_handler1.raw_msgs.empty());
+  ASSERT_EQ(1, msg_handler1.raw_msgs.size());
+  ASSERT_EQ(msg, msg_handler1.raw_msgs.front());
+  ASSERT_TRUE(msg_handler2.msgs.empty());
+}
+
+TEST_F(TransportTest, BEH_TRANS_AddrUsable) {
   transport::Transport node1, node2;
   MessageHandler msg_handler1, msg_handler2;
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3),
+    _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler2,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
+    _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler2, _1, _2)));
+  ASSERT_EQ(0, node2.Start(0));
   boost::uint16_t lp_node2 = node2.listening_port();
-  ASSERT_FALSE(node1.CheckConnection("", "127.0.0.1", lp_node2));
-  ASSERT_FALSE(node1.CheckConnection("127.0.0.1", "", lp_node2));
+  ASSERT_FALSE(node1.IsAddrUsable("", "127.0.0.1", lp_node2));
+  ASSERT_FALSE(node1.IsAddrUsable("127.0.0.1", "", lp_node2));
   std::vector<std::string> local_ips = base::get_local_addresses();
   if (local_ips.size() > 0) {
     std::string server_addr = "127.0.0.1";
     for (boost::uint32_t i = 0; i < local_ips.size(); i++) {
       LOG(INFO) << "Checking local address " << local_ips[i] <<
           " connecting to address " << server_addr << std::endl;
-      ASSERT_FALSE(node1.CheckConnection(local_ips[i], server_addr, lp_node2));
+      ASSERT_FALSE(node1.IsAddrUsable(local_ips[i], server_addr, lp_node2));
     }
-    ASSERT_TRUE(node1.CheckConnection(local_ips[0], local_ips[0], lp_node2));
+    ASSERT_TRUE(node1.IsAddrUsable(local_ips[0], local_ips[0], lp_node2));
   } else {
     LOG(INFO) << "No local addresses where retrieved" << std::endl;
   }
@@ -1270,14 +1439,20 @@ TEST_F(TransportTest, BEH_TRANS_CheckConnection) {
 TEST_F(TransportTest, BEH_TRANS_StartLocal) {
   transport::Transport node1, node2;
   MessageHandler msg_handler1, msg_handler2;
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
-    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
-  ASSERT_EQ(0, node2.StartLocal(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_EQ(0, node1.StartLocal(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node2.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_EQ(0, node2.StartLocal(0));
   boost::uint16_t lp_node2 = node2.listening_port();
   boost::uint32_t id;
   boost::asio::ip::address local_address;
@@ -1311,14 +1486,22 @@ TEST_F(TransportTest, BEH_TRANS_StartLocal) {
 TEST_F(TransportTest, BEH_TRANS_StartStopLocal) {
   transport::Transport node1, node2;
   MessageHandler msg_handler1, msg_handler2;
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
-    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
-  ASSERT_EQ(0, node2.StartLocal(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnServerDown(boost::bind(
+    &MessageHandler::OnDeadRendezvousServer, &msg_handler1, _1, _2, _3)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node2.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_EQ(0, node2.StartLocal(0));
   boost::uint16_t lp_node2 = node2.listening_port();
   boost::uint32_t id;
   boost::asio::ip::address local_address;
@@ -1334,6 +1517,7 @@ TEST_F(TransportTest, BEH_TRANS_StartStopLocal) {
       &id));
   ASSERT_EQ(0, node1.ConnectToSend(loop_back, lp_node2, "", 0, "", 0, true,
       &id));
+
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
   rpc_msg.set_message_id(2000);
@@ -1345,13 +1529,26 @@ TEST_F(TransportTest, BEH_TRANS_StartStopLocal) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_FALSE(msg_handler2.msgs.empty());
   ASSERT_EQ(msg, msg_handler2.msgs.front());
+  std::string raw_msg = base::RandomString(50);
+  ASSERT_EQ(0, node1.ConnectToSend(loop_back, lp_node2, "", 0, "", 0, true,
+      &id));
+  ASSERT_EQ(0, node1.Send(raw_msg, id, true));
+
+  while (msg_handler2.raw_msgs.empty())
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  ASSERT_FALSE(msg_handler2.raw_msgs.empty());
+  ASSERT_EQ(raw_msg, msg_handler2.raw_msgs.front());
   node2.Stop();
   msg_handler2.msgs.clear();
-  ASSERT_EQ(0, node2.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3),
-    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler2,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node2.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnServerDown(boost::bind(
+    &MessageHandler::OnDeadRendezvousServer, &msg_handler2, _1, _2, _3)));
+  ASSERT_EQ(0, node2.Start(0));
   lp_node2 = node2.listening_port();
   ASSERT_EQ(0, node1.ConnectToSend(local_ip, lp_node2, "", 0, "", 0, true,
       &id));
@@ -1375,11 +1572,13 @@ TEST_F(TransportTest, BEH_TRANS_StartStopLocal) {
 TEST_F(TransportTest, BEH_TRANS_CheckPortAvailable) {
   transport::Transport node1, node2;
   MessageHandler msg_handler1;
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
-    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_EQ(0, node1.StartLocal(0));
   boost::uint16_t lp_node1(node1.listening_port());
   ASSERT_FALSE(node2.IsPortAvailable(lp_node1));
   ASSERT_TRUE(node2.IsPortAvailable(lp_node1+1));
@@ -1390,14 +1589,20 @@ TEST_F(TransportTest, BEH_TRANS_CheckPortAvailable) {
 TEST_F(TransportTest, BEH_TRANS_StartBadLocal) {
   transport::Transport node1, node2;
   MessageHandler msg_handler1, msg_handler2;
-  ASSERT_EQ(0, node1.Start(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3),
-    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
-                _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
-  ASSERT_EQ(0, node2.StartLocal(0,
-    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3),
-    boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_TRUE(node1.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_EQ(0, node1.StartLocal(0));
+  ASSERT_TRUE(node2.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_TRUE(node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler2, _1, _2)));
+  ASSERT_TRUE(node2.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler2, _1, _2, _3)));
+  ASSERT_EQ(0, node2.StartLocal(0));
   boost::uint16_t lp_node2 = node2.listening_port();
   boost::uint32_t id;
   std::string loop_back("127.0.0.1");

@@ -25,13 +25,14 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/channelmanager.h"
+#include "maidsafe/channelmanager-api.h"
 #include "protobuf/general_messages.pb.h"
 #include "rpcprotocol/channelmanagerimpl.h"
 
 namespace rpcprotocol {
 
-ChannelManager::ChannelManager() : pimpl_(new ChannelManagerImpl) {}
+ChannelManager::ChannelManager(transport::Transport *ptransport)
+      : pimpl_(new ChannelManagerImpl(ptransport)) {}
 
 ChannelManager::~ChannelManager() {}
 
@@ -58,18 +59,11 @@ void ChannelManager::RegisterChannel(const std::string &service_name,
   pimpl_->RegisterChannel(service_name, channel);
 }
 
-int ChannelManager::StartTransport(boost::uint16_t port,
-    boost::function<void(const bool&, const std::string&,
-                         const boost::uint16_t&)> notify_dead_server) {
-  return pimpl_->StartTransport(port, notify_dead_server);
+int ChannelManager::Start() {
+  return pimpl_->Start();
 }
-
-int ChannelManager::StopTransport() {
-  return pimpl_->StopTransport();
-}
-
-void ChannelManager::CleanUpTransport() {
-  pimpl_->CleanUpTransport();
+int ChannelManager::Stop() {
+  return pimpl_->Stop();
 }
 
 void ChannelManager::UnRegisterChannel(const std::string &service_name) {
@@ -82,24 +76,6 @@ void ChannelManager::ClearChannels() {
 
 void ChannelManager::ClearCallLaters() {
   pimpl_->ClearCallLaters();
-}
-
-boost::shared_ptr<transport::Transport> ChannelManager::ptransport() {
-  return pimpl_->ptransport();
-}
-
-boost::uint16_t ChannelManager::local_port() const {
-  return pimpl_->local_port();
-}
-
-bool ChannelManager::CheckConnection(const std::string &ip,
-      const uint16_t &port) {
-  return pimpl_->CheckConnection(ip, port);
-}
-
-bool ChannelManager::CheckLocalAddress(const std::string &local_ip,
-    const std::string &remote_ip, const uint16_t &remote_port) {
-  return pimpl_->CheckLocalAddress(local_ip, remote_ip, remote_port);
 }
 
 void ChannelManager::AddTimeOutRequest(const boost::uint32_t &connection_id,
@@ -115,16 +91,7 @@ void ChannelManager::RemoveChannelId(const boost::uint32_t &id) {
   pimpl_->RemoveChannelId(id);
 }
 
-int ChannelManager::StartLocalTransport(const boost::uint16_t &port) {
-  return pimpl_->StartLocalTransport(port);
-}
-
-void ChannelManager::StartPingServer(const bool &dir_connected,
-    const std::string &server_ip, const boost::uint16_t &server_port) {
-  pimpl_->StartPingServer(dir_connected, server_ip, server_port);
-}
-
-void ChannelManager::StopPingServer() {
-  pimpl_->StopPingServer();
+bool ChannelManager::RegisterNotifiersToTransport() {
+  return pimpl_->RegisterNotifiersToTransport();
 }
 }  // namespace rpcprotocol

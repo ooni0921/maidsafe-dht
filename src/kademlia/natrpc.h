@@ -32,13 +32,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 #include <string>
 #include "protobuf/kademlia_service.pb.h"
-#include "maidsafe/channelmanager.h"
+#include "maidsafe/channelmanager-api.h"
 
 namespace kad {
 const int kRpcNatPingTimeout = 3;
 class NatRpcs {
  public:
-  explicit NatRpcs(boost::shared_ptr<rpcprotocol::ChannelManager> ch_manager);
+  NatRpcs(rpcprotocol::ChannelManager *ch_manager, transport::Transport
+    *trans);
   void NatDetection(const std::string &newcomer,
       const std::string &bootstrap_node, const boost::uint32_t type,
       const std::string &sender_id, const std::string &remote_ip,
@@ -50,7 +51,8 @@ class NatRpcs {
       const boost::uint16_t &rv_port, NatDetectionPingResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
  private:
-  boost::shared_ptr<rpcprotocol::ChannelManager> pchannel_manager_;
+  rpcprotocol::ChannelManager *pchannel_manager_;
+  transport::Transport *ptransport_;
 };
 }
 #endif  // KADEMLIA_NATRPC_H_

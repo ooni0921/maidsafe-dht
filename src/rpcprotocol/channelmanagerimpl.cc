@@ -34,17 +34,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace rpcprotocol {
 
-ChannelManagerImpl::ChannelManagerImpl()
-    : ptransport_(new transport::Transport), is_started_(false),
+ChannelManagerImpl::ChannelManagerImpl(transport::Transport *ptransport)
+    : ptransport_(ptransport), is_started_(false),
       ptimer_(new base::CallLaterTimer), req_mutex_(), channels_mutex_(),
       id_mutex_(), pend_timeout_mutex_(), channels_ids_mutex_(),
       current_request_id_(0), current_channel_id_(0), channels_(),
-      pending_req_(), local_port_(0), pending_timeout_(),
-      channels_ids_(), delete_channels_cond_(), online_status_id_(0) {}
+      pending_req_(), pending_timeout_(), channels_ids_(),
+      delete_channels_cond_(), online_status_id_(0) {}
 
 ChannelManagerImpl::~ChannelManagerImpl() {
   if (is_started_) {
-    StopTransport();
+    Stop();
   }
   channels_.clear();
   std::map<boost::uint32_t, PendingReq>::iterator it;
@@ -122,34 +122,23 @@ void ChannelManagerImpl::RegisterChannel(const std::string &service_name,
   channels_[service_name] = channel;
 }
 
-int ChannelManagerImpl::StartTransport(boost::uint16_t port,
-    boost::function<void(const bool&, const std::string&,
-                         const boost::uint16_t&)> notify_dead_server) {
+int ChannelManagerImpl::Start() {
   if (is_started_)
     return 0;
-  int start_res_(-1);
-  // if no port assigned, get a random port between 5000 & 65535 inclusive
-  if (0 == port)
-    port = static_cast<boost::uint16_t>
-        (base::random_32bit_uinteger() % (kMaxPort - kMinPort + 1)) + kMinPort;
-  current_request_id_ =
-      base::generate_next_transaction_id(current_request_id_)+(port*100);
-  if (0 == ptransport_->Start(port,
-      boost::bind(&ChannelManagerImpl::MessageArrive, this, _1, _2, _3),
-      notify_dead_server, boost::bind(&ChannelManagerImpl::RequestSent,
-      this, _1, _2))) {
-    start_res_ = 0;
+  if (!ptransport_->is_stopped()) {
+    current_request_id_ =
+      base::generate_next_transaction_id(current_request_id_) +
+        (ptransport_->listening_port()*100);
     is_started_ = true;
-    local_port_ = ptransport_->listening_port();
     online_status_id_ = base::OnlineController::instance()->RegisterObserver(
-        local_port_, boost::bind(&ChannelManagerImpl::OnlineStatusChanged,
-        this, _1));
+        ptransport_->listening_port(),
+        boost::bind(&ChannelManagerImpl::OnlineStatusChanged, this, _1));
+    return 0;
   }
-
-  return start_res_;
+  return 1;
 }
 
-int ChannelManagerImpl::StopTransport() {
+int ChannelManagerImpl::Stop() {
   if (!is_started_) {
     return 0;
   }
@@ -157,7 +146,6 @@ int ChannelManagerImpl::StopTransport() {
   base::OnlineController::instance()->UnregisterObserver(online_status_id_);
   pending_timeout_.clear();
   ClearCallLaters();
-  ptransport_->Stop();
   {
     boost::mutex::scoped_lock lock(channels_ids_mutex_);
     while (!channels_ids_.empty()) {
@@ -170,16 +158,12 @@ int ChannelManagerImpl::StopTransport() {
   return 1;
 }
 
-void ChannelManagerImpl::CleanUpTransport() {
-  UDT::cleanup();
-}
-
 void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
     const boost::uint32_t &connection_id, const float &rtt) {
   RpcMessage decoded_msg = msg;
   if (decoded_msg.rpc_type() == REQUEST) {
     if (!decoded_msg.has_service() || !decoded_msg.has_method()) {
-      DLOG(ERROR) << local_port_ <<
+      DLOG(ERROR) << ptransport_->listening_port() <<
           " --- request arrived cannot parse message" << std::endl;
       return;
     }
@@ -219,9 +203,9 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
   } else if (decoded_msg.rpc_type() == RESPONSE) {
     std::map<boost::uint32_t, PendingReq>::iterator it;
     req_mutex_.lock();
-    DLOG(INFO) << local_port_ << " --- response arrived for " <<
-        decoded_msg.method() << " -- " << decoded_msg.message_id()
-         << std::endl;
+    DLOG(INFO) << ptransport_->listening_port() <<
+        " --- response arrived for " << decoded_msg.method() << " -- " <<
+        decoded_msg.message_id() << std::endl;
     it = pending_req_.find(decoded_msg.message_id());
     if (it != pending_req_.end()) {
       if (it->second.args->ParseFromString(decoded_msg.args())) {
@@ -234,17 +218,19 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
         ptransport_->CloseConnection(connection_id);
       } else {
         req_mutex_.unlock();
-        DLOG(INFO) << local_port_ <<
+        DLOG(INFO) << ptransport_->listening_port() <<
             " --ChannelManager no callback for id " << decoded_msg.message_id()
              << std::endl;
       }
     } else {
       req_mutex_.unlock();
-      DLOG(INFO) << local_port_ << "ChannelManager no request for id " <<
-          decoded_msg.message_id() << std::endl;
+      DLOG(INFO) << ptransport_->listening_port() <<
+          "ChannelManager no request for id " << decoded_msg.message_id() <<
+          std::endl;
     }
   } else {
-    DLOG(ERROR) << local_port_ << " --- ChannelManager::MessageArrive " <<
+    DLOG(ERROR) << ptransport_->listening_port() <<
+        " --- ChannelManager::MessageArrive " <<
         "unknown type of message received" << std::endl;
   }
 }
@@ -263,11 +249,12 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
     if (ptransport_->HasReceivedData(connection_id, &size_rec)) {
       it->second.size_rec = size_rec;
       req_mutex_.unlock();
-      DLOG(INFO) << local_port_ << " -- Reseting timeout for RPC ID: " <<
-          req_id << ". Connection ID: " << connection_id << std::endl;
+      DLOG(INFO) << ptransport_->listening_port() <<
+        " -- Reseting timeout for RPC ID: " << req_id << ". Connection ID: " <<
+        connection_id << std::endl;
       AddReqToTimer(req_id, timeout);
     } else {
-      DLOG(INFO) << local_port_ << "Request " << req_id <<
+      DLOG(INFO) << ptransport_->listening_port() << "Request " << req_id <<
           " times out.  Connection ID: " << connection_id << std::endl;
       // call back without modifying the response
       google::protobuf::Closure* done = (*it).second.callback;
@@ -307,24 +294,6 @@ void ChannelManagerImpl::ClearCallLaters() {
   ptimer_->CancelAll();
 }
 
-bool ChannelManagerImpl::CheckConnection(const std::string &ip,
-    const uint16_t &port) {
-  if (!is_started_)
-    return false;
-  std::string dec_lip;
-  if (ip.size() == 4) {
-    dec_lip = base::inet_btoa(ip);
-  } else {
-    dec_lip = ip;
-  }
-  return ptransport_->CanConnect(dec_lip, port);
-}
-
-bool ChannelManagerImpl::CheckLocalAddress(const std::string &local_ip,
-    const std::string &remote_ip, const uint16_t &remote_port) {
-  return ptransport_->CheckConnection(local_ip, remote_ip, remote_port);
-}
-
 void ChannelManagerImpl::RequestSent(const boost::uint32_t &connection_id,
     const bool &success) {
   std::map<boost::uint32_t, PendingTimeOut>::iterator it;
@@ -348,35 +317,20 @@ void ChannelManagerImpl::AddTimeOutRequest(const boost::uint32_t &connection_id,
   pending_timeout_[connection_id] = timestruct;
 }
 
-int ChannelManagerImpl::StartLocalTransport(const boost::uint16_t &port) {
-  if (is_started_)
-    return 0;
-  current_request_id_ =
-      base::generate_next_transaction_id(current_request_id_)+(port*100);
-  int result = ptransport_->StartLocal(port,
-      boost::bind(&ChannelManagerImpl::MessageArrive, this, _1, _2, _3),
-      boost::bind(&ChannelManagerImpl::RequestSent, this, _1, _2));
-  if (result == 0) {
-    local_port_ = ptransport_->listening_port();
-    online_status_id_ = base::OnlineController::instance()->RegisterObserver(
-        local_port_, boost::bind(&ChannelManagerImpl::OnlineStatusChanged,
-        this, _1));
-    is_started_ = true;
-  }
-  return result;
-}
-
-void ChannelManagerImpl::StartPingServer(const bool &dir_connected,
-      const std::string &server_ip, const boost::uint16_t &server_port) {
-  ptransport_->StartPingRendezvous(dir_connected, server_ip, server_port);
-}
-
-void ChannelManagerImpl::StopPingServer() {
-  ptransport_->StopPingRendezvous();
-}
-
 void ChannelManagerImpl::OnlineStatusChanged(const bool&) {
   // TODO(anyone) handle connection loss
+}
+
+bool ChannelManagerImpl::RegisterNotifiersToTransport() {
+  if (is_started_)
+    return true;  // Everything has already been registered
+
+  if (ptransport_->RegisterOnRPCMessage(
+    boost::bind(&ChannelManagerImpl::MessageArrive, this, _1, _2, _3))) {
+    return ptransport_->RegisterOnSend(boost::bind(
+      &ChannelManagerImpl::RequestSent, this, _1, _2));
+  }
+  return false;
 }
 
 }  // namespace rpcprotocol

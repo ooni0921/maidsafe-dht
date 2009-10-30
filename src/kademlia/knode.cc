@@ -25,24 +25,24 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/knode.h"
+#include "maidsafe/knode-api.h"
 #include "kademlia/knodeimpl.h"
 
 namespace kad {
 
-KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp)
-      : pimpl_(new KNodeImpl(channel_manager, type, private_key, public_key,
-        port_forwarded, use_upnp)) {}
+KNode::KNode(rpcprotocol::ChannelManager *channel_manager,
+      transport::Transport *trans, node_type type,
+      const std::string &private_key, const std::string &public_key,
+      const bool &port_forwarded, const bool &use_upnp)
+      : pimpl_(new KNodeImpl(channel_manager, trans, type, private_key,
+        public_key, port_forwarded, use_upnp)) {}
 
-KNode::KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const boost::uint16_t k, const int &alpha,
-      const int &beta, const int &refresh_time, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp)
-      : pimpl_(new KNodeImpl(channel_manager, type, k, alpha, beta,
+KNode::KNode(rpcprotocol::ChannelManager *channel_manager,
+      transport::Transport *trans, node_type type, const boost::uint16_t k,
+      const int &alpha, const int &beta, const int &refresh_time,
+      const std::string &private_key, const std::string &public_key,
+      const bool &port_forwarded, const bool &use_upnp)
+      : pimpl_(new KNodeImpl(channel_manager, trans, type, k, alpha, beta,
         refresh_time, private_key, public_key, port_forwarded, use_upnp)) {}
 
 KNode::~KNode() {}
@@ -211,10 +211,6 @@ KadRpcs* KNode::kadrpcs() {
   return pimpl_->kadrpcs();
 }
 
-void KNode::StopRvPing() {
-  pimpl_->StopRvPing();
-}
-
 boost::uint32_t KNode::KeyLastRefreshTime(const std::string &key,
       const std::string &value) {
   return pimpl_->KeyLastRefreshTime(key, value);
@@ -240,4 +236,18 @@ void KNode::SetAlternativeStore(base::AlternativeStore* alternative_store) {
 base::AlternativeStore *KNode::alternative_store() {
   return pimpl_->alternative_store();
 }
+
+void InsertKadContact(const std::string &key,
+                      const kad::Contact &new_contact,
+                      std::vector<kad::Contact> *contacts) {
+  std::list<kad::Contact> contact_list(contacts->begin(), contacts->end());
+  contact_list.push_back(new_contact);
+  SortContactList(&contact_list, key);
+  contacts->clear();
+  for (std::list<kad::Contact>::iterator it = contact_list.begin();
+       it != contact_list.end(); ++it) {
+    contacts->push_back(*it);
+  }
+}
+
 }  // namespace kad

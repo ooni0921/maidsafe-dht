@@ -148,7 +148,7 @@ INCLUDE_DIRECTORIES(${maidsafe-dht_SOURCE_DIR} ${maidsafe-dht_SOURCE_DIR}/libupn
 #########################################################################################################
 #########################################################################################################
 ####	CODE	####
-LIST(APPEND M_LIBUPNP_DIR libupnp/igd_desc_parse.c  libupnp/minixml.c libupnp/minisoap.c libupnp/miniwget.c  libupnp/upnpcommands.c libupnp/upnpreplyparse.c libupnp/testupnpreplyparse.c  libupnp/upnperrors.c libupnp/miniupnpc.c libupnp/minissdpc.c)
+LIST(APPEND M_LIBUPNP_DIR libupnp/igd_desc_parse.c  libupnp/minixml.c libupnp/minisoap.c libupnp/miniwget.c  libupnp/upnpcommands.c libupnp/upnpreplyparse.c libupnp/upnperrors.c libupnp/miniupnpc.c libupnp/minissdpc.c)
 FILE(GLOB M_UPNP_C "upnp/*.c*")
 FILE(GLOB M_UPNP_H "upnp/*.h*")
 LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})
@@ -215,12 +215,12 @@ LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} 
 #######################################################################################
 #All Platforms:  Add Test Exes and Create all maidsafe-dht libs                       #
 #######################################################################################
-add_executable(TESTbase ${T_MAIN} ${T_BASE_DIR} ${MAIDSAFE_DIR} )
+add_executable(TESTbase ${T_MAIN} ${T_BASE_DIR} ${M_BASE_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP})
 add_executable(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_DIR})
 add_executable(TESTknode "tests/kademlia/testknode.cc" ${MAIDSAFE_DIR})
-add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${MAIDSAFE_DIR})
-add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${MAIDSAFE_DIR})
-add_executable(TESTupnp ${T_UPNP_DIR} ${MAIDSAFE_DIR})
+add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${M_BASE_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${MAIDSAFE_DIR}  ${M_UDT_DIR} ${CRYPTOPP})
+add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${M_BASE_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR} ${M_UDT_DIR} ${CRYPTOPP})
+add_executable(TESTupnp ${T_UPNP_DIR} ${M_BASE_DIR} ${M_UPNP_DIR} ${M_LIBUPNP_DIR}  ${MAIDSAFE_DIR} ${CRYPTOPP})
 add_executable(kaddemo ${T_DEMO_DIR})
 #######################################################################################
 #######################################################################################
@@ -288,12 +288,12 @@ ELSEIF (WIN32)
 		SET(DEMO_LIBS c:/usr/lib/libboost_program_options${GCC_VERSION}-mt${BOOST_VERSION}.lib)
 	ENDIF(MSVC)
 ENDIF(APPLE)
-TARGET_LINK_LIBRARIES(TESTbase  maidsafe-dht  protobuf  gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTtransport maidsafe-dht gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe-dht gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTbase protobuf  gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTtransport gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTrpcprotocol gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTkademlia maidsafe-dht gtest  ${SYS_LIB} )
-TARGET_LINK_LIBRARIES(TESTknode maidsafe-dht  gtest ${SYS_LIB} )
-TARGET_LINK_LIBRARIES(TESTupnp maidsafe-dht gtest ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(TESTknode maidsafe-dht gtest ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(TESTupnp gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(maidsafe-dht ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(kaddemo maidsafe-dht ${DEMO_LIBS})
 
@@ -354,7 +354,11 @@ ENDIF(NOT MSVC)
 
 SET_SOURCE_FILES_PROPERTIES(${M_UDT_DIR} PROPERTIES COMPILE_FLAGS ${UDT_CXX_FLAGS})
 SET_SOURCE_FILES_PROPERTIES(${DHT_SOURCE_FILES} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
-SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTupnp kaddemo PROPERTIES COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+SET_SOURCE_FILES_PROPERTIES(${T_BASE_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+SET_SOURCE_FILES_PROPERTIES(${T_TRANSPORT_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+SET_SOURCE_FILES_PROPERTIES(${T_RPCPROTO_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+SET_SOURCE_FILES_PROPERTIES(${T_UPNP_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+SET_TARGET_PROPERTIES(TESTkademlia TESTknode kaddemo PROPERTIES COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
 
 ################################################################
 # TESTS                                                        #
@@ -428,8 +432,8 @@ maidsafe/utils.h maidsafe/crypto.h maidsafe/routingtable.h
 maidsafe/alternativestore.h protobuf/signed_kadvalue.pb.h
 protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h
 protobuf/general_messages.pb.h maidsafe/online.h maidsafe/config.h
-maidsafe/transport.h maidsafe/channel.h maidsafe/channelmanager.h
-maidsafe/knode.h
+maidsafe/transport-api.h maidsafe/channel-api.h maidsafe/channelmanager-api.h
+maidsafe/knode-api.h
         DESTINATION /usr/include/maidsafe)
 install(TARGETS maidsafe-dht
         ARCHIVE

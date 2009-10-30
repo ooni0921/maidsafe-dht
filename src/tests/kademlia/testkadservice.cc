@@ -72,7 +72,7 @@ class Callback {
 
 class KadServicesTest: public testing::Test {
  protected:
-  KadServicesTest() : channel_manager_(new rpcprotocol::ChannelManager),
+  KadServicesTest() : trans_(), channel_manager_(&trans_),
       contact_(), crypto_(), node_id_(""), service_(), datastore_(),
       routingtable_() {
     crypto_.set_hash_algorithm(crypto::SHA_512);
@@ -97,7 +97,8 @@ class KadServicesTest: public testing::Test {
   virtual void SetUp() {
     datastore_.reset(new DataStore(kRefreshTime));
     routingtable_.reset(new RoutingTable(node_id_));
-    service_.reset(new KadService(NatRpcs(channel_manager_), datastore_, true,
+    service_.reset(new KadService(NatRpcs(&channel_manager_, &trans_),
+        datastore_, true,
         boost::bind(&KadServicesTest::AddCtc, this, _1, _2, _3),
         boost::bind(&KadServicesTest::GetRandCtcs, this, _1, _2, _3),
         boost::bind(&KadServicesTest::GetCtc, this, _1, _2),
@@ -113,7 +114,8 @@ class KadServicesTest: public testing::Test {
     service_->set_node_joined(true);
   }
 
-  boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager_;
+  transport::Transport trans_;
+  rpcprotocol::ChannelManager channel_manager_;
   ContactInfo contact_;
   crypto::Crypto crypto_;
   std::string node_id_;

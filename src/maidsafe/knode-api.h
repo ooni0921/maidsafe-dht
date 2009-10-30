@@ -34,8 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * notice is removed.                                                          *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_KNODE_H_
-#define MAIDSAFE_KNODE_H_
+#ifndef MAIDSAFE_KNODE_API_H_
+#define MAIDSAFE_KNODE_API_H_
 
 #include <string>
 #include <vector>
@@ -53,16 +53,16 @@ class SignedValue;
 
 class KNode {
  public:
-  KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp);
+  KNode(rpcprotocol::ChannelManager *channel_manager,
+      transport::Transport *trans, node_type type,
+      const std::string &private_key, const std::string &public_key,
+      const bool &port_forwarded, const bool &use_upnp);
   // constructor used to set up parameters K, alpha, and beta for kademlia
-  KNode(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const boost::uint16_t k, const int &alpha,
-      const int &beta, const int &refresh_time, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp);
+  KNode(rpcprotocol::ChannelManager *channel_manager,
+      transport::Transport *trans, node_type type, const boost::uint16_t k,
+      const int &alpha, const int &beta, const int &refresh_time,
+      const std::string &private_key, const std::string &public_key,
+      const bool &port_forwarded, const bool &use_upnp);
   ~KNode();
   // Join the network with a specific node ID.
   void Join(const std::string &node_id, const std::string &kad_config_file,
@@ -116,7 +116,6 @@ class KNode {
                                  const std::string &host_ip);
   void LogRTInfo();
   ContactInfo contact_info() const;
-  void StopRvPing();
   std::string node_id() const;
   std::string host_ip() const;
   boost::uint16_t host_port() const;
@@ -140,5 +139,9 @@ class KNode {
  private:
   boost::shared_ptr<KNodeImpl> pimpl_;
 };
+
+void InsertKadContact(const std::string &key, const kad::Contact &new_contact,
+    std::vector<kad::Contact> *contacts);
+
 }  // namespace kad
-#endif  // MAIDSAFE_KNODE_H_
+#endif  // MAIDSAFE_KNODE_API_H_

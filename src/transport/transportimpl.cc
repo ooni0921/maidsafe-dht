@@ -34,15 +34,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 namespace transport {
-TransportImpl::TransportImpl() : stop_(true), message_notifier_(),
-    rendezvous_notifier_(), accept_routine_(), recv_routine_(), send_routine_(),
-    ping_rendz_routine_(), handle_msgs_routine_(), listening_socket_(0),
-    peer_address_(), listening_port_(0), my_rendezvous_port_(0),
-    my_rendezvous_ip_(""), incoming_sockets_(), outgoing_queue_(),
-    incoming_msgs_queue_(), send_mutex_(), ping_rendez_mutex_(), recv_mutex_(),
-    msg_hdl_mutex_(), s_skts_mutex_(), addrinfo_hints_(), addrinfo_res_(NULL),
-    current_id_(0), send_cond_(), ping_rend_cond_(), recv_cond_(),
-    msg_hdl_cond_(), ping_rendezvous_(false), directly_connected_(false),
+TransportImpl::TransportImpl() : stop_(true), rpcmsg_notifier_(),
+    msg_notifier_(), server_down_notifier_(), accept_routine_(),
+    recv_routine_(), send_routine_(), ping_rendz_routine_(),
+    handle_msgs_routine_(), listening_socket_(0), peer_address_(),
+    listening_port_(0), my_rendezvous_port_(0), my_rendezvous_ip_(""),
+    incoming_sockets_(), outgoing_queue_(), incoming_msgs_queue_(),
+    send_mutex_(), ping_rendez_mutex_(), recv_mutex_(), msg_hdl_mutex_(),
+    s_skts_mutex_(), addrinfo_hints_(), addrinfo_res_(NULL), current_id_(0),
+    send_cond_(), ping_rend_cond_(), recv_cond_(), msg_hdl_cond_(),
+    ping_rendezvous_(false), directly_connected_(false),
     accepted_connections_(0), msgs_sent_(0), last_id_(0), data_arrived_(),
     ips_from_connections_(), send_notifier_(), send_sockets_() {
   UDT::startup();
@@ -53,12 +54,11 @@ TransportImpl::~TransportImpl() {
     Stop();
 }
 
-int TransportImpl::Start(const boost::uint16_t &port,
-    boost::function<void(const rpcprotocol::RpcMessage&, const boost::uint32_t&,
-    const float&)> on_message, boost::function<void(const bool&,
-    const std::string&, const boost::uint16_t&)> notify_dead_server,
-    boost::function<void(const boost::uint32_t&, const bool&)> on_send) {
+int TransportImpl::Start(const boost::uint16_t &port) {
   if (!stop_)
+    return 1;
+  if ((rpcmsg_notifier_.empty() && msg_notifier_.empty()) ||
+       server_down_notifier_.empty() || send_notifier_.empty())
     return 1;
   listening_port_ = port;
   memset(&addrinfo_hints_, 0, sizeof(struct addrinfo));
@@ -122,15 +122,13 @@ int TransportImpl::Start(const boost::uint16_t &port,
     freeaddrinfo(addrinfo_res_);
     return 1;
   }
-  message_notifier_ = on_message;
-  rendezvous_notifier_ = notify_dead_server;
-  send_notifier_ = on_send;
   current_id_ = base::generate_next_transaction_id(current_id_);
   return 0;
 }
 
 int TransportImpl::Send(const std::string &data,
-    DataType type, const boost::uint32_t &conn_id, const bool &new_skt) {
+    DataType type, const boost::uint32_t &conn_id, const bool &new_skt,
+    const bool &is_rpc) {
 
   UDTSOCKET skt;
   if (new_skt) {
@@ -161,7 +159,7 @@ int TransportImpl::Send(const std::string &data,
   if (type == STRING) {
     int64_t data_size = data.size();
     struct OutgoingData out_data = {skt, data_size, 0,
-      boost::shared_array<char>(new char[data_size]), false, conn_id};
+      boost::shared_array<char>(new char[data_size]), false, conn_id, is_rpc};
     memcpy(out_data.data.get(),
       const_cast<char*>(static_cast<const char*>(data.c_str())), data_size);
     {
@@ -249,7 +247,8 @@ void TransportImpl::Stop() {
   }
   send_sockets_.clear();
   outgoing_queue_.clear();
-  message_notifier_ = 0;
+  rpcmsg_notifier_ = 0;
+  msg_notifier_ = 0;
   send_notifier_ = 0;
   freeaddrinfo(addrinfo_res_);
   DLOG(INFO) << "(" << listening_port_ << ") Accepted connections: " <<
@@ -360,7 +359,7 @@ void TransportImpl::ReceiveHandler() {
                   HandleRendezvousMsgs(t_msg.hp_msg());
                   result = UDT::close((*it).second.u);
                   dead_connections_ids.push_back((*it).first);
-                } else if (t_msg.has_rpc_msg()) {
+                } else if (t_msg.has_rpc_msg() && !rpcmsg_notifier_.empty()) {
                   IncomingMessages msg(connection_id);
                   msg.msg = t_msg.rpc_msg();
                   DLOG(INFO) << "(" << listening_port_ << ") message for id "
@@ -389,6 +388,31 @@ void TransportImpl::ReceiveHandler() {
                   LOG(WARNING) << "( " << listening_port_ <<
                       ") Invalid Message received" << std::endl;
                 }
+              } else if (!msg_notifier_.empty()) {
+                IncomingMessages msg(connection_id);
+                msg.raw_data = message;
+                DLOG(INFO) << "(" << listening_port_ << ") message for id "
+                    << connection_id << " arrived" << std::endl;
+                UDT::TRACEINFO perf;
+                if (UDT::ERROR == UDT::perfmon((*it).second.u, &perf)) {
+                  DLOG(ERROR) << "UDT permon error: " <<
+                      UDT::getlasterror().getErrorMessage() << std::endl;
+                } else {
+                  msg.rtt = perf.msRTT;
+                  if ((*it).second.observations != 0) {
+                    msg.rtt = (*it).second.accum_RTT /
+                        static_cast<double>((*it).second.observations);
+                  } else {
+                    msg.rtt = 0.0;
+                  }
+                }
+                data_arrived_.insert(connection_id);
+                {  // NOLINT Fraser
+                  boost::mutex::scoped_lock guard1(msg_hdl_mutex_);
+                  ips_from_connections_[connection_id] = peer_address_;
+                  incoming_msgs_queue_.push_back(msg);
+                }
+                msg_hdl_cond_.notify_one();
               } else {
                 LOG(WARNING) << "( " << listening_port_ <<
                     ") Invalid Message received" << std::endl;
@@ -506,7 +530,8 @@ void TransportImpl::SendHandle() {
               DLOG(ERROR) << "(" << listening_port_ <<
                   ") Error sending message size: " <<
                   UDT::getlasterror().getErrorMessage() << std::endl;
-              send_notifier_(it->conn_id, false);
+              if (it->is_rpc)
+                send_notifier_(it->conn_id, false);
               outgoing_queue_.erase(it);
               break;
             }
@@ -526,7 +551,8 @@ void TransportImpl::SendHandle() {
               DLOG(ERROR) << "(" << listening_port_ <<
                   ") Error sending message data: " <<
                   UDT::getlasterror().getErrorMessage() << std::endl;
-              send_notifier_(it->conn_id, false);
+              if (it->is_rpc)
+                send_notifier_(it->conn_id, false);
               outgoing_queue_.erase(it);
               break;
             }
@@ -535,7 +561,8 @@ void TransportImpl::SendHandle() {
           it->data_sent += ssize;
         } else {
           // Finished sending data
-          send_notifier_(it->conn_id, true);
+          if (it->is_rpc)
+            send_notifier_(it->conn_id, true);
           outgoing_queue_.erase(it);
           msgs_sent_++;
           break;
@@ -603,7 +630,7 @@ void TransportImpl::HandleRendezvousMsgs(const HolePunchingMsg &message) {
     boost::uint32_t conn_id;
     if (0 == ConnectToSend(message.ip(), message.port(), "", 0, "", 0, false,
                            &conn_id))
-      Send(ser_msg, STRING, conn_id, true);
+      Send(ser_msg, STRING, conn_id, true, false);
   } else if (message.type() == FORWARD_MSG) {
     UDTSOCKET skt;
     if (Connect(&skt, message.ip(), message.port(), true) == 0) {
@@ -652,7 +679,7 @@ void TransportImpl::PingHandle() {
       UDT::close(skt);
       bool dead_rendezvous_server = false;
       // it is not dead, no nead to return the ip and port
-      rendezvous_notifier_(dead_rendezvous_server, "", 0);
+      server_down_notifier_(dead_rendezvous_server, "", 0);
       boost::this_thread::sleep(boost::posix_time::seconds(8));
     } else {
       // retrying two more times to connect to make sure
@@ -675,12 +702,12 @@ void TransportImpl::PingHandle() {
         // there is no need to call rendezvous_notifier_
         if (stop_) return;
         bool dead_rendezvous_server = true;
-        rendezvous_notifier_(dead_rendezvous_server, my_rendezvous_ip_,
+        server_down_notifier_(dead_rendezvous_server, my_rendezvous_ip_,
           my_rendezvous_port_);
       } else {
         base::OnlineController::instance()->SetOnline(listening_port_, true);
         bool dead_rendezvous_server = false;
-        rendezvous_notifier_(dead_rendezvous_server, "", 0);
+        server_down_notifier_(dead_rendezvous_server, "", 0);
         boost::this_thread::sleep(boost::posix_time::seconds(8));
       }
     }
@@ -689,8 +716,13 @@ void TransportImpl::PingHandle() {
 
 bool TransportImpl::CanConnect(const std::string &ip, const uint16_t &port) {
   UDTSOCKET skt;
+  std::string dec_lip;
+  if (ip.size() == 4)
+    dec_lip = base::inet_btoa(ip);
+  else
+    dec_lip = ip;
   bool result = false;
-  if (Connect(&skt, ip, port, false) == 0)
+  if (Connect(&skt, dec_lip, port, false) == 0)
     result = true;
   UDT::close(skt);
   return result;
@@ -739,6 +771,7 @@ void TransportImpl::MessageHandler() {
       {
         boost::mutex::scoped_lock guard(msg_hdl_mutex_);
         msg.msg = incoming_msgs_queue_.front().msg;
+        msg.raw_data = incoming_msgs_queue_.front().raw_data;
         msg.conn_id = incoming_msgs_queue_.front().conn_id;
         msg.rtt = incoming_msgs_queue_.front().rtt;
         incoming_msgs_queue_.pop_front();
@@ -747,7 +780,10 @@ void TransportImpl::MessageHandler() {
         boost::mutex::scoped_lock gaurd(recv_mutex_);
         data_arrived_.erase(msg.conn_id);
       }
-      message_notifier_(msg.msg, msg.conn_id, msg.rtt);
+      if (msg.raw_data == "")
+        rpcmsg_notifier_(msg.msg, msg.conn_id, msg.rtt);
+      else
+        msg_notifier_(msg.raw_data, msg.conn_id, msg.rtt);
       ips_from_connections_.erase(msg.conn_id);
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     }
@@ -762,7 +798,7 @@ int TransportImpl::Send(const rpcprotocol::RpcMessage &data,
   if (data.IsInitialized()) {
     std::string ser_msg;
     msg.SerializeToString(&ser_msg);
-    return Send(ser_msg, STRING, conn_id, new_skt);
+    return Send(ser_msg, STRING, conn_id, new_skt, true);
   } else {
     {
       boost::mutex::scoped_lock guard(msg_hdl_mutex_);
@@ -775,14 +811,35 @@ int TransportImpl::Send(const rpcprotocol::RpcMessage &data,
   }
 }
 
-bool TransportImpl::CheckConnection(const std::string &local_ip,
+int TransportImpl::Send(const std::string &data,
+    const boost::uint32_t &conn_id, const bool &new_skt) {
+  if (data != "") {
+    return Send(data, STRING, conn_id, new_skt, false);
+  } else {
+    {
+      boost::mutex::scoped_lock guard(msg_hdl_mutex_);
+      std::map<boost::uint32_t, UDTSOCKET>::iterator it =
+          send_sockets_.find(conn_id);
+      if (it != send_sockets_.end())
+        send_sockets_.erase(it);
+    }
+    return 1;
+  }
+}
+
+bool TransportImpl::IsAddrUsable(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port) {
   struct addrinfo hints, *local;
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_flags = AI_PASSIVE;
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
-  if (0 != getaddrinfo(local_ip.c_str(), "0", &hints, &local)) {
+  std::string dec_lip;
+  if (local_ip.size() == 4)
+    dec_lip = base::inet_btoa(local_ip);
+  else
+    dec_lip = local_ip;
+  if (0 != getaddrinfo(dec_lip.c_str(), "0", &hints, &local)) {
     LOG(ERROR) << "Invalid local address " << local_ip << std::endl;
     return false;
   }
@@ -927,11 +984,11 @@ int TransportImpl::ConnectToSend(const std::string &remote_ip,
   return 0;
 }
 
-int TransportImpl::StartLocal(const boost::uint16_t &port,
-      boost::function <void(const rpcprotocol::RpcMessage&,
-        const boost::uint32_t&, const float &)> on_message,
-      boost::function<void(const boost::uint32_t&, const bool&)> on_send) {
+int TransportImpl::StartLocal(const boost::uint16_t &port) {
   if (!stop_)
+    return 1;
+  if ((rpcmsg_notifier_.empty() && msg_notifier_.empty()) ||
+     send_notifier_.empty())
     return 1;
   listening_port_ = port;
   memset(&addrinfo_hints_, 0, sizeof(struct addrinfo));
@@ -995,14 +1052,8 @@ int TransportImpl::StartLocal(const boost::uint16_t &port,
     freeaddrinfo(addrinfo_res_);
     return 1;
   }
-  message_notifier_ = on_message;
-  send_notifier_ = on_send;
   current_id_ = base::generate_next_transaction_id(current_id_);
   return 0;
-}
-
-void TransportImpl::CleanUp() {
-  UDT::cleanup();
 }
 
 bool TransportImpl::IsPortAvailable(const boost::uint16_t &port) {
@@ -1032,5 +1083,41 @@ bool TransportImpl::IsPortAvailable(const boost::uint16_t &port) {
   UDT::close(skt);
   freeaddrinfo(addrinfo_res);
   return true;
+}
+
+bool TransportImpl::RegisterOnRPCMessage(boost::function<void(const rpcprotocol::RpcMessage&,
+      const boost::uint32_t&, const float &)> on_rpcmessage) {
+  if (stop_) {
+    rpcmsg_notifier_ = on_rpcmessage;
+    return true;
+  }
+  return false;
+}
+
+bool TransportImpl::RegisterOnMessage(boost::function<void(const std::string&,
+      const boost::uint32_t&, const float &)> on_message) {
+  if (stop_) {
+    msg_notifier_ = on_message;
+    return true;
+  }
+  return false;
+}
+
+bool TransportImpl::RegisterOnSend(boost::function<void(const boost::uint32_t&,
+      const bool&)> on_send) {
+  if (stop_) {
+    send_notifier_ = on_send;
+    return true;
+  }
+  return false;
+}
+
+bool TransportImpl::RegisterOnServerDown(boost::function<void(const bool&,
+        const std::string&, const boost::uint16_t&)> on_server_down) {
+  if (stop_) {
+    server_down_notifier_ = on_server_down;
+    return true;
+  }
+  return false;
 }
 };  // namespace transport

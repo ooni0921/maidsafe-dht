@@ -25,7 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/channel.h"
+#include "maidsafe/channel-api.h"
 #include "rpcprotocol/channelimpl.h"
 
 namespace rpcprotocol {
@@ -86,15 +86,17 @@ boost::uint32_t Controller::req_id() const {
   return controller_pimpl_->req_id();
 }
 
-Channel::Channel(rpcprotocol::ChannelManager *channelmanager)
-    : pimpl_(new ChannelImpl(channelmanager)) {}
+Channel::Channel(rpcprotocol::ChannelManager *channelmanager,
+      transport::Transport *ptransport)
+      : pimpl_(new ChannelImpl(channelmanager, ptransport)) {}
 
 Channel::Channel(rpcprotocol::ChannelManager *channelmanager,
-      const std::string &remote_ip, const boost::uint16_t &remote_port,
-      const std::string &local_ip, const boost::uint16_t &local_port,
-      const std::string &rv_ip, const boost::uint16_t &rv_port)
-      : pimpl_(new ChannelImpl(channelmanager, remote_ip, remote_port, local_ip,
-                               local_port, rv_ip, rv_port)) {}
+      transport::Transport *ptransport, const std::string &remote_ip,
+      const boost::uint16_t &remote_port, const std::string &local_ip,
+      const boost::uint16_t &local_port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port)
+      : pimpl_(new ChannelImpl(channelmanager, ptransport, remote_ip,
+        remote_port, local_ip, local_port, rv_ip, rv_port)) {}
 
 Channel::~Channel() {}
 

@@ -25,7 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/transport.h"
+#include "maidsafe/transport-api.h"
 #include "transport/transportimpl.h"
 
 
@@ -45,21 +45,17 @@ int Transport::Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t
   return pimpl_->Send(data, conn_id, new_skt);
 }
 
-int Transport::Start(const boost::uint16_t &port,
-      boost::function<void(const rpcprotocol::RpcMessage&,
-        const boost::uint32_t&, const float &)> on_message,
-      boost::function<void(const bool&, const std::string&,
-        const boost::uint16_t&)> notify_dead_server,
-      boost::function<void(const boost::uint32_t&,
-        const bool&)> on_send) {
-  return pimpl_->Start(port, on_message, notify_dead_server, on_send);
+int Transport::Send(const std::string &data, const boost::uint32_t &conn_id,
+      const bool &new_skt) {
+  return pimpl_->Send(data, conn_id, new_skt);
 }
 
-int Transport::StartLocal(const uint16_t &port, boost::function <void(
-      const rpcprotocol::RpcMessage&, const boost::uint32_t&, const float &)>
-      on_message, boost::function<void(const boost::uint32_t&, const bool&)>
-      on_send) {
-  return pimpl_->StartLocal(port, on_message, on_send);
+int Transport::Start(const boost::uint16_t &port) {
+  return pimpl_->Start(port);
+}
+
+int Transport::StartLocal(const boost::uint16_t &port) {
+  return pimpl_->StartLocal(port);
 }
 
 void Transport::CloseConnection(const boost::uint32_t &connection_id) {
@@ -111,16 +107,36 @@ bool Transport::CanConnect(const std::string &ip, const uint16_t &port) {
   return pimpl_->CanConnect(ip, port);
 }
 
-bool Transport::CheckConnection(const std::string &local_ip,
+bool Transport::IsAddrUsable(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port) {
-  return pimpl_->CheckConnection(local_ip, remote_ip, remote_port);
-}
-
-void Transport::CleanUp() {
-  pimpl_->CleanUp();
+  return pimpl_->IsAddrUsable(local_ip, remote_ip, remote_port);
 }
 
 bool Transport::IsPortAvailable(const boost::uint16_t &port) {
   return pimpl_->IsPortAvailable(port);
+}
+
+bool Transport::RegisterOnRPCMessage(boost::function<void(const
+      rpcprotocol::RpcMessage&, const boost::uint32_t&,
+      const float &)> on_rpcmessage) {
+  return pimpl_->RegisterOnRPCMessage(on_rpcmessage);
+}
+
+bool Transport::RegisterOnMessage(boost::function<void(const std::string&,
+      const boost::uint32_t&, const float &)> on_message) {
+  return pimpl_->RegisterOnMessage(on_message);
+}
+
+bool Transport::RegisterOnSend(boost::function<void(const boost::uint32_t&,
+      const bool&)> on_send) {
+  return pimpl_->RegisterOnSend(on_send);
+}
+
+bool Transport::RegisterOnServerDown(boost::function<void(const bool&,
+        const std::string&, const boost::uint16_t&)> on_server_down) {
+  return pimpl_->RegisterOnServerDown(on_server_down);
+}
+void CleanUp() {
+  UDT::cleanup();
 }
 }  // namespace transport

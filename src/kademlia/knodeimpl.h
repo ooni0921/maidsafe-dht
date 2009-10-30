@@ -52,7 +52,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kademlia/routingtable.h"
 #include "kademlia/kadservice.h"
 #include "maidsafe/maidsafe-dht_config.h"
-#include "maidsafe/channel.h"
+#include "maidsafe/channel-api.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service.pb.h"
 #include "upnp/upnpclient.h"
@@ -201,16 +201,16 @@ struct StoreRequestSignature {
 
 class KNodeImpl {
  public:
-  KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp);
+  KNodeImpl(rpcprotocol::ChannelManager* channel_manager,
+      transport::Transport *trans, node_type type,
+      const std::string &private_key, const std::string &public_key,
+      const bool &port_forwarded, const bool &use_upnp);
   // constructor used to set up parameters k, alpha, and beta for kademlia
-  KNodeImpl(boost::shared_ptr<rpcprotocol::ChannelManager> channel_manager,
-      node_type type, const boost::uint16_t k, const int &alpha,
-      const int &beta, const int &refresh_time, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp);
+  KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
+      transport::Transport *trans, node_type type, const boost::uint16_t k,
+      const int &alpha, const int &beta, const int &refresh_time,
+      const std::string &private_key, const std::string &public_key,
+      const bool &port_forwarded, const bool &use_upnp);
   ~KNodeImpl();
 
   void Join(const std::string &node_id, const std::string &kad_config_file,
@@ -258,7 +258,6 @@ class KNodeImpl {
   void UpdatePDRTContactToRemote(const std::string &node_id,
                                  const std::string &host_ip);
   ContactInfo contact_info() const;
-  void StopRvPing();
   inline std::string node_id() const {
     return (type_ == CLIENT) ? fake_client_node_id_ : node_id_;
   }
@@ -352,7 +351,8 @@ class KNodeImpl {
       joinbootstrapping_mutex_, leave_mutex_, activeprobes_mutex_,
       pendingcts_mutex_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
-  boost::shared_ptr<rpcprotocol::ChannelManager> pchannel_manager_;
+  rpcprotocol::ChannelManager *pchannel_manager_;
+  transport::Transport *ptransport_;
   boost::shared_ptr<rpcprotocol::Channel> pservice_channel_;
   boost::shared_ptr<DataStore> pdata_store_;
   base::AlternativeStore *alternative_store_;
