@@ -25,6 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <boost/compressed_pair.hpp>
 #include "maidsafe/config.h"
 #include "kademlia/kadservice.h"
 #include "kademlia/kadrpc.h"
