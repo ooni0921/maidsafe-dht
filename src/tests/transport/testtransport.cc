@@ -1658,3 +1658,37 @@ TEST_F(TransportTest, BEH_TRANS_StartBadLocal) {
   node1.Stop();
   node2.Stop();
 }
+
+TEST_F(TransportTest, BEH_TRANS_RegisterNotifiers) {
+  transport::Transport node1;
+  ASSERT_EQ(1, node1.Start(0));
+  MessageHandler msg_handler1;
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_EQ(1, node1.Start(0));
+  ASSERT_TRUE(node1.RegisterOnServerDown(
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
+    _1, _2, _3)));
+  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_FALSE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_FALSE(node1.RegisterOnMessage(
+    boost::bind(&MessageHandler::OnMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_FALSE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_FALSE(node1.RegisterOnServerDown(
+    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
+    _1, _2, _3)));
+  node1.Stop();
+  
+  ASSERT_EQ(1, node1.StartLocal(0));
+  ASSERT_TRUE(node1.RegisterOnRPCMessage(
+    boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));
+  ASSERT_EQ(1, node1.StartLocal(0));
+  ASSERT_TRUE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
+    &msg_handler1, _1, _2)));
+  ASSERT_EQ(0, node1.StartLocal(0));
+  node1.Stop();
+}

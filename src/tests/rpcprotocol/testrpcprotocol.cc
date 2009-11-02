@@ -627,6 +627,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
 TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   transport::Transport local_transport;
   rpcprotocol::ChannelManager chman(&local_transport);
+  ASSERT_EQ(1, chman.Start());
   ASSERT_TRUE(chman.RegisterNotifiersToTransport());
   std::string local_ip;
   std::string loop_back("127.0.0.1");
@@ -639,7 +640,9 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   ASSERT_NE(loop_back, local_ip);
   ASSERT_EQ(1, chman.Start());
   ASSERT_EQ(0, local_transport.StartLocal(0));
+  ASSERT_FALSE(chman.RegisterNotifiersToTransport());
   ASSERT_EQ(0, chman.Start());
+  ASSERT_TRUE(chman.RegisterNotifiersToTransport());
   PingTestService service;
   // creating a channel for the service
   rpcprotocol::Channel service_channel(&chman, &local_transport);
