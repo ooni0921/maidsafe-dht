@@ -26,6 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <boost/compressed_pair.hpp>
+#include <utility>
 #include "maidsafe/config.h"
 #include "kademlia/kadservice.h"
 #include "kademlia/kadrpc.h"

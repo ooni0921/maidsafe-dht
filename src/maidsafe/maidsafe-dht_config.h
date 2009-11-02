@@ -87,7 +87,7 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 #include "maidsafe/routingtable.h"
 #include "maidsafe/utils.h"
 
-#define MAIDSAFE_DHT_VERSION 12
+#define MAIDSAFE_DHT_VERSION 13
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *
