@@ -913,8 +913,8 @@ TEST_F(TransportTest, FUNC_TRANS_PingRendezvousServer) {
   ASSERT_TRUE(rendezvous_node.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
     _1, _2, _3)));
-  ASSERT_TRUE(rendezvous_node.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
-    &msg_handler[1], _1, _2)));
+  ASSERT_TRUE(rendezvous_node.RegisterOnSend(
+              boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
   ASSERT_EQ(0, rendezvous_node.Start(0));
   boost::uint16_t lp_rvn = rendezvous_node.listening_port();
   node1.StartPingRendezvous(false, "127.0.0.1", lp_rvn);
@@ -942,8 +942,8 @@ TEST_F(TransportTest, FUNC_TRANS_PingDeadRendezvousServer) {
   ASSERT_TRUE(rendezvous_node.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
     _1, _2, _3)));
-  ASSERT_TRUE(rendezvous_node.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
-    &msg_handler[1], _1, _2)));
+  ASSERT_TRUE(rendezvous_node.RegisterOnSend(
+              boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
   ASSERT_EQ(0, rendezvous_node.Start(0));
   boost::uint16_t lp_rvn = rendezvous_node.listening_port();
   node1.StartPingRendezvous(false, "127.0.0.1", lp_rvn);
@@ -975,8 +975,8 @@ TEST_F(TransportTest, FUNC_TRANS_ReconnectToDifferentServer) {
   ASSERT_TRUE(rendezvous_node1.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[1],
     _1, _2, _3)));
-  ASSERT_TRUE(rendezvous_node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
-    &msg_handler[1], _1, _2)));
+  ASSERT_TRUE(rendezvous_node1.RegisterOnSend(
+              boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
   ASSERT_EQ(0, rendezvous_node1.Start(0));
   boost::uint16_t lp_rvn1 = rendezvous_node1.listening_port();
   ASSERT_TRUE(rendezvous_node2.RegisterOnRPCMessage(
@@ -984,8 +984,8 @@ TEST_F(TransportTest, FUNC_TRANS_ReconnectToDifferentServer) {
   ASSERT_TRUE(rendezvous_node2.RegisterOnServerDown(
     boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler[2],
     _1, _2, _3)));
-  ASSERT_TRUE(rendezvous_node2.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
-    &msg_handler[2], _1, _2)));
+  ASSERT_TRUE(rendezvous_node2.RegisterOnSend(
+              boost::bind(&MessageHandler::OnSend, &msg_handler[2], _1, _2)));
   ASSERT_EQ(0, rendezvous_node2.Start(0));
   boost::uint16_t lp_rvn2 = rendezvous_node2.listening_port();
   node1.StartPingRendezvous(false, "127.0.0.1", lp_rvn1);
@@ -1107,7 +1107,8 @@ TEST_F(TransportTest, FUNC_TRANS_SendRespond) {
   ASSERT_TRUE(node1.RegisterOnSend(boost::bind(
     &MessageHandlerEchoReq::OnSend, &msg_handler1, _1, _2)));
   ASSERT_TRUE(node1.RegisterOnServerDown(boost::bind(
-    &MessageHandlerEchoReq::OnDeadRendezvousServer, &msg_handler1, _1, _2, _3)));
+    &MessageHandlerEchoReq::OnDeadRendezvousServer,
+    &msg_handler1, _1, _2, _3)));
   ASSERT_EQ(0, node1.Start(0));
   boost::uint16_t lp_node1 = node1.listening_port();
   ASSERT_TRUE(node2.RegisterOnRPCMessage(boost::bind(
@@ -1115,7 +1116,8 @@ TEST_F(TransportTest, FUNC_TRANS_SendRespond) {
   ASSERT_TRUE(node2.RegisterOnSend(boost::bind(
     &MessageHandlerEchoResp::OnSend, &msg_handler2, _1, _2)));
   ASSERT_TRUE(node2.RegisterOnServerDown(boost::bind(
-    &MessageHandlerEchoResp::OnDeadRendezvousServer, &msg_handler2, _1, _2, _3)));
+    &MessageHandlerEchoResp::OnDeadRendezvousServer,
+    &msg_handler2, _1, _2, _3)));
   ASSERT_EQ(0, node2.Start(0));
   std::vector<std::string> msgs;
   unsigned int msgs_sent = 12;
@@ -1679,10 +1681,10 @@ TEST_F(TransportTest, BEH_TRANS_RegisterNotifiers) {
   ASSERT_FALSE(node1.RegisterOnSend(boost::bind(&MessageHandler::OnSend,
     &msg_handler1, _1, _2)));
   ASSERT_FALSE(node1.RegisterOnServerDown(
-    boost::bind(&MessageHandler::OnDeadRendezvousServer, &msg_handler1,
-    _1, _2, _3)));
+    boost::bind(&MessageHandler::OnDeadRendezvousServer,
+    &msg_handler1, _1, _2, _3)));
   node1.Stop();
-  
+
   ASSERT_EQ(1, node1.StartLocal(0));
   ASSERT_TRUE(node1.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3)));

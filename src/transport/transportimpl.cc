@@ -1085,8 +1085,9 @@ bool TransportImpl::IsPortAvailable(const boost::uint16_t &port) {
   return true;
 }
 
-bool TransportImpl::RegisterOnRPCMessage(boost::function<void(const rpcprotocol::RpcMessage&,
-      const boost::uint32_t&, const float &)> on_rpcmessage) {
+bool TransportImpl::RegisterOnRPCMessage(
+    boost::function<void(const rpcprotocol::RpcMessage&,
+    const boost::uint32_t&, const float &)> on_rpcmessage) {
   if (stop_) {
     rpcmsg_notifier_ = on_rpcmessage;
     return true;

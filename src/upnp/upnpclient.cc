@@ -27,6 +27,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "upnp/upnpclient.h"
 
+#include <vector>
+
 namespace upnp {
 
 UpnpIgdClient::UpnpIgdClient() : pimpl_(new UpnpIgdClientImpl()) {}

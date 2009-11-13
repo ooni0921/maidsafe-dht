@@ -22,12 +22,16 @@
 * ============================================================================
 */
 
-#include <iostream>
+#include <iostream>  // NOLINT
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
+
+#include <string>
+#include <vector>
+
 #include "tests/demo/commands.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -208,7 +212,7 @@ void Commands::PrintUsage() {
   printf("\n\tNOTE -- node_id should be input encoded.\n");
   printf("\t          If key is not a valid 512 hash key (encoded format),\n");
   printf("\t          it will be hashed.\n\n");
- }
+}
 
 void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
   std::string cmd;
@@ -224,7 +228,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
         args.push_back(*it);
     }
   }
-  catch(std::exception &ex) {
+  catch(const std::exception &ex) {
     printf("Error processing command: %s\n", ex.what());
     *wait_for_cb = false;
     return;
@@ -235,7 +239,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
     if (args.size() != 3) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for storefile command\n");
-    } else if (!ReadFile(args[1], &content)){
+    } else if (!ReadFile(args[1], &content)) {
       *wait_for_cb = false;
     } else {
       boost::uint32_t ttl = boost::lexical_cast<boost::uint32_t>(args[2]);

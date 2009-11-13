@@ -22,7 +22,11 @@
 * ============================================================================
 */
 
+#ifndef TESTS_DEMO_COMMANDS_H_
+#define TESTS_DEMO_COMMANDS_H_
+
 #include <boost/function.hpp>
+#include <string>
 #include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/crypto.h"
 
@@ -56,4 +60,7 @@ class Commands {
   crypto::Crypto cryobj_;
   bool finish_;
 };
-}
+
+}  // namespace
+
+#endif  // TESTS_DEMO_COMMANDS_H_

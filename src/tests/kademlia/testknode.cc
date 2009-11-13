@@ -52,8 +52,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace fs = boost::filesystem;
 
-const int kNetworkSize = 20;
-const int kTestK = 4;
+const int kNetworkSize = 17;
+const int kTestK = 16;
 
 inline void create_rsakeys(std::string *pub_key, std::string *priv_key) {
   crypto::RsaKeyPair kp;
@@ -505,8 +505,8 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
   // load the value from no.1 node
   cb_1.Reset();
   ASSERT_TRUE(knodes_[0]->is_joined());
-  knodes_[0]->FindValue(key, false, boost::bind(&FakeCallback::CallbackFunc, &cb_1,
-      _1));
+  knodes_[0]->FindValue(key, false,
+                        boost::bind(&FakeCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_LE(static_cast<unsigned int>(1), cb_1.values().size());
@@ -592,6 +592,60 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   }
   if (!got_value)
     FAIL();
+}
+
+TEST_F(KNodeTest, FUNC_KAD_StoreAndLoad100Values) {
+  size_t count(100);
+  std::vector<std::string> keys(count);
+  std::vector<kad::SignedValue> values(count);
+  std::vector<StoreValueCallback> cbs(count);
+  std::string pub_key, priv_key, sig_pub_key, sig_req;
+  create_rsakeys(&pub_key, &priv_key);
+  printf("Store: ");
+  for (size_t n = 0; n < count; ++n) {
+    keys[n] = cry_obj_.Hash("key" + base::itos(n), "", crypto::STRING_STRING,
+              false);
+    values[n].set_value(base::RandomString(1024));
+    create_req(pub_key, priv_key, keys[n], &sig_pub_key, &sig_req);
+    values[n].set_value_signature(cry_obj_.AsymSign(values[n].value(), "",
+                                  priv_key, crypto::STRING_STRING));
+    knodes_[n % (kNetworkSize - 1)]->StoreValue(keys[n], values[n], pub_key,
+        sig_pub_key, sig_req, 24*3600,
+        boost::bind(&StoreValueCallback::CallbackFunc, &cbs[n], _1));
+    if (!(n % 5))
+      printf(".");
+  }
+  printf("\nLoad:  ");
+  size_t chunk_count = 0;
+  int time_count = 0;
+  for (size_t p = 0; p < count; ++p) {
+    while (time_count < 300) {
+      FindCallback cb_1;
+      knodes_[7]->FindValue(keys[p], false,
+                  boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
+      wait_result(&cb_1);
+      if (kad::kRpcResultSuccess == cb_1.result()) {
+        ++chunk_count;
+        break;
+      } else {
+        time_count += 10;
+        boost::this_thread::sleep(boost::posix_time::seconds(3));
+      }
+    }
+  }
+  for (size_t p = 0; p < count; ++p) {
+    ASSERT_EQ(kad::kRpcResultSuccess, cbs[p].result());
+    FindCallback cb_1;
+    knodes_[7]->FindValue(keys[p], false,
+                          boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
+    wait_result(&cb_1);
+    ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
+    ASSERT_EQ(static_cast<unsigned int>(1), cb_1.values().size());
+    ASSERT_EQ(values[p].value(), cb_1.values()[0]);
+    if (!(p % 5))
+      printf(".");
+  }
+  printf("\nDone\n");
 }
 
 TEST_F(KNodeTest, FUNC_KAD_LoadNonExistingValue) {

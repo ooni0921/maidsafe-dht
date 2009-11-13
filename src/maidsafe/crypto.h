@@ -108,7 +108,7 @@ class Crypto {
  private:
   std::string XOROperation(const std::string &first,
                            const std::string &second);
-	template <class T>
+  template <class T>
   std::string HashFunc(const std::string &input,
                        const std::string &output,
                        operationtype ot,

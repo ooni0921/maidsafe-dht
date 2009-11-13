@@ -24,11 +24,10 @@
 
 #include <signal.h>
 #include <boost/program_options.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
-#include <iostream>
-#include <fstream>
 #include "maidsafe/config.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/demo/commands.h"
@@ -77,7 +76,8 @@ void option_dependency(const po::variables_map& vm,
 bool kadconfig_empty(const std::string &path) {
   base::KadConfig kadconfig;
   try {
-    std::ifstream input(path.c_str(), std::ios::in | std::ios::binary);
+    boost::filesystem::ifstream input(path.c_str(),
+                                      std::ios::in | std::ios::binary);
     if (!kadconfig.ParseFromIstream(&input)) {;
       return true;
     }
@@ -85,7 +85,7 @@ bool kadconfig_empty(const std::string &path) {
     if (kadconfig.contact_size() == 0)
       return true;
   }
-  catch (const std::exception &) {
+  catch(const std::exception &) {
     return true;
   }
   return false;
@@ -102,15 +102,15 @@ bool write_to_kadconfig(const std::string &path, const std::string &node_id,
     ctc->set_port(port);
     ctc->set_local_ip(local_ip);
     ctc->set_local_port(local_port);
-    std::fstream output(path.c_str(), std::ios::out | std::ios::trunc
-        | std::ios::binary);
+    boost::filesystem::fstream output(path.c_str(), std::ios::out |
+                                      std::ios::trunc | std::ios::binary);
     if (!kadconfig.SerializeToOstream(&output)) {
       output.close();
       return false;
     }
     output.close();
   }
-    catch (const std::exception &) {
+    catch(const std::exception &) {
     return false;
   }
   return boost::filesystem::exists(path);
@@ -118,8 +118,9 @@ bool write_to_kadconfig(const std::string &path, const std::string &node_id,
 
 volatile int ctrlc_pressed = 0;
 
-void ctrlc_handler(int) {
-  ctrlc_pressed = 1;
+void ctrlc_handler(int b) {
+  b = 1;
+  ctrlc_pressed = b;
 }
 
 void printf_info(kad::ContactInfo info) {
@@ -139,8 +140,10 @@ int main(int argc, char **argv) {
       ("help,h", "Print options informations and exit.")
       ("logfilepath,l", po::value(&logpath), "Path of logfile")
       ("verbose,v", po::bool_switch(), "Print log to console.")
-      ("kadconfigfile,k", po::value(&kadconfigpath)->default_value(kadconfigpath),
-        "Complete pathname of kadconfig file. Default is KNode<port>/.kadconfig")
+      ("kadconfigfile,k",
+        po::value(&kadconfigpath)->default_value(kadconfigpath),
+        "Complete pathname of kadconfig file. Default is KNode<port>/."
+        "kadconfig")
       ("client,c", po::bool_switch(), "Start the node as a client node.")
       ("port,p", po::value(&port)->default_value(port),
         "Local port to start node.  Default is 0, that starts in random port.")
@@ -152,14 +155,16 @@ int main(int argc, char **argv) {
       ("upnp", po::bool_switch(), "Use UPnP for Nat Traversal.")
       ("port_fw", po::bool_switch(), "Manually port forwared local port.")
       ("externalip", po::value(&ext_ip),
-        "Node's external ip.  Use only when it is the first node in the network.")
+        "Node's external ip. "
+        "Use only when it is the first node in the network.")
       ("externalport", po::value(&ext_port),
-          "Node's external ip.  Use only when it is the first node in the network.")
+          "Node's external ip. "
+          "Use only when it is the first node in the network.")
       ("noconsole", po::bool_switch(),
-        "Do not have access to kademlia functions (store/load/ping) after node startup.")
+        "Do not have access to kademlia functions (store/load/ping) "
+        "after node startup.")
       ("refresh_time,r", po::value(&refresh_time),
-          "Time in minutes to refresh values and kbuckets.")
-    ;
+          "Time in minutes to refresh values and kbuckets.");
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     if (vm.count("help")) {
@@ -280,7 +285,7 @@ int main(int argc, char **argv) {
     // if not the first vault, write to kadconfig file bootstrapping info
     // if provided in options
     if (!first_node && vm.count("bs_id")) {
-      if(!write_to_kadconfig(kadconfigpath, vm["bs_id"].as<std::string>(),
+      if (!write_to_kadconfig(kadconfigpath, vm["bs_id"].as<std::string>(),
           vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>(),
           vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>())) {
         printf("unable to write kadconfig file to %s\n", kadconfigpath.c_str());
@@ -318,7 +323,7 @@ int main(int argc, char **argv) {
       printf("Press Ctrl+C to exit\n");
       printf("=====================================\n\n");
       signal(SIGINT, ctrlc_handler);
-	    while (!ctrlc_pressed) {
+      while (!ctrlc_pressed) {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
     }
@@ -328,7 +333,7 @@ int main(int argc, char **argv) {
     chmanager.Stop();
     printf("\nNode Stopped successfully\n");
   }
-  catch(std::exception &e) {
+  catch(const std::exception &e) {
     printf("Error: %s\n", e.what());
     return 1;
   }

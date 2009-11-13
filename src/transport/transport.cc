@@ -116,9 +116,9 @@ bool Transport::IsPortAvailable(const boost::uint16_t &port) {
   return pimpl_->IsPortAvailable(port);
 }
 
-bool Transport::RegisterOnRPCMessage(boost::function<void(const
-      rpcprotocol::RpcMessage&, const boost::uint32_t&,
-      const float &)> on_rpcmessage) {
+bool Transport::RegisterOnRPCMessage(
+    boost::function<void(const rpcprotocol::RpcMessage&,
+    const boost::uint32_t&, const float &)> on_rpcmessage) {
   return pimpl_->RegisterOnRPCMessage(on_rpcmessage);
 }
 
