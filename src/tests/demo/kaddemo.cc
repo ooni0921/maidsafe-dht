@@ -28,6 +28,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
+#include <iostream>  //  NOLINT
 #include "maidsafe/config.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/demo/commands.h"

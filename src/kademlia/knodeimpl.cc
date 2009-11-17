@@ -1603,13 +1603,12 @@ void KNodeImpl::SearchIteration(boost::shared_ptr<IterativeLookUpData> data) {
   SortLookupContact(&data->short_list, data->key);
   // Wait for beta to start the iteration
   activeprobes_mutex_.lock();
-  if (data->current_alpha.size() > static_cast<unsigned int>(beta_)
+  unsigned int remaining_of_iter = data->current_alpha.size();
+  activeprobes_mutex_.unlock();
+  if (remaining_of_iter > static_cast<unsigned int>(beta_)
       || data->wait_for_key) {
-    activeprobes_mutex_.unlock();
     return;
   }
-  data->current_alpha.clear();
-  activeprobes_mutex_.unlock();
 
   // check if there are closer nodes than the ones already seen
   bool closer_nodes = false;
@@ -1632,9 +1631,15 @@ void KNodeImpl::SearchIteration(boost::shared_ptr<IterativeLookUpData> data) {
       }
   }
   if (!closer_nodes) {
+    // waiting for all the rpc's sent in the iteration
+    if (remaining_of_iter > 0)
+      return;
     SendFinalIteration(data);
   } else {
     // send Rpc Find to alpha contacts
+    activeprobes_mutex_.lock();
+    data->current_alpha.clear();
+    activeprobes_mutex_.unlock();
     int contacted_now = 0;
     std::list<LookupContact>::iterator it;
     std::vector<Contact> pending_to_contact;
@@ -2197,4 +2202,5 @@ void KNodeImpl::RefreshValuesRoutine() {
     }
   }
 }
+
 }  // namespace kad
