@@ -829,6 +829,10 @@ int TransportImpl::Send(const std::string &data,
 
 bool TransportImpl::IsAddrUsable(const std::string &local_ip,
       const std::string &remote_ip, const uint16_t &remote_port) {
+  // Ensure that local and remote addresses aren't empty
+  if (local_ip.empty() || remote_ip.empty())
+    return false;
+
   struct addrinfo hints, *local;
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_flags = AI_PASSIVE;
