@@ -788,8 +788,8 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
     wait_result(&ping_cb);
     ASSERT_EQ(kad::kRpcResultFailure, ping_cb.result());
      ping_cb.Reset();
-    knodes_[kNetworkSize - 1]->Ping(ctc, boost::bind(&PingCallback::CallbackFunc,
-      &ping_cb, _1));
+    knodes_[kNetworkSize - 1]->Ping(ctc, boost::bind(
+      &PingCallback::CallbackFunc, &ping_cb, _1));
     wait_result(&ping_cb);
     ASSERT_EQ(kad::kRpcResultFailure, ping_cb.result());
   }

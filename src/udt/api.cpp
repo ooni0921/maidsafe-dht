@@ -470,7 +470,7 @@ CUDTSocket::UDTSTATUS CUDTUnited::getStatus(const UDTSOCKET u)
    if (i->second->m_pUDT->m_bBroken)
       return CUDTSocket::BROKEN;
 
-   return i->second->m_Status;   
+   return i->second->m_Status;
 }
 
 int CUDTUnited::bind(const UDTSOCKET u, const sockaddr* name, const int& namelen)
@@ -672,13 +672,24 @@ UDTSOCKET CUDTUnited::accept(const UDTSOCKET listen, sockaddr* addr, int* addrle
       throw CUDTException(5, 6, 0);
    }
 
-   if (AF_INET == locate(u)->m_iIPversion)
+   CUDTSocket *skt = locate(u);
+   if (skt == NULL)
+   {
+      if (!ls->m_pUDT->m_bSynRecving)
+         throw CUDTException(6, 2, 0);
+
+      // listening socket is closed
+      throw CUDTException(5, 6, 0);
+   }
+//   if (AF_INET == locate(u)->m_iIPversion)
+   if (AF_INET == skt->m_iIPversion)
       *addrlen = sizeof(sockaddr_in);
    else
       *addrlen = sizeof(sockaddr_in6);
 
    // copy address information of peer node
-   memcpy(addr, locate(u)->m_pPeerAddr, *addrlen);
+   memcpy(addr, skt->m_pPeerAddr, *addrlen);
+//   memcpy(addr, locate(u)->m_pPeerAddr, *addrlen);
 
    return u;
 }
@@ -743,6 +754,7 @@ int CUDTUnited::close(const UDTSOCKET u)
 {
    CUDTSocket* s = locate(u);
 
+   // silently drop a request to close an invalid ID, rather than return error
    if (NULL == s)
       throw CUDTException(5, 4, 0);
 
@@ -1148,6 +1160,10 @@ void CUDTUnited::removeSocket(const UDTSOCKET u)
       set<UDTSOCKET> tbc;
       for (set<UDTSOCKET>::iterator q = i->second->m_pQueuedSockets->begin(); q != i->second->m_pQueuedSockets->end(); ++ q)
       {
+         std::map<UDTSOCKET, CUDTSocket*>::iterator it;
+         it = m_Sockets.find(*q);
+         if (it == m_Sockets.end())
+           continue;
          m_Sockets[*q]->m_pUDT->close();
          m_Sockets[*q]->m_TimeStamp = CTimer::getTime();
          m_Sockets[*q]->m_Status = CUDTSocket::CLOSED;
