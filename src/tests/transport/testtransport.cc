@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "transport/transportimpl.h"
 #include "maidsafe/config.h"
 #include "maidsafe/routingtable.h"
-
+#include "udt/api.h"
 class TransportNode {
  public:
   explicit TransportNode(transport::Transport *tnode) : tnode_(tnode),
@@ -148,7 +148,7 @@ class MessageHandlerEchoReq {
     LOG(INFO) << "message " << msgs.size() << " arrived from " << peer_ip << ":"
         << peer_port << " . RTT = " << rtt << std::endl;
     // replying same msg
-    if (msgs.size() < 10)
+    if (msgs.size() < size_t(10))
       node_->Send(msg, conn_id, false);
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
@@ -323,7 +323,8 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOne) {
       &id));
   ASSERT_EQ(0, node3.Send(rpc_msg, id, true));
   boost::uint32_t now = base::get_epoch_time();
-  while (msg_handler[3].msgs.size() < 3 && base::get_epoch_time() - now < 15)
+  while (msg_handler[3].msgs.size() < size_t(3) &&
+         base::get_epoch_time() - now < 15)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   node1.Stop();
   node2.Stop();
@@ -334,7 +335,7 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOne) {
     ASSERT_EQ(1, msg_handler[i].msgs_sent_);
   }
   ASSERT_FALSE(msg_handler[3].msgs.empty());
-  ASSERT_EQ(msg_handler[3].msgs.size(), static_cast<unsigned int>(3));
+  ASSERT_EQ(msg_handler[3].msgs.size(), size_t(3));
   msg_handler[3].msgs.sort();
   sent_msgs.sort();
   for (int i = 0; i < 3; i++) {
@@ -448,7 +449,7 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToMany) {
     ASSERT_EQ(1, msg_handler[i].msgs_sent_);
   }
   for (int i = 3; i < 6; i++) {
-    ASSERT_EQ(static_cast<unsigned int>(1), msg_handler[i].msgs.size());
+    ASSERT_EQ(size_t(1), msg_handler[i].msgs.size());
     ASSERT_EQ(msg_handler[i].msgs.front(), sent_msgs[i-3]);
   }
 }
@@ -522,11 +523,11 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromOneToMany) {
   bool msgs_received[3] = {false, false, false};
   while ((!msgs_received[0] || !msgs_received[1] || !msgs_received[2]) &&
           base::get_epoch_time() - now < 15) {
-    if (msg_handler[1].msgs.size() >= 1)
+    if (msg_handler[1].msgs.size() >= size_t(1))
       msgs_received[0] = true;
-    if (msg_handler[2].msgs.size() >= 1)
+    if (msg_handler[2].msgs.size() >= size_t(1))
       msgs_received[1] = true;
-    if (msg_handler[3].msgs.size() >= 1)
+    if (msg_handler[3].msgs.size() >= size_t(1))
       msgs_received[2] = true;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
@@ -537,7 +538,7 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromOneToMany) {
   ASSERT_TRUE(msg_handler[0].msgs.empty());
   ASSERT_EQ(3, msg_handler[0].msgs_sent_);
   for (int i = 0; i < 3; i++) {
-    ASSERT_EQ(static_cast<unsigned int>(1), msg_handler[i+1].msgs.size());
+    ASSERT_EQ(size_t(1), msg_handler[i+1].msgs.size());
     ASSERT_EQ(msg_handler[i+1].msgs.front(), sent_msgs[i]);
   }
 }
@@ -797,7 +798,7 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOneBidirectional) {
       &id));
   ASSERT_EQ(0, node3.Send(rpc_msg, id, true));
   // waiting for all messages to be delivered
-  while (msg_handler[3].msgs.size() != 3)
+  while (msg_handler[3].msgs.size() != size_t(3))
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   // node4 responding to all nodes
   std::list<boost::uint32_t>::iterator it;
@@ -834,14 +835,14 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOneBidirectional) {
       ASSERT_EQ(1, msg_handler[i].msgs_sent_);
   }
   ASSERT_FALSE(msg_handler[3].msgs.empty());
-  ASSERT_EQ(msg_handler[3].msgs.size(), static_cast<unsigned int>(3));
+  ASSERT_EQ(msg_handler[3].msgs.size(), size_t(3));
   msg_handler[3].msgs.sort();
   sent_msgs.sort();
   for (int i = 0; i < 3; i++) {
     ASSERT_EQ(msg_handler[3].msgs.front(), sent_msgs.front());
     msg_handler[3].msgs.pop_front();
     sent_msgs.pop_front();
-    ASSERT_EQ(static_cast<unsigned int>(1), msg_handler[i].msgs.size());
+    ASSERT_EQ(size_t(1), msg_handler[i].msgs.size());
     ASSERT_EQ(reply_str, msg_handler[i].msgs.front());
   }
   ASSERT_EQ(3, msg_handler[3].msgs_sent_);
@@ -1144,7 +1145,7 @@ TEST_F(TransportTest, FUNC_TRANS_SendRespond) {
   boost::progress_timer t;
   while (!finished && t.elapsed() < 10) {
       if (msg_handler1.msgs.size() == msgs_sent &&
-          msg_handler2.msgs.size() == 9) {
+          msg_handler2.msgs.size() == size_t(9)) {
         finished = true;
         continue;
       }
@@ -1162,7 +1163,7 @@ TEST_F(TransportTest, FUNC_TRANS_SendRespond) {
     }
   }
   ASSERT_TRUE(msg_handler1.msgs.empty());
-  ASSERT_EQ(static_cast<unsigned int>(9), msg_handler2.msgs.size());
+  ASSERT_EQ(size_t(9), msg_handler2.msgs.size());
   for (int i = 0; i < 9; i++) {
     for (unsigned int j = 0; j < msgs_sent; j++) {
       if (msgs[j] == msg_handler2.msgs.front()) {
@@ -1395,7 +1396,7 @@ TEST_F(TransportTest, BEH_TRANS_NotificationForInvalidMsgs) {
   node2.Stop();
   ASSERT_TRUE(msg_handler1.msgs.empty());
   ASSERT_FALSE(msg_handler1.raw_msgs.empty());
-  ASSERT_EQ(1, msg_handler1.raw_msgs.size());
+  ASSERT_EQ(size_t(1), msg_handler1.raw_msgs.size());
   ASSERT_EQ(msg, msg_handler1.raw_msgs.front());
   ASSERT_TRUE(msg_handler2.msgs.empty());
 }
@@ -1423,7 +1424,7 @@ TEST_F(TransportTest, BEH_TRANS_AddrUsable) {
   ASSERT_FALSE(node1.IsAddrUsable("", "127.0.0.1", lp_node2));
   ASSERT_FALSE(node1.IsAddrUsable("127.0.0.1", "", lp_node2));
   std::vector<std::string> local_ips = base::get_local_addresses();
-  if (local_ips.size() > 0) {
+  if (local_ips.size() > size_t(0)) {
     std::string server_addr = "127.0.0.1";
     for (boost::uint32_t i = 0; i < local_ips.size(); i++) {
       LOG(INFO) << "Checking local address " << local_ips[i] <<

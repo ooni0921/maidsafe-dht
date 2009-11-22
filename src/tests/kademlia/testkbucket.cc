@@ -317,7 +317,7 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
       "the contact readded was not placed at the begging of the list";
 }
 
-TEST_F(TestKbucket, BEH_KAD_GetLastSeenContact) {
+TEST_F(TestKbucket, BEH_KAD_GetOldestContact) {
   BigInt min_value(0);
   std::string hex_max_val;
   for (int i = 0; i < kKeySizeBytes * 2; ++i)
