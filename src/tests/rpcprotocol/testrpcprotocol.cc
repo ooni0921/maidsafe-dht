@@ -473,7 +473,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   service_channel.SetService(&mirrorservice);
   server_chann_manager->RegisterChannel(mirrorservice.GetDescriptor()->name(),
       &service_channel);
-  // Sending rpc to an existing server, but deleting it before response arrives
+  // Sending rpc to an existing server, but cancelin it before response arrives
   rpcprotocol::Controller controller;
   controller.set_timeout(10);
   rpcprotocol::Channel out_channel1(client_chann_manager, client_transport,
@@ -497,7 +497,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   controller.Reset();
   ASSERT_EQ(std::string(""), controller.ErrorText());
 
-  // Sending a request to a non-existent server and deleting before it
+  // Sending a request to a non-existent server and cancelling before it
   // times out
   controller.set_timeout(3);
   rpcprotocol::Channel out_channel2(client_chann_manager, client_transport,
@@ -515,57 +515,6 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
   ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
   ASSERT_FALSE(client_chann_manager->DeletePendingRequest(1));
-}
-
-TEST_F(RpcProtocolTest, FUNC_RPC_CancelPendingRequest) {
-  MirrorTestService mirrorservice;
-  rpcprotocol::Channel service_channel(server_chann_manager, server_transport);
-  service_channel.SetService(&mirrorservice);
-  server_chann_manager->RegisterChannel(mirrorservice.GetDescriptor()->name(),
-      &service_channel);
-  // Sending rpc to an existing server, but cancelin it before response arrives
-  rpcprotocol::Controller controller;
-  controller.set_timeout(10);
-  rpcprotocol::Channel out_channel1(client_chann_manager, client_transport,
-    "127.0.0.1", server_transport->listening_port(), "", 0, "", 0);
-  std::string test_string(base::RandomString(500 * 1024));
-  tests::MirrorTest::Stub stubservice1(&out_channel1);
-  tests::StringMirrorRequest req1, req2;
-  tests::StringMirrorResponse resp1, resp2;
-  req1.set_message(test_string);
-  req1.set_ip("127.0.0.1");
-  req1.set_port(client_transport->listening_port());
-  ResultHolder resultholder;
-  google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
-      const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
-      &resultholder, &ResultHolder::GetMirrorResult, &resp1, &controller);
-  stubservice1.Mirror(&controller, &req1, &resp1, done1);
-  ASSERT_TRUE(client_chann_manager->CancelPendingRequest(controller.req_id()));
-  ASSERT_FALSE(client_chann_manager->CancelPendingRequest(controller.req_id()));
-//  boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-//  ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
-//  ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
-  controller.Reset();
-  ASSERT_EQ(std::string(""), controller.ErrorText());
-
-  // Sending a request to a non-existent server and cancelling before it
-  // times out
-  boost::shared_ptr<rpcprotocol::Controller>
-      p_controller(new rpcprotocol::Controller);
-  p_controller->set_timeout(11);
-  rpcprotocol::Channel out_channel2(client_chann_manager, client_transport,
-    "2.2.2.1", 5555, "", 0, "", 0);
-  req2.set_message(test_string);
-  req2.set_ip("2.2.2.1");
-  req2.set_port(5555);
-  tests::MirrorTest::Stub stubservice2(&out_channel2);
-  google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
-      const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
-      &resultholder, &ResultHolder::GetMirrorResult, &resp2,
-      p_controller.get());
-  stubservice2.Mirror(&controller, &req2, &resp2, done2);
-  ASSERT_TRUE(client_chann_manager->CancelPendingRequest(controller.req_id()));
-  ASSERT_FALSE(client_chann_manager->CancelPendingRequest(controller.req_id()));
 }
 
 TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {

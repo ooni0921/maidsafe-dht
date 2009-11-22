@@ -32,9 +32,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  #define SHOW_MUTEX
 
 #include <boost/asio.hpp>
+#include <boost/cstdint.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/cstdint.hpp>
+
 #include <gtest/gtest_prod.h>
 
 #include <string>
@@ -55,6 +56,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/channel-api.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service.pb.h"
+#include "nat-pmp/natpmpclient.h"
 #include "upnp/upnpclient.h"
 
 namespace kad {
@@ -347,6 +349,17 @@ class KNodeImpl {
   void RefreshValueCallback(const std::string &result, const std::string &key,
       const std::string &value, const boost::uint32_t &ttl,
       boost::shared_ptr<int> refreshes_done, const int &total_refreshes);
+      
+      /**
+       * The sole boost::asio::io_service for running asynchronous events.
+       */
+      boost::asio::io_service io_service_;
+      
+      /**
+       * The thread that runs the boost::asio::io_service object.
+       */
+      boost::shared_ptr<boost::thread> io_service_thread_;
+      
   boost::mutex routingtable_mutex_, kadconfig_mutex_, extendshortlist_mutex_,
       joinbootstrapping_mutex_, leave_mutex_, activeprobes_mutex_,
       pendingcts_mutex_;
@@ -378,6 +391,25 @@ class KNodeImpl {
   boost::shared_ptr<boost::thread> addcontacts_routine_;
   boost::condition_variable add_ctc_cond_;
   std::string private_key_, public_key_;
+  
+    /**
+     * The NAT-PMP client.
+     */
+    natpmp::natpmpclient natpmp_;
+    
+    /**
+     * The port currently mapped by NAT-PMP, if any.
+     */
+    boost::uint16_t natpmp_mapped_port_;
+    
+    /**
+     * The NAT-PMP map port success callback.
+     */
+    void nat_pmp_map_port_success(
+        boost::uint16_t protocol, boost::uint16_t private_port, 
+        boost::uint16_t public_port
+    );
+    
   // for UPnP
   upnp::UpnpIgdClient upnp_;
   int upnp_mapped_port_;

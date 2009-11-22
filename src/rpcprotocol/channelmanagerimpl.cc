@@ -101,27 +101,6 @@ bool ChannelManagerImpl::DeletePendingRequest(const boost::uint32_t &req_id) {
   return true;
 }
 
-bool ChannelManagerImpl::CancelPendingRequest(const boost::uint32_t &req_id) {
-  if (!is_started_) {
-    return false;
-  }
-  std::map<boost::uint32_t, PendingReq>::iterator it;
-  req_mutex_.lock();
-  it = pending_req_.find(req_id);
-  if (it == pending_req_.end()) {
-    req_mutex_.unlock();
-    return false;
-  }
-  boost::uint32_t connection_id = it->second.connection_id;
-  delete it->second.callback;
-  pending_req_.erase(it);
-  req_mutex_.unlock();
-  if (connection_id != 0)
-    ptransport_->CloseConnection(connection_id);
-//  callback->Run();
-  return true;
-}
-
 void ChannelManagerImpl::AddReqToTimer(const boost::uint32_t &req_id,
     const int &timeout) {
   if (!is_started_) {

@@ -45,10 +45,6 @@ bool ChannelManager::DeletePendingRequest(const boost::uint32_t &req_id) {
   return pimpl_->DeletePendingRequest(req_id);
 }
 
-bool ChannelManager::CancelPendingRequest(const boost::uint32_t &req_id) {
-  return pimpl_->CancelPendingRequest(req_id);
-}
-
 void ChannelManager::AddReqToTimer(const boost::uint32_t &req_id,
       const int &timeout) {
   pimpl_->AddReqToTimer(req_id, timeout);

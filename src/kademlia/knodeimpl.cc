@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>  // NOLINT
 #include <vector>
 #include "base/config.h"
+#include "base/network_interface.h"
 #include "kademlia/kadutils.h"
 #include "maidsafe/alternativestore.h"
 #include "maidsafe/utils.h"
@@ -141,8 +142,9 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
         kad_config_path_(""), local_host_ip_(""), local_host_port_(0),
         stopping_(false), port_forwarded_(port_forwarded), use_upnp_(use_upnp),
         contacts_to_add_(), addcontacts_routine_(), add_ctc_cond_(),
-        private_key_(private_key), public_key_(public_key), upnp_(),
-        upnp_mapped_port_(0) {}
+        private_key_(private_key), public_key_(public_key), 
+        natpmp_(io_service_), natpmp_mapped_port_(0), upnp_(), 
+        upnp_mapped_port_(0) { }
 
 KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
       transport::Transport *trans, node_type type, const boost::uint16_t k,
@@ -163,8 +165,9 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
         kad_config_path_(""), local_host_ip_(""), local_host_port_(0),
         stopping_(false), port_forwarded_(port_forwarded), use_upnp_(use_upnp),
         contacts_to_add_(), addcontacts_routine_(), add_ctc_cond_(),
-        private_key_(private_key), public_key_(public_key), upnp_(),
-        upnp_mapped_port_(0) {}
+        private_key_(private_key), public_key_(public_key),  
+        natpmp_(io_service_), natpmp_mapped_port_(0), upnp_(), 
+        upnp_mapped_port_(0) { }
 
 KNodeImpl::~KNodeImpl() {
   if (is_joined_) {
@@ -172,9 +175,20 @@ KNodeImpl::~KNodeImpl() {
     is_joined_ = false;
     pdata_store_->Clear();
   }
+  
+  /**
+   * :FIXME: I am not checking for the port because there are no NAT-PMP
+   * callbacks to assign it.
+   */
+  /*
+  if (natpmp_mapped_port_) {*/
+   natpmp_.stop(); 
+  /*}*/
   if (upnp_mapped_port_ != 0) {
     UnMapUPnP();
   }
+  
+  io_service_thread_->join();
 }
 
 inline void KNodeImpl::CallbackWithFailure(base::callback_func_type cb) {
@@ -305,6 +319,19 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
     } else if (result_msg.nat_type() == 3) {
       // behind symmetric router or no connection
       DLOG(INFO) << "Node is behind a NAT of type 3" << std::endl;
+      std::cout << "Node is behind a NAT of type 3" << std::endl;
+      natpmp_.start();
+      natpmp_.set_map_port_success_callback(
+        boost::bind(&KNodeImpl::nat_pmp_map_port_success, this, _1, _2, _3)
+      );
+      io_service_thread_.reset(new boost::thread(
+        boost::bind(&boost::asio::io_service::run, &io_service_))
+      );
+      natpmp_.map_port(
+        natpmp::protocol::udp, local_host_port_, local_host_port_
+      );
+      /* :FIXME: upnp is blocking while nat-pmp is not. This blocking code
+      may break the initaliztation flow and should be async. - jc. */
       UPnPMap(local_host_port_);
       if (upnp_mapped_port_ != 0) {
         host_port_ = upnp_mapped_port_;
@@ -425,6 +452,8 @@ void KNodeImpl::Join_RefreshNode(base::callback_func_type cb,
   // Initiate the Kademlia joining sequence - perform a search for this
   // node's own ID
   kadrpcs_.set_info(contact_info());
+  
+  /* Is this really doing what I think it is doing? ;-) - jc
   // Getting local IP and temporarily setting host_ip_ == local_host_ip_
   std::vector<std::string> local_ips = base::get_local_addresses();
   bool got_local_address = false;
@@ -441,14 +470,22 @@ void KNodeImpl::Join_RefreshNode(base::callback_func_type cb,
       }
     }
   }
-  if (!got_local_address) {
+  */
+    boost::asio::ip::address local_address = 
+        base::network_interface::local_address()
+    ;
+    if (!got_external_address) {
+        host_ip_ = local_address.to_string();
+    }
+    local_host_ip_ = local_address.to_string();
+    /*
     boost::asio::ip::address local_address;
     if (base::get_local_address(&local_address)) {
-      if (!got_external_address)
-          host_ip_ = local_address.to_string();
-      local_host_ip_ = local_address.to_string();
+        if (!got_external_address)
+            host_ip_ = local_address.to_string();
+        local_host_ip_ = local_address.to_string();
     }
-  }
+    */
   Join_Bootstrapping(cb, bootstrapping_nodes_, got_external_address);
 }
 
@@ -478,7 +515,22 @@ void KNodeImpl::Join(const std::string &node_id,
     fake_client_node_id_ = client_node_id();
   }
   bool got_external_address = false;
+  
   if (use_upnp_) {
+    /* :FIXME: should there be a single ivar for ALL IGD usage? 
+    Ask team. - jc */
+      natpmp_.start();
+      natpmp_.set_map_port_success_callback(
+        boost::bind(&KNodeImpl::nat_pmp_map_port_success, this, _1, _2, _3)
+      );
+      io_service_thread_.reset(new boost::thread(
+        boost::bind(&boost::asio::io_service::run, &io_service_))
+      );
+      natpmp_.map_port(
+        natpmp::protocol::udp, local_host_port_, local_host_port_
+      );
+      /* :FIXME: upnp is blocking while nat-pmp is not. This blocking code
+      may break the initaliztation flow and should be async. - jc. */
     UPnPMap(local_host_port_);
     if (upnp_mapped_port_ != 0) {
       host_port_ = upnp_mapped_port_;
@@ -531,6 +583,20 @@ void KNodeImpl::Join(const std::string &node_id,
   local_host_port_ = ptransport_->listening_port();
 
   if (use_upnp_) {
+    /* :FIXME: should there be a single ivar for ALL IGD usage? 
+    Ask team. - jc */
+      natpmp_.start();
+      natpmp_.set_map_port_success_callback(
+        boost::bind(&KNodeImpl::nat_pmp_map_port_success, this, _1, _2, _3)
+      );
+      io_service_thread_.reset(new boost::thread(
+        boost::bind(&boost::asio::io_service::run, &io_service_))
+      );
+      natpmp_.map_port(
+        natpmp::protocol::udp, local_host_port_, local_host_port_
+      );
+      /* :FIXME: upnp is blocking while nat-pmp is not. This blocking code
+      may break the initaliztation flow and should be async. - jc. */
     UPnPMap(local_host_port_);
     if (upnp_mapped_port_ != 0) {
       host_port_ = upnp_mapped_port_;
@@ -550,9 +616,13 @@ void KNodeImpl::Join(const std::string &node_id,
     host_ip_ = external_ip;
     host_port_ = external_port;
   }
+  
+  local_host_ip_ = base::network_interface::local_address().to_string();
+  /*
   boost::asio::ip::address local_address;
   if (base::get_local_address(&local_address))
     local_host_ip_ = local_address.to_string();
+  */
   rv_ip_ = "";
   rv_port_ = 0;
   // Set kad_config_path_
@@ -1361,6 +1431,7 @@ void KNodeImpl::ReBootstrapping_Callback(const std::string &result) {
 }
 
 void KNodeImpl::RegisterKadService() {
+    
   premote_service_.reset(new KadService(natrpcs_, pdata_store_, HasRSAKeys(),
       boost::bind(&KNodeImpl::AddContact, this, _1, _2, _3),
 //      boost::bind(&KNodeImpl::RemoveContact, this, _1),
@@ -1433,7 +1504,7 @@ void KNodeImpl::UPnPMap(boost::uint16_t host_port) {
     DLOG(INFO) << "Successfully mapped to " << host_ip_ << ":" <<
         upnp_mapped_port_ << std::endl;
   } else {
-    DLOG(ERROR) << "UPnP port mappin failed" << std::endl;
+    DLOG(ERROR) << "UPnP port mapping failed" << std::endl;
   }
 }
 
@@ -2203,4 +2274,22 @@ void KNodeImpl::RefreshValuesRoutine() {
   }
 }
 
+void KNodeImpl::nat_pmp_map_port_success(
+    boost::uint16_t protocol, boost::uint16_t private_port, 
+    boost::uint16_t public_port
+    )
+{
+    std::cout << 
+        "KNodeImpl::nat_pmp_map_port_success: protocol = " << protocol << 
+        ", private port = " << private_port << ", public port = " << 
+        public_port << "." <<
+    std::endl;
+    
+    host_port_ = public_port;
+    upnp_mapped_port_ = public_port;
+    // It is now directly connected
+    rv_ip_ = "";
+    rv_port_ = 0;
+}
+    
 }  // namespace kad

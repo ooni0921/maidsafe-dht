@@ -149,6 +149,9 @@ INCLUDE_DIRECTORIES(${maidsafe-dht_SOURCE_DIR} ${maidsafe-dht_SOURCE_DIR}/libupn
 #########################################################################################################
 ####	CODE	####
 LIST(APPEND M_LIBUPNP_DIR libupnp/igd_desc_parse.c  libupnp/minixml.c libupnp/minisoap.c libupnp/miniwget.c  libupnp/upnpcommands.c libupnp/upnpreplyparse.c libupnp/upnperrors.c libupnp/miniupnpc.c libupnp/minissdpc.c)
+FILE(GLOB M_NATPMP_C "nat-pmp/*.c*")
+FILE(GLOB M_NATPMP_H "nat-pmp/*.h*")
+LIST(APPEND M_NATPMP_DIR ${M_NATPMP_C} ${M_NATPMP_H})
 FILE(GLOB M_UPNP_C "upnp/*.c*")
 FILE(GLOB M_UPNP_H "upnp/*.h*")
 LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})
@@ -198,6 +201,9 @@ FILE(GLOB STYLE_RPCPROTO_H "tests/rpcprotocol/*.h*")
 LIST(APPEND STYLE_RPCPROTO_DIR ${STYLE_RPCPROTO_C} ${STYLE_RPCPROTO_H})
 LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${maidsafe-dht_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.h")
 LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${maidsafe-dht_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.cc")
+FILE(GLOB T_NATPMP_C "tests/nat-pmp/*.c*")
+FILE(GLOB T_NATPMP_H "tests/nat-pmp/*.h*")
+LIST(APPEND T_NATPMP_DIR ${T_NATPMP_C} ${T_NATPMP_H})
 FILE(GLOB T_UPNP_C "tests/upnp/*.c*")
 FILE(GLOB T_UPNP_H "tests/upnp/*.h*")
 LIST(APPEND T_UPNP_DIR ${T_UPNP_C} ${T_UPNP_H})
@@ -211,7 +217,7 @@ LIST(APPEND CRYPTOPP ${CRYPTOPP_C} ${CRYPTOPP_H})
 FILE(GLOB T_DEMO_C "tests/demo/*.c*")
 FILE(GLOB T_DEMO_H "tests/demo/*.h*")
 LIST(APPEND T_DEMO_DIR ${T_DEMO_C} ${T_DEMO_H})
-LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR}) 
+LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_NATPMP_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR}) 
 #######################################################################################
 #All Platforms:  Add Test Exes and Create all maidsafe-dht libs                       #
 #######################################################################################
@@ -221,10 +227,11 @@ add_executable(TESTknode "tests/kademlia/testknode.cc" ${MAIDSAFE_DIR})
 add_executable(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${M_BASE_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${MAIDSAFE_DIR}  ${M_UDT_DIR} ${CRYPTOPP})
 add_executable(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${M_BASE_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR} ${M_UDT_DIR} ${CRYPTOPP})
 add_executable(TESTupnp ${T_UPNP_DIR} ${M_BASE_DIR} ${M_UPNP_DIR} ${M_LIBUPNP_DIR}  ${MAIDSAFE_DIR} ${CRYPTOPP})
+add_executable(TESTnatpmp ${T_NATPMP_DIR} ${M_BASE_DIR} ${M_NATPMP_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP})
 add_executable(kaddemo ${T_DEMO_DIR})
 #######################################################################################
 #######################################################################################
-add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ${M_UDT_DIR} ${CRYPTOPP}) 
+add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_NATPMP_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ${M_UDT_DIR} ${CRYPTOPP}) 
 #######################################################################################
 #Set up some extra compiler and linker flags for the tests mainly                     #
 #######################################################################################
@@ -232,16 +239,16 @@ add_library(maidsafe-dht STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DI
 #BUILDS
 IF (APPLE)
 	SET(SYS_LIB 
-/usr/lib/libboost_thread-xgcc40-mt${BOOST_VERSION}.a 
-/usr/lib/libprotobuf.a 
-/usr/lib/libboost_system-xgcc40-mt${BOOST_VERSION}.a
-/usr/lib/libboost_filesystem-xgcc40-mt${BOOST_VERSION}.a
-/usr/lib/libboost_regex-xgcc40-mt${BOOST_VERSION}.a
-/usr/lib/libboost_date_time-xgcc40-mt${BOOST_VERSION}.a
+/usr/local/lib/libboost_thread.a 
+/usr/local/lib/libprotobuf.a 
+/usr/local/lib/libboost_system.a
+/usr/local/lib/libboost_filesystem.a
+/usr/local/lib/libboost_regex.a
+/usr/local/lib/libboost_date_time.a
 dl 
 pthread
 )
-SET(DEMO_LIBS boost_program_options-xgcc40-mt${BOOST_VERSION})
+SET(DEMO_LIBS boost_program_options)
 IF(HAVE_GLOG)
   SET(SYS_LIB "${SYS_LIB};/usr/lib/libglog.a")
 ENDIF(HAVE_GLOG)
@@ -294,6 +301,7 @@ TARGET_LINK_LIBRARIES(TESTrpcprotocol gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTkademlia maidsafe-dht gtest  ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTknode maidsafe-dht gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp gtest ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(TESTnatpmp gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(maidsafe-dht ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(kaddemo maidsafe-dht ${DEMO_LIBS})
 
@@ -318,7 +326,7 @@ ELSEIF (UNIX AND NOT APPLE)
   SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -pg -fprofile-arcs -ftest-coverage")
   SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized ")
   IF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
-  	SET_TARGET_PROPERTIES( TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTupnp kaddemo PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage" )
+  	SET_TARGET_PROPERTIES( TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage" )
   ENDIF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   SET(UDT_CXX_FLAGS "-fPIC -Wall -DLINUX -finline-functions -O3")
   SET_SOURCE_FILES_PROPERTIES(${CRYPTOPP} PROPERTIES COMPILE_FLAGS " -DNDEBUG -O3 -march=native -mtune=native -pipe")
@@ -334,7 +342,7 @@ ELSE(MSVC)
   SET(MAIDSAFE_DHT_CXX_FLAGS "${MAIDSAFE_DHT_CXX_FLAGS} -Wall -finline-functions  -static -DNDEBUG -DSTATICLIB  -DWIN32_LEAN_AND_MEAN  -D__MINGW__ -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -DSTATICLIB  -DWIN32_LEAN_AND_MEAN  -D__MINGW__  -static -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32  -D_WIN32_WINNT=0x0501")
   SET(UDT_CXX_FLAGS "-mthreads -Wall -finline-functions -O3 -D__MINGW__ -DWIN32 -D_WIN32_WINNT=0x0501")
-  SET_TARGET_PROPERTIES( TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTupnp kaddemo PROPERTIES LINK_FLAGS "-mthreads" )
+  SET_TARGET_PROPERTIES( TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo PROPERTIES LINK_FLAGS "-mthreads" )
 ENDIF(MSVC)
 ENDIF(APPLE)
 
