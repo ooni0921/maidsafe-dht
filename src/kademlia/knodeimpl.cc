@@ -175,15 +175,7 @@ KNodeImpl::~KNodeImpl() {
     is_joined_ = false;
     pdata_store_->Clear();
   }
-  
-  /**
-   * :FIXME: I am not checking for the port because there are no NAT-PMP
-   * callbacks to assign it.
-   */
-  /*
-  if (natpmp_mapped_port_) {*/
-   natpmp_.stop(); 
-  /*}*/
+    
   if (upnp_mapped_port_ != 0) {
     UnMapUPnP();
   }
@@ -319,7 +311,6 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
     } else if (result_msg.nat_type() == 3) {
       // behind symmetric router or no connection
       DLOG(INFO) << "Node is behind a NAT of type 3" << std::endl;
-      std::cout << "Node is behind a NAT of type 3" << std::endl;
       natpmp_.start();
       natpmp_.set_map_port_success_callback(
         boost::bind(&KNodeImpl::nat_pmp_map_port_success, this, _1, _2, _3)
@@ -338,7 +329,13 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
         // It is now directly connected
         rv_ip_ = "";
         rv_port_ = 0;
-      } else {
+      }
+      else if (natpmp_mapped_port_ != 0)
+      {
+        // It is now directly connected
+      }
+      else
+      {
         base::GeneralResponse local_result;
         local_result.set_result(kRpcResultFailure);
         std::string local_result_str;
@@ -531,8 +528,14 @@ void KNodeImpl::Join(const std::string &node_id,
       );
       /* :FIXME: upnp is blocking while nat-pmp is not. This blocking code
       may break the initaliztation flow and should be async. - jc. */
-    UPnPMap(local_host_port_);
-    if (upnp_mapped_port_ != 0) {
+      
+      UPnPMap(local_host_port_);
+      
+    if (natpmp_mapped_port_ != 0)
+    {
+        got_external_address = true;
+    }
+    else if (upnp_mapped_port_ != 0) {
       host_port_ = upnp_mapped_port_;
       // It is now directly connected
       rv_ip_ = "";
@@ -601,7 +604,13 @@ void KNodeImpl::Join(const std::string &node_id,
     if (upnp_mapped_port_ != 0) {
       host_port_ = upnp_mapped_port_;
       // It is now directly connected
-    } else {
+    }
+    else if (natpmp_mapped_port_ != 0)
+    {
+        // It is now directly connected
+    }
+    else
+    {
       local_result.set_result(kRpcResultFailure);
       local_result.SerializeToString(&local_result_str);
       cb(local_result_str);
@@ -658,6 +667,10 @@ void KNodeImpl::Join(const std::string &kad_config_file,
 
 void KNodeImpl::Leave() {
   if (is_joined_) {
+    if (natpmp_mapped_port_ != 0)
+    {
+        natpmp_.stop();
+    }
     if (upnp_mapped_port_ != 0) {
       UnMapUPnP();
     }
@@ -2286,7 +2299,8 @@ void KNodeImpl::nat_pmp_map_port_success(
     std::endl;
     
     host_port_ = public_port;
-    upnp_mapped_port_ = public_port;
+    natpmp_mapped_port_ = public_port;
+    //upnp_mapped_port_ = public_port;
     // It is now directly connected
     rv_ip_ = "";
     rv_port_ = 0;
