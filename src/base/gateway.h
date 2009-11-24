@@ -10,7 +10,7 @@
 
 #if (defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
 struct rt_msghdr;
-#elif defined(__linux__)
+#elif defined(MAIDSAFE_LINUX)
 struct nlmsghdr;
 #endif
 
@@ -50,7 +50,7 @@ namespace base {
             static bool parse_rt_msghdr(
                 rt_msghdr * rtm, network_interface & rt_if
             );
-#elif defined (__linux__)
+#elif defined (MAIDSAFE_LINUX)
         
             /**
              * Parse a nlmsghdr and assign it to rt_if.

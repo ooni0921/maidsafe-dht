@@ -175,11 +175,8 @@ std::vector<network_interface> network_interface::local_list(
     )
 {
     std::vector<network_interface> ret;
-    
-    /**
-     * :FIXME: No define for MAIDSAFE_LINUX?
-     */
-#if defined __linux__ || (defined MAIDSAFE_APPLE || __MACH__)
+
+#if defined MAIDSAFE_LINUX || (defined MAIDSAFE_APPLE || __MACH__)
 
     int s = socket(AF_INET, SOCK_DGRAM, 0);
     
@@ -255,10 +252,8 @@ std::vector<network_interface> network_interface::local_list(
 
 #if (defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
         std::size_t if_size = item.ifr_addr.sa_len + IFNAMSIZ;
-    /**
-     * :FIXME: No define for MAIDSAFE_LINUX?
-     */
-#elif defined __linux__
+
+#elif defined MAIDSAFE_LINUX
         std::size_t if_size = sizeof(ifreq);
 #endif
 			ifr += if_size;

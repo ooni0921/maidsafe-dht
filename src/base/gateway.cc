@@ -3,7 +3,7 @@
 #include <net/route.h>
 #include <sys/sysctl.h>
 #include <boost/scoped_ptr.hpp>
-#elif defined(__linux__)
+#elif defined(MAIDSAFE_LINUX)
 #include <asm/types.h>
 #include <netinet/ether.h>
 #include <netinet/in.h>
@@ -99,7 +99,7 @@ bool gateway::parse_rt_msghdr(rt_msghdr * rtm, network_interface & rt_if)
     return true;
 }
 
-#elif defined(__linux__)
+#elif defined(MAIDSAFE_LINUX)
 
 static int read_nl_sock(int sock, char * buf, int len, int seq, int pid)
 {
@@ -309,7 +309,7 @@ std::vector<network_interface> gateway::routes(
     delete adapter_info, adapter_info = 0;
     FreeLibrary(iphlp);
 
-#elif defined (__linux__)
+#elif defined (MAIDSAFE_LINUX)
 
     enum { BUFSIZE = 8192 };
 
