@@ -81,12 +81,14 @@ namespace natpmp {
             );
             
             /**
-             * Sends a mapping request with the given protocol, private port,
-             * public port and lifetime.
+             * Sends a mapping request by posting it to the 
+             * boost::asio::io_service object with the given protocol, 
+             * private port, public port and lifetime.
              * @param protocol
              * @param private_port
              * @param public_port
              * @param lifetime
+             * @note thread-safe
              */
             void send_mapping_request(
                 boost::uint16_t protocol, boost::uint16_t private_port, 
@@ -96,7 +98,7 @@ namespace natpmp {
         private:
             
             /**
-             *
+             * Sends a mapping.
              */
             void do_send_mapping_request(
                 boost::uint16_t protocol, boost::uint16_t private_port, 
