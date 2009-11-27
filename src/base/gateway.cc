@@ -3,7 +3,13 @@
 #include <net/route.h>
 #include <sys/sysctl.h>
 #include <boost/scoped_ptr.hpp>
-#elif defined(MAIDSAFE_LINUX)
+#elif (defined MAIDSAFE_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif // WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <iphlpapi.h>
+#elif (defined MAIDSAFE_LINUX)
 #include <asm/types.h>
 #include <netinet/ether.h>
 #include <netinet/in.h>
