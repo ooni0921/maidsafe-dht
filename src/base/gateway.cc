@@ -19,7 +19,7 @@
 #include "base/gateway.h"
 
 namespace base {
-    
+
 boost::asio::ip::address gateway::default_route(
     boost::asio::io_service & ios, boost::system::error_code & ec
     )
@@ -27,7 +27,7 @@ boost::asio::ip::address gateway::default_route(
     std::vector<network_interface> ret = routes(ios, ec);
 #if (defined MAIDSAFE_WIN32)
     std::vector<network_interface>::iterator it = std::find_if(
-        ret.begin(), ret.end(), boost::bind(&network_interface::is_loopback, 
+        ret.begin(), ret.end(), boost::bind(&network_interface::is_loopback,
         boost::bind(&network_interface::destination, _1))
     );
 #else
@@ -40,7 +40,7 @@ boost::asio::ip::address gateway::default_route(
     {
         return boost::asio::ip::address();
     }
-        
+
     return it->gateway;
 }
 
@@ -49,7 +49,7 @@ boost::asio::ip::address gateway::default_route(
 
 inline long round_up(long val)
 {
-    return 
+    return
         ((val) > 0 ? (1 + (((val) - 1) | (sizeof(long) - 1))) : sizeof(long))
     ;
 }
@@ -58,7 +58,7 @@ bool gateway::parse_rt_msghdr(rt_msghdr * rtm, network_interface & rt_if)
 {
     sockaddr * rti_info[RTAX_MAX];
     sockaddr * sa = (sockaddr*)(rtm + 1);
-        
+
     for (unsigned int i = 0; i < RTAX_MAX; ++i)
     {
         if ((rtm->rtm_addrs & (1 << i)) == 0)
@@ -66,16 +66,16 @@ bool gateway::parse_rt_msghdr(rt_msghdr * rtm, network_interface & rt_if)
             rti_info[i] = 0;
             continue;
         }
-        
+
         rti_info[i] = sa;
 
         sa = (sockaddr *)((char *)(sa) + round_up(sa->sa_len));
     }
 
     sa = rti_info[RTAX_GATEWAY];
-        
+
     if (
-        sa == 0 || rti_info[RTAX_DST] == 0 || rti_info[RTAX_NETMASK] == 0 || 
+        sa == 0 || rti_info[RTAX_DST] == 0 || rti_info[RTAX_NETMASK] == 0 ||
         (sa->sa_family != AF_INET && sa->sa_family != AF_INET6)
         )
     {
@@ -85,17 +85,17 @@ bool gateway::parse_rt_msghdr(rt_msghdr * rtm, network_interface & rt_if)
     rt_if.gateway = network_interface::sockaddr_to_address(
         rti_info[RTAX_GATEWAY]
     );
-    
+
     rt_if.netmask = network_interface::sockaddr_to_address(
         rti_info[RTAX_NETMASK]
     );
-    
+
     rt_if.destination = network_interface::sockaddr_to_address(
         rti_info[RTAX_DST]
     );
-    
+
     if_indextoname(rtm->rtm_index, rt_if.name);
-        
+
     return true;
 }
 
@@ -110,7 +110,7 @@ static int read_nl_sock(int sock, char * buf, int len, int seq, int pid)
     do
     {
         int read_len = recv(sock, buf, len - msg_len, 0);
-            
+
         if (read_len < 0)
         {
             return -1;
@@ -119,7 +119,7 @@ static int read_nl_sock(int sock, char * buf, int len, int seq, int pid)
         nl_hdr = (nlmsghdr *)buf;
 
         if (
-            (NLMSG_OK(nl_hdr, read_len) == 0) || 
+            (NLMSG_OK(nl_hdr, read_len) == 0) ||
             (nl_hdr->nlmsg_type == NLMSG_ERROR)
             )
         {
@@ -132,7 +132,7 @@ static int read_nl_sock(int sock, char * buf, int len, int seq, int pid)
         }
 
         buf += read_len;
-            
+
         msg_len += read_len;
 
         if ((nl_hdr->nlmsg_flags & NLM_F_MULTI) == 0)
@@ -141,7 +141,7 @@ static int read_nl_sock(int sock, char * buf, int len, int seq, int pid)
         }
 
     } while ((nl_hdr->nlmsg_seq != seq) || (nl_hdr->nlmsg_pid != pid));
-        
+
     return msg_len;
 }
 
@@ -155,23 +155,23 @@ bool gateway::parse_nlmsghdr(nlmsghdr * nl_hdr, network_interface & rt_if)
     }
 
     int rt_len = RTM_PAYLOAD(nl_hdr);
-        
+
     rtattr * rt_attr = (rtattr *)RTM_RTA(rt_msg);
-    
+
     for (; RTA_OK(rt_attr, rt_len); rt_attr = RTA_NEXT(rt_attr, rt_len))
     {
         switch (rt_attr->rta_type)
         {
             case RTA_OIF:
-                if_indextoname(*(int*)RTA_DATA(rt_attr), rt_if->name);
+                if_indextoname(*(int*)RTA_DATA(rt_attr), rt_if.name);
             break;
             case RTA_GATEWAY:
-                rt_if->gateway = boost::asio::ip::address_v4(
+                rt_if.gateway = boost::asio::ip::address_v4(
                     ntohl(*(u_int*)RTA_DATA(rt_attr))
                 );
             break;
             case RTA_DST:
-                rt_if->destination = boost::asio::ip::address_v4(
+                rt_if.destination = boost::asio::ip::address_v4(
                     ntohl(*(u_int*)RTA_DATA(rt_attr))
                 );
             break;
@@ -187,13 +187,13 @@ std::vector<network_interface> gateway::routes(
     )
 {
     std::vector<network_interface> ret;
-    
+
 #if (defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
 
     int mib[6] = { CTL_NET, PF_ROUTE, 0, AF_UNSPEC, NET_RT_DUMP, 0 };
 
     std::size_t needed = 0;
-	
+
     if (sysctl(mib, 6, 0, &needed, 0, 0) < 0)
     {
         ec = boost::system::error_code(
@@ -220,28 +220,28 @@ std::vector<network_interface> gateway::routes(
     char * end = buf.get() + needed;
 
     rt_msghdr * rtm;
-	
+
     for (char * next = buf.get(); next < end; next += rtm->rtm_msglen)
     {
         rtm = (rt_msghdr *)next;
-            
+
         if (rtm->rtm_version != RTM_VERSION)
         {
             continue;
         }
-		
+
         network_interface r;
-        
+
         if (parse_rt_msghdr(rtm, r))
         {
             ret.push_back(r);
         }
     }
-	
+
 #elif defined(WIN32) || defined(_WIN32)
 
     HMODULE iphlp = LoadLibraryA("Iphlpapi.dll");
-        
+
     if (!iphlp)
     {
         ec = boost::asio::error::operation_not_supported;
@@ -249,11 +249,11 @@ std::vector<network_interface> gateway::routes(
     }
 
     typedef DWORD(WINAPI *GetAdaptersInfo_t)(PIP_ADAPTER_INFO, PULONG);
-        
+
     GetAdaptersInfo_t GetAdaptersInfo = (GetAdaptersInfo_t)GetProcAddress(
         iphlp, "GetAdaptersInfo"
     );
-        
+
     if (!GetAdaptersInfo)
     {
         FreeLibrary(iphlp);
@@ -262,9 +262,9 @@ std::vector<network_interface> gateway::routes(
     }
 
     PIP_ADAPTER_INFO adapter_info = 0;
-        
+
     ULONG out_buf_size = 0;
-   
+
     if (GetAdaptersInfo(adapter_info, &out_buf_size) != ERROR_BUFFER_OVERFLOW)
     {
         FreeLibrary(iphlp);
@@ -277,24 +277,24 @@ std::vector<network_interface> gateway::routes(
     if (GetAdaptersInfo(adapter_info, &out_buf_size) == NO_ERROR)
     {
         for (
-            PIP_ADAPTER_INFO adapter = adapter_info; adapter != 0; 
+            PIP_ADAPTER_INFO adapter = adapter_info; adapter != 0;
             adapter = adapter->Next
             )
         {
             network_interface r;
-				
+
 			r.destination = boost::asio::ip::address::from_string(
                 adapter->IpAddressList.IpAddress.String, ec
             );
-                
+
 			r.gateway =  boost::asio::ip::address::from_string(
                 adapter->GatewayList.IpAddress.String, ec
             );
-                
+
 			r.netmask =  boost::asio::ip::address::from_string(
                 adapter->IpAddressList.IpMask.String, ec
             );
-				
+
             strncpy(r.name, adapter->AdapterName, sizeof(r.name));
 
             if (ec)
@@ -305,7 +305,7 @@ std::vector<network_interface> gateway::routes(
             ret.push_back(r);
         }
     }
-   
+
     delete adapter_info, adapter_info = 0;
     FreeLibrary(iphlp);
 
@@ -314,7 +314,7 @@ std::vector<network_interface> gateway::routes(
     enum { BUFSIZE = 8192 };
 
     int sock = socket(PF_ROUTE, SOCK_DGRAM, NETLINK_ROUTE);
-    
+
     if (sock < 0)
     {
         ec = boost::system::error_code(errno, boost::asio::error::system_category);
@@ -324,9 +324,9 @@ std::vector<network_interface> gateway::routes(
     int seq = 0;
 
     char msg[BUFSIZE];
-        
+
     std::memset(msg, 0, BUFSIZE);
-        
+
     nlmsghdr * nl_msg = (nlmsghdr*)msg;
 
     nl_msg->nlmsg_len = NLMSG_LENGTH(sizeof(rtmsg));
@@ -338,28 +338,28 @@ std::vector<network_interface> gateway::routes(
     if (send(sock, nl_msg, nl_msg->nlmsg_len, 0) < 0)
     {
         ec = boost::system::error_code(errno, boost::asio::error::system_category);
-        
+
         close(sock);
-        
+
         return std::vector<network_interface>();
     }
 
     int len = read_nl_sock(sock, msg, BUFSIZE, seq, getpid());
-        
+
     if (len < 0)
     {
         ec = boost::system::error_code(errno, boost::asio::error::system_category);
-        
+
         close(sock);
-        
+
         return std::vector<network_interface>();
     }
 
     for (; NLMSG_OK(nl_msg, len); nl_msg = NLMSG_NEXT(nl_msg, len))
     {
         network_interface intf;
-        
-        if (parse_nlmsghdr(nl_msg, &intf))
+
+        if (parse_nlmsghdr(nl_msg, intf))
         {
             ret.push_back(intf);
         }
@@ -369,5 +369,5 @@ std::vector<network_interface> gateway::routes(
 #endif
     return ret;
 }
-        
+
 } // namespace base
