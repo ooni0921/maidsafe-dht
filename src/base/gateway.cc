@@ -105,9 +105,9 @@ bool gateway::parse_rt_msghdr(rt_msghdr * rtm, network_interface & rt_if)
     return true;
 }
 
-#elif defined(MAIDSAFE_LINUX)
+#elif (defined MAIDSAFE_LINUX)
 
-static int read_nl_sock(int sock, char * buf, int len, int seq, int pid)
+int gateway::read_netlink_sock(int sock, char * buf, int len, int seq, int pid)
 {
     nlmsghdr * nl_hdr;
 
@@ -350,7 +350,7 @@ std::vector<network_interface> gateway::routes(
         return std::vector<network_interface>();
     }
 
-    int len = read_nl_sock(sock, msg, BUFSIZE, seq, getpid());
+    int len = read_netlink_sock(sock, msg, BUFSIZE, seq, getpid());
         
     if (len < 0)
     {

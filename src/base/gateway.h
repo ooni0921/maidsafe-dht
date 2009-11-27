@@ -50,8 +50,21 @@ namespace base {
             static bool parse_rt_msghdr(
                 rt_msghdr * rtm, network_interface & rt_if
             );
-#elif defined (MAIDSAFE_LINUX)
+
+#elif (defined MAIDSAFE_LINUX)
         
+            /**
+             * Reads the netlink socket.
+             * @param sock The socket to read.
+             * @param buf The buffer.
+             * @param len The len of buffer in bytes.
+             * @param seq The sequence.
+             * @param pid The process id.
+             */
+            static int read_netlink_sock(
+                int sock, char * buf, int len, int seq, int pid
+            );
+            
             /**
              * Parse a nlmsghdr and assign it to rt_if.
              * @param nl_hdr
