@@ -23,6 +23,9 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Created by Julian Cain on 11/3/09.
+
 */
 
 #include <stdexcept>
@@ -31,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nat-pmp/natpmpprotocol.h"
 
 namespace natpmp {
-    
+
 natpmpclient::natpmpclient(boost::asio::io_service & ios)
     : io_service_(ios)
 {
@@ -47,19 +50,19 @@ void natpmpclient::start()
 {
     if (impl_)
     {
-        // ...   
+        // ...
     }
     else
     {
         /**
          * Allocate the implementation.
          */
-        impl_.reset(new natpmpclientimpl(io_service_)); 
-        
+        impl_.reset(new natpmpclientimpl(io_service_));
+
         /**
          * Start the implementation.
          */
-        impl_->start();  
+        impl_->start();
     }
 }
 
@@ -71,7 +74,7 @@ void natpmpclient::stop()
          * Stop the implementation.
          */
         impl_->stop();
-        
+
         /**
          * Cleanup
          */
@@ -79,8 +82,8 @@ void natpmpclient::stop()
     }
     else
     {
-        // ...  
-    }  
+        // ...
+    }
 }
 
 void natpmpclient::set_map_port_success_callback(
@@ -93,14 +96,14 @@ void natpmpclient::set_map_port_success_callback(
     }
     else
     {
-        std::cerr << 
-            "Cannot set NAT-PMP success callback with null impl." << 
-        std::endl;   
+        std::cerr <<
+            "Cannot set NAT-PMP success callback with null impl." <<
+        std::endl;
     }
 }
 
 void natpmpclient::map_port(
-    unsigned int protocol, unsigned short private_port, 
+    unsigned int protocol, unsigned short private_port,
     unsigned short public_port, long long lifetime
     )
 {
@@ -110,7 +113,7 @@ void natpmpclient::map_port(
             protocol::string_from_opcode(protocol::error_invalid_args)
         );
     }
-    
+
     if (impl_)
     {
         impl_->send_mapping_request(

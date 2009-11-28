@@ -38,51 +38,45 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class NATPMPTest : public testing::Test
 {
     public:
-        
+
         NATPMPTest()
         {
             // ...
         }
 };
 
-TEST_F(NATPMPTest, BEH_NATPMP_Test)
+TEST_F(NATPMPTest, FUNC_NATPMP_Test)
 {
     boost::asio::io_service ios;
-    
+
     natpmp::natpmpclient client(ios);
-    
+
     boost::uint16_t tcp_port = 33333;
     boost::uint16_t udp_port = 33333;
-    
+
     printf("Starting NAT-PMP...\n");
-    
+
     printf("Requesting external ip address from gateway.\n");
-    
+
     client.start();
-    
+
     printf("Queueing mapping request for tcp port %d to %d.\n", tcp_port, tcp_port);
-    
+
     client.map_port(natpmp::protocol::tcp, 33333, 33333);
-    
+
     printf("Queueing mapping request for udp port %d to %d.\n", udp_port, udp_port);
-    
+
     client.map_port(natpmp::protocol::udp, 33333, 33333);
 
     boost::shared_ptr<boost::thread> thread(new boost::thread(
         boost::bind(&boost::asio::io_service::run, &ios))
     );
-    
+
     printf("Sleeping for 64 seconds...\n");
-    
+
     boost::this_thread::sleep(boost::posix_time::seconds(64));
 
     printf("Stopping NAT-PMP...\n");
-    
-    client.stop();
-}
 
-int main(int argc, char * argv[])
-{
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    client.stop();
 }

@@ -1,8 +1,35 @@
-/*
- *  network_interface.hpp
- *  Created by Julian Cain on 11/3/09.
- */
- 
+/* Copyright (c) 2009 maidsafe.net limited
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+    * Neither the name of the maidsafe.net limited nor the names of its
+    contributors may be used to endorse or promote products derived from this
+    software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Created by Julian Cain on 11/3/09.
+
+*/
+
+#include "base/network_interface.h"
+
 #if defined (MAIDSAFE_WIN32)
     // ...
 #else
@@ -16,8 +43,6 @@
 #include <netdb.h>
 #endif
 
-#include "base/network_interface.h"
-
 using namespace base;
 
 bool network_interface::is_local(const boost::asio::ip::address & addr)
@@ -29,16 +54,16 @@ bool network_interface::is_local(const boost::asio::ip::address & addr)
     else
     {
         boost::asio::ip::address_v4 a4 = addr.to_v4();
-        
+
         unsigned long ip = a4.to_ulong();
-        
+
         return (
-            (ip & 0xff000000) == 0x0a000000 || 
-            (ip & 0xfff00000) == 0xac100000 || 
+            (ip & 0xff000000) == 0x0a000000 ||
+            (ip & 0xfff00000) == 0xac100000 ||
             (ip & 0xffff0000) == 0xc0a80000
         );
     }
-    
+
     return false;
 }
 
@@ -116,8 +141,8 @@ boost::asio::ip::address network_interface::sockaddr_to_address(
 #if defined (MAIDSAFE_POSIX) || defined (MAIDSAFE_APPLE)
 static bool verify_sockaddr(sockaddr_in * sin)
 {
-    return 
-        (sin->sin_len == sizeof(sockaddr_in) && sin->sin_family == AF_INET) || 
+    return
+        (sin->sin_len == sizeof(sockaddr_in) && sin->sin_family == AF_INET) ||
         (sin->sin_len == sizeof(sockaddr_in6) && sin->sin_family == AF_INET6)
     ;
 }
@@ -127,15 +152,15 @@ boost::asio::ip::address network_interface::local_address()
 {
     boost::system::error_code ec;
     boost::asio::ip::address ret = boost::asio::ip::address_v4::any();
-    
+
     const std::vector<network_interface> & interfaces = local_list(ec);
-        
+
     std::vector<network_interface>::const_iterator it = interfaces.begin();
-        
+
     for (; it != interfaces.end(); ++it)
     {
         const boost::asio::ip::address & a = (*it).destination;
-            
+
         /**
          * Skip loopback, multicast and any.
          */
@@ -143,9 +168,9 @@ boost::asio::ip::address network_interface::local_address()
         {
             continue;
         }
-        
+
         /**
-         * :NOTE: Other properties could be checked here such as the IFF_UP 
+         * :NOTE: Other properties could be checked here such as the IFF_UP
          * flag.
          */
 
@@ -166,7 +191,7 @@ boost::asio::ip::address network_interface::local_address()
             ret = a;
         }
     }
-    
+
     return ret;
 }
 
@@ -179,32 +204,32 @@ std::vector<network_interface> network_interface::local_list(
 #if defined MAIDSAFE_LINUX || (defined MAIDSAFE_APPLE || __MACH__)
 
     int s = socket(AF_INET, SOCK_DGRAM, 0);
-    
+
     if (s < 0)
     {
         ec = boost::asio::error::fault;
         return ret;
     }
-    
+
     ifconf ifc;
     char buf[1024];
-    
+
     ifc.ifc_len = sizeof(buf);
     ifc.ifc_buf = buf;
-    
+
     if (ioctl(s, SIOCGIFCONF, &ifc) < 0)
     {
         ec = boost::system::error_code(
             errno, boost::asio::error::system_category
         );
-        
+
         close(s);
-        
+
         return ret;
     }
 
     char *ifr = (char *)ifc.ifc_req;
-    
+
     int remaining = ifc.ifc_len;
 
     while (remaining)
@@ -212,18 +237,18 @@ std::vector<network_interface> network_interface::local_list(
         const ifreq & item = *reinterpret_cast<ifreq *>(ifr);
 
         if (
-            item.ifr_addr.sa_family == AF_INET || 
+            item.ifr_addr.sa_family == AF_INET ||
             item.ifr_addr.sa_family == AF_INET6
             )
         {
             network_interface iface;
 
             iface.destination = sockaddr_to_address(&item.ifr_addr);
-            
+
             strcpy(iface.name, item.ifr_name);
 
             ifreq netmask = item;
-            
+
             if (ioctl(s, SIOCGIFNETMASK, &netmask) < 0)
             {
                 if (iface.destination.is_v6())
@@ -235,9 +260,9 @@ std::vector<network_interface> network_interface::local_list(
                     ec = boost::system::error_code(
                         errno, boost::asio::error::system_category
                     );
-                    
+
                     close(s);
-                    
+
                     return ret;
                 }
             }
@@ -259,56 +284,56 @@ std::vector<network_interface> network_interface::local_list(
 			ifr += if_size;
 			remaining -= if_size;
 		}
-        
+
 		close(s);
 
 #elif defined (MAIDSAFE_WIN32)
 
 		SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
-        
-		if (s == SOCKET_ERROR)
+
+		if (static_cast<int>(s) == SOCKET_ERROR)
 		{
 			ec = boost::system::error_code(
                 WSAGetLastError(), boost::asio::error::system_category
             );
-            
+
 			return ret;
 		}
 
 		INTERFACE_INFO buf[30];
-        
+
 		DWORD size;
-	
+
         int err = WSAIoctl(
             s, SIO_GET_INTERFACE_LIST, 0, 0, buf, sizeof(buf), &size, 0, 0
         );
-    
+
 		if (err != 0)
 		{
 			ec = boost::system::error_code(
                 WSAGetLastError(), boost::asio::error::system_category
             );
-			
+
             closesocket(s);
-			
+
             return ret;
 		}
-        
+
 		closesocket(s);
 
 		std::size_t n = size / sizeof(INTERFACE_INFO);
 
 		network_interface iface;
-        
+
 		for (std::size_t i = 0; i < n; ++i)
 		{
-			iface.address = sockaddr_to_address(&buf[i].iiAddress.Address);
-            
+			iface.destination = sockaddr_to_address(&buf[i].iiAddress.Address);
+
 			iface.netmask = sockaddr_to_address(&buf[i].iiNetmask.Address);
-            
+
 			iface.name[0] = 0;
-			
-            if (iface.address == boost::asio::ip::address_v4::any())
+
+            if (iface.destination == boost::asio::ip::address_v4::any())
             {
                 continue;
             }

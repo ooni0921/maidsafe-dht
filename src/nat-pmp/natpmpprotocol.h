@@ -23,6 +23,9 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Created by Julian Cain on 11/3/09.
+
 */
 
 #ifndef NATPMP_PROTOCOL_H_
@@ -39,7 +42,7 @@ namespace natpmp {
     class protocol
     {
         public:
-        
+
             /**
              * NAT-PMP port.
              */
@@ -47,7 +50,7 @@ namespace natpmp {
             {
                 port = 5351
             };
-        
+
             /**
              * Supported protocols.
              */
@@ -56,14 +59,14 @@ namespace natpmp {
                 tcp = 1,
                 udp = 2
             };
-            
+
             /**
              * Result opcodes.
              * 0 - Success
              * 1 - Unsupported Version
-             * 2 - Not Authorized/Refused (e.g. box supports mapping, but user 
+             * 2 - Not Authorized/Refused (e.g. box supports mapping, but user
              * has turned feature off)
-             * 3 - Network Failure (e.g. NAT box itself has not obtained a 
+             * 3 - Network Failure (e.g. NAT box itself has not obtained a
              * DHCP lease)
              * 4 - Out of resources
                (NAT box cannot create any more mappings at this time)
@@ -79,7 +82,7 @@ namespace natpmp {
                 result_unsupported_opcode = 5,
                 result_undefined = 64,
             };
-            
+
             /**
              * Error codes.
              */
@@ -93,7 +96,7 @@ namespace natpmp {
                 error_source_conflict = 6,
                 error_cannot_get_gateway = 7,
             };
-            
+
             /**
              * Mapping request structure.
              */
@@ -105,12 +108,12 @@ namespace natpmp {
                         buffer, other.buffer, sizeof(buffer)
                     ) == 0;
                 }
-                
+
                 std::size_t length;
                 char buffer[12];
                 boost::uint8_t retry_count;
             };
-        
+
             /**
              * External ip address request structure.
              */
@@ -118,7 +121,7 @@ namespace natpmp {
             {
                 boost::uint16_t opcode;
             };
-        
+
             /**
              * Mapping response structure.
              */
@@ -131,7 +134,7 @@ namespace natpmp {
                         public_port == other.public_port
                     );
                 }
-                
+
                 boost::uint16_t type;
                 boost::uint16_t result_code;
                 boost::uint32_t epoch;
@@ -140,22 +143,22 @@ namespace natpmp {
                 boost::uint16_t public_port;
                 boost::uint32_t lifetime;
         	};
-        	
+
         	/**
         	 * Generates a string representation from an opcode
         	 * @param opcode
         	 */
             static const char * string_from_opcode(unsigned int opcode);
-        	
+
         private:
-        
+
             // ...
-                
+
         protected:
-        
-            // ... 
+
+            // ...
     };
-    
+
 }  // namespace upnp
 
 #endif  // NATPMP_PROTOCOL_H_

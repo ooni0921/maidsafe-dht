@@ -23,16 +23,19 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Created by Julian Cain on 11/3/09.
+
 */
 
 #include "nat-pmp/natpmpprotocol.h"
 
 namespace natpmp {
-    
+
 const char * protocol::string_from_opcode(unsigned int opcode)
 {
     const char * str;
-    
+
     switch (opcode)
     {
         case error_invalid_args:
@@ -45,21 +48,21 @@ const char * protocol::string_from_opcode(unsigned int opcode)
             str = "cannot get default gateway ip address";
     	break;
         case result_out_of_resources:
-            str = 
+            str =
                 "Out of resources(NAT box cannot create any more mappings at "
                 "this time)."
             ;
     	break;
         case result_network_failure:
-            str = 
+            str =
                 "Network Failure, nat box may have not obtained a DHCP lease."
             ;
         break;
         default:
             str = "Unknown NAT-PMP error";
     }
-    
+
     return str;
 }
-    
+
 } // namespace natpmp

@@ -114,8 +114,3 @@ TEST_F(UpnpTest, BEH_UPNP_PortMappingTest) {
 
   // boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
-
-int main(int argc, char **argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
