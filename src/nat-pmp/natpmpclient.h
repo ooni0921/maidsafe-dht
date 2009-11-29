@@ -28,8 +28,8 @@ Created by Julian Cain on 11/3/09.
 
 */
 
-#ifndef NATPMPCLIENT_H_
-#define NATPMPCLIENT_H_
+#ifndef NAT_PMP_NATPMPCLIENT_H_
+#define NAT_PMP_NATPMPCLIENT_H_
 
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
@@ -39,71 +39,69 @@ Created by Julian Cain on 11/3/09.
 
 namespace natpmp {
 
-    /**
-     * Implements a NAT-PMP client.
-     */
-    class natpmpclient
-    {
-        public:
+/**
+  * Implements a NAT-PMP client.
+  */
+class NatPmpClient {
+ public:
 
-            /**
-             * Constructor
-             * @param ios The boost::asio::io_service object to use.
-             */
-            explicit natpmpclient(boost::asio::io_service & ios);
+/**
+  * Constructor
+  * @param ios The boost::asio::io_service object to use.
+  */
+  explicit NatPmpClient(boost::asio::io_service & ios);
 
-            /**
-             * Destructor
-             */
-            ~natpmpclient();
+/**
+  * Destructor
+  */
+  ~NatPmpClient();
 
-            /**
-             * Start the underlying subsystem.
-             */
-            void start();
+/**
+  * Start the underlying subsystem.
+  */
+  void Start();
 
-            /**
-             * Stop the underlying subsystem.
-             */
-            void stop();
+/**
+  * Stop the underlying subsystem.
+  */
+  void Stop();
 
-            /**
-             * Set the port map success callback.
-             */
-            void set_map_port_success_callback(
-                const nat_pmp_map_port_success_cb_t & map_port_success_cb
-            );
+/**
+  * Set the port map success callback.
+  */
+  void SetMapPortSuccessCallback(
+      const NatPmpMapPortSuccessCbType & map_port_success_cb);
 
-            /**
-             * Maps a private port to a public port of the given protocol and
-             * lifetime.
-             * @param protocol
-             * @param private_port
-             * @param public_port
-             * @param lifetime
-             */
-            void map_port(
-                unsigned int protocol, unsigned short private_port,
-                unsigned short public_port, long long lifetime = 3600
-            );
+/**
+  * Maps a private port to a public port of the given protocol and
+  * lifetime.
+  * @param protocol
+  * @param private_port
+  * @param public_port
+  * @param lifetime
+  */
+  void MapPort(boost::uint32_t protocol,
+               boost::uint16_t private_port,
+               boost::uint16_t public_port,
+               boost::uint64_t lifetime);
 
-        protected:
+ private:
 
-            // ...
+  // ...
 
-        protected:
+ protected:
 
-            /**
-             * Reference to the boost::asio::io_service object.
-             */
-            boost::asio::io_service & io_service_;
+/**
+  * Reference to the boost::asio::io_service object.
+  */
+  boost::asio::io_service & io_service_;
 
-            /**
-             * The underlying nat-pmp implementation.
-             */
-            boost::shared_ptr<natpmpclientimpl> impl_;
-    };
+/**
+  * The underlying nat-pmp implementation.
+  */
+  boost::shared_ptr<NatPmpClientImpl> impl_;
+};
 
 }  // namespace natpmp
 
-#endif  // NATPMP_NATPMPCLIENT_H_
+#endif  // NAT_PMP_NATPMPCLIENT_H_

@@ -43,304 +43,240 @@ Created by Julian Cain on 11/3/09.
 #include <netdb.h>
 #endif
 
-using namespace base;
+namespace base {
 
-bool network_interface::is_local(const boost::asio::ip::address & addr)
-{
-    if (addr.is_v6())
-    {
-        return addr.to_v6().is_link_local();
-    }
-    else
-    {
-        boost::asio::ip::address_v4 a4 = addr.to_v4();
+bool NetworkInterface::IsLocal(const boost::asio::ip::address & addr) {
+  if (addr.is_v6()) {
+    return addr.to_v6().is_link_local();
+  } else {
+    boost::asio::ip::address_v4 a4 = addr.to_v4();
 
-        unsigned long ip = a4.to_ulong();
+    boost::uint32_t ip = a4.to_ulong();
 
-        return (
-            (ip & 0xff000000) == 0x0a000000 ||
-            (ip & 0xfff00000) == 0xac100000 ||
-            (ip & 0xffff0000) == 0xc0a80000
-        );
-    }
+    return (
+        (ip & 0xff000000) == 0x0a000000 ||
+        (ip & 0xfff00000) == 0xac100000 ||
+        (ip & 0xffff0000) == 0xc0a80000);
+  }
 
-    return false;
+  return false;
 }
 
-bool network_interface::is_loopback(const boost::asio::ip::address & addr)
-{
-    if (addr.is_v4())
-    {
-        return addr.to_v4() == boost::asio::ip::address_v4::loopback();
-    }
-    else
-    {
-        return addr.to_v6() == boost::asio::ip::address_v6::loopback();
-    }
+bool NetworkInterface::IsLoopback(const boost::asio::ip::address & addr) {
+  if (addr.is_v4()) {
+    return addr.to_v4() == boost::asio::ip::address_v4::loopback();
+  } else {
+    return addr.to_v6() == boost::asio::ip::address_v6::loopback();
+  }
 }
 
-bool network_interface::is_multicast(const boost::asio::ip::address & addr)
-{
-    if (addr.is_v4())
-    {
-        return addr.to_v4().is_multicast();
-    }
-    else
-    {
-        return addr.to_v6().is_multicast();
-    }
+bool NetworkInterface::IsMulticast(const boost::asio::ip::address & addr) {
+  if (addr.is_v4()) {
+    return addr.to_v4().is_multicast();
+  } else {
+    return addr.to_v6().is_multicast();
+  }
 }
 
-bool network_interface::is_any(const boost::asio::ip::address & addr)
-{
-    if (addr.is_v4())
-    {
-        return addr.to_v4() == boost::asio::ip::address_v4::any();
-    }
-    else
-    {
-        return addr.to_v6() == boost::asio::ip::address_v6::any();
-    }
+bool NetworkInterface::IsAny(const boost::asio::ip::address & addr) {
+  if (addr.is_v4()) {
+    return addr.to_v4() == boost::asio::ip::address_v4::any();
+  } else {
+    return addr.to_v6() == boost::asio::ip::address_v6::any();
+  }
 }
 
-boost::asio::ip::address network_interface::inaddr_to_address(
-    const in_addr * addr
-    )
-{
-    typedef boost::asio::ip::address_v4::bytes_type bytes_t;
-    bytes_t b;
-    std::memcpy(&b[0], addr, b.size());
-    return boost::asio::ip::address_v4(b);
+boost::asio::ip::address NetworkInterface::InaddrToAddress(
+    const in_addr * addr) {
+  typedef boost::asio::ip::address_v4::bytes_type bytes_t;
+  bytes_t b;
+  std::memcpy(&b[0], addr, b.size());
+  return boost::asio::ip::address_v4(b);
 }
 
-boost::asio::ip::address network_interface::inaddr6_to_address(
-    const in6_addr * addr
-    )
-{
-    typedef boost::asio::ip::address_v6::bytes_type bytes_t;
-    bytes_t b;
-    std::memcpy(&b[0], addr, b.size());
-    return boost::asio::ip::address_v6(b);
+boost::asio::ip::address NetworkInterface::Inaddr6ToAddress(
+    const in6_addr * addr) {
+  typedef boost::asio::ip::address_v6::bytes_type bytes_t;
+  bytes_t b;
+  std::memcpy(&b[0], addr, b.size());
+  return boost::asio::ip::address_v6(b);
 }
 
-boost::asio::ip::address network_interface::sockaddr_to_address(
-    const sockaddr * addr
-    )
-{
-    if (addr->sa_family == AF_INET)
-    {
-        return inaddr_to_address(&((const sockaddr_in *)addr)->sin_addr);
-    }
-    else if (addr->sa_family == AF_INET6)
-    {
-        return inaddr6_to_address(&((const sockaddr_in6 *)addr)->sin6_addr);
-    }
-    return boost::asio::ip::address();
+boost::asio::ip::address NetworkInterface::SockaddrToAddress(
+    const sockaddr * addr) {
+  if (addr->sa_family == AF_INET) {
+    in_addr address = (reinterpret_cast<const sockaddr_in*>(addr))->sin_addr;
+    return InaddrToAddress(&address);
+  } else if (addr->sa_family == AF_INET6) {
+    in6_addr address = (reinterpret_cast<const sockaddr_in6*>(addr))->sin6_addr;
+    return Inaddr6ToAddress(&address);
+  }
+  return boost::asio::ip::address();
 }
 
-#if defined (MAIDSAFE_POSIX) || defined (MAIDSAFE_APPLE)
-static bool verify_sockaddr(sockaddr_in * sin)
-{
-    return
-        (sin->sin_len == sizeof(sockaddr_in) && sin->sin_family == AF_INET) ||
-        (sin->sin_len == sizeof(sockaddr_in6) && sin->sin_family == AF_INET6)
-    ;
+#if defined(MAIDSAFE_POSIX) || defined(MAIDSAFE_APPLE)
+static bool VerifySockaddr(sockaddr_in * sin) {
+  return (sin->sin_len == sizeof(sockaddr_in) && sin->sin_family == AF_INET) ||
+         (sin->sin_len == sizeof(sockaddr_in6) && sin->sin_family == AF_INET6);
 }
-#endif // defined (MAIDSAFE_POSIX) || defined (MAIDSAFE_APPLE)
+#endif  // defined(MAIDSAFE_POSIX) || defined(MAIDSAFE_APPLE)
 
-boost::asio::ip::address network_interface::local_address()
-{
-    boost::system::error_code ec;
-    boost::asio::ip::address ret = boost::asio::ip::address_v4::any();
+boost::asio::ip::address NetworkInterface::LocalAddress() {
+  boost::system::error_code ec;
+  boost::asio::ip::address ret = boost::asio::ip::address_v4::any();
 
-    const std::vector<network_interface> & interfaces = local_list(ec);
+  const std::vector<NetworkInterface> & interfaces = LocalList(ec);
 
-    std::vector<network_interface>::const_iterator it = interfaces.begin();
+  std::vector<NetworkInterface>::const_iterator it = interfaces.begin();
 
-    for (; it != interfaces.end(); ++it)
-    {
-        const boost::asio::ip::address & a = (*it).destination;
+  for (; it != interfaces.end(); ++it) {
+    const boost::asio::ip::address & a = (*it).destination;
 
-        /**
-         * Skip loopback, multicast and any.
-         */
-        if (is_loopback(a)|| is_multicast(a) || is_any(a))
-        {
-            continue;
-        }
-
-        /**
-         * :NOTE: Other properties could be checked here such as the IFF_UP
-         * flag.
-         */
-
-        /**
-         * Prefer an ipv4 address over v6.
-         */
-        if (a.is_v4())
-        {
-            ret = a;
-            break;
-        }
-
-        /**
-         * If this one is not any then return it.
-         */
-        if (ret != boost::asio::ip::address_v4::any())
-        {
-            ret = a;
-        }
+    // Skip loopback, multicast and any.
+    if (IsLoopback(a)|| IsMulticast(a) || IsAny(a)) {
+      continue;
     }
 
-    return ret;
+    // :NOTE: Other properties could be checked here such as the IFF_UP flag.
+
+    // Prefer an ipv4 address over v6.
+    if (a.is_v4()) {
+      ret = a;
+      break;
+    }
+
+    // If this one is not any then return it.
+    if (ret != boost::asio::ip::address_v4::any()) {
+      ret = a;
+    }
+  }
+
+  return ret;
 }
 
-std::vector<network_interface> network_interface::local_list(
-    boost::system::error_code & ec
-    )
-{
-    std::vector<network_interface> ret;
+std::vector<NetworkInterface> NetworkInterface::LocalList(
+    boost::system::error_code & ec) {
+  std::vector<NetworkInterface> ret;
 
 #if defined MAIDSAFE_LINUX || (defined MAIDSAFE_APPLE || __MACH__)
 
-    int s = socket(AF_INET, SOCK_DGRAM, 0);
+  int s = socket(AF_INET, SOCK_DGRAM, 0);
 
-    if (s < 0)
-    {
-        ec = boost::asio::error::fault;
-        return ret;
-    }
+  if (s < 0) {
+    ec = boost::asio::error::fault;
+    return ret;
+  }
 
-    ifconf ifc;
-    char buf[1024];
+  ifconf ifc;
+  char buf[1024];
 
-    ifc.ifc_len = sizeof(buf);
-    ifc.ifc_buf = buf;
+  ifc.ifc_len = sizeof(buf);
+  ifc.ifc_buf = buf;
 
-    if (ioctl(s, SIOCGIFCONF, &ifc) < 0)
-    {
-        ec = boost::system::error_code(
-            errno, boost::asio::error::system_category
-        );
+  if (ioctl(s, SIOCGIFCONF, &ifc) < 0) {
+    ec = boost::system::error_code(errno, boost::asio::error::system_category);
 
-        close(s);
+    close(s);
 
-        return ret;
-    }
+    return ret;
+  }
 
-    char *ifr = (char *)ifc.ifc_req;
+  char *ifr = reinterpret_cast<char *>(ifc.ifc_req);
 
-    int remaining = ifc.ifc_len;
+  int remaining = ifc.ifc_len;
 
-    while (remaining)
-    {
-        const ifreq & item = *reinterpret_cast<ifreq *>(ifr);
+  while (remaining) {
+    const ifreq & item = *reinterpret_cast<ifreq *>(ifr);
 
-        if (
-            item.ifr_addr.sa_family == AF_INET ||
-            item.ifr_addr.sa_family == AF_INET6
-            )
-        {
-            network_interface iface;
+    if (item.ifr_addr.sa_family == AF_INET ||
+        item.ifr_addr.sa_family == AF_INET6) {
+      NetworkInterface iface;
 
-            iface.destination = sockaddr_to_address(&item.ifr_addr);
+      iface.destination = SockaddrToAddress(&item.ifr_addr);
 
-            strcpy(iface.name, item.ifr_name);
+//      strcpy(iface.name, item.ifr_name);
+      snprintf(iface.name, sizeof(iface.name), item.ifr_name);
 
-            ifreq netmask = item;
+      ifreq netmask = item;
 
-            if (ioctl(s, SIOCGIFNETMASK, &netmask) < 0)
-            {
-                if (iface.destination.is_v6())
-                {
-                    iface.netmask = boost::asio::ip::address_v6::any();
-                }
-                else
-                {
-                    ec = boost::system::error_code(
-                        errno, boost::asio::error::system_category
-                    );
+      if (ioctl(s, SIOCGIFNETMASK, &netmask) < 0) {
+        if (iface.destination.is_v6()) {
+          iface.netmask = boost::asio::ip::address_v6::any();
+        } else {
+          ec = boost::system::error_code(errno,
+                                         boost::asio::error::system_category);
 
-                    close(s);
+          close(s);
 
-                    return ret;
-                }
-            }
-            else
-            {
-                iface.netmask = sockaddr_to_address(
-                    &netmask.ifr_addr
-                );
-            }
-            ret.push_back(iface);
+          return ret;
         }
+      } else {
+        iface.netmask = SockaddrToAddress(&netmask.ifr_addr);
+      }
+      ret.push_back(iface);
+    }
 
-#if (defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
-        std::size_t if_size = item.ifr_addr.sa_len + IFNAMSIZ;
+#if(defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
+    std::size_t if_size = item.ifr_addr.sa_len + IFNAMSIZ;
 
-#elif defined MAIDSAFE_LINUX
-        std::size_t if_size = sizeof(ifreq);
+#elif defined(MAIDSAFE_LINUX)
+    std::size_t if_size = sizeof(ifreq);
 #endif
-			ifr += if_size;
-			remaining -= if_size;
-		}
+    ifr += if_size;
+    remaining -= if_size;
+  }
 
-		close(s);
+  close(s);
 
-#elif defined (MAIDSAFE_WIN32)
+#elif defined(MAIDSAFE_WIN32)
 
-		SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
+  SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
 
-		if (static_cast<int>(s) == SOCKET_ERROR)
-		{
-			ec = boost::system::error_code(
-                WSAGetLastError(), boost::asio::error::system_category
-            );
+  if (static_cast<int>(s) == SOCKET_ERROR) {
+    ec = boost::system::error_code(WSAGetLastError(),
+                                   boost::asio::error::system_category);
 
-			return ret;
-		}
+    return ret;
+  }
 
-		INTERFACE_INFO buf[30];
+  INTERFACE_INFO buf[30];
 
-		DWORD size;
+  DWORD size;
 
-        int err = WSAIoctl(
-            s, SIO_GET_INTERFACE_LIST, 0, 0, buf, sizeof(buf), &size, 0, 0
-        );
+  int err = WSAIoctl(s, SIO_GET_INTERFACE_LIST, 0, 0, buf, sizeof(buf), &size,
+                     0, 0);
 
-		if (err != 0)
-		{
-			ec = boost::system::error_code(
-                WSAGetLastError(), boost::asio::error::system_category
-            );
+  if (err != 0) {
+    ec = boost::system::error_code(WSAGetLastError(),
+                                   boost::asio::error::system_category);
 
-            closesocket(s);
+    closesocket(s);
 
-            return ret;
-		}
+    return ret;
+  }
 
-		closesocket(s);
+  closesocket(s);
 
-		std::size_t n = size / sizeof(INTERFACE_INFO);
+  std::size_t n = size / sizeof(INTERFACE_INFO);
 
-		network_interface iface;
+  NetworkInterface iface;
 
-		for (std::size_t i = 0; i < n; ++i)
-		{
-			iface.destination = sockaddr_to_address(&buf[i].iiAddress.Address);
+  for (std::size_t i = 0; i < n; ++i) {
+    iface.destination = SockaddrToAddress(&buf[i].iiAddress.Address);
 
-			iface.netmask = sockaddr_to_address(&buf[i].iiNetmask.Address);
+    iface.netmask = SockaddrToAddress(&buf[i].iiNetmask.Address);
 
-			iface.name[0] = 0;
+    iface.name[0] = 0;
 
-            if (iface.destination == boost::asio::ip::address_v4::any())
-            {
-                continue;
-            }
-			ret.push_back(iface);
-		}
+    if (iface.destination == boost::asio::ip::address_v4::any()) {
+      continue;
+    }
+    ret.push_back(iface);
+  }
 #else
 #error "Unsupported Device or Platform."
 #endif
-    return ret;
+  return ret;
 }
+
+}  // namespace base

@@ -31,15 +31,15 @@ Created by Julian Cain on 11/3/09.
 #ifndef BASE_GATEWAY_H_
 #define BASE_GATEWAY_H_
 
-#include <vector>
-
 #include <boost/asio.hpp>
+
+#include <vector>
 
 #include "base/network_interface.h"
 #include "base/config.h"
 
 
-#if (defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
+#if(defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
 struct rt_msghdr;
 #elif defined(MAIDSAFE_LINUX)
 struct nlmsghdr;
@@ -47,64 +47,55 @@ struct nlmsghdr;
 
 namespace base {
 
-    class gateway
-    {
-        public:
+class Gateway {
+ public:
 
-            /**
-             * Returns the default gateway address.
-             * @param ios
-             * @param ec
-             */
-            static boost::asio::ip::address default_route(
-                boost::asio::io_service & ios,
-                boost::system::error_code & ec
-            );
+/**
+  * Returns the default gateway address.
+  * @param ios
+  * @param ec
+  */
+  static boost::asio::ip::address DefaultRoute(boost::asio::io_service & ios,
+                                               boost::system::error_code & ec);
 
-        private:
+ private:
 
-            /**
-             * Enumerates and returns ip routes.
-             */
-            static std::vector<network_interface> routes(
-                boost::asio::io_service & ios, boost::system::error_code & ec
-            );
+/**
+  * Enumerates and returns ip routes.
+  */
+  static std::vector<NetworkInterface> Routes(boost::asio::io_service & ios,
+                                              boost::system::error_code & ec);
 
-        protected:
+ protected:
 
-#if (defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
-            /**
-             * Parse a rt_msghdr and assign it to rt_if.
-             * @param rtm
-             * @param rt_info
-             */
-            static bool parse_rt_msghdr(
-                rt_msghdr * rtm, network_interface & rt_if
-            );
-#elif (defined MAIDSAFE_LINUX)
+#if(defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
+/**
+  * Parse a rt_msghdr and assign it to rt_if.
+  * @param rtm
+  * @param rt_info
+  */
+  static bool ParseRtMsghdr(rt_msghdr * rtm, NetworkInterface & rt_if);
+#elif(defined MAIDSAFE_LINUX)
 
-            /**
-             * Reads the netlink socket.
-             * @param sock The socket to read.
-             * @param buf The buffer.
-             * @param len The len of buffer in bytes.
-             * @param seq The sequence.
-             * @param pid The process id.
-             */
-            static int read_netlink_sock(
-                int sock, char * buf, int len, int seq, int pid
-            );
+/**
+  * Reads the netlink socket.
+  * @param sock The socket to read.
+  * @param buf The buffer.
+  * @param len The len of buffer in bytes.
+  * @param seq The sequence.
+  * @param pid The process id.
+  */
+  static int ReadNetlinkSock(int sock, char * buf, int len, int seq, int pid);
 
-            /**
-             * Parse a nlmsghdr and assign it to rt_if.
-             * @param nl_hdr
-             * @param rt_info
-             */
-        static bool parse_nlmsghdr(nlmsghdr * nl_hdr, network_interface & rt_if);
+/**
+  * Parse a nlmsghdr and assign it to rt_if.
+  * @param nl_hdr
+  * @param rt_info
+  */
+  static bool ParseNlmsghdr(nlmsghdr * nl_hdr, NetworkInterface & rt_if);
 #endif
+};
 
-    };
+}  // namespace base
 
-} // namespace base
-
-#endif // BASE_GATEWAY_H_
+#endif  // BASE_GATEWAY_H_

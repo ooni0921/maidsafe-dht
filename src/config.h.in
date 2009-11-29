@@ -33,23 +33,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef HAVE_GLOG
 #include <glog/logging.h>
 #else
-  #include <iostream>  // NOLINT
-  namespace google {
-    inline void InitGoogleLogging(char *) {}  // NOLINT
-  }
-  class LogMessageVoidify {
-   public:
-    LogMessageVoidify() {}
-   void operator &(std::ostream&) {}
-  };
-  #define LOG(severity) std::cerr
-  #ifndef NDEBUG
-    #define DLOG(severity) std::cerr
-  #else
-    #define DLOG(severity) \
-      true ? (void) 0 : LogMessageVoidify() & LOG(severity)
-  #endif
+#include <iostream>  // NOLINT
+
+namespace google {
+inline void InitGoogleLogging(char *) {}  // NOLINT
+}  // namespace google
+
+class LogMessageVoidify {
+ public:
+  LogMessageVoidify() {}
+  void operator &(std::ostream&) {}
+};
+
+#define LOG(severity) std::cerr
+#ifndef NDEBUG
+#define DLOG(severity) std::cerr
+#else
+#define DLOG(severity) true ? (void) 0 : LogMessageVoidify() & LOG(severity)
+#endif
 #endif
 
-#endif  // CONFIG_H
+#endif  // MAIDSAFE_CONFIG_H_
 

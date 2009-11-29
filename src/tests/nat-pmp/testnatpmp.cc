@@ -35,48 +35,43 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "nat-pmp/natpmpclient.h"
 
-class NATPMPTest : public testing::Test
-{
-    public:
-
-        NATPMPTest()
-        {
-            // ...
-        }
+class NATPMPTest : public testing::Test {
+ public:
+  NATPMPTest() {}
 };
 
-TEST_F(NATPMPTest, FUNC_NATPMP_Test)
-{
-    boost::asio::io_service ios;
+TEST_F(NATPMPTest, FUNC_NATPMP_Test) {
+  boost::asio::io_service ios;
 
-    natpmp::natpmpclient client(ios);
+  natpmp::NatPmpClient client(ios);
 
-    boost::uint16_t tcp_port = 33333;
-    boost::uint16_t udp_port = 33333;
+  boost::uint16_t tcp_port = 33333;
+  boost::uint16_t udp_port = 33333;
 
-    printf("Starting NAT-PMP...\n");
+  printf("Starting NAT-PMP...\n");
 
-    printf("Requesting external ip address from gateway.\n");
+  printf("Requesting external ip address from gateway.\n");
 
-    client.start();
+  client.Start();
 
-    printf("Queueing mapping request for tcp port %d to %d.\n", tcp_port, tcp_port);
+  printf("Queueing mapping request for tcp port %d to %d.\n", tcp_port,
+         tcp_port);
 
-    client.map_port(natpmp::protocol::tcp, 33333, 33333);
+  client.MapPort(natpmp::Protocol::kTcp, 33333, 33333, 3600);
 
-    printf("Queueing mapping request for udp port %d to %d.\n", udp_port, udp_port);
+  printf("Queueing mapping request for udp port %d to %d.\n", udp_port,
+         udp_port);
 
-    client.map_port(natpmp::protocol::udp, 33333, 33333);
+  client.MapPort(natpmp::Protocol::kUdp, 33333, 33333, 3600);
 
-    boost::shared_ptr<boost::thread> thread(new boost::thread(
-        boost::bind(&boost::asio::io_service::run, &ios))
-    );
+  boost::shared_ptr<boost::thread> thread(new boost::thread(
+      boost::bind(&boost::asio::io_service::run, &ios)));
 
-    printf("Sleeping for 64 seconds...\n");
+  printf("Sleeping for 64 seconds...\n");
 
-    boost::this_thread::sleep(boost::posix_time::seconds(64));
+  boost::this_thread::sleep(boost::posix_time::seconds(64));
 
-    printf("Stopping NAT-PMP...\n");
+  printf("Stopping NAT-PMP...\n");
 
-    client.stop();
+  client.Stop();
 }

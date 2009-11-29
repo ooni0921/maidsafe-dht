@@ -32,37 +32,31 @@ Created by Julian Cain on 11/3/09.
 
 namespace natpmp {
 
-const char * protocol::string_from_opcode(unsigned int opcode)
-{
-    const char * str;
+const char * Protocol::StringFromOpcode(unsigned int opcode) {
+  const char * str;
 
-    switch (opcode)
-    {
-        case error_invalid_args:
-            str = "invalid arguments";
-    	break;
-        case error_socket_error:
-            str = "socket() failed";
-    	break;
-        case error_cannot_get_gateway:
-            str = "cannot get default gateway ip address";
-    	break;
-        case result_out_of_resources:
-            str =
-                "Out of resources(NAT box cannot create any more mappings at "
-                "this time)."
-            ;
-    	break;
-        case result_network_failure:
-            str =
-                "Network Failure, nat box may have not obtained a DHCP lease."
-            ;
-        break;
-        default:
-            str = "Unknown NAT-PMP error";
-    }
+  switch (opcode) {
+    case kErrorInvalidArgs:
+      str = "invalid arguments";
+      break;
+    case kErrorSocketError:
+      str = "socket() failed";
+      break;
+    case kErrorCannotGetGateway:
+      str = "cannot get default gateway ip address";
+      break;
+    case kResultOutOfResources:
+      str = "Out of resources (NAT box cannot create any more mappings at "
+            "this time).";
+      break;
+    case kResultNetworkFailure:
+      str = "Network Failure, nat box may have not obtained a DHCP lease.";
+      break;
+    default:
+      str = "Unknown NAT-PMP error";
+  }
 
-    return str;
+  return str;
 }
 
-} // namespace natpmp
+}  // namespace natpmp

@@ -28,104 +28,68 @@ Created by Julian Cain on 11/3/09.
 
 */
 
+#include "nat-pmp/natpmpclient.h"
+
 #include <stdexcept>
 
-#include "nat-pmp/natpmpclient.h"
+#include "maidsafe/config.h"
 #include "nat-pmp/natpmpprotocol.h"
 
 namespace natpmp {
 
-natpmpclient::natpmpclient(boost::asio::io_service & ios)
-    : io_service_(ios)
-{
+NatPmpClient::NatPmpClient(boost::asio::io_service & ios) : io_service_(ios) {}
+
+NatPmpClient::~NatPmpClient() {}
+
+void NatPmpClient::Start() {
+  if (impl_) {
     // ...
+  } else {
+    // Allocate the implementation.
+    impl_.reset(new NatPmpClientImpl(io_service_));
+
+    // Start the implementation.
+    impl_->Start();
+  }
 }
 
-natpmpclient::~natpmpclient()
-{
-    // ...
-}
+void NatPmpClient::Stop() {
+  if (impl_) {
+    // Stop the implementation.
+    impl_->Stop();
 
-void natpmpclient::start()
-{
-    if (impl_)
-    {
+    // Cleanup
+    impl_.reset();
+  } else {
         // ...
-    }
-    else
-    {
-        /**
-         * Allocate the implementation.
-         */
-        impl_.reset(new natpmpclientimpl(io_service_));
-
-        /**
-         * Start the implementation.
-         */
-        impl_->start();
-    }
+  }
 }
 
-void natpmpclient::stop()
-{
-    if (impl_)
-    {
-        /**
-         * Stop the implementation.
-         */
-        impl_->stop();
-
-        /**
-         * Cleanup
-         */
-        impl_.reset();
-    }
-    else
-    {
-        // ...
-    }
-}
-
-void natpmpclient::set_map_port_success_callback(
-    const nat_pmp_map_port_success_cb_t & map_port_success_cb
-    )
-{
-    if (impl_)
-    {
-        impl_->set_map_port_success_callback(map_port_success_cb);
-    }
-    else
-    {
-        std::cerr <<
-            "Cannot set NAT-PMP success callback with null impl." <<
+void NatPmpClient::SetMapPortSuccessCallback(
+    const NatPmpMapPortSuccessCbType & map_port_success_cb) {
+  if (impl_) {
+    impl_->SetMapPortSuccessCallback(map_port_success_cb);
+  } else {
+    DLOG(ERROR) << "Cannot set NAT-PMP success callback with null impl." <<
         std::endl;
-    }
+  }
 }
 
-void natpmpclient::map_port(
-    unsigned int protocol, unsigned short private_port,
-    unsigned short public_port, long long lifetime
-    )
-{
-	if (protocol != protocol::tcp && protocol != protocol::udp)
-    {
-        throw std::runtime_error(
-            protocol::string_from_opcode(protocol::error_invalid_args)
-        );
-    }
+void NatPmpClient::MapPort(boost::uint32_t protocol,
+                           boost::uint16_t private_port,
+                           boost::uint16_t public_port,
+                           boost::uint64_t lifetime) {
+  if (protocol != Protocol::kTcp && protocol != Protocol::kUdp) {
+    throw std::runtime_error(
+        Protocol::StringFromOpcode(Protocol::kErrorInvalidArgs));
+  }
 
-    if (impl_)
-    {
-        impl_->send_mapping_request(
-            protocol, private_port, public_port, lifetime
-        );
-    }
-    else
-    {
-        throw std::runtime_error(
-            "Attempted to map nat-pmp port while subsystem is not started."
-        );
-    }
+  if (impl_) {
+    impl_->SendMappingRequest(protocol, private_port, public_port, lifetime);
+  } else {
+    throw std::runtime_error(
+        "Attempted to map nat-pmp port while subsystem is not started.");
+  }
 }
 
 }  // namespace natpmp

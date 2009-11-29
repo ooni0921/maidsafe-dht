@@ -325,7 +325,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  ASSERT_LE(size_t(1), cb_2.values().size());
   bool got_value = false;
   for (unsigned int i = 0; i < cb_2.values().size(); i++) {
     if (value == cb_2.values()[i]) {
@@ -342,7 +342,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  ASSERT_LE(size_t(1), cb_2.values().size());
   got_value = false;
   for (unsigned int i = 0; i < cb_2.values().size(); i++) {
     if (value == cb_2.values()[i]) {
@@ -363,7 +363,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   wait_result(&cb_3);
   // make sure the nodes returned are what we expect.
   ASSERT_EQ(kad::kRpcResultSuccess, cb_3.result());
-  ASSERT_NE(static_cast<unsigned int>(0), cb_3.closest_nodes().size());
+  ASSERT_NE(size_t(0), cb_3.closest_nodes().size());
   std::list<std::string> closest_nodes_str;  // = cb_3.closest_nodes();
   for (unsigned int i = 0; i < cb_3.closest_nodes().size(); i++)
     closest_nodes_str.push_back(cb_3.closest_nodes()[i]);
@@ -375,7 +375,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     node.ParseFromString(*it);
     closest_nodes.push_back(node);
   }
-  ASSERT_EQ(static_cast<unsigned int>(kTestK), closest_nodes.size());
+  ASSERT_EQ(size_t(kTestK), closest_nodes.size());
   std::list<kad::Contact> all_nodes;
   for (int i = 0; i < kNetworkSize; i++) {
     kad::Contact node(knodes_[i]->node_id(), knodes_[i]->host_ip(),
@@ -411,7 +411,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindClosestNodes) {
   wait_result(&cb_1);
   // make sure the nodes returned are what we expect.
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_NE(static_cast<unsigned int>(0), cb_1.closest_nodes().size());
+  ASSERT_NE(size_t(0), cb_1.closest_nodes().size());
   std::list<std::string> closest_nodes_str;  // = cb_1.closest_nodes();
   for (unsigned int i = 0; i < cb_1.closest_nodes().size(); i++)
     closest_nodes_str.push_back(cb_1.closest_nodes()[i]);
@@ -423,7 +423,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindClosestNodes) {
     node.ParseFromString(*it);
     closest_nodes.push_back(node);
   }
-  ASSERT_EQ(static_cast<unsigned int>(kTestK), closest_nodes.size());
+  ASSERT_EQ(size_t(kTestK), closest_nodes.size());
   std::list<kad::Contact> all_nodes;
   for (int i = 0; i < kNetworkSize; i++) {
     kad::Contact node(knodes_[i]->node_id(), knodes_[i]->host_ip(),
@@ -491,7 +491,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
     &FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(static_cast<unsigned int>(1), cb_1.values().size());
+  ASSERT_LE(size_t(1), cb_1.values().size());
   bool got_value = false;
   for (unsigned int i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
@@ -509,7 +509,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
     &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(static_cast<unsigned int>(1), cb_1.values().size());
+  ASSERT_LE(size_t(1), cb_1.values().size());
   got_value = false;
   for (unsigned int i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
@@ -566,7 +566,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
       boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(static_cast<unsigned int>(1), cb_1.values().size());
+  ASSERT_LE(size_t(1), cb_1.values().size());
   bool got_value = false;
   for (unsigned int i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
@@ -582,7 +582,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
       boost::bind(&FindCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  ASSERT_LE(size_t(1), cb_2.values().size());
   got_value = false;
   for (unsigned int i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
@@ -616,8 +616,6 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoad100Values) {
       printf(".");
   }
   printf("\nLoad:  ");
-  size_t chunk_count = 0;
-  int time_count = 0;
   for (size_t p = 0; p < count; ++p) {
     wait_result(&cbs[p]);
     ASSERT_EQ(kad::kRpcResultSuccess, cbs[p].result());
@@ -628,7 +626,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoad100Values) {
                           boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
     wait_result(&cb_1);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-    ASSERT_EQ(static_cast<unsigned int>(1), cb_1.values().size());
+    ASSERT_EQ(size_t(1), cb_1.values().size());
     ASSERT_EQ(values[p].value(), cb_1.values()[0]);
     if (!(p % 5))
       printf(".");
@@ -645,8 +643,8 @@ TEST_F(KNodeTest, FUNC_KAD_LoadNonExistingValue) {
       boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultFailure, cb_1.result());
-  ASSERT_LT(0, cb_1.closest_nodes().size());
-  ASSERT_EQ(0, cb_1.values().size());
+  ASSERT_LT(size_t(0), cb_1.closest_nodes().size());
+  ASSERT_EQ(size_t(0), cb_1.values().size());
 }
 
 TEST_F(KNodeTest, FUNC_KAD_FindNode) {
@@ -762,7 +760,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
       boost::bind(&FakeCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(static_cast<unsigned int>(1), cb_2.values().size());
+  ASSERT_LE(size_t(1), cb_2.values().size());
   bool got_value = false;
   for (unsigned int i = 0; i < cb_2.values().size(); ++i) {
     if (value == cb_2.values()[i]) {

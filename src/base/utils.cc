@@ -432,7 +432,7 @@ bool get_local_address(boost::asio::ip::address *local_address) {
 }
 
 int32_t random_32bit_integer() {
-  int32_t result;
+  int32_t result(0);
   bool success = false;
   while (!success) {
     try {
@@ -454,7 +454,7 @@ int32_t random_32bit_integer() {
 }
 
 uint32_t random_32bit_uinteger() {
-  uint32_t result;
+  uint32_t result(0);
   bool success = false;
   while (!success) {
     try {

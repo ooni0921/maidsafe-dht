@@ -232,11 +232,11 @@ TEST(UtilsTest, BEH_BASE_NameValidation) {
 TEST(UtilsTest, BEH_BASE_RandomNumberGen) {
   int i = 1;
   while (i < 10) {
-    unsigned int urandnum1 = base::random_32bit_uinteger();
-    unsigned int urandnum2 = base::random_32bit_uinteger();
+    boost::uint32_t urandnum1 = base::random_32bit_uinteger();
+    boost::uint32_t urandnum2 = base::random_32bit_uinteger();
     ASSERT_NE(urandnum1, urandnum2);
-    ASSERT_NE(urandnum1, 0);
-    ASSERT_NE(urandnum2, 0);
+    ASSERT_NE(urandnum1, boost::uint32_t(0));
+    ASSERT_NE(urandnum2, boost::uint32_t(0));
     ++i;
   }
   int j = 1;

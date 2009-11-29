@@ -28,137 +28,118 @@ Created by Julian Cain on 11/3/09.
 
 */
 
-#ifndef NATPMP_PROTOCOL_H_
-#define NATPMP_PROTOCOL_H_
+#ifndef NAT_PMP_NATPMPPROTOCOL_H_
+#define NAT_PMP_NATPMPPROTOCOL_H_
 
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace natpmp {
 
-    /**
-     * Implements the NAT-PMP base protocol.
-     */
-    class protocol
-    {
-        public:
+/**
+  * Implements the NAT-PMP base protocol.
+  */
+class Protocol {
+ public:
 
-            /**
-             * NAT-PMP port.
-             */
-            enum
-            {
-                port = 5351
-            };
+/**
+  * NAT-PMP port.
+  */
+  enum { kPort = 5351 };
 
-            /**
-             * Supported protocols.
-             */
-            enum
-            {
-                tcp = 1,
-                udp = 2
-            };
+/**
+  * Supported protocols.
+  */
+  enum { kTcp = 1, kUdp = 2 };
 
-            /**
-             * Result opcodes.
-             * 0 - Success
-             * 1 - Unsupported Version
-             * 2 - Not Authorized/Refused (e.g. box supports mapping, but user
-             * has turned feature off)
-             * 3 - Network Failure (e.g. NAT box itself has not obtained a
-             * DHCP lease)
-             * 4 - Out of resources
-               (NAT box cannot create any more mappings at this time)
-             * 5 - Unsupported opcode
-             */
-            enum result_opcodes
-            {
-                result_success = 0,
-                result_unsupported_version = 1,
-                result_not_authorized_refused = 2,
-                result_network_failure = 3,
-                result_out_of_resources = 4,
-                result_unsupported_opcode = 5,
-                result_undefined = 64,
-            };
+/**
+  * Result opcodes.
+  * 0 - Success
+  * 1 - Unsupported Version
+  * 2 - Not Authorized/Refused (e.g. box supports mapping, but user
+  * has turned feature off)
+  * 3 - Network Failure (e.g. NAT box itself has not obtained a
+  * DHCP lease)
+  * 4 - Out of resources
+  (NAT box cannot create any more mappings at this time)
+  * 5 - Unsupported opcode
+  */
+  enum ResultOpcodes {
+    kResultSuccess = 0,
+    kResultUnsupportedVersion = 1,
+    kResultNotAuthorisedRefused = 2,
+    kResultNetworkFailure = 3,
+    kResultOutOfResources = 4,
+    kResultUnsupportedOpcode = 5,
+    kResultUndefined = 64,
+  };
 
-            /**
-             * Error codes.
-             */
-            enum error_codes
-            {
-                error_invalid_args = 1,
-                error_socket_error = 2,
-                error_connect = 3,
-                error_send = 4,
-                error_receive_from = 5,
-                error_source_conflict = 6,
-                error_cannot_get_gateway = 7,
-            };
+/**
+  * Error codes.
+  */
+  enum ErrorCodes {
+    kErrorInvalidArgs = 1,
+    kErrorSocketError = 2,
+    kErrorConnect = 3,
+    kErrorSend = 4,
+    kErrorReceiveFrom = 5,
+    kErrorSourceConflict = 6,
+    kErrorCannotGetGateway = 7,
+  };
 
-            /**
-             * Mapping request structure.
-             */
-            struct mapping_request
-            {
-                bool operator == (const mapping_request & other) const
-                {
-                    return std::memcmp(
-                        buffer, other.buffer, sizeof(buffer)
-                    ) == 0;
-                }
+/**
+  * Mapping request structure.
+  */
+  struct MappingRequest {
+    bool operator == (const MappingRequest & other) const {
+      return std::memcmp(buffer, other.buffer, sizeof(buffer)) == 0;
+    }
 
-                std::size_t length;
-                char buffer[12];
-                boost::uint8_t retry_count;
-            };
+    std::size_t length;
+    char buffer[12];
+    boost::uint8_t retry_count;
+  };
 
-            /**
-             * External ip address request structure.
-             */
-            struct external_address_request
-            {
-                boost::uint16_t opcode;
-            };
+/**
+  * External ip address request structure.
+  */
+  struct ExternalAddressRequest {
+    boost::uint16_t opcode;
+  };
 
-            /**
-             * Mapping response structure.
-             */
-            struct mapping_response
-            {
-                bool operator == (const mapping_response & other) const
-                {
-                    return (
-                        private_port == other.private_port &&
-                        public_port == other.public_port
-                    );
-                }
+/**
+  * Mapping response structure.
+  */
+  struct MappingResponse {
+    bool operator == (const MappingResponse & other) const {
+      return (private_port == other.private_port &&
+              public_port == other.public_port);
+    }
 
-                boost::uint16_t type;
-                boost::uint16_t result_code;
-                boost::uint32_t epoch;
-                boost::asio::ip::address public_address;
-                boost::uint16_t private_port;
-                boost::uint16_t public_port;
-                boost::uint32_t lifetime;
-        	};
+    boost::uint16_t type;
+    boost::uint16_t result_code;
+    boost::uint32_t epoch;
+    boost::asio::ip::address public_address;
+    boost::uint16_t private_port;
+    boost::uint16_t public_port;
+    boost::uint32_t lifetime;
+  };
 
-        	/**
-        	 * Generates a string representation from an opcode
-        	 * @param opcode
-        	 */
-            static const char * string_from_opcode(unsigned int opcode);
+/**
+  * Generates a string representation from an opcode
+  * @param opcode
+  */
+  static const char * StringFromOpcode(unsigned int opcode);
 
-        private:
+ private:
 
-            // ...
+  // ...
 
-        protected:
+ protected:
 
-            // ...
-    };
+  // ...
+};
 
-}  // namespace upnp
+}  // namespace natpnp
 
-#endif  // NATPMP_PROTOCOL_H_
+#endif  // NAT_PMP_NATPMPPROTOCOL_H_
