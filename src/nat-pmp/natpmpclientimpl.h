@@ -133,7 +133,7 @@ class NatPmpClientImpl {
 /**
   * Asynchronous send handler.
   */
-  void HandleSend(const boost::system::error_code & ec, std::size_t bytes);
+  void HandleSend(const boost::system::error_code & ec, std::size_t);
 
 /**
   * Asynchronous cannot handler.
@@ -149,7 +149,7 @@ class NatPmpClientImpl {
 /**
   * Asynchronous response handler.
   */
-  void HandleResponse(const char * buf, std::size_t len);
+  void HandleResponse(const char * buf, std::size_t);
 
 /**
   * The ip address of the gateway.

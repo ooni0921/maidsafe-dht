@@ -30,17 +30,18 @@ Created by Julian Cain on 11/3/09.
 
 #include "base/gateway.h"
 
-#if(defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
+#if (defined(MAIDSAFE_APPLE) || defined(MAIDSAFE_POSIX) || defined(__MACH__)) \
+    && !defined(MAIDSAFE_LINUX)
 #include <net/route.h>
 #include <sys/sysctl.h>
 #include <boost/scoped_ptr.hpp>
-#elif(defined MAIDSAFE_WIN32)
+#elif defined(MAIDSAFE_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif  // WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <iphlpapi.h>
-#elif(defined MAIDSAFE_LINUX)
+#elif defined(MAIDSAFE_LINUX)
 #include <asm/types.h>
 #include <netinet/ether.h>
 #include <netinet/in.h>
@@ -59,7 +60,7 @@ boost::asio::ip::address Gateway::DefaultRoute(
     boost::asio::io_service & ios,
     boost::system::error_code & ec) {
   std::vector<NetworkInterface> ret = Routes(ios, ec);
-#if (defined MAIDSAFE_WIN32)
+#if defined(MAIDSAFE_WIN32)
   std::vector<NetworkInterface>::iterator it = std::find_if(
       ret.begin(),
       ret.end(),
@@ -79,7 +80,8 @@ boost::asio::ip::address Gateway::DefaultRoute(
   return it->gateway;
 }
 
-#if(defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
+#if (defined(MAIDSAFE_APPLE) || defined(MAIDSAFE_POSIX) || defined(__MACH__)) \
+    && !defined(MAIDSAFE_LINUX)
 
 inline int32_t RoundUp(int32_t val) {
   return ((val) > 0 ? (1 + (((val) - 1) | (sizeof(int32_t) - 1))) :
@@ -120,7 +122,7 @@ bool Gateway::ParseRtMsghdr(rt_msghdr * rtm, NetworkInterface & rt_if) {
   return true;
 }
 
-#elif(defined MAIDSAFE_LINUX)
+#elif defined(MAIDSAFE_LINUX)
 
 int Gateway::ReadNetlinkSock(int sock, char * buf, int len, int seq, int pid) {
   nlmsghdr * nl_hdr;
@@ -136,7 +138,7 @@ int Gateway::ReadNetlinkSock(int sock, char * buf, int len, int seq, int pid) {
 
     nl_hdr = reinterpret_cast<nlmsghdr *>(buf);
 
-    if ((NLMSG_OK(nl_hdr, read_len) == 0) ||
+    if ((NLMSG_OK(nl_hdr, static_cast<boost::uint32_t>(read_len)) == 0) ||
         (nl_hdr->nlmsg_type == NLMSG_ERROR)) {
       return -1;
     }
@@ -152,7 +154,8 @@ int Gateway::ReadNetlinkSock(int sock, char * buf, int len, int seq, int pid) {
     if ((nl_hdr->nlmsg_flags & NLM_F_MULTI) == 0) {
       break;
     }
-  } while ((nl_hdr->nlmsg_seq != seq) || (nl_hdr->nlmsg_pid != pid));
+  } while ((nl_hdr->nlmsg_seq != boost::uint32_t(seq)) ||
+           (nl_hdr->nlmsg_pid != boost::uint32_t(pid)));
 
   return msg_len;
 }
@@ -189,10 +192,11 @@ bool Gateway::ParseNlmsghdr(nlmsghdr * nl_hdr, NetworkInterface & rt_if) {
 #endif
 
 std::vector<NetworkInterface> Gateway::Routes(
-    boost::asio::io_service & ios, boost::system::error_code & ec) {
+    boost::asio::io_service &, boost::system::error_code & ec) {
   std::vector<NetworkInterface> ret;
 
-#if (defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
+#if (defined(MAIDSAFE_APPLE) || defined(MAIDSAFE_POSIX) || defined(__MACH__)) \
+    && !defined(MAIDSAFE_LINUX)
 
   int mib[6] = { CTL_NET, PF_ROUTE, 0, AF_UNSPEC, NET_RT_DUMP, 0 };
 
@@ -232,7 +236,7 @@ std::vector<NetworkInterface> Gateway::Routes(
     }
   }
 
-#elif defined(WIN32) || defined(_WIN32)
+#elif defined(MAIDSAFE_WIN32)
 
   HMODULE iphlp = LoadLibraryA("Iphlpapi.dll");
 
@@ -337,7 +341,8 @@ std::vector<NetworkInterface> Gateway::Routes(
     return std::vector<NetworkInterface>();
   }
 
-  for (; NLMSG_OK(nl_msg, len); nl_msg = NLMSG_NEXT(nl_msg, len)) {
+  for (; NLMSG_OK(nl_msg, static_cast<boost::uint32_t>(len));
+       nl_msg = NLMSG_NEXT(nl_msg, len)) {
     NetworkInterface intf;
 
     if (ParseNlmsghdr(nl_msg, intf)) {

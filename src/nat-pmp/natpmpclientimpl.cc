@@ -241,7 +241,7 @@ void NatPmpClientImpl::Send(const char * buf, std::size_t len) {
 }
 
 void NatPmpClientImpl::HandleSend(const boost::system::error_code & ec,
-                                  std::size_t bytes) {
+                                  std::size_t) {
   if (ec == boost::asio::error::operation_aborted) {
     // ...
   } else if (ec) {
@@ -307,7 +307,7 @@ void NatPmpClientImpl::HandleReceiveFrom(const boost::system::error_code & ec,
   }
 }
 
-void NatPmpClientImpl::HandleResponse(const char * buf, std::size_t len) {
+void NatPmpClientImpl::HandleResponse(const char * buf, std::size_t) {
   boost::uint32_t opcode = 0;
 
   Protocol::MappingResponse response;

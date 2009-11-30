@@ -796,7 +796,7 @@ TEST(RpcControllerTest, BEH_RPC_RpcController) {
   rpcprotocol::Controller controller;
   ASSERT_FALSE(controller.Failed());
   ASSERT_EQ(std::string(""), controller.ErrorText());
-  ASSERT_EQ(0, controller.req_id());
+  ASSERT_EQ(boost::uint32_t(0), controller.req_id());
   controller.SetFailed(rpcprotocol::kTimeOut);
   boost::uint32_t id = 1234;
   controller.set_req_id(id);
@@ -808,5 +808,5 @@ TEST(RpcControllerTest, BEH_RPC_RpcController) {
   controller.Reset();
   ASSERT_FALSE(controller.Failed());
   ASSERT_EQ(std::string(""), controller.ErrorText());
-  ASSERT_EQ(0, controller.req_id());
+  ASSERT_EQ(boost::uint32_t(0), controller.req_id());
 }

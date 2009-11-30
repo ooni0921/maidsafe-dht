@@ -114,12 +114,13 @@ boost::asio::ip::address NetworkInterface::SockaddrToAddress(
   return boost::asio::ip::address();
 }
 
-#if defined(MAIDSAFE_POSIX) || defined(MAIDSAFE_APPLE)
+#if (defined(MAIDSAFE_APPLE) || defined(MAIDSAFE_POSIX) || defined(__MACH__)) \
+    && !defined(MAIDSAFE_LINUX)
 static bool VerifySockaddr(sockaddr_in * sin) {
   return (sin->sin_len == sizeof(sockaddr_in) && sin->sin_family == AF_INET) ||
          (sin->sin_len == sizeof(sockaddr_in6) && sin->sin_family == AF_INET6);
 }
-#endif  // defined(MAIDSAFE_POSIX) || defined(MAIDSAFE_APPLE)
+#endif
 
 boost::asio::ip::address NetworkInterface::LocalAddress() {
   boost::system::error_code ec;
@@ -158,7 +159,8 @@ std::vector<NetworkInterface> NetworkInterface::LocalList(
     boost::system::error_code & ec) {
   std::vector<NetworkInterface> ret;
 
-#if defined MAIDSAFE_LINUX || (defined MAIDSAFE_APPLE || __MACH__)
+#if defined(MAIDSAFE_LINUX) || defined(MAIDSAFE_APPLE) || \
+    defined(MAIDSAFE_POSIX) || defined(__MACH__)
 
   int s = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -195,7 +197,7 @@ std::vector<NetworkInterface> NetworkInterface::LocalList(
       iface.destination = SockaddrToAddress(&item.ifr_addr);
 
 //      strcpy(iface.name, item.ifr_name);
-      snprintf(iface.name, sizeof(iface.name), item.ifr_name);
+      snprintf(iface.name, sizeof(iface.name), "%s", item.ifr_name);
 
       ifreq netmask = item;
 
@@ -216,10 +218,9 @@ std::vector<NetworkInterface> NetworkInterface::LocalList(
       ret.push_back(iface);
     }
 
-#if(defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
+#if !defined(MAIDSAFE_LINUX)
     std::size_t if_size = item.ifr_addr.sa_len + IFNAMSIZ;
-
-#elif defined(MAIDSAFE_LINUX)
+#else
     std::size_t if_size = sizeof(ifreq);
 #endif
     ifr += if_size;

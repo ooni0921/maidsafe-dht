@@ -39,7 +39,8 @@ Created by Julian Cain on 11/3/09.
 #include "base/config.h"
 
 
-#if(defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
+#if (defined(MAIDSAFE_APPLE) || defined(MAIDSAFE_POSIX) || defined(__MACH__)) \
+    && !defined(MAIDSAFE_LINUX)
 struct rt_msghdr;
 #elif defined(MAIDSAFE_LINUX)
 struct nlmsghdr;
@@ -68,14 +69,15 @@ class Gateway {
 
  protected:
 
-#if(defined MAIDSAFE_APPLE || MAIDSAFE_POSIX || __MACH__)
+#if (defined(MAIDSAFE_APPLE) || defined(MAIDSAFE_POSIX) || defined(__MACH__)) \
+    && !defined(MAIDSAFE_LINUX)
 /**
   * Parse a rt_msghdr and assign it to rt_if.
   * @param rtm
   * @param rt_info
   */
   static bool ParseRtMsghdr(rt_msghdr * rtm, NetworkInterface & rt_if);
-#elif(defined MAIDSAFE_LINUX)
+#elif defined(MAIDSAFE_LINUX)
 
 /**
   * Reads the netlink socket.
