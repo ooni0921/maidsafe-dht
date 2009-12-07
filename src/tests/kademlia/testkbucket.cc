@@ -67,7 +67,7 @@ TEST_F(TestKbucket, BEH_KAD_IsInRange) {
   ASSERT_FALSE(kbucket2.KeyInRange(base::DecodeFromHex(enc_id)));
 }
 
-TEST_F(TestKbucket, BEH_KAD_AddContactGetContact) {
+TEST_F(TestKbucket, BEH_KAD_AddAndGetContact) {
   BigInt min_value(0);
   std::string hex_max_val;
   for (int i = 0; i < kKeySizeBytes * 2; ++i)

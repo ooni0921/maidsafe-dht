@@ -816,7 +816,7 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   }
 }
 
-TEST_F(KadServicesTest, BEH_KAD_ServicesFindValueAltStore) {
+TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
   DummyAltStore dummy_alt_store;
   service_->set_alternative_store(&dummy_alt_store);
   // Search in empty alt store, routing table and datastore

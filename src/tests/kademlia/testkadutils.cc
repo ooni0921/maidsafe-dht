@@ -51,7 +51,7 @@ TEST(KadRandomId, BEH_KAD_InRange) {
   ASSERT_TRUE(InRange(id, min_range, max_range));
 }
 
-TEST(KadRandomId, BEH_KAD_InRangeKadEnv) {
+TEST(KadRandomId, BEH_KAD_KadEnvInRange) {
   kad::BigInt min_range(0);
   kad::BigInt max_range(2);
   max_range.pow2(kad::kKeySizeBytes*8);

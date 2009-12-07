@@ -681,7 +681,7 @@ TEST_F(TransportTest, BEH_TRANS_GetRemotePeerAddress) {
   node2.Stop();
 }
 
-TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnotherBidirectional) {
+TEST_F(TransportTest, BEH_TRANS_SendMessageFromOneToAnotherBidirectional) {
   boost::uint32_t id;
   transport::Transport node1, node2;
   MessageHandler msg_handler[2];
@@ -735,7 +735,7 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnotherBidirectional) {
   ASSERT_EQ(1, msg_handler[1].msgs_sent_);
 }
 
-TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOneBidirectional) {
+TEST_F(TransportTest, BEH_TRANS_SendMsgsFromManyToOneBidirectional) {
   boost::uint32_t id;
   transport::Transport node1, node2, node3, node4;
   MessageHandler msg_handler[4];
