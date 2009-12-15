@@ -87,14 +87,20 @@ void send_string(TransportNode* node, int port, int repeat,
 class MessageHandler {
  public:
   MessageHandler(): msgs(), raw_msgs(), ids(), dead_server_(true), server_ip_(),
-    server_port_(0), node_(NULL), msgs_sent_(0) {}
+    server_port_(0), node_(NULL), msgs_sent_(0), msgs_received_(0),
+    msgs_confirmed_(0), target_msg_(""), keep_msgs_(true) {}
   void OnRPCMessage(const rpcprotocol::RpcMessage &msg,
       const boost::uint32_t &conn_id, const float &rtt) {
     std::string message;
     msg.SerializeToString(&message);
-    msgs.push_back(message);
-    ids.push_back(conn_id);
-    LOG(INFO) << "message " << msgs.size() << " arrived. RTT = " << rtt
+    msgs_received_++;
+    if (!target_msg_.empty() && message == target_msg_)
+      msgs_confirmed_++;
+    if (keep_msgs_) {
+      msgs.push_back(message);
+      ids.push_back(conn_id);
+    }
+    LOG(INFO) << "message " << msgs_received_ << " arrived. RTT = " << rtt
         << std::endl;
     if (node_ != NULL)
       node_->CloseConnection(conn_id);
@@ -123,7 +129,9 @@ class MessageHandler {
   std::string server_ip_;
   boost::uint16_t server_port_;
   transport::Transport *node_;
-  int msgs_sent_;
+  int msgs_sent_, msgs_received_, msgs_confirmed_;
+  std::string target_msg_;
+  bool keep_msgs_;
  private:
   MessageHandler(const MessageHandler&);
   MessageHandler& operator=(const MessageHandler&);
@@ -565,8 +573,8 @@ TEST_F(TransportTest, BEH_TRANS_TimeoutForSendingToAWrongPeer) {
   node1.Stop();
 }
 
-TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
-  const int kNumNodes(11), kRepeatSend(10);
+TEST_F(TransportTest, BEH_TRANS_Send1000Msgs) {
+  const int kNumNodes(6), kRepeatSend(200);
   // No. of times to repeat the send message.
   ASSERT_LT(2, kNumNodes);  // ensure enough nodes for test
   EXPECT_LT(1, kRepeatSend);  // ensure enough repeats to make test worthwhile
@@ -584,6 +592,8 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
   rpc_msg.SerializeToString(&sent_msg);
   for (int i = 0; i < kNumNodes; ++i) {
     transport::Transport *trans = new transport::Transport;
+    msg_handler[i].keep_msgs_ = false;
+    msg_handler[i].target_msg_ = sent_msg;
     ASSERT_TRUE(trans->RegisterOnRPCMessage(boost::bind(
       &MessageHandler::OnRPCMessage, &msg_handler[i], _1, _2, _3)));
     ASSERT_TRUE(trans->RegisterOnSend(boost::bind(&MessageHandler::OnSend,
@@ -614,7 +624,7 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
   bool finished = false;
   boost::progress_timer t;
   while (!finished && t.elapsed() < 20) {
-      if (msg_handler[0].msgs.size() >= messages_size) {
+      if (msg_handler[0].msgs_received_ >= messages_size) {
         finished = true;
         continue;
       }
@@ -623,14 +633,11 @@ TEST_F(TransportTest, BEH_TRANS_Send100Msgs) {
 
   for (int k = 0; k < kNumNodes; ++k)
     nodes[k]->Stop();
-  LOG(INFO) << "Total of successful connection = " << messages_size
+  LOG(INFO) << "Total of successful connections = " << messages_size
       << std::endl;
-  ASSERT_EQ(messages_size, msg_handler[0].msgs.size());
-  while (!msg_handler[0].msgs.empty()) {
-    std::string msg = msg_handler[0].msgs.back();
-    EXPECT_EQ(sent_msg, msg);
-    msg_handler[0].msgs.pop_back();
-  }
+  ASSERT_EQ(0, msg_handler[0].msgs.size());
+  ASSERT_EQ(messages_size, msg_handler[0].msgs_received_);
+  ASSERT_EQ(messages_size, msg_handler[0].msgs_confirmed_);
   for (int k = 0; k < kNumNodes; ++k) {
     if (k < kNumNodes - 1)
       delete tnodes[k];
