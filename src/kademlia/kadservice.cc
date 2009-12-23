@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/knode-api.h"
 #include "maidsafe/channel-api.h"
 #include "protobuf/signed_kadvalue.pb.h"
+#include "maidsafe/validationinterface.h"
 
 namespace kad {
 
@@ -50,7 +51,8 @@ KadService::KadService(const NatRpcs &nat_rpcs,
       node_joined_(false), node_hasRSAkeys_(hasRSAkeys), node_info_(),
       alternative_store_(NULL), add_contact_(add_cts),
       get_random_contacts_(rand_cts), get_contact_(get_ctc),
-      get_closestK_contacts_(get_kcts), ping_(ping) {}
+      get_closestK_contacts_(get_kcts), ping_(ping),
+      signature_validator_(NULL) {}
 
 void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
       struct NatDetectionData data) {
@@ -276,9 +278,14 @@ void KadService::Store(google::protobuf::RpcController *controller,
   if (!CheckStoreRequest(request, &sender)) {
     response->set_result(kRpcResultFailure);
   } else if (node_hasRSAkeys_) {
-    if (!ValidateSignedRequest(request->public_key(),
-        request->signed_public_key(), request->signed_request(),
-        request->key())) {
+    if (signature_validator_ == NULL ||
+        !signature_validator_->ValidateSignerId(
+          request->signed_request().signer_id(),
+          request->signed_request().signed_public_key(), request->key()) ||
+        !signature_validator_->ValidateRequest(
+          request->signed_request().signed_request(),
+          request->signed_request().public_key(),
+          request->signed_request().signed_public_key(), request->key())) {
       DLOG(WARNING) << "Failed to validate Store request for kad value"
            << std::endl;
       response->set_result(kRpcResultFailure);
@@ -330,19 +337,6 @@ void KadService::Downlist(google::protobuf::RpcController *controller,
   }
   response->set_node_id(node_info_.node_id());
   done->Run();
-}
-
-bool KadService::ValidateSignedRequest(const std::string &public_key,
-      const std::string &signed_public_key, const std::string &signed_request,
-      const std::string &key) {
-  if (signed_request == kAnonymousSignedRequest)
-    return true;
-  crypto::Crypto checker;
-  checker.set_symm_algorithm(crypto::AES_256);
-  checker.set_hash_algorithm(crypto::SHA_512);
-  return checker.AsymCheckSig(checker.Hash(public_key + signed_public_key + key,
-      "", crypto::STRING_STRING, true), signed_request, public_key,
-      crypto::STRING_STRING);
 }
 
 bool KadService::GetSender(const ContactInfo &sender_info, Contact *sender) {
@@ -512,8 +506,7 @@ bool KadService::CheckStoreRequest(const StoreRequest *request,
   if (!request->IsInitialized())
     return false;
   if (node_hasRSAkeys_) {
-    if (!request->has_public_key() || !request->has_signed_public_key() ||
-        !request->has_signed_request() || !request->has_sig_value())
+    if (!request->has_signed_request() || !request->has_sig_value())
       return false;
   } else {
     if (!request->has_value())
@@ -523,14 +516,15 @@ bool KadService::CheckStoreRequest(const StoreRequest *request,
 }
 
 void KadService::StoreValueLocal(const std::string &key,
-      const std::string &value, Contact sender, const boost::uint32_t &ttl,
+      const std::string &value, Contact sender, const boost::int32_t &ttl,
       const bool &publish, StoreResponse *response,
       rpcprotocol::Controller *ctrl) {
   bool result;
+  std::string ser_del_request;
   if (publish) {
     result = pdatastore_->StoreItem(key, value, ttl, false);
   } else {
-    result = pdatastore_->RefreshItem(key, value);
+    result = pdatastore_->RefreshItem(key, value, &ser_del_request);
     if (!result)
       result = pdatastore_->StoreItem(key, value, ttl, false);
   }
@@ -547,10 +541,11 @@ void KadService::StoreValueLocal(const std::string &key,
 }
 
 void KadService::StoreValueLocal(const std::string &key,
-      const SignedValue &value, Contact sender, const boost::uint32_t &ttl,
+      const SignedValue &value, Contact sender, const boost::int32_t &ttl,
       const bool &publish, StoreResponse *response,
       rpcprotocol::Controller *ctrl) {
   bool result, hashable;
+  std::string ser_del_request;
   std::string ser_value = value.SerializeAsString();
   if (publish) {
     if (CanStoreSignedValueHashable(key, ser_value, &hashable))
@@ -558,7 +553,7 @@ void KadService::StoreValueLocal(const std::string &key,
     else
       result = false;
   } else {
-    result = pdatastore_->RefreshItem(key, ser_value);
+    result = pdatastore_->RefreshItem(key, ser_value, &ser_del_request);
     if (!result && CanStoreSignedValueHashable(key, ser_value, &hashable))
       result = pdatastore_->StoreItem(key, ser_value, ttl, hashable);
   }
@@ -591,4 +586,61 @@ bool KadService::CanStoreSignedValueHashable(const std::string &key,
   }
   return true;
 }
+
+void KadService::Delete(google::protobuf::RpcController *controller,
+      const DeleteRequest *request, DeleteResponse *response,
+      google::protobuf::Closure *done) {
+  // only node with RSAkeys can delete values
+  if (!node_joined_ || !node_hasRSAkeys_ || signature_validator_ == NULL ||
+      !request->IsInitialized()) {
+    response->set_result(kRpcResultFailure);
+    done->Run();
+    return;
+  }
+
+  response->set_node_id(node_info_.node_id());
+  // validating request
+  if (!signature_validator_->ValidateSignerId(
+      request->signed_request().signer_id(),
+      request->signed_request().signed_public_key(), request->key()) ||
+      !signature_validator_->ValidateRequest(
+      request->signed_request().signed_request(),
+      request->signed_request().public_key(),
+      request->signed_request().signed_public_key(), request->key())) {
+    response->set_result(kRpcResultFailure);
+    done->Run();
+    return;
+  }
+
+  // only the signer of the value can delete it
+  std::vector<std::string> values_str;
+  if (!pdatastore_->LoadItem(request->key(), &values_str)) {
+    response->set_result(kRpcResultFailure);
+    done->Run();
+    return;
+  }
+  crypto::Crypto cobj;
+  if (cobj.AsymCheckSig(request->value().value(),
+      request->value().value_signature(),
+      request->signed_request().public_key(), crypto::STRING_STRING)) {
+    std::string ser_request(request->signed_request().SerializeAsString());
+    Contact sender;
+    if (pdatastore_->MarkForDeletion(request->key(),
+        request->value().SerializeAsString(), ser_request) &&
+        GetSender(request->sender_info(), &sender)) {
+      rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
+        (controller);
+      if (ctrl != NULL)
+        add_contact_(sender, ctrl->rtt(), false);
+      else
+        add_contact_(sender, 0.0, false);
+      response->set_result(kRpcResultSuccess);
+      done->Run();
+      return;
+    }
+  }
+  response->set_result(kRpcResultFailure);
+  done->Run();
+}
+
 }  // namespace kad

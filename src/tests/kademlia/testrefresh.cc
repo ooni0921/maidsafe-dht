@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "tests/kademlia/fake_callbacks.h"
 #include "udt/udt.h"
 #include "maidsafe/config.h"
+#include "tests/validationimpl.h"
 
 namespace kad {
 
@@ -260,7 +261,8 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
 class TestRefreshSignedValues : public testing::Test {
  public:
   TestRefreshSignedValues() : transports(), ch_managers(), nodes(), datadirs(),
-      test_dir("TestKnodes"), testK(4), testRefresh(10), testNetworkSize(10) {
+      test_dir("TestKnodes"), testK(4), testRefresh(10), testNetworkSize(10),
+      validator() {
     test_dir += boost::lexical_cast<std::string>(base::random_32bit_uinteger());
   }
   ~TestRefreshSignedValues() {
@@ -305,6 +307,7 @@ class TestRefreshSignedValues : public testing::Test {
       boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
     wait_result(&cb);
     ASSERT_EQ(kRpcResultSuccess, cb.result());
+    nodes[0]->set_signature_validator(&validator);
     cb.Reset();
     ASSERT_TRUE(nodes[0]->is_joined());
     for (int i = 1; i < testNetworkSize; i++) {
@@ -329,6 +332,7 @@ class TestRefreshSignedValues : public testing::Test {
       ASSERT_EQ(kRpcResultSuccess, cb.result());
       cb.Reset();
       ASSERT_TRUE(nodes[i]->is_joined());
+      nodes[i]->set_signature_validator(&validator);
     }
   }
 
@@ -364,6 +368,7 @@ class TestRefreshSignedValues : public testing::Test {
   boost::uint16_t testK;
   boost::uint32_t testRefresh;
   int testNetworkSize;
+  base::TestValidator validator;
 };
 
 TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
@@ -386,9 +391,13 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
   sig_value.set_value_signature(co.AsymSign(value, "", keys.private_key(),
       crypto::STRING_STRING));
   std::string ser_sig_value = sig_value.SerializeAsString();
-  nodes[4]->StoreValue(key, sig_value, keys.public_key(), signed_public_key,
-      signed_request, 24*3600, boost::bind(
-      &StoreValueCallback::CallbackFunc, &store_cb, _1));
+  kad::SignedRequest req;
+  req.set_signer_id(nodes[4]->node_id());
+  req.set_public_key(keys.public_key());
+  req.set_signed_public_key(signed_public_key);
+  req.set_signed_request(signed_request);
+  nodes[4]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &store_cb, _1));
   wait_result(&store_cb);
   ASSERT_EQ(kad::kRpcResultSuccess, store_cb.result());
   std::vector<int> indxs;
@@ -444,9 +453,13 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
       crypto::STRING_STRING));
   std::string ser_sig_value = sig_value.SerializeAsString();
   keys.GenerateKeys(4096);
-  nodes[4]->StoreValue(key, sig_value, pub_key, signed_public_key,
-      signed_request, 24*3600, boost::bind(
-      &StoreValueCallback::CallbackFunc, &store_cb, _1));
+  kad::SignedRequest req;
+  req.set_signer_id(nodes[4]->node_id());
+  req.set_public_key(pub_key);
+  req.set_signed_public_key(signed_public_key);
+  req.set_signed_request(signed_request);
+  nodes[4]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &store_cb, _1));
   wait_result(&store_cb);
   ASSERT_EQ(kad::kRpcResultSuccess, store_cb.result());
   std::vector<int> indxs;
@@ -497,6 +510,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
     boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
   ASSERT_EQ(kRpcResultSuccess, cb.result());
+  node.set_signature_validator(&validator);
   cb.Reset();
   ASSERT_TRUE(node.is_joined());
 

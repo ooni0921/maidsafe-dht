@@ -82,6 +82,10 @@ class KademliaService : public ::google::protobuf::Service {
                        const ::kad::BootstrapRequest* request,
                        ::kad::BootstrapResponse* response,
                        ::google::protobuf::Closure* done);
+  virtual void Delete(::google::protobuf::RpcController* controller,
+                       const ::kad::DeleteRequest* request,
+                       ::kad::DeleteResponse* response,
+                       ::google::protobuf::Closure* done);
   
   // implements Service ----------------------------------------------
   
@@ -142,6 +146,10 @@ class KademliaService_Stub : public KademliaService {
   void Bootstrap(::google::protobuf::RpcController* controller,
                        const ::kad::BootstrapRequest* request,
                        ::kad::BootstrapResponse* response,
+                       ::google::protobuf::Closure* done);
+  void Delete(::google::protobuf::RpcController* controller,
+                       const ::kad::DeleteRequest* request,
+                       ::kad::DeleteResponse* response,
                        ::google::protobuf::Closure* done);
  private:
   ::google::protobuf::RpcChannel* channel_;

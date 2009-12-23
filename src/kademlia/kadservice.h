@@ -35,6 +35,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "protobuf/kademlia_service.pb.h"
 #include "kademlia/natrpc.h"
 
+namespace base {
+class SignatureValidator;
+}
+
 namespace kad {
 class DataStore;
 class Contact;
@@ -73,30 +77,33 @@ class KadService : public KademliaService {
       const bool &hasRSAkeys, add_contact_function add_cts,
       get_random_contacts_function rand_cts, get_contact_function get_ctc,
       get_closestK_function get_kcts, ping_function ping);
-  virtual void Ping(google::protobuf::RpcController *controller,
+  void Ping(google::protobuf::RpcController *controller,
       const PingRequest *request, PingResponse *response,
       google::protobuf::Closure *done);
-  virtual void FindValue(google::protobuf::RpcController *controller,
+  void FindValue(google::protobuf::RpcController *controller,
       const FindRequest *request, FindResponse *response,
       google::protobuf::Closure *done);
-  virtual void FindNode(google::protobuf::RpcController *controller,
+  void FindNode(google::protobuf::RpcController *controller,
       const FindRequest *request, FindResponse *response,
       google::protobuf::Closure *done);
-  virtual void Store(google::protobuf::RpcController *controller,
+  void Store(google::protobuf::RpcController *controller,
       const StoreRequest *request, StoreResponse *response,
       google::protobuf::Closure *done);
-  virtual void Downlist(google::protobuf::RpcController *controller,
+  void Downlist(google::protobuf::RpcController *controller,
       const DownlistRequest *request, DownlistResponse *response,
       google::protobuf::Closure *done);
-  virtual void NatDetection(google::protobuf::RpcController *controller,
+  void NatDetection(google::protobuf::RpcController *controller,
       const NatDetectionRequest *request, NatDetectionResponse *response,
       google::protobuf::Closure *done);
-  virtual void NatDetectionPing(google::protobuf::RpcController *controller,
+  void NatDetectionPing(google::protobuf::RpcController *controller,
       const NatDetectionPingRequest *request,
       NatDetectionPingResponse *response,
       google::protobuf::Closure *done);
-  virtual void Bootstrap(google::protobuf::RpcController *controller,
+  void Bootstrap(google::protobuf::RpcController *controller,
       const BootstrapRequest *request, BootstrapResponse *response,
+      google::protobuf::Closure *done);
+  void Delete(google::protobuf::RpcController *controller,
+      const DeleteRequest *request, DeleteResponse *response,
       google::protobuf::Closure *done);
   inline void set_node_joined(const bool &joined) {
     node_joined_ = joined;
@@ -107,13 +114,16 @@ class KadService : public KademliaService {
   inline void set_alternative_store(base::AlternativeStore* alt_store) {
     alternative_store_ = alt_store;
   }
+  inline void set_signature_validator(base::SignatureValidator *sig_validator) {
+    signature_validator_ = sig_validator;
+  }
  private:
   FRIEND_TEST(NatDetectionTest, BEH_KAD_SendNatDet);
   FRIEND_TEST(NatDetectionTest, BEH_KAD_BootstrapNatDetRv);
   FRIEND_TEST(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet);
-  bool ValidateSignedRequest(const std::string &public_key, const std::string
-      &signed_public_key, const std::string &signed_request, const std::string
-      &key);
+//  bool ValidateSignedRequest(const std::string &public_key, const std::string
+//      &signed_public_key, const std::string &signed_request, const std::string
+//      &key);
   bool GetSender(const ContactInfo &sender_info, Contact *sender);
   void Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
       struct NatDetectionData data);
@@ -127,11 +137,11 @@ class KadService : public KademliaService {
   void SendNatDetection(struct NatDetectionData data);
   bool CheckStoreRequest(const StoreRequest *request, Contact *sender);
   void StoreValueLocal(const std::string &key,
-      const std::string &value, Contact sender, const boost::uint32_t &ttl,
+      const std::string &value, Contact sender, const boost::int32_t &ttl,
       const bool &publish, StoreResponse *response,
       rpcprotocol::Controller *ctrl);
   void StoreValueLocal(const std::string &key,
-      const SignedValue &value, Contact sender, const boost::uint32_t &ttl,
+      const SignedValue &value, Contact sender, const boost::int32_t &ttl,
       const bool &publish, StoreResponse *response,
       rpcprotocol::Controller *ctrl);
   bool CanStoreSignedValueHashable(const std::string &key,
@@ -146,6 +156,7 @@ class KadService : public KademliaService {
   get_contact_function get_contact_;
   get_closestK_function get_closestK_contacts_;
   ping_function ping_;
+  base::SignatureValidator *signature_validator_;
   KadService(const KadService&);
   KadService& operator=(const KadService&);
 };

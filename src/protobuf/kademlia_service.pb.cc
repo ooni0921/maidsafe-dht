@@ -51,7 +51,7 @@ void protobuf_AddDesc_kademlia_5fservice_2eproto() {
   ::kad::protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\026kademlia_service.proto\022\003kad\032\037kademlia_"
-    "service_messages.proto2\334\003\n\017KademliaServi"
+    "service_messages.proto2\217\004\n\017KademliaServi"
     "ce\022+\n\004Ping\022\020.kad.PingRequest\032\021.kad.PingR"
     "esponse\0220\n\tFindValue\022\020.kad.FindRequest\032\021"
     ".kad.FindResponse\022/\n\010FindNode\022\020.kad.Find"
@@ -63,7 +63,8 @@ void protobuf_AddDesc_kademlia_5fservice_2eproto() {
     "\022O\n\020NatDetectionPing\022\034.kad.NatDetectionP"
     "ingRequest\032\035.kad.NatDetectionPingRespons"
     "e\022:\n\tBootstrap\022\025.kad.BootstrapRequest\032\026."
-    "kad.BootstrapResponse", 541);
+    "kad.BootstrapResponse\0221\n\006Delete\022\022.kad.De"
+    "leteRequest\032\023.kad.DeleteResponse", 592);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "kademlia_service.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_kademlia_5fservice_2eproto);
@@ -155,6 +156,14 @@ void KademliaService::Bootstrap(::google::protobuf::RpcController* controller,
   done->Run();
 }
 
+void KademliaService::Delete(::google::protobuf::RpcController* controller,
+                         const ::kad::DeleteRequest*,
+                         ::kad::DeleteResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method Delete() not implemented.");
+  done->Run();
+}
+
 void KademliaService::CallMethod(const ::google::protobuf::MethodDescriptor* method,
                              ::google::protobuf::RpcController* controller,
                              const ::google::protobuf::Message* request,
@@ -210,6 +219,12 @@ void KademliaService::CallMethod(const ::google::protobuf::MethodDescriptor* met
              ::google::protobuf::down_cast< ::kad::BootstrapResponse*>(response),
              done);
       break;
+    case 8:
+      Delete(controller,
+             ::google::protobuf::down_cast<const ::kad::DeleteRequest*>(request),
+             ::google::protobuf::down_cast< ::kad::DeleteResponse*>(response),
+             done);
+      break;
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       break;
@@ -236,6 +251,8 @@ const ::google::protobuf::Message& KademliaService::GetRequestPrototype(
       return ::kad::NatDetectionPingRequest::default_instance();
     case 7:
       return ::kad::BootstrapRequest::default_instance();
+    case 8:
+      return ::kad::DeleteRequest::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
@@ -262,6 +279,8 @@ const ::google::protobuf::Message& KademliaService::GetResponsePrototype(
       return ::kad::NatDetectionPingResponse::default_instance();
     case 7:
       return ::kad::BootstrapResponse::default_instance();
+    case 8:
+      return ::kad::DeleteResponse::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
@@ -333,6 +352,13 @@ void KademliaService_Stub::Bootstrap(::google::protobuf::RpcController* controll
                               ::kad::BootstrapResponse* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(7),
+                       controller, request, response, done);
+}
+void KademliaService_Stub::Delete(::google::protobuf::RpcController* controller,
+                              const ::kad::DeleteRequest* request,
+                              ::kad::DeleteResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(8),
                        controller, request, response, done);
 }
 

@@ -88,21 +88,19 @@ void KadRpcs::Ping(const std::string &ip, const boost::uint16_t &port,
 }
 
 void KadRpcs::Store(const std::string &key, const SignedValue &value,
-      const std::string &public_key, const std::string &signed_public_key,
-      const std::string &signed_request, const std::string &ip,
+      const SignedRequest &sig_req, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, StoreResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb,
-      const boost::uint32_t &ttl, const bool &publish) {
+      const boost::int32_t &ttl, const bool &publish) {
   StoreRequest args;
   args.set_key(key);
   SignedValue *svalue = args.mutable_sig_value();
   *svalue = value;
   args.set_ttl(ttl);
   args.set_publish(publish);
-  args.set_public_key(public_key);
-  args.set_signed_public_key(signed_public_key);
-  args.set_signed_request(signed_request);
+  SignedRequest *sreq = args.mutable_signed_request();
+  *sreq = sig_req;
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   rpcprotocol::Channel channel(pchannel_manager_, ptransport_, ip, port, "", 0,
@@ -115,7 +113,7 @@ void KadRpcs::Store(const std::string &key, const std::string &value,
       const std::string &ip, const boost::uint16_t &port,
       const std::string &rv_ip, const boost::uint16_t &rv_port,
       StoreResponse *resp, rpcprotocol::Controller *ctler,
-      google::protobuf::Closure *cb, const boost::uint32_t &ttl,
+      google::protobuf::Closure *cb, const boost::int32_t &ttl,
       const bool &publish) {
   StoreRequest args;
   args.set_key(key);
@@ -161,5 +159,24 @@ void KadRpcs::Bootstrap(const std::string &local_id,
       remote_port, "", 0, "", 0);
   KademliaService::Stub service(&channel);
   service.Bootstrap(ctler, &args, resp, cb);
+}
+
+void KadRpcs::Delete(const std::string &key, const SignedValue &value,
+      const SignedRequest &sig_req, const std::string &ip,
+      const boost::uint16_t &port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port, DeleteResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb) {
+  DeleteRequest args;
+  args.set_key(key);
+  SignedValue *svalue = args.mutable_value();
+  *svalue = value;
+  SignedRequest *sreq = args.mutable_signed_request();
+  *sreq = sig_req;
+  ContactInfo *sender_info = args.mutable_sender_info();
+  *sender_info = info_;
+  rpcprotocol::Channel channel(pchannel_manager_, ptransport_, ip, port, "", 0,
+      rv_ip, rv_port);
+  KademliaService::Stub service(&channel);
+  service.Delete(ctler, &args, resp, cb);
 }
 }  // namepsace

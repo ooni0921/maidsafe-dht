@@ -118,37 +118,51 @@ struct IterativeLookUpData {
 struct IterativeStoreValueData {
   IterativeStoreValueData(const std::vector<Contact> &close_nodes,
       const std::string &key, const std::string &value,
-      base::callback_func_type cb, const std::string &pubkey,
-      const std::string &sigpubkey, const std::string &sigreq,
-      const bool &publish_val, const boost::uint32_t &timetolive,
-      const SignedValue &svalue) : closest_nodes(close_nodes), key(key),
+      base::callback_func_type cb, const bool &publish_val,
+      const boost::int32_t &timetolive, const SignedValue &svalue,
+      const SignedRequest &sreq) : closest_nodes(close_nodes), key(key),
         value(value), save_nodes(0), contacted_nodes(0), index(-1), cb(cb),
-        is_callbacked(false), data_type(0), pub_key(pubkey),
-        sig_pub_key(sigpubkey), sig_req(sigreq), publish(publish_val),
-        ttl(timetolive), sig_value(svalue) {}
+        is_callbacked(false), data_type(0), publish(publish_val),
+        ttl(timetolive), sig_value(svalue), sig_request(sreq) {}
   IterativeStoreValueData(const std::vector<Contact> &close_nodes,
       const std::string &key, const std::string &value,
       base::callback_func_type cb, const bool &publish_val,
       const boost::uint32_t &timetolive)
       : closest_nodes(close_nodes), key(key),
         value(value), save_nodes(0), contacted_nodes(0), index(-1), cb(cb),
-        is_callbacked(false), data_type(0), pub_key(""), sig_pub_key(""),
-        sig_req(""), publish(publish_val), ttl(timetolive), sig_value() {}
+        is_callbacked(false), data_type(0), publish(publish_val),
+        ttl(timetolive), sig_value(), sig_request() {}
   std::vector<Contact> closest_nodes;
   std::string key, value;
   unsigned int save_nodes, contacted_nodes, index;
   base::callback_func_type cb;
   bool is_callbacked;
   int data_type;
-  std::string pub_key, sig_pub_key, sig_req;
   bool publish;
-  boost::uint32_t ttl;
+  boost::int32_t ttl;
   SignedValue sig_value;
+  SignedRequest sig_request;
+};
+
+struct IterativeDelValueData {
+  IterativeDelValueData(const std::vector<Contact> &close_nodes,
+      const std::string &key, const SignedValue &svalue,
+      const SignedRequest &sreq, base::callback_func_type cb)
+      : closest_nodes(close_nodes), key(key), del_nodes(0), contacted_nodes(0),
+        index(-1), cb(cb), is_callbacked(false), value(svalue),
+        sig_request(sreq) {}
+  std::vector<Contact> closest_nodes;
+  std::string key;
+  unsigned int del_nodes, contacted_nodes, index;
+  base::callback_func_type cb;
+  bool is_callbacked;
+  SignedValue value;
+  SignedRequest sig_request;
 };
 
 struct FindCallbackArgs {
-    explicit FindCallbackArgs(boost::shared_ptr<IterativeLookUpData> data)
-        : remote_ctc(), data(data), retry(false), rpc_ctrler(NULL) {}
+  explicit FindCallbackArgs(boost::shared_ptr<IterativeLookUpData> data)
+      : remote_ctc(), data(data), retry(false), rpc_ctrler(NULL) {}
   Contact remote_ctc;
   boost::shared_ptr<IterativeLookUpData> data;
   bool retry;
@@ -156,8 +170,8 @@ struct FindCallbackArgs {
 };
 
 struct StoreCallbackArgs {
-    explicit StoreCallbackArgs(boost::shared_ptr<IterativeStoreValueData> data)
-        : remote_ctc(), data(data), retry(false), rpc_ctrler(NULL) {}
+  explicit StoreCallbackArgs(boost::shared_ptr<IterativeStoreValueData> data)
+      : remote_ctc(), data(data), retry(false), rpc_ctrler(NULL) {}
   Contact remote_ctc;
   boost::shared_ptr<IterativeStoreValueData> data;
   bool retry;
@@ -169,6 +183,15 @@ struct PingCallbackArgs {
       : remote_ctc(), cb(cb), retry(false), rpc_ctrler(NULL) {}
   Contact remote_ctc;
   base::callback_func_type cb;
+  bool retry;
+  rpcprotocol::Controller *rpc_ctrler;
+};
+
+struct DeleteCallbackArgs {
+  explicit DeleteCallbackArgs(boost::shared_ptr<IterativeDelValueData> data)
+      : remote_ctc(), data(data), retry(false), rpc_ctrler(NULL) {}
+  Contact remote_ctc;
+  boost::shared_ptr<IterativeDelValueData> data;
   bool retry;
   rpcprotocol::Controller *rpc_ctrler;
 };
@@ -187,16 +210,6 @@ struct BootstrapArgs {
   base::callback_func_type cb;
   int active_process;
   bool is_callbacked, dir_connected;
-};
-
-struct StoreRequestSignature {
-  StoreRequestSignature() : public_key(""), signed_public_key(""),
-    signed_request(""), value() {}
-  StoreRequestSignature(const std::string &p_key, const std::string &sig_p_key,
-    const std::string &s_req, const SignedValue &svalue) : public_key(p_key),
-    signed_public_key(sig_p_key), signed_request(s_req), value(svalue) {}
-  std::string public_key, signed_public_key, signed_request;
-  SignedValue value;
 };
 
 class KNodeImpl {
@@ -226,11 +239,12 @@ class KNodeImpl {
 
   void Leave();
   void StoreValue(const std::string &key, const SignedValue &value,
-      const std::string &public_key, const std::string &signed_public_key,
-      const std::string &signed_request, const boost::uint32_t &ttl,
+      const SignedRequest &sreq, const boost::int32_t &ttl,
       base::callback_func_type cb);
   void StoreValue(const std::string &key, const std::string &value,
-      const boost::uint32_t &ttl, base::callback_func_type cb);
+      const boost::int32_t &ttl, base::callback_func_type cb);
+  void DeleteValue(const std::string &key, const SignedValue &value,
+      const SignedRequest &request, base::callback_func_type cb);
   void FindValue(const std::string &key, const bool &check_alt_store,
       base::callback_func_type cb);
   void FindNode(const std::string &node_id, base::callback_func_type cb,
@@ -246,9 +260,11 @@ class KNodeImpl {
   bool GetContact(const std::string &id, Contact *contact);
   bool FindValueLocal(const std::string &key, std::vector<std::string> *values);
   bool StoreValueLocal(const std::string &key, const std::string &value,
-      const boost::uint32_t &ttl);
+      const boost::int32_t &ttl);
   bool RefreshValueLocal(const std::string &key, const std::string &value,
-      const boost::uint32_t &ttl);
+      const boost::int32_t &ttl);
+  bool DelValueLocal(const std::string &key, const SignedValue &value,
+      const SignedRequest &req);
   void GetRandomContacts(const int &count,
       const std::vector<Contact> &exclude_contacts,
       std::vector<Contact> *contacts);
@@ -274,7 +290,7 @@ class KNodeImpl {
   inline bool is_joined() const { return is_joined_; }
   inline KadRpcs* kadrpcs() { return &kadrpcs_; }
   bool HasRSAKeys();
-  boost::uint32_t KeyValueTTL(const std::string &key,
+  boost::int32_t KeyValueTTL(const std::string &key,
       const std::string &value) const;
   inline void SetAlternativeStore(base::AlternativeStore* alt_store) {
     alternative_store_ = alt_store;
@@ -283,6 +299,11 @@ class KNodeImpl {
   }
   inline base::AlternativeStore *alternative_store() {
     return alternative_store_;
+  }
+  inline void set_signature_validator(base::SignatureValidator *validator) {
+    signature_validator_ = validator;
+    if (premote_service_ != 0)
+      premote_service_->set_signature_validator(signature_validator_);
   }
  private:
   KNodeImpl &operator=(const KNodeImpl&);
@@ -322,11 +343,17 @@ class KNodeImpl {
   void SearchIteration_Callback(boost::shared_ptr<IterativeLookUpData> data);
   void SendFinalIteration(boost::shared_ptr<IterativeLookUpData> data);
   void StoreValue_IterativeStoreValue(const StoreResponse *response,
-      StoreCallbackArgs callback_args);
+      StoreCallbackArgs callback_data);
   void StoreValue_ExecuteStoreRPCs(const std::string &result,
       const std::string &key, const std::string &value,
-      const StoreRequestSignature &sig_req, const bool &publish,
-      const boost::uint32_t &ttl, base::callback_func_type cb);
+      const SignedValue &sig_value, const SignedRequest &sig_req,
+      const bool &publish,
+      const boost::int32_t &ttl, base::callback_func_type cb);
+  void DelValue_ExecuteDeleteRPCs(const std::string &result,
+      const std::string &key, const SignedValue &value,
+      const SignedRequest &sig_req, base::callback_func_type cb);
+  void DelValue_IterativeDeleteValue(const DeleteResponse *response,
+      DeleteCallbackArgs callback_data);
   void FindNode_GetNode(const std::string &result, const std::string &node_id,
       base::callback_func_type cb);
   void Ping_HandleResult(const PingResponse *response,
@@ -343,9 +370,9 @@ class KNodeImpl {
   void CheckAddContacts();
   void RefreshValuesRoutine();
   void RefreshValue(const std::string &key, const std::string &value,
-      const boost::uint32_t &ttl, base::callback_func_type cb);
+      const boost::int32_t &ttl, base::callback_func_type cb);
   void RefreshValueCallback(const std::string &result, const std::string &key,
-      const std::string &value, const boost::uint32_t &ttl,
+      const std::string &value, const boost::int32_t &ttl,
       boost::shared_ptr<int> refreshes_done, const int &total_refreshes);
   boost::mutex routingtable_mutex_, kadconfig_mutex_, extendshortlist_mutex_,
       joinbootstrapping_mutex_, leave_mutex_, activeprobes_mutex_,
@@ -381,6 +408,8 @@ class KNodeImpl {
   // for UPnP
   upnp::UpnpIgdClient upnp_;
   int upnp_mapped_port_;
+  //
+  base::SignatureValidator *signature_validator_;
 };
 }  // namespace kad
 #endif  // KADEMLIA_KNODEIMPL_H_

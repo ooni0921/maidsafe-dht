@@ -44,28 +44,46 @@ namespace kad {
 // This class implements physical storage (for data published and fetched via
 // the RPCs) for the Kademlia DHT. Boost::multiindex are used
 
+enum delete_status {
+  NOT_DELETED,
+  MARKED_FOR_DELETION,
+  DELETED
+};
+
 struct refresh_value {
   std::string key_, value_;
-  boost::uint32_t ttl_;
+  boost::int32_t ttl_;
+  delete_status del_status_;
   refresh_value(const std::string &key, const std::string &value, const
-      boost::uint32_t &ttl) : key_(key), value_(value), ttl_(ttl) {}
+      boost::int32_t &ttl) : key_(key), value_(value), ttl_(ttl),
+      del_status_(NOT_DELETED) {}
+  refresh_value(const std::string &key, const std::string &value, const
+      delete_status &del_status) : key_(key), value_(value),
+      ttl_(0), del_status_(del_status) {}
 };
 
 struct key_value_tuple {
-  std::string key_, value_;
-  boost::uint32_t last_refresh_time_, expire_time_, ttl_;
+  std::string key_, value_, ser_delete_req_;
+  boost::uint32_t last_refresh_time_, expire_time_;
+  boost::int32_t ttl_;
   bool appendable_key_;
+  delete_status del_status_;
 
   key_value_tuple(const std::string &key, const std::string &value,
       const boost::uint32_t &last_refresh_time,
-      const boost::uint32_t &expire_time, const boost::uint32_t &ttl,
+      const boost::uint32_t &expire_time, const boost::int32_t &ttl,
       const bool &appendable_key) : key_(key), value_(value),
-        last_refresh_time_(last_refresh_time), expire_time_(expire_time),
-        ttl_(ttl), appendable_key_(appendable_key) {}
+        ser_delete_req_(""), last_refresh_time_(last_refresh_time),
+        expire_time_(expire_time), ttl_(ttl), appendable_key_(appendable_key),
+        del_status_(NOT_DELETED) {
+    if (ttl < 0)
+      expire_time_ = 0;
+  }
   key_value_tuple(const std::string &key, const std::string &value,
       const boost::uint32_t &last_refresh_time) : key_(key), value_(value),
-        last_refresh_time_(last_refresh_time), expire_time_(0), ttl_(0),
-        appendable_key_(false) {}
+        ser_delete_req_(""), last_refresh_time_(last_refresh_time),
+        expire_time_(0), ttl_(0), appendable_key_(false),
+        del_status_(NOT_DELETED) {}
 };
 
 /* Tags */
@@ -99,14 +117,13 @@ typedef boost::multi_index::multi_index_container<
 
 class DataStore {
  public:
+  // t_refresh = refresh time of key/value pair in seconds
   explicit DataStore(const boost::uint32_t &t_refresh);
   ~DataStore();
   bool Keys(std::set<std::string> *keys);
-  // time_to_live is in seconds,
-  // publish = true => reset expire_time & last_published_time
-  // publish = false => reset only last_publish_time
+  // time_to_live is in seconds.
   bool StoreItem(const std::string &key, const std::string &value,
-      const boost::uint32_t &time_to_live, const bool &hashable);
+      const boost::int32_t &time_to_live, const bool &hashable);
   bool LoadItem(const std::string &key, std::vector<std::string> *values);
   bool DeleteKey(const std::string &key);
   bool DeleteItem(const std::string &key, const std::string &value);
@@ -116,11 +133,18 @@ class DataStore {
       const std::string &value);
   boost::uint32_t ExpireTime(const std::string &key, const std::string &value);
   std::vector<refresh_value> ValuesToRefresh();
-  boost::uint32_t TimeToLive(const std::string &key, const std::string &value);
+  boost::int32_t TimeToLive(const std::string &key, const std::string &value);
   void Clear();
   std::vector< std::pair<std::string, bool> > LoadKeyAppendableAttr(
       const std::string &key);
-  bool RefreshItem(const std::string &key, const std::string &value);
+  bool RefreshItem(const std::string &key, const std::string &value,
+    std::string *str_delete_req);
+  // If key, value pair does not exist, then it returns false
+  bool MarkForDeletion(const std::string &key, const std::string &value,
+    const std::string &ser_del_request);
+  // If key, value pair does not exist or its status is not MARKED_FOR_DELETION,
+  // then it returns false
+  bool MarkAsDeleted(const std::string &key, const std::string &value);
   boost::uint32_t t_refresh() const;
  private:
   datastore datastore_;

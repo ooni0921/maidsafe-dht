@@ -56,17 +56,16 @@ class KadRpcs {
       PingResponse *resp, rpcprotocol::Controller *ctler,
       google::protobuf::Closure *cb);
   void Store(const std::string &key, const SignedValue &value,
-      const std::string &public_key, const std::string &signed_public_key,
-      const std::string &signed_request, const std::string &ip,
+      const SignedRequest &sig_req, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, StoreResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb,
-      const boost::uint32_t &ttl, const bool &publish);
+      const boost::int32_t &ttl, const bool &publish);
   void Store(const std::string &key, const std::string &value,
       const std::string &ip, const boost::uint16_t &port,
       const std::string &rv_ip, const boost::uint16_t &rv_port,
       StoreResponse *resp, rpcprotocol::Controller *ctler,
-      google::protobuf::Closure *cb, const boost::uint32_t &ttl,
+      google::protobuf::Closure *cb, const boost::int32_t &ttl,
       const bool &publish);
   void Downlist(const std::vector<std::string> downlist,
       const std::string &ip, const boost::uint16_t &port,
@@ -76,6 +75,11 @@ class KadRpcs {
   void Bootstrap(const std::string &local_id, const std::string &local_ip,
       const boost::uint16_t &local_port, const std::string &remote_ip,
       const boost::uint16_t &remote_port, BootstrapResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
+  void Delete(const std::string &key, const SignedValue &value,
+      const SignedRequest &sig_req, const std::string &ip,
+      const boost::uint16_t &port, const std::string &rv_ip,
+      const boost::uint16_t &rv_port, DeleteResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
   void set_info(const ContactInfo &info);
  private:

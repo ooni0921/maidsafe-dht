@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "tests/kademlia/fake_callbacks.h"
 #include "protobuf/signed_kadvalue.pb.h"
 #include "maidsafe/config.h"
+#include "tests/validationimpl.h"
 
 inline void CreateRSAKeys(std::string *pub_key, std::string *priv_key) {
   crypto::RsaKeyPair kp;
@@ -74,7 +75,7 @@ class KadServicesTest: public testing::Test {
  protected:
   KadServicesTest() : trans_(), channel_manager_(&trans_),
       contact_(), crypto_(), node_id_(""), service_(), datastore_(),
-      routingtable_() {
+      routingtable_(), validator_() {
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     std::string priv_key, pub_key;
@@ -104,6 +105,7 @@ class KadServicesTest: public testing::Test {
         boost::bind(&KadServicesTest::GetCtc, this, _1, _2),
         boost::bind(&KadServicesTest::GetKCtcs, this, _1, _2, _3),
         boost::bind(&KadServicesTest::Ping, this, _1, _2)));
+    service_->set_signature_validator(&validator_);
     ContactInfo node_info;
     node_info.set_node_id(node_id_);
     node_info.set_ip("127.0.0.1");
@@ -122,6 +124,7 @@ class KadServicesTest: public testing::Test {
   boost::shared_ptr<KadService> service_;
   boost::shared_ptr<DataStore> datastore_;
   boost::shared_ptr<RoutingTable> routingtable_;
+  base::TestValidator validator_;
  private:
   int AddCtc(Contact ctc, const float&, const bool &only_db) {
     if (!only_db)
@@ -486,9 +489,11 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
                       &signed_request);
   store_request.set_key(key);
   store_request.set_value(value1);
-  store_request.set_public_key(public_key);
-  store_request.set_signed_public_key(signed_public_key);
-  store_request.set_signed_request(signed_request);
+  SignedRequest *sig_req = store_request.mutable_signed_request();
+  sig_req->set_signer_id("id1");
+  sig_req->set_public_key(public_key);
+  sig_req->set_signed_public_key(signed_public_key);
+  sig_req->set_signed_request(signed_request);
   store_request.set_publish(true);
   store_request.set_ttl(3600*24);
   ContactInfo *sender_info = store_request.mutable_sender_info();
@@ -503,11 +508,11 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
 
   store_request.clear_value();
 
-  SignedValue *svalue1 = store_request.mutable_sig_value();
-  svalue1->set_value(value1);
-  svalue1->set_value_signature(crypto_.AsymSign(value1, "", private_key,
+  SignedValue *svalue = store_request.mutable_sig_value();
+  svalue->set_value(value1);
+  svalue->set_value_signature(crypto_.AsymSign(value1, "", private_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value1 = svalue1->SerializeAsString();
+  std::string ser_sig_value1(svalue->SerializeAsString());
 
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -525,12 +530,11 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   // Allow thread to sleep so that second value has a different last published
   // time to first value.
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  store_request.clear_sig_value();
-  SignedValue *svalue2 = store_request.mutable_sig_value();
-  svalue2->set_value(value2);
-  svalue2->set_value_signature(crypto_.AsymSign(value2, "", private_key,
+  svalue->Clear();
+  svalue->set_value(value2);
+  svalue->set_value_signature(crypto_.AsymSign(value2, "", private_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value2 = svalue2->SerializeAsString();
+  std::string ser_sig_value2(svalue->SerializeAsString());
   store_response.Clear();
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -546,12 +550,11 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   // Store value3
   // Allow thread to sleep for same reason as above.
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  store_request.clear_sig_value();
-  SignedValue *svalue3 = store_request.mutable_sig_value();
-  svalue3->set_value(value3);
-  svalue3->set_value_signature(crypto_.AsymSign(value3, "", private_key,
+  svalue->Clear();
+  svalue->set_value(value3);
+  svalue->set_value_signature(crypto_.AsymSign(value3, "", private_key,
       crypto::STRING_STRING));
-  std::string ser_sig_value3 = svalue3->SerializeAsString();
+  std::string ser_sig_value3(svalue->SerializeAsString());
   store_response.Clear();
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -619,9 +622,15 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
       crypto::STRING_STRING));
   std::string ser_sig_value = sig_value->SerializeAsString();
 
-  store_request.set_public_key("public_key");
-  store_request.set_signed_public_key(signed_public_key);
-  store_request.set_signed_request(signed_request);
+  SignedRequest *sig_req = store_request.mutable_signed_request();
+  sig_req->set_signer_id("id1");
+  sig_req->set_public_key("public_key");
+  sig_req->set_signed_public_key(signed_public_key);
+  sig_req->set_signed_request(signed_request);
+
+//  store_request.set_public_key("public_key");
+//  store_request.set_signed_public_key(signed_public_key);
+//  store_request.set_signed_request(signed_request);
   google::protobuf::Closure *done6 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   service_->Store(&controller, &store_request, &store_response, done6);
@@ -631,8 +640,9 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   values.clear();
   EXPECT_FALSE(datastore_->LoadItem(key, &values));
 
-  store_request.clear_public_key();
-  store_request.set_public_key(public_key);
+//  store_request.clear_public_key();
+//  store_request.set_public_key(public_key);
+  sig_req->set_public_key(public_key);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   service_->Store(&controller, &store_request, &store_response, done2);
@@ -678,9 +688,14 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   signed_request = "";
   CreateSignedRequest(public_key, private_key, key1, &signed_public_key,
       &signed_request);
-  store_request.set_public_key(public_key);
-  store_request.set_signed_public_key(signed_public_key);
-  store_request.set_signed_request(signed_request);
+  SignedRequest *sig_req1 = store_request.mutable_signed_request();
+  sig_req1->set_signer_id("id1");
+  sig_req1->set_public_key(public_key);
+  sig_req1->set_signed_public_key(signed_public_key);
+  sig_req1->set_signed_request(signed_request);
+//  store_request.set_public_key(public_key);
+//  store_request.set_signed_public_key(signed_public_key);
+//  store_request.set_signed_request(signed_request);
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   service_->Store(&controller, &store_request, &store_response, done4);
@@ -693,11 +708,12 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   EXPECT_EQ(ser_sig_value1, values[0]);
 
   store_request.clear_sig_value();
-  SignedValue *sig_value2 = store_request.mutable_sig_value();
-  sig_value2->set_value("other value");
-  sig_value2->set_value_signature(crypto_.AsymSign("other value", "",
+//  SignedValue *sig_value2 = store_request.mutable_sig_value();
+  sig_value1->Clear();
+  sig_value1->set_value("other value");
+  sig_value1->set_value_signature(crypto_.AsymSign("other value", "",
       private_key, crypto::STRING_STRING));
-  std::string ser_sig_value2 = sig_value2->SerializeAsString();
+  std::string ser_sig_value2 = sig_value1->SerializeAsString();
   google::protobuf::Closure *done5 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   service_->Store(&controller, &store_request, &store_response, done5);
@@ -966,6 +982,147 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
   EXPECT_FALSE(find_value_response.has_needs_cache_copy());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_, find_value_response.node_id());
+}
+
+TEST_F(KadServicesTest, FUNC_KAD_ServiceDelete) {
+  // Store value in kad::DataStore
+  std::string hex_key;
+  for (int i = 0; i < 128; ++i)
+    hex_key += "a";
+  std::string value1("Val1"), value2("Val2");
+  std::string public_key, private_key, signed_public_key, signed_request;
+  std::string key = base::DecodeFromHex(hex_key);
+  CreateRSAKeys(&public_key, &private_key);
+  CreateSignedRequest(public_key, private_key, key, &signed_public_key,
+    &signed_request);
+
+  SignedValue svalue;
+  svalue.set_value(value1);
+  svalue.set_value_signature(crypto_.AsymSign(value1, "", private_key,
+      crypto::STRING_STRING));
+  std::string ser_svalue(svalue.SerializeAsString());
+  ASSERT_TRUE(datastore_->StoreItem(key, ser_svalue, -1, false));
+  svalue.Clear();
+  svalue.set_value(value2);
+  svalue.set_value_signature(crypto_.AsymSign(value2, "", private_key,
+      crypto::STRING_STRING));
+  ser_svalue = svalue.SerializeAsString();
+  ASSERT_TRUE(datastore_->StoreItem(key, ser_svalue, -1, false));
+
+  std::vector<std::string> values;
+  ASSERT_TRUE(datastore_->LoadItem(key, &values));
+  ASSERT_EQ(2, values.size());
+  int values_found = 0;
+  for (unsigned int i = 0; i < values.size(); ++i) {
+    svalue.Clear();
+    EXPECT_TRUE(svalue.ParseFromString(values[i]));
+    if (svalue.value() == value1) {
+      ++values_found;
+      break;
+    }
+  }
+  for (unsigned int i = 0; i < values.size(); ++i) {
+    svalue.Clear();
+    EXPECT_TRUE(svalue.ParseFromString(values[i]));
+    if (svalue.value() == value2) {
+      ++values_found;
+      break;
+    }
+  }
+  ASSERT_EQ(2, values_found);
+  // setting validator class to NULL
+  service_->set_signature_validator(NULL);
+
+  rpcprotocol::Controller controller;
+  DeleteRequest delete_request;
+  delete_request.set_key(key);
+  ContactInfo *sender_info = delete_request.mutable_sender_info();
+  SignedValue *req_svalue = delete_request.mutable_value();
+  *sender_info = contact_;
+  req_svalue->set_value(value1);
+  req_svalue->set_value_signature(crypto_.AsymSign(value1, "", private_key,
+      crypto::STRING_STRING));
+  SignedRequest *sreq = delete_request.mutable_signed_request();
+  sreq->set_signer_id("id1");
+  sreq->set_public_key(public_key);
+  sreq->set_signed_public_key(signed_public_key);
+  sreq->set_signed_request(signed_request);
+  DeleteResponse delete_response;
+  Callback cb_obj;
+  google::protobuf::Closure *done =
+    google::protobuf::NewPermanentCallback<Callback>(&cb_obj,
+    &Callback::CallbackFunction);
+  service_->Delete(&controller, &delete_request, &delete_response, done);
+  EXPECT_TRUE(delete_response.IsInitialized());
+  EXPECT_EQ(kRpcResultFailure, delete_response.result());
+
+  // setting validator
+  service_->set_signature_validator(&validator_);
+  delete_response.Clear();
+
+  // value does not exists
+  req_svalue->set_value("othervalue");
+  req_svalue->set_value_signature(crypto_.AsymSign("othervalue", "",
+      private_key, crypto::STRING_STRING));
+  service_->Delete(&controller, &delete_request, &delete_response, done);
+  EXPECT_TRUE(delete_response.IsInitialized());
+  EXPECT_EQ(kRpcResultFailure, delete_response.result());
+  delete_response.Clear();
+
+  // request sent signed with different key
+  req_svalue->set_value(value1);
+  req_svalue->set_value_signature(crypto_.AsymSign(value1, "", private_key,
+      crypto::STRING_STRING));
+  std::string public_key1, private_key1, signed_public_key1, signed_request1;
+  CreateRSAKeys(&public_key1, &private_key1);
+  CreateSignedRequest(public_key1, private_key1, key, &signed_public_key1,
+    &signed_request1);
+  sreq->Clear();
+  sreq->set_signer_id("id1");
+  sreq->set_public_key(public_key);
+  sreq->set_signed_public_key(signed_public_key1);
+  sreq->set_signed_request(signed_request1);
+  service_->Delete(&controller, &delete_request, &delete_response, done);
+  EXPECT_TRUE(delete_response.IsInitialized());
+  EXPECT_EQ(kRpcResultFailure, delete_response.result());
+  delete_response.Clear();
+
+  // correct delete (Marked as delete)
+  sreq->Clear();
+  sreq->set_signer_id("id1");
+  sreq->set_public_key(public_key);
+  sreq->set_signed_public_key(signed_public_key);
+  sreq->set_signed_request(signed_request);
+
+  service_->Delete(&controller, &delete_request, &delete_response, done);
+  EXPECT_TRUE(delete_response.IsInitialized());
+  EXPECT_EQ(kRpcResultSuccess, delete_response.result());
+
+  // validating DataStore no longer returns value1 and in refresh returns
+  // the correct signed request
+  values.clear();
+  ASSERT_TRUE(datastore_->LoadItem(key, &values));
+  ASSERT_EQ(1, values.size());
+  svalue.Clear();
+  ASSERT_TRUE(svalue.ParseFromString(values[0]));
+  EXPECT_EQ(value2, svalue.value());
+
+  // refreshing Deleted value
+  svalue.Clear();
+  svalue.set_value(value1);
+  svalue.set_value_signature(crypto_.AsymSign(value1, "", private_key,
+      crypto::STRING_STRING));
+
+  std::string ser_req;
+  EXPECT_FALSE(datastore_->RefreshItem(key, svalue.SerializeAsString(),
+    &ser_req));
+  SignedRequest req;
+  ASSERT_TRUE(req.ParseFromString(ser_req));
+  ASSERT_EQ(sreq->public_key(), req.public_key());
+  ASSERT_EQ(sreq->signed_public_key(), req.signed_public_key());
+  ASSERT_EQ(sreq->signed_request(), req.signed_request());
+
+  delete done;
 }
 
 }  // namespace kad

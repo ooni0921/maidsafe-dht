@@ -14,6 +14,9 @@ namespace {
 const ::google::protobuf::Descriptor* SignedValue_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   SignedValue_reflection_ = NULL;
+const ::google::protobuf::Descriptor* SignedRequest_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  SignedRequest_reflection_ = NULL;
 
 }  // namespace
 
@@ -40,6 +43,24 @@ void protobuf_AssignDesc_signed_5fkadvalue_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(SignedValue));
+  SignedRequest_descriptor_ = file->message_type(1);
+  static const int SignedRequest_offsets_[4] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SignedRequest, signer_id_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SignedRequest, public_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SignedRequest, signed_public_key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SignedRequest, signed_request_),
+  };
+  SignedRequest_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      SignedRequest_descriptor_,
+      SignedRequest::default_instance_,
+      SignedRequest_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SignedRequest, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(SignedRequest, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(SignedRequest));
 }
 
 namespace {
@@ -54,6 +75,8 @@ void protobuf_RegisterTypes() {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     SignedValue_descriptor_, &SignedValue::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    SignedRequest_descriptor_, &SignedRequest::default_instance());
 }
 
 }  // namespace
@@ -61,6 +84,8 @@ void protobuf_RegisterTypes() {
 void protobuf_ShutdownFile_signed_5fkadvalue_2eproto() {
   delete SignedValue::default_instance_;
   delete SignedValue_reflection_;
+  delete SignedRequest::default_instance_;
+  delete SignedRequest_reflection_;
 }
 
 void protobuf_AddDesc_signed_5fkadvalue_2eproto() {
@@ -72,11 +97,15 @@ void protobuf_AddDesc_signed_5fkadvalue_2eproto() {
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\025signed_kadvalue.proto\022\003kad\"5\n\013SignedVa"
     "lue\022\r\n\005value\030\001 \002(\014\022\027\n\017value_signature\030\002 "
-    "\002(\014", 83);
+    "\002(\014\"i\n\rSignedRequest\022\021\n\tsigner_id\030\001 \002(\014\022"
+    "\022\n\npublic_key\030\002 \002(\014\022\031\n\021signed_public_key"
+    "\030\003 \002(\014\022\026\n\016signed_request\030\004 \002(\014", 190);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "signed_kadvalue.proto", &protobuf_RegisterTypes);
   SignedValue::default_instance_ = new SignedValue();
+  SignedRequest::default_instance_ = new SignedRequest();
   SignedValue::default_instance_->InitAsDefaultInstance();
+  SignedRequest::default_instance_->InitAsDefaultInstance();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_signed_5fkadvalue_2eproto);
 }
 
@@ -346,6 +375,356 @@ const ::google::protobuf::Descriptor* SignedValue::GetDescriptor() const {
 const ::google::protobuf::Reflection* SignedValue::GetReflection() const {
   protobuf_AssignDescriptorsOnce();
   return SignedValue_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string SignedRequest::_default_signer_id_;
+const ::std::string SignedRequest::_default_public_key_;
+const ::std::string SignedRequest::_default_signed_public_key_;
+const ::std::string SignedRequest::_default_signed_request_;
+#ifndef _MSC_VER
+const int SignedRequest::kSignerIdFieldNumber;
+const int SignedRequest::kPublicKeyFieldNumber;
+const int SignedRequest::kSignedPublicKeyFieldNumber;
+const int SignedRequest::kSignedRequestFieldNumber;
+#endif  // !_MSC_VER
+
+SignedRequest::SignedRequest()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    signer_id_(const_cast< ::std::string*>(&_default_signer_id_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    signed_public_key_(const_cast< ::std::string*>(&_default_signed_public_key_)),
+    signed_request_(const_cast< ::std::string*>(&_default_signed_request_)) {
+  SharedCtor();
+}
+
+void SignedRequest::InitAsDefaultInstance() {}
+
+SignedRequest::SignedRequest(const SignedRequest& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    signer_id_(const_cast< ::std::string*>(&_default_signer_id_)),
+    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
+    signed_public_key_(const_cast< ::std::string*>(&_default_signed_public_key_)),
+    signed_request_(const_cast< ::std::string*>(&_default_signed_request_)) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void SignedRequest::SharedCtor() {
+  _cached_size_ = 0;
+  signer_id_ = const_cast< ::std::string*>(&_default_signer_id_);
+  public_key_ = const_cast< ::std::string*>(&_default_public_key_);
+  signed_public_key_ = const_cast< ::std::string*>(&_default_signed_public_key_);
+  signed_request_ = const_cast< ::std::string*>(&_default_signed_request_);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+SignedRequest::~SignedRequest() {
+  SharedDtor();
+}
+
+void SignedRequest::SharedDtor() {
+  if (signer_id_ != &_default_signer_id_) {
+    delete signer_id_;
+  }
+  if (public_key_ != &_default_public_key_) {
+    delete public_key_;
+  }
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    delete signed_public_key_;
+  }
+  if (signed_request_ != &_default_signed_request_) {
+    delete signed_request_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* SignedRequest::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return SignedRequest_descriptor_;
+}
+
+const SignedRequest& SignedRequest::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_signed_5fkadvalue_2eproto();  return *default_instance_;
+}
+
+SignedRequest* SignedRequest::default_instance_ = NULL;
+
+SignedRequest* SignedRequest::New() const {
+  return new SignedRequest;
+}
+
+void SignedRequest::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (signer_id_ != &_default_signer_id_) {
+        signer_id_->clear();
+      }
+    }
+    if (_has_bit(1)) {
+      if (public_key_ != &_default_public_key_) {
+        public_key_->clear();
+      }
+    }
+    if (_has_bit(2)) {
+      if (signed_public_key_ != &_default_signed_public_key_) {
+        signed_public_key_->clear();
+      }
+    }
+    if (_has_bit(3)) {
+      if (signed_request_ != &_default_signed_request_) {
+        signed_request_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool SignedRequest::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required bytes signer_id = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_signer_id()));
+        if (input->ExpectTag(18)) goto parse_public_key;
+        break;
+      }
+      
+      // required bytes public_key = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_public_key:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key()));
+        if (input->ExpectTag(26)) goto parse_signed_public_key;
+        break;
+      }
+      
+      // required bytes signed_public_key = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_signed_public_key:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_signed_public_key()));
+        if (input->ExpectTag(34)) goto parse_signed_request;
+        break;
+      }
+      
+      // required bytes signed_request = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_signed_request:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_signed_request()));
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void SignedRequest::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    SignedRequest::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required bytes signer_id = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->signer_id(), output);
+  }
+  
+  // required bytes public_key = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->public_key(), output);
+  }
+  
+  // required bytes signed_public_key = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(3, this->signed_public_key(), output);
+  }
+  
+  // required bytes signed_request = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(4, this->signed_request(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* SignedRequest::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required bytes signer_id = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->signer_id(), target);
+  }
+  
+  // required bytes public_key = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->public_key(), target);
+  }
+  
+  // required bytes signed_public_key = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(3, this->signed_public_key(), target);
+  }
+  
+  // required bytes signed_request = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(4, this->signed_request(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int SignedRequest::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required bytes signer_id = 1;
+    if (has_signer_id()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->signer_id());
+    }
+    
+    // required bytes public_key = 2;
+    if (has_public_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key());
+    }
+    
+    // required bytes signed_public_key = 3;
+    if (has_signed_public_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->signed_public_key());
+    }
+    
+    // required bytes signed_request = 4;
+    if (has_signed_request()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->signed_request());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void SignedRequest::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const SignedRequest* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const SignedRequest*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void SignedRequest::MergeFrom(const SignedRequest& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_signer_id(from.signer_id());
+    }
+    if (from._has_bit(1)) {
+      set_public_key(from.public_key());
+    }
+    if (from._has_bit(2)) {
+      set_signed_public_key(from.signed_public_key());
+    }
+    if (from._has_bit(3)) {
+      set_signed_request(from.signed_request());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void SignedRequest::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void SignedRequest::CopyFrom(const SignedRequest& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void SignedRequest::Swap(SignedRequest* other) {
+  if (other != this) {
+    std::swap(signer_id_, other->signer_id_);
+    std::swap(public_key_, other->public_key_);
+    std::swap(signed_public_key_, other->signed_public_key_);
+    std::swap(signed_request_, other->signed_request_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool SignedRequest::IsInitialized() const {
+  if ((_has_bits_[0] & 0x0000000f) != 0x0000000f) return false;
+  
+  return true;
+}
+
+const ::google::protobuf::Descriptor* SignedRequest::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* SignedRequest::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return SignedRequest_reflection_;
 }
 
 }  // namespace kad

@@ -25,45 +25,39 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef TESTS_DEMO_COMMANDS_H_
-#define TESTS_DEMO_COMMANDS_H_
+#ifndef MAIDSAFE_VALIDATIONINTERFACE_H_
+#define MAIDSAFE_VALIDATIONINTERFACE_H_
 
-#include <boost/function.hpp>
 #include <string>
-#include "maidsafe/maidsafe-dht_config.h"
-#include "maidsafe/crypto.h"
 
-namespace kad {
-class KNode;
-}
-
-namespace kaddemo {
-
-class Commands {
+namespace base {
+/**
+ * Base class to validate with a public key requests signed with a private key
+ * and to validate the id of the sender of the request.  This methods should be
+ * implemented by the user.
+ */
+class SignatureValidator {
  public:
-  Commands(kad::KNode *node, const boost::uint16_t &K);
-  void Run();
- private:
-  void FindValueCallback(const std::string &result, const std::string &key,
-     const bool &write_to_file, const std::string &path);
-  void StoreCallback(const std::string &result, const std::string &key,
-      const boost::int32_t &ttl);
-  void PingCallback(const std::string &result, const std::string &id);
-  void FindNodeCallback(const std::string &result, const std::string &id);
-  void ProcessCommand(const std::string &cmdline, bool *wait_for_cb);
-  void PrintUsage();
-  bool ReadFile(const std::string &path, std::string *content);
-  void WriteToFile(const std::string &path, const std::string &content);
-  void Store50Values(const std::string &prefix);
-  void Store50Callback(const std::string &result, const std::string &key,
-      bool *arrived);
-  kad::KNode *node_;
-  bool result_arrived_;
-  double min_succ_stores_;
-  crypto::Crypto cryobj_;
-  bool finish_;
+  virtual ~SignatureValidator() {}
+  /**
+   * Validates the Id of the signer
+   * signer_id - id to be validated
+   * signed_public_key - public key signed
+   * key - key to store/delete value
+   */
+  virtual bool ValidateSignerId(const std::string &signer_id,
+    const std::string &signed_public_key, const std::string &key) = 0;
+  /**
+   * Validates the request signed by sender
+   * signed_request - request to be validated with the public key
+   * public_key - used to validate signature of the request
+   * signed_public_key - public key signed
+   * key - key to store/delete value
+   */
+  virtual bool ValidateRequest(const std::string &signed_request,
+    const std::string &public_key, const std::string &signed_public_key,
+    const std::string &key) = 0;
 };
 
-}  // namespace
-
-#endif  // TESTS_DEMO_COMMANDS_H_
+}  // namespace base
+#endif  // MAIDSAFE_VALIDATIONINTERFACE_H_

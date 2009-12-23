@@ -67,7 +67,7 @@ void Commands::Run() {
 }
 
 void Commands::StoreCallback(const std::string &result,
-    const std::string &key, const boost::uint32_t &ttl) {
+    const std::string &key, const boost::int32_t &ttl) {
   kad::StoreResponse msg;
   std::string enc_key = base::EncodeToHex(key);
   if (!msg.ParseFromString(result)) {
@@ -245,15 +245,19 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
     } else if (!ReadFile(args[1], &content)) {
       *wait_for_cb = false;
     } else {
-      boost::uint32_t ttl = boost::lexical_cast<boost::uint32_t>(args[2]);
+      boost::int32_t ttl = boost::lexical_cast<boost::int32_t>(args[2]);
       std::string key;
       if (args[0].size() != 128) {
         key = base::DecodeFromHex(args[0]);
         if (key.size()*2 != std::string(args[0]).size())
           key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
       }
-      node_->StoreValue(key, content, ttl*60, boost::bind(
-          &Commands::StoreCallback, this, _1, key, ttl));
+      if (ttl == -1)
+        node_->StoreValue(key, content, ttl, boost::bind(
+            &Commands::StoreCallback, this, _1, key, ttl));
+      else
+        node_->StoreValue(key, content, ttl*60, boost::bind(
+            &Commands::StoreCallback, this, _1, key, ttl));
       *wait_for_cb = true;
     }
   } else if (cmd == "storevalue") {
@@ -261,14 +265,18 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for storevalue command\n");
     } else {
-      boost::uint32_t ttl = base::stoi(args[2]);
+      boost::int32_t ttl = base::stoi(args[2]);
       std::string key;
       if (args[0].size() != 128) {
         key = base::DecodeFromHex(args[0]);
         if (key.size()*2 != args[0].size())
           key = cryobj_.Hash(args[0], "", crypto::STRING_STRING, false);
       }
-      node_->StoreValue(key, args[1], ttl*60, boost::bind(
+      if (ttl == -1)
+        node_->StoreValue(key, args[1], ttl, boost::bind(
+          &Commands::StoreCallback, this, _1, key, ttl));
+      else
+        node_->StoreValue(key, args[1], ttl*60, boost::bind(
           &Commands::StoreCallback, this, _1, key, ttl));
       *wait_for_cb = true;
     }

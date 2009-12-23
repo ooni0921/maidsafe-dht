@@ -30,6 +30,7 @@ void protobuf_AssignDesc_signed_5fkadvalue_2eproto();
 void protobuf_ShutdownFile_signed_5fkadvalue_2eproto();
 
 class SignedValue;
+class SignedRequest;
 
 // ===================================================================
 
@@ -134,6 +135,133 @@ class SignedValue : public ::google::protobuf::Message {
   void InitAsDefaultInstance();
   static SignedValue* default_instance_;
 };
+// -------------------------------------------------------------------
+
+class SignedRequest : public ::google::protobuf::Message {
+ public:
+  SignedRequest();
+  virtual ~SignedRequest();
+  
+  SignedRequest(const SignedRequest& from);
+  
+  inline SignedRequest& operator=(const SignedRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const SignedRequest& default_instance();
+  void Swap(SignedRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  SignedRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const SignedRequest& from);
+  void MergeFrom(const SignedRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes signer_id = 1;
+  inline bool has_signer_id() const;
+  inline void clear_signer_id();
+  static const int kSignerIdFieldNumber = 1;
+  inline const ::std::string& signer_id() const;
+  inline void set_signer_id(const ::std::string& value);
+  inline void set_signer_id(const char* value);
+  inline void set_signer_id(const void* value, size_t size);
+  inline ::std::string* mutable_signer_id();
+  
+  // required bytes public_key = 2;
+  inline bool has_public_key() const;
+  inline void clear_public_key();
+  static const int kPublicKeyFieldNumber = 2;
+  inline const ::std::string& public_key() const;
+  inline void set_public_key(const ::std::string& value);
+  inline void set_public_key(const char* value);
+  inline void set_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_public_key();
+  
+  // required bytes signed_public_key = 3;
+  inline bool has_signed_public_key() const;
+  inline void clear_signed_public_key();
+  static const int kSignedPublicKeyFieldNumber = 3;
+  inline const ::std::string& signed_public_key() const;
+  inline void set_signed_public_key(const ::std::string& value);
+  inline void set_signed_public_key(const char* value);
+  inline void set_signed_public_key(const void* value, size_t size);
+  inline ::std::string* mutable_signed_public_key();
+  
+  // required bytes signed_request = 4;
+  inline bool has_signed_request() const;
+  inline void clear_signed_request();
+  static const int kSignedRequestFieldNumber = 4;
+  inline const ::std::string& signed_request() const;
+  inline void set_signed_request(const ::std::string& value);
+  inline void set_signed_request(const char* value);
+  inline void set_signed_request(const void* value, size_t size);
+  inline ::std::string* mutable_signed_request();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* signer_id_;
+  static const ::std::string _default_signer_id_;
+  ::std::string* public_key_;
+  static const ::std::string _default_public_key_;
+  ::std::string* signed_public_key_;
+  static const ::std::string _default_signed_public_key_;
+  ::std::string* signed_request_;
+  static const ::std::string _default_signed_request_;
+  friend void  protobuf_AddDesc_signed_5fkadvalue_2eproto();
+  friend void protobuf_AssignDesc_signed_5fkadvalue_2eproto();
+  friend void protobuf_ShutdownFile_signed_5fkadvalue_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static SignedRequest* default_instance_;
+};
 // ===================================================================
 
 
@@ -226,6 +354,178 @@ inline ::std::string* SignedValue::mutable_value_signature() {
     value_signature_ = new ::std::string;
   }
   return value_signature_;
+}
+
+// -------------------------------------------------------------------
+
+// SignedRequest
+
+// required bytes signer_id = 1;
+inline bool SignedRequest::has_signer_id() const {
+  return _has_bit(0);
+}
+inline void SignedRequest::clear_signer_id() {
+  if (signer_id_ != &_default_signer_id_) {
+    signer_id_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& SignedRequest::signer_id() const {
+  return *signer_id_;
+}
+inline void SignedRequest::set_signer_id(const ::std::string& value) {
+  _set_bit(0);
+  if (signer_id_ == &_default_signer_id_) {
+    signer_id_ = new ::std::string;
+  }
+  signer_id_->assign(value);
+}
+inline void SignedRequest::set_signer_id(const char* value) {
+  _set_bit(0);
+  if (signer_id_ == &_default_signer_id_) {
+    signer_id_ = new ::std::string;
+  }
+  signer_id_->assign(value);
+}
+inline void SignedRequest::set_signer_id(const void* value, size_t size) {
+  _set_bit(0);
+  if (signer_id_ == &_default_signer_id_) {
+    signer_id_ = new ::std::string;
+  }
+  signer_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* SignedRequest::mutable_signer_id() {
+  _set_bit(0);
+  if (signer_id_ == &_default_signer_id_) {
+    signer_id_ = new ::std::string;
+  }
+  return signer_id_;
+}
+
+// required bytes public_key = 2;
+inline bool SignedRequest::has_public_key() const {
+  return _has_bit(1);
+}
+inline void SignedRequest::clear_public_key() {
+  if (public_key_ != &_default_public_key_) {
+    public_key_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& SignedRequest::public_key() const {
+  return *public_key_;
+}
+inline void SignedRequest::set_public_key(const ::std::string& value) {
+  _set_bit(1);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void SignedRequest::set_public_key(const char* value) {
+  _set_bit(1);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(value);
+}
+inline void SignedRequest::set_public_key(const void* value, size_t size) {
+  _set_bit(1);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* SignedRequest::mutable_public_key() {
+  _set_bit(1);
+  if (public_key_ == &_default_public_key_) {
+    public_key_ = new ::std::string;
+  }
+  return public_key_;
+}
+
+// required bytes signed_public_key = 3;
+inline bool SignedRequest::has_signed_public_key() const {
+  return _has_bit(2);
+}
+inline void SignedRequest::clear_signed_public_key() {
+  if (signed_public_key_ != &_default_signed_public_key_) {
+    signed_public_key_->clear();
+  }
+  _clear_bit(2);
+}
+inline const ::std::string& SignedRequest::signed_public_key() const {
+  return *signed_public_key_;
+}
+inline void SignedRequest::set_signed_public_key(const ::std::string& value) {
+  _set_bit(2);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void SignedRequest::set_signed_public_key(const char* value) {
+  _set_bit(2);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(value);
+}
+inline void SignedRequest::set_signed_public_key(const void* value, size_t size) {
+  _set_bit(2);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* SignedRequest::mutable_signed_public_key() {
+  _set_bit(2);
+  if (signed_public_key_ == &_default_signed_public_key_) {
+    signed_public_key_ = new ::std::string;
+  }
+  return signed_public_key_;
+}
+
+// required bytes signed_request = 4;
+inline bool SignedRequest::has_signed_request() const {
+  return _has_bit(3);
+}
+inline void SignedRequest::clear_signed_request() {
+  if (signed_request_ != &_default_signed_request_) {
+    signed_request_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& SignedRequest::signed_request() const {
+  return *signed_request_;
+}
+inline void SignedRequest::set_signed_request(const ::std::string& value) {
+  _set_bit(3);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void SignedRequest::set_signed_request(const char* value) {
+  _set_bit(3);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(value);
+}
+inline void SignedRequest::set_signed_request(const void* value, size_t size) {
+  _set_bit(3);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  signed_request_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* SignedRequest::mutable_signed_request() {
+  _set_bit(3);
+  if (signed_request_ == &_default_signed_request_) {
+    signed_request_ = new ::std::string;
+  }
+  return signed_request_;
 }
 
 

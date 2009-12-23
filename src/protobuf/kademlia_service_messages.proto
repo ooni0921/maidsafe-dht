@@ -47,9 +47,7 @@ message StoreRequest {
   required int32 ttl = 4;
   required ContactInfo sender_info = 5;
   required bool publish = 6;
-  optional bytes public_key = 7;
-  optional bytes signed_public_key = 8;
-  optional bytes signed_request = 9;
+  optional SignedRequest signed_request = 7;
 };
 
 message StoreResponse {
@@ -104,4 +102,17 @@ message NatDetectionPingResponse {
   required bytes result = 1;
   optional bytes echo = 2;
   optional bytes node_id = 3;
+};
+
+
+message DeleteRequest {
+  required bytes key = 1;
+  required SignedValue value = 2;
+  required SignedRequest signed_request = 3;
+  required ContactInfo sender_info = 4;
+};
+
+message DeleteResponse {
+  required bytes result = 1;
+  optional bytes node_id = 2;
 };

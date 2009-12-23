@@ -46,6 +46,8 @@ class NatDetectionRequest;
 class NatDetectionResponse;
 class NatDetectionPingRequest;
 class NatDetectionPingResponse;
+class DeleteRequest;
+class DeleteResponse;
 
 // ===================================================================
 
@@ -776,35 +778,12 @@ class StoreRequest : public ::google::protobuf::Message {
   inline bool publish() const;
   inline void set_publish(bool value);
   
-  // optional bytes public_key = 7;
-  inline bool has_public_key() const;
-  inline void clear_public_key();
-  static const int kPublicKeyFieldNumber = 7;
-  inline const ::std::string& public_key() const;
-  inline void set_public_key(const ::std::string& value);
-  inline void set_public_key(const char* value);
-  inline void set_public_key(const void* value, size_t size);
-  inline ::std::string* mutable_public_key();
-  
-  // optional bytes signed_public_key = 8;
-  inline bool has_signed_public_key() const;
-  inline void clear_signed_public_key();
-  static const int kSignedPublicKeyFieldNumber = 8;
-  inline const ::std::string& signed_public_key() const;
-  inline void set_signed_public_key(const ::std::string& value);
-  inline void set_signed_public_key(const char* value);
-  inline void set_signed_public_key(const void* value, size_t size);
-  inline ::std::string* mutable_signed_public_key();
-  
-  // optional bytes signed_request = 9;
+  // optional .kad.SignedRequest signed_request = 7;
   inline bool has_signed_request() const;
   inline void clear_signed_request();
-  static const int kSignedRequestFieldNumber = 9;
-  inline const ::std::string& signed_request() const;
-  inline void set_signed_request(const ::std::string& value);
-  inline void set_signed_request(const char* value);
-  inline void set_signed_request(const void* value, size_t size);
-  inline ::std::string* mutable_signed_request();
+  static const int kSignedRequestFieldNumber = 7;
+  inline const ::kad::SignedRequest& signed_request() const;
+  inline ::kad::SignedRequest* mutable_signed_request();
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -818,16 +797,11 @@ class StoreRequest : public ::google::protobuf::Message {
   ::google::protobuf::int32 ttl_;
   ::kad::ContactInfo* sender_info_;
   bool publish_;
-  ::std::string* public_key_;
-  static const ::std::string _default_public_key_;
-  ::std::string* signed_public_key_;
-  static const ::std::string _default_signed_public_key_;
-  ::std::string* signed_request_;
-  static const ::std::string _default_signed_request_;
+  ::kad::SignedRequest* signed_request_;
   friend void  protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(9 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -1835,6 +1809,224 @@ class NatDetectionPingResponse : public ::google::protobuf::Message {
   void InitAsDefaultInstance();
   static NatDetectionPingResponse* default_instance_;
 };
+// -------------------------------------------------------------------
+
+class DeleteRequest : public ::google::protobuf::Message {
+ public:
+  DeleteRequest();
+  virtual ~DeleteRequest();
+  
+  DeleteRequest(const DeleteRequest& from);
+  
+  inline DeleteRequest& operator=(const DeleteRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const DeleteRequest& default_instance();
+  void Swap(DeleteRequest* other);
+  
+  // implements Message ----------------------------------------------
+  
+  DeleteRequest* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const DeleteRequest& from);
+  void MergeFrom(const DeleteRequest& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes key = 1;
+  inline bool has_key() const;
+  inline void clear_key();
+  static const int kKeyFieldNumber = 1;
+  inline const ::std::string& key() const;
+  inline void set_key(const ::std::string& value);
+  inline void set_key(const char* value);
+  inline void set_key(const void* value, size_t size);
+  inline ::std::string* mutable_key();
+  
+  // required .kad.SignedValue value = 2;
+  inline bool has_value() const;
+  inline void clear_value();
+  static const int kValueFieldNumber = 2;
+  inline const ::kad::SignedValue& value() const;
+  inline ::kad::SignedValue* mutable_value();
+  
+  // required .kad.SignedRequest signed_request = 3;
+  inline bool has_signed_request() const;
+  inline void clear_signed_request();
+  static const int kSignedRequestFieldNumber = 3;
+  inline const ::kad::SignedRequest& signed_request() const;
+  inline ::kad::SignedRequest* mutable_signed_request();
+  
+  // required .kad.ContactInfo sender_info = 4;
+  inline bool has_sender_info() const;
+  inline void clear_sender_info();
+  static const int kSenderInfoFieldNumber = 4;
+  inline const ::kad::ContactInfo& sender_info() const;
+  inline ::kad::ContactInfo* mutable_sender_info();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* key_;
+  static const ::std::string _default_key_;
+  ::kad::SignedValue* value_;
+  ::kad::SignedRequest* signed_request_;
+  ::kad::ContactInfo* sender_info_;
+  friend void  protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static DeleteRequest* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class DeleteResponse : public ::google::protobuf::Message {
+ public:
+  DeleteResponse();
+  virtual ~DeleteResponse();
+  
+  DeleteResponse(const DeleteResponse& from);
+  
+  inline DeleteResponse& operator=(const DeleteResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const DeleteResponse& default_instance();
+  void Swap(DeleteResponse* other);
+  
+  // implements Message ----------------------------------------------
+  
+  DeleteResponse* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const DeleteResponse& from);
+  void MergeFrom(const DeleteResponse& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const { _cached_size_ = size; }
+  public:
+  
+  const ::google::protobuf::Descriptor* GetDescriptor() const;
+  const ::google::protobuf::Reflection* GetReflection() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required bytes result = 1;
+  inline bool has_result() const;
+  inline void clear_result();
+  static const int kResultFieldNumber = 1;
+  inline const ::std::string& result() const;
+  inline void set_result(const ::std::string& value);
+  inline void set_result(const char* value);
+  inline void set_result(const void* value, size_t size);
+  inline ::std::string* mutable_result();
+  
+  // optional bytes node_id = 2;
+  inline bool has_node_id() const;
+  inline void clear_node_id();
+  static const int kNodeIdFieldNumber = 2;
+  inline const ::std::string& node_id() const;
+  inline void set_node_id(const ::std::string& value);
+  inline void set_node_id(const char* value);
+  inline void set_node_id(const void* value, size_t size);
+  inline ::std::string* mutable_node_id();
+  
+ private:
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  mutable int _cached_size_;
+  
+  ::std::string* result_;
+  static const ::std::string _default_result_;
+  ::std::string* node_id_;
+  static const ::std::string _default_node_id_;
+  friend void  protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();
+  friend void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto();
+  friend void protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto();
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  
+  // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
+  inline bool _has_bit(int index) const {
+    return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;
+  }
+  inline void _set_bit(int index) {
+    _has_bits_[index / 32] |= (1u << (index % 32));
+  }
+  inline void _clear_bit(int index) {
+    _has_bits_[index / 32] &= ~(1u << (index % 32));
+  }
+  
+  void InitAsDefaultInstance();
+  static DeleteResponse* default_instance_;
+};
 // ===================================================================
 
 
@@ -2732,129 +2924,20 @@ inline void StoreRequest::set_publish(bool value) {
   publish_ = value;
 }
 
-// optional bytes public_key = 7;
-inline bool StoreRequest::has_public_key() const {
+// optional .kad.SignedRequest signed_request = 7;
+inline bool StoreRequest::has_signed_request() const {
   return _has_bit(6);
 }
-inline void StoreRequest::clear_public_key() {
-  if (public_key_ != &_default_public_key_) {
-    public_key_->clear();
-  }
+inline void StoreRequest::clear_signed_request() {
+  if (signed_request_ != NULL) signed_request_->::kad::SignedRequest::Clear();
   _clear_bit(6);
 }
-inline const ::std::string& StoreRequest::public_key() const {
-  return *public_key_;
+inline const ::kad::SignedRequest& StoreRequest::signed_request() const {
+  return signed_request_ != NULL ? *signed_request_ : *default_instance_->signed_request_;
 }
-inline void StoreRequest::set_public_key(const ::std::string& value) {
+inline ::kad::SignedRequest* StoreRequest::mutable_signed_request() {
   _set_bit(6);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(value);
-}
-inline void StoreRequest::set_public_key(const char* value) {
-  _set_bit(6);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(value);
-}
-inline void StoreRequest::set_public_key(const void* value, size_t size) {
-  _set_bit(6);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  public_key_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* StoreRequest::mutable_public_key() {
-  _set_bit(6);
-  if (public_key_ == &_default_public_key_) {
-    public_key_ = new ::std::string;
-  }
-  return public_key_;
-}
-
-// optional bytes signed_public_key = 8;
-inline bool StoreRequest::has_signed_public_key() const {
-  return _has_bit(7);
-}
-inline void StoreRequest::clear_signed_public_key() {
-  if (signed_public_key_ != &_default_signed_public_key_) {
-    signed_public_key_->clear();
-  }
-  _clear_bit(7);
-}
-inline const ::std::string& StoreRequest::signed_public_key() const {
-  return *signed_public_key_;
-}
-inline void StoreRequest::set_signed_public_key(const ::std::string& value) {
-  _set_bit(7);
-  if (signed_public_key_ == &_default_signed_public_key_) {
-    signed_public_key_ = new ::std::string;
-  }
-  signed_public_key_->assign(value);
-}
-inline void StoreRequest::set_signed_public_key(const char* value) {
-  _set_bit(7);
-  if (signed_public_key_ == &_default_signed_public_key_) {
-    signed_public_key_ = new ::std::string;
-  }
-  signed_public_key_->assign(value);
-}
-inline void StoreRequest::set_signed_public_key(const void* value, size_t size) {
-  _set_bit(7);
-  if (signed_public_key_ == &_default_signed_public_key_) {
-    signed_public_key_ = new ::std::string;
-  }
-  signed_public_key_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* StoreRequest::mutable_signed_public_key() {
-  _set_bit(7);
-  if (signed_public_key_ == &_default_signed_public_key_) {
-    signed_public_key_ = new ::std::string;
-  }
-  return signed_public_key_;
-}
-
-// optional bytes signed_request = 9;
-inline bool StoreRequest::has_signed_request() const {
-  return _has_bit(8);
-}
-inline void StoreRequest::clear_signed_request() {
-  if (signed_request_ != &_default_signed_request_) {
-    signed_request_->clear();
-  }
-  _clear_bit(8);
-}
-inline const ::std::string& StoreRequest::signed_request() const {
-  return *signed_request_;
-}
-inline void StoreRequest::set_signed_request(const ::std::string& value) {
-  _set_bit(8);
-  if (signed_request_ == &_default_signed_request_) {
-    signed_request_ = new ::std::string;
-  }
-  signed_request_->assign(value);
-}
-inline void StoreRequest::set_signed_request(const char* value) {
-  _set_bit(8);
-  if (signed_request_ == &_default_signed_request_) {
-    signed_request_ = new ::std::string;
-  }
-  signed_request_->assign(value);
-}
-inline void StoreRequest::set_signed_request(const void* value, size_t size) {
-  _set_bit(8);
-  if (signed_request_ == &_default_signed_request_) {
-    signed_request_ = new ::std::string;
-  }
-  signed_request_->assign(reinterpret_cast<const char*>(value), size);
-}
-inline ::std::string* StoreRequest::mutable_signed_request() {
-  _set_bit(8);
-  if (signed_request_ == &_default_signed_request_) {
-    signed_request_ = new ::std::string;
-  }
+  if (signed_request_ == NULL) signed_request_ = new ::kad::SignedRequest;
   return signed_request_;
 }
 
@@ -3785,6 +3868,191 @@ inline void NatDetectionPingResponse::set_node_id(const void* value, size_t size
 }
 inline ::std::string* NatDetectionPingResponse::mutable_node_id() {
   _set_bit(2);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  return node_id_;
+}
+
+// -------------------------------------------------------------------
+
+// DeleteRequest
+
+// required bytes key = 1;
+inline bool DeleteRequest::has_key() const {
+  return _has_bit(0);
+}
+inline void DeleteRequest::clear_key() {
+  if (key_ != &_default_key_) {
+    key_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& DeleteRequest::key() const {
+  return *key_;
+}
+inline void DeleteRequest::set_key(const ::std::string& value) {
+  _set_bit(0);
+  if (key_ == &_default_key_) {
+    key_ = new ::std::string;
+  }
+  key_->assign(value);
+}
+inline void DeleteRequest::set_key(const char* value) {
+  _set_bit(0);
+  if (key_ == &_default_key_) {
+    key_ = new ::std::string;
+  }
+  key_->assign(value);
+}
+inline void DeleteRequest::set_key(const void* value, size_t size) {
+  _set_bit(0);
+  if (key_ == &_default_key_) {
+    key_ = new ::std::string;
+  }
+  key_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* DeleteRequest::mutable_key() {
+  _set_bit(0);
+  if (key_ == &_default_key_) {
+    key_ = new ::std::string;
+  }
+  return key_;
+}
+
+// required .kad.SignedValue value = 2;
+inline bool DeleteRequest::has_value() const {
+  return _has_bit(1);
+}
+inline void DeleteRequest::clear_value() {
+  if (value_ != NULL) value_->::kad::SignedValue::Clear();
+  _clear_bit(1);
+}
+inline const ::kad::SignedValue& DeleteRequest::value() const {
+  return value_ != NULL ? *value_ : *default_instance_->value_;
+}
+inline ::kad::SignedValue* DeleteRequest::mutable_value() {
+  _set_bit(1);
+  if (value_ == NULL) value_ = new ::kad::SignedValue;
+  return value_;
+}
+
+// required .kad.SignedRequest signed_request = 3;
+inline bool DeleteRequest::has_signed_request() const {
+  return _has_bit(2);
+}
+inline void DeleteRequest::clear_signed_request() {
+  if (signed_request_ != NULL) signed_request_->::kad::SignedRequest::Clear();
+  _clear_bit(2);
+}
+inline const ::kad::SignedRequest& DeleteRequest::signed_request() const {
+  return signed_request_ != NULL ? *signed_request_ : *default_instance_->signed_request_;
+}
+inline ::kad::SignedRequest* DeleteRequest::mutable_signed_request() {
+  _set_bit(2);
+  if (signed_request_ == NULL) signed_request_ = new ::kad::SignedRequest;
+  return signed_request_;
+}
+
+// required .kad.ContactInfo sender_info = 4;
+inline bool DeleteRequest::has_sender_info() const {
+  return _has_bit(3);
+}
+inline void DeleteRequest::clear_sender_info() {
+  if (sender_info_ != NULL) sender_info_->::kad::ContactInfo::Clear();
+  _clear_bit(3);
+}
+inline const ::kad::ContactInfo& DeleteRequest::sender_info() const {
+  return sender_info_ != NULL ? *sender_info_ : *default_instance_->sender_info_;
+}
+inline ::kad::ContactInfo* DeleteRequest::mutable_sender_info() {
+  _set_bit(3);
+  if (sender_info_ == NULL) sender_info_ = new ::kad::ContactInfo;
+  return sender_info_;
+}
+
+// -------------------------------------------------------------------
+
+// DeleteResponse
+
+// required bytes result = 1;
+inline bool DeleteResponse::has_result() const {
+  return _has_bit(0);
+}
+inline void DeleteResponse::clear_result() {
+  if (result_ != &_default_result_) {
+    result_->clear();
+  }
+  _clear_bit(0);
+}
+inline const ::std::string& DeleteResponse::result() const {
+  return *result_;
+}
+inline void DeleteResponse::set_result(const ::std::string& value) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(value);
+}
+inline void DeleteResponse::set_result(const char* value) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(value);
+}
+inline void DeleteResponse::set_result(const void* value, size_t size) {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  result_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* DeleteResponse::mutable_result() {
+  _set_bit(0);
+  if (result_ == &_default_result_) {
+    result_ = new ::std::string;
+  }
+  return result_;
+}
+
+// optional bytes node_id = 2;
+inline bool DeleteResponse::has_node_id() const {
+  return _has_bit(1);
+}
+inline void DeleteResponse::clear_node_id() {
+  if (node_id_ != &_default_node_id_) {
+    node_id_->clear();
+  }
+  _clear_bit(1);
+}
+inline const ::std::string& DeleteResponse::node_id() const {
+  return *node_id_;
+}
+inline void DeleteResponse::set_node_id(const ::std::string& value) {
+  _set_bit(1);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  node_id_->assign(value);
+}
+inline void DeleteResponse::set_node_id(const char* value) {
+  _set_bit(1);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  node_id_->assign(value);
+}
+inline void DeleteResponse::set_node_id(const void* value, size_t size) {
+  _set_bit(1);
+  if (node_id_ == &_default_node_id_) {
+    node_id_ = new ::std::string;
+  }
+  node_id_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* DeleteResponse::mutable_node_id() {
+  _set_bit(1);
   if (node_id_ == &_default_node_id_) {
     node_id_ = new ::std::string;
   }

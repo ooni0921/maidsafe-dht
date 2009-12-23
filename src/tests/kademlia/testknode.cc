@@ -49,6 +49,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "udt/udt.h"
 #include "protobuf/signed_kadvalue.pb.h"
 #include "maidsafe/config.h"
+#include "tests/validationimpl.h"
 
 namespace fs = boost::filesystem;
 
@@ -112,6 +113,7 @@ GeneralKadCallback cb_;
 std::vector<std::string> node_ids_;
 std::set<boost::uint16_t> ports_;
 std::string test_dir_;
+base::TestValidator validator;
 
 class Env: public testing::Environment {
  public:
@@ -179,6 +181,7 @@ class Env: public testing::Environment {
     wait_result(&cb_);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
     ASSERT_TRUE(knodes_[0]->is_joined());
+    knodes_[0]->set_signature_validator(&validator);
     LOG(INFO) << "Node 0 joined" << std::endl;
     node_ids_.push_back(knodes_[0]->node_id());
     base::KadConfig kad_config;
@@ -207,6 +210,7 @@ class Env: public testing::Environment {
       wait_result(&cb_);
       ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
       ASSERT_TRUE(knodes_[i]->is_joined());
+      knodes_[i]->set_signature_validator(&validator);
       LOG(INFO) << "Node " << i << " joined" << std::endl;
       node_ids_.push_back(knodes_[i]->node_id());
     }
@@ -313,9 +317,13 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", privkey,
       crypto::STRING_STRING));
   std::string ser_sig_value = sig_value.SerializeAsString();
-  knode_local_.StoreValue(key, sig_value, pubkey, sig_pub_key,
-      sig_req, 24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_1,
-      _1));
+  kad::SignedRequest req;
+  req.set_signer_id(knode_local_.node_id());
+  req.set_public_key(pubkey);
+  req.set_signed_public_key(sig_pub_key);
+  req.set_signed_request(sig_req);
+  knode_local_.StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
 
@@ -452,17 +460,22 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
   std::string pub_key, priv_key, sig_pub_key, sig_req;
   create_rsakeys(&pub_key, &priv_key);
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
+  kad::SignedRequest req;
+  req.set_signer_id(knodes_[7]->node_id());
+  req.set_public_key(pub_key);
+  req.set_signed_public_key(sig_pub_key);
+  req.set_signed_request(sig_req);
 
-  knodes_[7]->StoreValue(key, sig_value, pub_key, sig_pub_key, sig_req,
-      24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  knodes_[7]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultFailure, cb_.result());
   cb_.Reset();
 
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
-  knodes_[7]->StoreValue(key, sig_value, pub_key, sig_pub_key, sig_req,
-      24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  knodes_[7]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   // calculate number of nodes which hold this key/value pair
@@ -537,8 +550,13 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
-  knodes_[10]->StoreValue(key, sig_value, pub_key, sig_pub_key, sig_req,
-      24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  kad::SignedRequest req;
+  req.set_signer_id(knodes_[10]->node_id());
+  req.set_public_key(pub_key);
+  req.set_signed_public_key(sig_pub_key);
+  req.set_signed_request(sig_req);
+  knodes_[10]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   // calculate number of nodes which hold this key/value pair
@@ -609,9 +627,13 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoad100Values) {
     create_req(pub_key, priv_key, keys[n], &sig_pub_key, &sig_req);
     values[n].set_value_signature(cry_obj_.AsymSign(values[n].value(), "",
                                   priv_key, crypto::STRING_STRING));
-    knodes_[n % (kNetworkSize - 1)]->StoreValue(keys[n], values[n], pub_key,
-        sig_pub_key, sig_req, 24*3600,
-        boost::bind(&StoreValueCallback::CallbackFunc, &cbs[n], _1));
+    kad::SignedRequest req;
+    req.set_signer_id(knodes_[n % (kNetworkSize - 1)]->node_id());
+    req.set_public_key(pub_key);
+    req.set_signed_public_key(sig_pub_key);
+    req.set_signed_request(sig_req);
+    knodes_[n % (kNetworkSize - 1)]->StoreValue(keys[n], values[n], req,
+        24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cbs[n], _1));
     if (!(n % 5))
       printf(".");
   }
@@ -741,8 +763,13 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
   create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
-  knodes_[8]->StoreValue(key, sig_value, pub_key, sig_pub_key, sig_req,
-      24*3600, boost::bind(&FakeCallback::CallbackFunc, &cb_1, _1));
+  kad::SignedRequest req;
+  req.set_signer_id(knodes_[8]->node_id());
+  req.set_public_key(pub_key);
+  req.set_signed_public_key(sig_pub_key);
+  req.set_signed_request(sig_req);
+  knodes_[8]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&FakeCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   // kill k-1 nodes, there should be at least one node left which holds this
@@ -822,6 +849,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
     wait_result(&cb_);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
     ASSERT_TRUE(knodes_[2 + i]->is_joined());
+    knodes_[2 + i]->set_signature_validator(&validator);
   }
 }
 
@@ -926,6 +954,7 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());
+  knodes_[r_node]->set_signature_validator(&validator);
   ports_.insert(knodes_[r_node]->host_port());
 }
 
@@ -943,16 +972,24 @@ TEST_F(KNodeTest, FUNC_KAD_StoreWithInvalidRequest) {
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
   std::string ser_sig_value = sig_value.SerializeAsString();
-  knodes_[7]->StoreValue(key, sig_value, pub_key, sig_pub_key, "bad request",
-      24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  kad::SignedRequest req;
+  req.set_signer_id(knodes_[7]->node_id());
+  req.set_public_key(pub_key);
+  req.set_signed_public_key(sig_pub_key);
+  req.set_signed_request("bad request");
+
+  knodes_[7]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultFailure, cb_.result());
   std::string new_pub_key, new_priv_key;
   create_rsakeys(&new_pub_key, &new_priv_key);
   ASSERT_NE(pub_key, new_pub_key);
   cb_.Reset();
-  knodes_[7]->StoreValue(key, sig_value, new_pub_key, sig_pub_key, sig_req,
-      24*3600, boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  req.set_signed_request(sig_req);
+  req.set_public_key(new_pub_key);
+  knodes_[7]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultFailure, cb_.result());
 }
@@ -1026,6 +1063,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());
+  knodes_[r_node]->set_signature_validator(&validator);
   ports_.insert(knodes_[r_node]->host_port());
 }
 
@@ -1050,7 +1088,191 @@ TEST_F(KNodeTest, FUNC_KAD_StartStopNode) {
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   ASSERT_TRUE(knodes_[r_node]->is_joined());
+  knodes_[r_node]->set_signature_validator(&validator);
   cb_.Reset();
+}
+
+TEST_F(KNodeTest, FUNC_KAD_DeleteValue) {
+  // prepare small size of values
+  std::string key = cry_obj_.Hash(base::RandomString(5), "",
+    crypto::STRING_STRING, false);
+  std::string value = base::RandomString(1024*5);  // 5KB
+  kad::SignedValue sig_value;
+  sig_value.set_value(value);
+  // save key/value pair from no.8 node
+  StoreValueCallback cb_;
+  std::string pub_key, priv_key, sig_pub_key, sig_req;
+  create_rsakeys(&pub_key, &priv_key);
+  create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
+  sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
+      crypto::STRING_STRING));
+  kad::SignedRequest req;
+  req.set_signer_id(knodes_[7]->node_id());
+  req.set_public_key(pub_key);
+  req.set_signed_public_key(sig_pub_key);
+  req.set_signed_request(sig_req);
+
+  knodes_[7]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  wait_result(&cb_);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
+  // calculate number of nodes which hold this key/value pair
+  int number = 0;
+  for (int i = 0; i < kNetworkSize; i++) {
+    std::vector<std::string> values;
+    bool b = false;
+    knodes_[i]->FindValueLocal(key, &values);
+    if (values.size() > 0) {
+      for (boost::uint32_t n = 0; n < values.size() && !b; ++n) {
+        kad::SignedValue sig_value;
+        ASSERT_TRUE(sig_value.ParseFromString(values[n]));
+        if (value == sig_value.value()) {
+          number++;
+          b = true;
+        }
+      }
+    }
+  }
+  double d = kTestK * kad::kMinSuccessfulPecentageStore;
+  ASSERT_LE(static_cast<int>(d), number);
+  // load the value from no.kNetworkSize-1 node
+  cb_.Reset();
+  FindCallback cb_1;
+  knodes_[kNetworkSize - 2]->FindValue(key, false, boost::bind(
+    &FindCallback::CallbackFunc, &cb_1, _1));
+  wait_result(&cb_1);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
+  ASSERT_LE(size_t(1), cb_1.values().size());
+  bool got_value = false;
+  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+    if (value == cb_1.values()[i]) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value) {
+    FAIL() << "FAIL node " << kNetworkSize - 2;
+  }
+
+  // Deleting Value
+  DeleteValueCallback del_cb;
+  knodes_[5]->DeleteValue(key, sig_value, req,
+    boost::bind(&FakeCallback::CallbackFunc, &del_cb, _1));
+  wait_result(&del_cb);
+  ASSERT_EQ(kad::kRpcResultSuccess, del_cb.result());
+  // Checking no node returns the value
+  for (int i = 0; i < kNetworkSize; i++) {
+    std::vector<std::string> values;
+    ASSERT_FALSE(knodes_[i]->FindValueLocal(key, &values));
+    ASSERT_TRUE(values.empty());
+  }
+
+
+  // trying to load the value from no.1 node
+  cb_1.Reset();
+  knodes_[0]->FindValue(key, false, boost::bind(&FakeCallback::CallbackFunc,
+    &cb_1, _1));
+  wait_result(&cb_1);
+  ASSERT_EQ(kad::kRpcResultFailure, cb_1.result());
+  ASSERT_LE(size_t(0), cb_1.values().size());
+  cb_1.Reset();
+}
+
+TEST_F(KNodeTest, FUNC_KAD_InvReqDeleteValue) {
+  // prepare small size of values
+  std::string key = cry_obj_.Hash(base::RandomString(5), "",
+    crypto::STRING_STRING, false);
+  std::string value = base::RandomString(1024*5);  // 5KB
+  kad::SignedValue sig_value;
+  sig_value.set_value(value);
+  // save key/value pair from no.8 node
+  StoreValueCallback cb_;
+  std::string pub_key, priv_key, sig_pub_key, sig_req;
+  create_rsakeys(&pub_key, &priv_key);
+  create_req(pub_key, priv_key, key, &sig_pub_key, &sig_req);
+  sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
+      crypto::STRING_STRING));
+  kad::SignedRequest req;
+  req.set_signer_id(knodes_[7]->node_id());
+  req.set_public_key(pub_key);
+  req.set_signed_public_key(sig_pub_key);
+  req.set_signed_request(sig_req);
+
+  knodes_[7]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  wait_result(&cb_);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
+
+  // load the value from no.kNetworkSize-1 node
+  cb_.Reset();
+  FindCallback cb_1;
+  knodes_[kNetworkSize - 2]->FindValue(key, false, boost::bind(
+    &FindCallback::CallbackFunc, &cb_1, _1));
+  wait_result(&cb_1);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
+  ASSERT_LE(size_t(1), cb_1.values().size());
+  bool got_value = false;
+  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+    if (value == cb_1.values()[i]) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value) {
+    FAIL() << "FAIL node " << kNetworkSize - 2;
+  }
+
+  // Deleting Value
+  std::string pub_key1, priv_key1, sig_pub_key1, sig_req1;
+  create_rsakeys(&pub_key1, &priv_key1);
+  create_req(pub_key1, priv_key1, key, &sig_pub_key1, &sig_req1);
+  req.Clear();
+  req.set_signer_id(knodes_[7]->node_id());
+  req.set_public_key(pub_key1);
+  req.set_signed_public_key(sig_pub_key1);
+  req.set_signed_request(sig_req1);
+  DeleteValueCallback del_cb;
+  knodes_[5]->DeleteValue(key, sig_value, req,
+    boost::bind(&FakeCallback::CallbackFunc, &del_cb, _1));
+  wait_result(&del_cb);
+  ASSERT_EQ(kad::kRpcResultFailure, del_cb.result());
+
+  del_cb.Reset();
+  req.Clear();
+  req.set_signer_id(knodes_[7]->node_id());
+  req.set_public_key(pub_key1);
+  req.set_signed_public_key(sig_pub_key);
+  req.set_signed_request(sig_req);
+  knodes_[4]->DeleteValue(key, sig_value, req,
+    boost::bind(&FakeCallback::CallbackFunc, &del_cb, _1));
+  wait_result(&del_cb);
+  ASSERT_EQ(kad::kRpcResultFailure, del_cb.result());
+
+  del_cb.Reset();
+  req.set_public_key(pub_key);
+  sig_value.set_value("other value");
+  knodes_[6]->DeleteValue(key, sig_value, req,
+    boost::bind(&FakeCallback::CallbackFunc, &del_cb, _1));
+  wait_result(&del_cb);
+  ASSERT_EQ(kad::kRpcResultFailure, del_cb.result());
+
+  // trying to load the value from no.1 node
+  cb_1.Reset();
+  knodes_[kNetworkSize - 2]->FindValue(key, false, boost::bind(&FakeCallback::CallbackFunc,
+    &cb_1, _1));
+  wait_result(&cb_1);
+  ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
+  ASSERT_LE(size_t(1), cb_1.values().size());
+  got_value = false;
+  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+    if (value == cb_1.values()[i]) {
+      got_value = true;
+      break;
+    }
+  }
+  if (!got_value) {
+    FAIL() << "FAIL node " << kNetworkSize - 2;
+  }
 }
 
 int main(int argc, char **argv) {

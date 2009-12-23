@@ -73,21 +73,14 @@ void KNode::Leave() {
   pimpl_->Leave();
 }
 
-void KNode::StoreValue(const std::string &key,
-                       const SignedValue &value,
-                       const std::string &public_key,
-                       const std::string &signed_public_key,
-                       const std::string &signed_request,
-                       const boost::uint32_t &ttl,
-                       base::callback_func_type cb) {
-  pimpl_->StoreValue(key, value, public_key, signed_public_key, signed_request,
-                     ttl, cb);
+void KNode::StoreValue(const std::string &key, const SignedValue &value,
+    const SignedRequest &sreq, const boost::int32_t &ttl,
+    base::callback_func_type cb) {
+  pimpl_->StoreValue(key, value, sreq, ttl, cb);
 }
 
-void KNode::StoreValue(const std::string &key,
-                       const std::string &value,
-                       const boost::uint32_t &ttl,
-                       base::callback_func_type cb) {
+void KNode::StoreValue(const std::string &key, const std::string &value,
+    const boost::int32_t &ttl, base::callback_func_type cb) {
   pimpl_->StoreValue(key, value, ttl, cb);
 }
 
@@ -140,12 +133,12 @@ bool KNode::FindValueLocal(const std::string &key,
 }
 
 bool KNode::StoreValueLocal(const std::string &key,
-      const std::string &value, const boost::uint32_t &ttl) {
+      const std::string &value, const boost::int32_t &ttl) {
   return pimpl_->StoreValueLocal(key, value, ttl);
 }
 
 bool KNode::RefreshValueLocal(const std::string &key,
-      const std::string &value, const boost::uint32_t &ttl) {
+      const std::string &value, const boost::int32_t &ttl) {
   return pimpl_->RefreshValueLocal(key, value, ttl);
 }
 
@@ -224,7 +217,7 @@ bool KNode::HasRSAKeys() {
   return pimpl_->HasRSAKeys();
 }
 
-boost::uint32_t KNode::KeyValueTTL(const std::string &key,
+boost::int32_t KNode::KeyValueTTL(const std::string &key,
       const std::string &value) const {
   return pimpl_->KeyValueTTL(key, value);
 }
@@ -235,6 +228,15 @@ void KNode::SetAlternativeStore(base::AlternativeStore* alternative_store) {
 
 base::AlternativeStore *KNode::alternative_store() {
   return pimpl_->alternative_store();
+}
+
+void KNode::set_signature_validator(base::SignatureValidator *validator) {
+  pimpl_->set_signature_validator(validator);
+}
+
+void KNode::DeleteValue(const std::string &key, const SignedValue &value,
+      const SignedRequest &request, base::callback_func_type cb) {
+  pimpl_->DeleteValue(key, value, request, cb);
 }
 
 void InsertKadContact(const std::string &key,

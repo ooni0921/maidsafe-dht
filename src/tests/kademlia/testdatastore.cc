@@ -292,7 +292,7 @@ TEST_F(DataStoreTest, BEH_KAD_RefreshKeyValue) {
       false);
   std::string value1 = base::RandomString(500);
   ASSERT_EQ(boost::uint32_t(0),  test_ds_->LastRefreshTime(key1, value1));
-  ASSERT_EQ(boost::uint32_t(0),  test_ds_->ExpireTime(key1, value1));
+  ASSERT_EQ(boost::int32_t(0),  test_ds_->ExpireTime(key1, value1));
   boost::int32_t t_refresh1, t_refresh2, t_expire1, t_expire2;
   ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, false));
   t_refresh1 = test_ds_->LastRefreshTime(key1, value1);
@@ -305,10 +305,11 @@ TEST_F(DataStoreTest, BEH_KAD_RefreshKeyValue) {
   ASSERT_EQ(value1, values[0]);
   boost::this_thread::sleep(boost::posix_time::milliseconds(1500));
   // refreshing the value
-  ASSERT_FALSE(test_ds_->RefreshItem("key1", value1));
-  ASSERT_FALSE(test_ds_->RefreshItem(key1, "value1"));
-  ASSERT_FALSE(test_ds_->RefreshItem("key1", "value1"));
-  ASSERT_TRUE(test_ds_->RefreshItem(key1, value1));
+  std::string ser_del_request;
+  ASSERT_FALSE(test_ds_->RefreshItem("key1", value1, &ser_del_request));
+  ASSERT_FALSE(test_ds_->RefreshItem(key1, "value1", &ser_del_request));
+  ASSERT_FALSE(test_ds_->RefreshItem("key1", "value1", &ser_del_request));
+  ASSERT_TRUE(test_ds_->RefreshItem(key1, value1, &ser_del_request));
   t_refresh2 = test_ds_->LastRefreshTime(key1, value1);
   t_expire2 = test_ds_->ExpireTime(key1, value1);
   ASSERT_LT(t_refresh1, t_refresh2);
@@ -324,7 +325,7 @@ TEST_F(DataStoreTest, BEH_KAD_RepublishKeyValue) {
       false);
   std::string value1 = base::RandomString(500);
   ASSERT_EQ(boost::uint32_t(0),  test_ds_->LastRefreshTime(key1, value1));
-  ASSERT_EQ(boost::uint32_t(0),  test_ds_->ExpireTime(key1, value1));
+  ASSERT_EQ(boost::int32_t(0),  test_ds_->ExpireTime(key1, value1));
   ASSERT_EQ(boost::uint32_t(0),  test_ds_->TimeToLive(key1, value1));
   boost::int32_t t_refresh1, t_refresh2, t_expire1, t_expire2;
   ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, false));
@@ -354,32 +355,40 @@ TEST_F(DataStoreTest, FUNC_KAD_GetValuesToRefresh) {
   kad::DataStore ds(3);
   std::vector<kad::refresh_value> refvalues;
   std::vector<std::string> keys, values;
-  for (unsigned int i = 0; i < 6; i++) {
+  for (unsigned int i = 0; i < 7; i++) {
     keys.push_back(cry_obj_.Hash(boost::lexical_cast<std::string>(i), "",
         crypto::STRING_STRING, false));
     values.push_back(base::RandomString(500));
   }
-  boost::uint32_t ttl = 3600*24;
-  for (unsigned int i = 0; i < 4; i++) {
-    if (i == 2) {
-      ASSERT_TRUE(ds.StoreItem(keys[i], values[i]+"EXTRA", ttl, false));
+  boost::int32_t ttl = 3600*24;
+  for (unsigned int i = 0; i < 5; i++) {
+    if (i == 1) {
+      ASSERT_TRUE(ds.StoreItem(keys[i], values[i], -1, false));
+    } else {
+      if (i == 2) {
+        ASSERT_TRUE(ds.StoreItem(keys[i], values[i]+"EXTRA", ttl, false));
+      }
+      ASSERT_TRUE(ds.StoreItem(keys[i], values[i], ttl, false));
     }
-    ASSERT_TRUE(ds.StoreItem(keys[i], values[i], ttl, false));
   }
 
   boost::this_thread::sleep(boost::posix_time::seconds(ds.t_refresh()+1));
 
-  for (unsigned int i = 4; i < keys.size(); i++) {
-    ASSERT_TRUE(ds.StoreItem(keys[i], values[i], ttl, false));
+  for (unsigned int i = 5; i < keys.size(); i++) {
+    if (i == 6)
+      ASSERT_TRUE(ds.StoreItem(keys[i], values[i], -1, false));
+    else
+      ASSERT_TRUE(ds.StoreItem(keys[i], values[i], ttl, false));
   }
   // refreshing key[0] so it does not apperat in keys to refresh
-  ASSERT_TRUE(ds.RefreshItem(keys[0], values[0]));
+  std::string ser_del_request;
+  ASSERT_TRUE(ds.RefreshItem(keys[0], values[0], &ser_del_request));
   refvalues = ds.ValuesToRefresh();
   for (unsigned int i = 0; i < refvalues.size(); i++) {
     ASSERT_NE(keys[0], refvalues[i].key_);
     ASSERT_NE(values[0], refvalues[i].value_);
   }
-  for (unsigned int i = 4; i < keys.size(); i++) {
+  for (unsigned int i = 5; i < keys.size(); i++) {
     bool found = false;
     for (unsigned int j = 0; j < refvalues.size(); j++) {
       if (keys[i] == refvalues[j].key_ && values[i] == refvalues[j].value_) {
@@ -391,16 +400,20 @@ TEST_F(DataStoreTest, FUNC_KAD_GetValuesToRefresh) {
   }
   for (unsigned int i = 1; i < 4; i++) {
     bool found = false;
-    boost::uint32_t ttl_for_refresh = ttl+1;
+    boost::int32_t ttl_for_refresh = ttl+1;
     for (unsigned int j = 0; j < refvalues.size(); j++) {
       if (keys[i] == refvalues[j].key_ && values[i] == refvalues[j].value_) {
         found = true;
         ttl_for_refresh = refvalues[j].ttl_;
+        ASSERT_EQ(kad::NOT_DELETED, refvalues[j].del_status_);
         break;
       }
     }
     ASSERT_TRUE(found);
-    ASSERT_GE(ttl, ttl_for_refresh);
+    if (i == 1)
+      ASSERT_EQ(-1, ttl_for_refresh);
+    else
+      ASSERT_GE(ttl, ttl_for_refresh);
   }
 }
 
@@ -440,7 +453,7 @@ TEST_F(DataStoreTest, FUNC_KAD_ExpiredValuesNotRefreshed) {
 
 TEST_F(DataStoreTest, FUNC_KAD_DeleteExpiredValues) {
   std::vector<std::string> keys, values;
-  std::vector<boost::uint32_t> ttl;
+  std::vector<boost::int32_t> ttl;
   // creating 10 key/values
   for (int i = 0; i < 10; i++) {
     keys.push_back(boost::lexical_cast<std::string>(i));
@@ -454,7 +467,8 @@ TEST_F(DataStoreTest, FUNC_KAD_DeleteExpiredValues) {
   // republishing value 2 with TTL 7
   ASSERT_TRUE(test_ds_->StoreItem(keys[2], values[2], ttl[2], false));
   // refreshing value 3 with TTL 8
-  ASSERT_TRUE(test_ds_->RefreshItem(keys[3], values[3]));
+  std::string ser_del_request;
+  ASSERT_TRUE(test_ds_->RefreshItem(keys[3], values[3], &ser_del_request));
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   test_ds_->DeleteExpiredValues();
   boost::uint32_t now = base::get_epoch_time();
@@ -477,6 +491,56 @@ TEST_F(DataStoreTest, FUNC_KAD_DeleteExpiredValues) {
   del_keys.push_back(keys[0]);
   del_keys.push_back(keys[1]);
   del_keys.push_back(keys[3]);
+  for (unsigned int j = 0; j < del_keys.size(); j++) {
+    ASSERT_TRUE(rec_keys.end() == rec_keys.find(del_keys[j]));
+    std::vector<std::string> values;
+    ASSERT_FALSE(test_ds_->LoadItem(del_keys[j], &values));
+  }
+}
+
+TEST_F(DataStoreTest, FUNC_KAD_ValuesInfTTLDontExpire) {
+  std::vector<std::string> keys, values;
+  std::vector<boost::int32_t> ttl;
+  // creating 10 key/values
+  for (int i = 0; i < 5; i++) {
+    keys.push_back(boost::lexical_cast<std::string>(i));
+    values.push_back(base::RandomString(100));
+    ttl.push_back(i+5);  // TTL = i + 5 seconds
+  }
+  // 5 have inf TTL
+  for (int i = 5; i < 10; i++) {
+    keys.push_back(boost::lexical_cast<std::string>(i));
+    values.push_back(base::RandomString(100));
+    ttl.push_back(-1);  // TTL = i + 5 seconds
+  }
+  for (unsigned int i = 0; i < keys.size(); i++)
+    ASSERT_TRUE(test_ds_->StoreItem(keys[i], values[i], ttl[i], false));
+  // waiting 12 seconds  values 0 - 4 have expired and should be deleted
+  // other values don't expire, the have TTL = -1
+  boost::this_thread::sleep(boost::posix_time::seconds(12));
+  test_ds_->DeleteExpiredValues();
+  std::set<std::string> rec_keys;
+  ASSERT_TRUE(test_ds_->Keys(&rec_keys));
+  ASSERT_EQ(keys.size()-5, rec_keys.size());
+  for (std::set<std::string>::iterator it = rec_keys.begin();
+       it != rec_keys.end(); it++) {
+    std::string value;
+    for (unsigned int j = 0; j < keys.size(); j++) {
+      if (*it == keys[j]) {
+        value = values[j];
+        break;
+      }
+    }
+    // expire time is 0
+    ASSERT_EQ(0, test_ds_->ExpireTime(*it, value));
+  }
+  // checking correct keys have been deleted
+  std::vector<std::string> del_keys;
+  del_keys.push_back(keys[0]);
+  del_keys.push_back(keys[1]);
+  del_keys.push_back(keys[2]);
+  del_keys.push_back(keys[3]);
+  del_keys.push_back(keys[4]);
   for (unsigned int j = 0; j < del_keys.size(); j++) {
     ASSERT_TRUE(rec_keys.end() == rec_keys.find(del_keys[j]));
     std::vector<std::string> values;
@@ -522,4 +586,157 @@ TEST_F(DataStoreTest, FUNC_KAD_ExpiredValuesNotReturned) {
   ASSERT_TRUE(test_ds_->LoadItem(key, &rec_values));
   ASSERT_EQ(1, rec_values.size());
   ASSERT_EQ(value2, rec_values[0]);
+}
+
+TEST_F(DataStoreTest, BEH_KAD_ItemsWithInfTTL) {
+  std::string value(base::RandomString(50));
+  std::string key(cry_obj_.Hash(base::RandomString(5), "",
+      crypto::STRING_STRING, false));
+  ASSERT_TRUE(test_ds_->StoreItem(key, value, -1, false));
+  std::vector<std::string> rec_values;
+  ASSERT_TRUE(test_ds_->LoadItem(key, &rec_values));
+  ASSERT_EQ(1, rec_values.size());
+  ASSERT_EQ(value, rec_values[0]);
+  ASSERT_EQ(-1, test_ds_->TimeToLive(key, value));
+  ASSERT_EQ(0, test_ds_->ExpireTime(key, value));
+}
+
+TEST_F(DataStoreTest, BEH_KAD_ChangeDelStatus) {
+  std::string value1(base::RandomString(50)), value2(base::RandomString(50)),
+    value3(base::RandomString(50));
+  std::string key1(cry_obj_.Hash(base::RandomString(5), "",
+      crypto::STRING_STRING, false));
+  std::string key2(cry_obj_.Hash(base::RandomString(5), "",
+      crypto::STRING_STRING, false));
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 1000, false));
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value2, 1000, false));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value3, 1000, false));
+  std::vector<std::string> rec_values;
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &rec_values));
+  ASSERT_EQ(2, rec_values.size());
+  for (unsigned int i = 0; i < rec_values.size(); ++i)
+    if (rec_values[i] != value1 && rec_values[i] != value2)
+      FAIL();
+
+  rec_values.clear();
+  ASSERT_TRUE(test_ds_->LoadItem(key2, &rec_values));
+  ASSERT_EQ(1, rec_values.size());
+  ASSERT_EQ(value3, rec_values[0]);
+  rec_values.clear();
+  ASSERT_TRUE(test_ds_->MarkForDeletion(key1, value2, "delete request"));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &rec_values));
+  ASSERT_EQ(1, rec_values.size());
+  ASSERT_EQ(value1, rec_values[0]);
+  rec_values.clear();
+  ASSERT_FALSE(test_ds_->MarkAsDeleted(key2, value3));
+  ASSERT_TRUE(test_ds_->MarkForDeletion(key2, value3, "delete request"));
+  ASSERT_TRUE(test_ds_->MarkAsDeleted(key2, value3));
+  ASSERT_FALSE(test_ds_->LoadItem(key2, &rec_values));
+  ASSERT_TRUE(rec_values.empty());
+
+  ASSERT_FALSE(test_ds_->MarkForDeletion("bad key", value2, "delete request"));
+  ASSERT_FALSE(test_ds_->MarkAsDeleted(key2, "anothervalue"));
+}
+
+TEST_F(DataStoreTest, FUNC_KAD_CheckDelStatusValuesToRefresh) {
+  // data store with refresh time set to 3 seconds for test
+  kad::DataStore ds(3);
+  std::vector<kad::refresh_value> refvalues;
+  std::vector<std::string> keys, values;
+  for (unsigned int i = 0; i < 2; i++) {
+    keys.push_back(cry_obj_.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false));
+    values.push_back(base::RandomString(500));
+  }
+  ASSERT_TRUE(ds.StoreItem(keys[0], values[0], -1, false));
+  ASSERT_TRUE(ds.StoreItem(keys[1], values[1], 3600*24, false));
+  ASSERT_TRUE(ds.MarkForDeletion(keys[0], values[0], "delete request1"));
+  ASSERT_TRUE(ds.MarkForDeletion(keys[1], values[1], "delete request2"));
+  ASSERT_TRUE(ds.MarkAsDeleted(keys[0], values[0]));
+
+  std::string ser_del_request;
+  ASSERT_FALSE(ds.RefreshItem(keys[0], values[0], &ser_del_request));
+  ASSERT_EQ(std::string("delete request1"), ser_del_request);
+  ser_del_request.clear();
+  ASSERT_FALSE(ds.RefreshItem(keys[1], values[1], &ser_del_request));
+  ASSERT_EQ(std::string("delete request2"), ser_del_request);
+
+  boost::this_thread::sleep(boost::posix_time::seconds(ds.t_refresh()+1));
+
+  refvalues = ds.ValuesToRefresh();
+  ASSERT_EQ(2, refvalues.size());
+  for (unsigned int j = 0; j < refvalues.size(); j++) {
+    if (keys[0] == refvalues[j].key_) {
+      ASSERT_EQ(values[0], refvalues[j].value_);
+      ASSERT_EQ(kad::DELETED, refvalues[j].del_status_);
+    } else if (keys[1] == refvalues[j].key_) {
+      ASSERT_EQ(values[1], refvalues[j].value_);
+      ASSERT_EQ(kad::MARKED_FOR_DELETION, refvalues[j].del_status_);
+    } else {
+      FAIL();
+    }
+  }
+}
+
+TEST_F(DataStoreTest, BEH_KAD_CompareTTLWhenStoringMarkedFotDelValues) {
+  std::string value1(base::RandomString(50)), value2(base::RandomString(50));
+  std::string key1(cry_obj_.Hash(base::RandomString(5), "",
+      crypto::STRING_STRING, false));
+  std::string key2(cry_obj_.Hash(base::RandomString(5), "",
+      crypto::STRING_STRING, false));
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, -1, false));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2, 3600, false));
+  ASSERT_TRUE(test_ds_->MarkForDeletion(key1, value1, "delete request"));
+  ASSERT_TRUE(test_ds_->MarkForDeletion(key2, value2, "delete request"));
+  ASSERT_TRUE(test_ds_->MarkAsDeleted(key2, value2));
+  std::vector<std::string> rec_values;
+  ASSERT_FALSE(test_ds_->LoadItem(key1, &rec_values));
+  ASSERT_FALSE(test_ds_->LoadItem(key2, &rec_values));
+
+  // trying to republish key1, value1 with not infinite TTL
+  ASSERT_FALSE(test_ds_->StoreItem(key1, value1, 1000, false));
+  ASSERT_FALSE(test_ds_->LoadItem(key1, &rec_values));
+  ASSERT_TRUE(test_ds_->StoreItem(key1, value1, -1, false));
+  ASSERT_TRUE(test_ds_->LoadItem(key1, &rec_values));
+  ASSERT_EQ(1, rec_values.size());
+  ASSERT_EQ(value1, rec_values[0]);
+  rec_values.clear();
+
+  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  // trying to store with less TTL than the one left
+  ASSERT_FALSE(test_ds_->StoreItem(key2, value2, 3597, false));
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2, 3600, false));
+  ASSERT_TRUE(test_ds_->LoadItem(key2, &rec_values));
+  ASSERT_EQ(1, rec_values.size());
+  ASSERT_EQ(value2, rec_values[0]);
+  rec_values.clear();
+
+  ASSERT_TRUE(test_ds_->MarkForDeletion(key2, value2, "delete request"));
+  ASSERT_FALSE(test_ds_->LoadItem(key2, &rec_values));
+  // storing now key2 value2 with infinite ttl
+  ASSERT_TRUE(test_ds_->StoreItem(key2, value2, -1, false));
+  ASSERT_TRUE(test_ds_->LoadItem(key2, &rec_values));
+  ASSERT_EQ(1, rec_values.size());
+  ASSERT_EQ(value2, rec_values[0]);
+}
+
+TEST_F(DataStoreTest, BEH_KAD_DeleteDelStatusExpiredValues) {
+  std::string key(base::RandomString(5)), value(base::RandomString(50));
+  ASSERT_TRUE(test_ds_->StoreItem(key, value, 3, false));
+  std::set<std::string> keys;
+  std::vector<std::string> values;
+  ASSERT_TRUE(test_ds_->Keys(&keys));
+  ASSERT_EQ(1, static_cast<int>(keys.size()));
+  ASSERT_TRUE(test_ds_->LoadItem(key, &values));
+  ASSERT_EQ(1, static_cast<int>(values.size()));
+  ASSERT_EQ(value, values[0]);
+  ASSERT_TRUE(test_ds_->MarkForDeletion(key, value, "delete request"));
+  values.clear();
+  ASSERT_FALSE(test_ds_->LoadItem(key, &values));
+  keys.clear();
+  boost::this_thread::sleep(boost::posix_time::seconds(4));
+  test_ds_->DeleteExpiredValues();
+  ASSERT_FALSE(test_ds_->LoadItem(key, &values));
+  ASSERT_TRUE(test_ds_->Keys(&keys));
+  ASSERT_TRUE(keys.empty());
 }

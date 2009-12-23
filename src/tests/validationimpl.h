@@ -25,45 +25,39 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef TESTS_DEMO_COMMANDS_H_
-#define TESTS_DEMO_COMMANDS_H_
+#ifndef TESTS_VALIDATIONIMPL_H_
+#define TESTS_VALIDATIONIMPL_H_
 
-#include <boost/function.hpp>
 #include <string>
+#include "maidsafe/validationinterface.h"
 #include "maidsafe/maidsafe-dht_config.h"
-#include "maidsafe/crypto.h"
 
-namespace kad {
-class KNode;
-}
+namespace base {
 
-namespace kaddemo {
-
-class Commands {
+class TestValidator : public SignatureValidator {
  public:
-  Commands(kad::KNode *node, const boost::uint16_t &K);
-  void Run();
- private:
-  void FindValueCallback(const std::string &result, const std::string &key,
-     const bool &write_to_file, const std::string &path);
-  void StoreCallback(const std::string &result, const std::string &key,
-      const boost::int32_t &ttl);
-  void PingCallback(const std::string &result, const std::string &id);
-  void FindNodeCallback(const std::string &result, const std::string &id);
-  void ProcessCommand(const std::string &cmdline, bool *wait_for_cb);
-  void PrintUsage();
-  bool ReadFile(const std::string &path, std::string *content);
-  void WriteToFile(const std::string &path, const std::string &content);
-  void Store50Values(const std::string &prefix);
-  void Store50Callback(const std::string &result, const std::string &key,
-      bool *arrived);
-  kad::KNode *node_;
-  bool result_arrived_;
-  double min_succ_stores_;
-  crypto::Crypto cryobj_;
-  bool finish_;
+  /**
+   * Signer Id is not validated, return always true
+   */
+  bool ValidateSignerId(const std::string &, const std::string &,
+      const std::string &) {
+    return true;
+  }
+  /**
+   * Validates the request signed with private key that corresponds
+   * to public_key
+   */
+  bool ValidateRequest(const std::string &signed_request,
+      const std::string &public_key, const std::string &signed_public_key,
+      const std::string &key) {
+    if (signed_request == kad::kAnonymousSignedRequest)
+      return true;
+    crypto::Crypto checker;
+    return checker.AsymCheckSig(checker.Hash(public_key + signed_public_key
+      + key, "", crypto::STRING_STRING, true), signed_request, public_key,
+      crypto::STRING_STRING);
+  }
 };
 
-}  // namespace
-
-#endif  // TESTS_DEMO_COMMANDS_H_
+}  // namespace base
+#endif  // TESTS_VALIDATIONIMPL_H_

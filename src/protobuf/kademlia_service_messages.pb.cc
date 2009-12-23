@@ -56,6 +56,12 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* NatDetectionPingResponse_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   NatDetectionPingResponse_reflection_ = NULL;
+const ::google::protobuf::Descriptor* DeleteRequest_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  DeleteRequest_reflection_ = NULL;
+const ::google::protobuf::Descriptor* DeleteResponse_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  DeleteResponse_reflection_ = NULL;
 
 }  // namespace
 
@@ -157,15 +163,13 @@ void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(FindNodeResult));
   StoreRequest_descriptor_ = file->message_type(5);
-  static const int StoreRequest_offsets_[9] = {
+  static const int StoreRequest_offsets_[7] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, value_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, sig_value_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, ttl_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, sender_info_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, publish_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, public_key_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, signed_public_key_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreRequest, signed_request_),
   };
   StoreRequest_reflection_ =
@@ -330,6 +334,40 @@ void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(NatDetectionPingResponse));
+  DeleteRequest_descriptor_ = file->message_type(15);
+  static const int DeleteRequest_offsets_[4] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteRequest, key_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteRequest, value_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteRequest, signed_request_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteRequest, sender_info_),
+  };
+  DeleteRequest_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      DeleteRequest_descriptor_,
+      DeleteRequest::default_instance_,
+      DeleteRequest_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteRequest, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteRequest, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(DeleteRequest));
+  DeleteResponse_descriptor_ = file->message_type(16);
+  static const int DeleteResponse_offsets_[2] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteResponse, result_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteResponse, node_id_),
+  };
+  DeleteResponse_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      DeleteResponse_descriptor_,
+      DeleteResponse::default_instance_,
+      DeleteResponse_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteResponse, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(DeleteResponse, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(DeleteResponse));
 }
 
 namespace {
@@ -372,6 +410,10 @@ void protobuf_RegisterTypes() {
     NatDetectionPingRequest_descriptor_, &NatDetectionPingRequest::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     NatDetectionPingResponse_descriptor_, &NatDetectionPingResponse::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    DeleteRequest_descriptor_, &DeleteRequest::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    DeleteResponse_descriptor_, &DeleteResponse::default_instance());
 }
 
 }  // namespace
@@ -407,6 +449,10 @@ void protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto() {
   delete NatDetectionPingRequest_reflection_;
   delete NatDetectionPingResponse::default_instance_;
   delete NatDetectionPingResponse_reflection_;
+  delete DeleteRequest::default_instance_;
+  delete DeleteRequest_reflection_;
+  delete DeleteResponse::default_instance_;
+  delete DeleteResponse_reflection_;
 }
 
 void protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto() {
@@ -433,30 +479,34 @@ void protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto() {
     "ds_cache_copy\030\005 \001(\014\022\032\n\022requester_ext_add"
     "r\030\006 \001(\014\022\017\n\007node_id\030\007 \001(\014\"B\n\016FindNodeResu"
     "lt\022\016\n\006result\030\001 \002(\014\022\017\n\007contact\030\002 \001(\014\022\017\n\007n"
-    "ode_id\030\003 \001(\014\"\333\001\n\014StoreRequest\022\013\n\003key\030\001 \002"
+    "ode_id\030\003 \001(\014\"\300\001\n\014StoreRequest\022\013\n\003key\030\001 \002"
     "(\014\022\r\n\005value\030\002 \001(\014\022#\n\tsig_value\030\003 \001(\0132\020.k"
     "ad.SignedValue\022\013\n\003ttl\030\004 \002(\005\022%\n\013sender_in"
     "fo\030\005 \002(\0132\020.kad.ContactInfo\022\017\n\007publish\030\006 "
-    "\002(\010\022\022\n\npublic_key\030\007 \001(\014\022\031\n\021signed_public"
-    "_key\030\010 \001(\014\022\026\n\016signed_request\030\t \001(\014\"0\n\rSt"
-    "oreResponse\022\016\n\006result\030\001 \002(\014\022\017\n\007node_id\030\002"
-    " \001(\014\"J\n\017DownlistRequest\022\020\n\010downlist\030\001 \003("
-    "\014\022%\n\013sender_info\030\002 \002(\0132\020.kad.ContactInfo"
-    "\"3\n\020DownlistResponse\022\016\n\006result\030\001 \002(\014\022\017\n\007"
-    "node_id\030\002 \001(\014\"\223\001\n\020BootstrapRequest\022\023\n\013ne"
-    "wcomer_id\030\001 \002(\014\022\031\n\021newcomer_local_ip\030\002 \002"
-    "(\014\022\033\n\023newcomer_local_port\030\003 \002(\005\022\027\n\017newco"
-    "mer_ext_ip\030\004 \001(\014\022\031\n\021newcomer_ext_port\030\005 "
-    "\001(\005\"\177\n\021BootstrapResponse\022\016\n\006result\030\001 \002(\014"
-    "\022\024\n\014bootstrap_id\030\002 \001(\014\022\027\n\017newcomer_ext_i"
-    "p\030\003 \001(\014\022\031\n\021newcomer_ext_port\030\004 \001(\005\022\020\n\010na"
-    "t_type\030\005 \001(\005\"`\n\023NatDetectionRequest\022\020\n\010n"
-    "ewcomer\030\001 \002(\014\022\026\n\016bootstrap_node\030\002 \002(\014\022\014\n"
-    "\004type\030\003 \002(\005\022\021\n\tsender_id\030\004 \002(\014\"&\n\024NatDet"
-    "ectionResponse\022\016\n\006result\030\001 \002(\014\"\'\n\027NatDet"
-    "ectionPingRequest\022\014\n\004ping\030\001 \002(\014\"I\n\030NatDe"
-    "tectionPingResponse\022\016\n\006result\030\001 \002(\014\022\014\n\004e"
-    "cho\030\002 \001(\014\022\017\n\007node_id\030\003 \001(\014", 1546);
+    "\002(\010\022*\n\016signed_request\030\007 \001(\0132\022.kad.Signed"
+    "Request\"0\n\rStoreResponse\022\016\n\006result\030\001 \002(\014"
+    "\022\017\n\007node_id\030\002 \001(\014\"J\n\017DownlistRequest\022\020\n\010"
+    "downlist\030\001 \003(\014\022%\n\013sender_info\030\002 \002(\0132\020.ka"
+    "d.ContactInfo\"3\n\020DownlistResponse\022\016\n\006res"
+    "ult\030\001 \002(\014\022\017\n\007node_id\030\002 \001(\014\"\223\001\n\020Bootstrap"
+    "Request\022\023\n\013newcomer_id\030\001 \002(\014\022\031\n\021newcomer"
+    "_local_ip\030\002 \002(\014\022\033\n\023newcomer_local_port\030\003"
+    " \002(\005\022\027\n\017newcomer_ext_ip\030\004 \001(\014\022\031\n\021newcome"
+    "r_ext_port\030\005 \001(\005\"\177\n\021BootstrapResponse\022\016\n"
+    "\006result\030\001 \002(\014\022\024\n\014bootstrap_id\030\002 \001(\014\022\027\n\017n"
+    "ewcomer_ext_ip\030\003 \001(\014\022\031\n\021newcomer_ext_por"
+    "t\030\004 \001(\005\022\020\n\010nat_type\030\005 \001(\005\"`\n\023NatDetectio"
+    "nRequest\022\020\n\010newcomer\030\001 \002(\014\022\026\n\016bootstrap_"
+    "node\030\002 \002(\014\022\014\n\004type\030\003 \002(\005\022\021\n\tsender_id\030\004 "
+    "\002(\014\"&\n\024NatDetectionResponse\022\016\n\006result\030\001 "
+    "\002(\014\"\'\n\027NatDetectionPingRequest\022\014\n\004ping\030\001"
+    " \002(\014\"I\n\030NatDetectionPingResponse\022\016\n\006resu"
+    "lt\030\001 \002(\014\022\014\n\004echo\030\002 \001(\014\022\017\n\007node_id\030\003 \001(\014\""
+    "\220\001\n\rDeleteRequest\022\013\n\003key\030\001 \002(\014\022\037\n\005value\030"
+    "\002 \002(\0132\020.kad.SignedValue\022*\n\016signed_reques"
+    "t\030\003 \002(\0132\022.kad.SignedRequest\022%\n\013sender_in"
+    "fo\030\004 \002(\0132\020.kad.ContactInfo\"1\n\016DeleteResp"
+    "onse\022\016\n\006result\030\001 \002(\014\022\017\n\007node_id\030\002 \001(\014", 1717);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "kademlia_service_messages.proto", &protobuf_RegisterTypes);
   PingRequest::default_instance_ = new PingRequest();
@@ -474,6 +524,8 @@ void protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto() {
   NatDetectionResponse::default_instance_ = new NatDetectionResponse();
   NatDetectionPingRequest::default_instance_ = new NatDetectionPingRequest();
   NatDetectionPingResponse::default_instance_ = new NatDetectionPingResponse();
+  DeleteRequest::default_instance_ = new DeleteRequest();
+  DeleteResponse::default_instance_ = new DeleteResponse();
   PingRequest::default_instance_->InitAsDefaultInstance();
   PingResponse::default_instance_->InitAsDefaultInstance();
   FindRequest::default_instance_->InitAsDefaultInstance();
@@ -489,6 +541,8 @@ void protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto() {
   NatDetectionResponse::default_instance_->InitAsDefaultInstance();
   NatDetectionPingRequest::default_instance_->InitAsDefaultInstance();
   NatDetectionPingResponse::default_instance_->InitAsDefaultInstance();
+  DeleteRequest::default_instance_->InitAsDefaultInstance();
+  DeleteResponse::default_instance_->InitAsDefaultInstance();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto);
 }
 
@@ -2229,9 +2283,6 @@ const ::google::protobuf::Reflection* FindNodeResult::GetReflection() const {
 
 const ::std::string StoreRequest::_default_key_;
 const ::std::string StoreRequest::_default_value_;
-const ::std::string StoreRequest::_default_public_key_;
-const ::std::string StoreRequest::_default_signed_public_key_;
-const ::std::string StoreRequest::_default_signed_request_;
 #ifndef _MSC_VER
 const int StoreRequest::kKeyFieldNumber;
 const int StoreRequest::kValueFieldNumber;
@@ -2239,8 +2290,6 @@ const int StoreRequest::kSigValueFieldNumber;
 const int StoreRequest::kTtlFieldNumber;
 const int StoreRequest::kSenderInfoFieldNumber;
 const int StoreRequest::kPublishFieldNumber;
-const int StoreRequest::kPublicKeyFieldNumber;
-const int StoreRequest::kSignedPublicKeyFieldNumber;
 const int StoreRequest::kSignedRequestFieldNumber;
 #endif  // !_MSC_VER
 
@@ -2254,14 +2303,13 @@ StoreRequest::StoreRequest()
     ttl_(0),
     sender_info_(NULL),
     publish_(false),
-    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
-    signed_public_key_(const_cast< ::std::string*>(&_default_signed_public_key_)),
-    signed_request_(const_cast< ::std::string*>(&_default_signed_request_)) {
+    signed_request_(NULL) {
   SharedCtor();
 }
 
 void StoreRequest::InitAsDefaultInstance() {  sig_value_ = const_cast< ::kad::SignedValue*>(&::kad::SignedValue::default_instance());
   sender_info_ = const_cast< ::kad::ContactInfo*>(&::kad::ContactInfo::default_instance());
+  signed_request_ = const_cast< ::kad::SignedRequest*>(&::kad::SignedRequest::default_instance());
 }
 
 StoreRequest::StoreRequest(const StoreRequest& from)
@@ -2274,9 +2322,7 @@ StoreRequest::StoreRequest(const StoreRequest& from)
     ttl_(0),
     sender_info_(NULL),
     publish_(false),
-    public_key_(const_cast< ::std::string*>(&_default_public_key_)),
-    signed_public_key_(const_cast< ::std::string*>(&_default_signed_public_key_)),
-    signed_request_(const_cast< ::std::string*>(&_default_signed_request_)) {
+    signed_request_(NULL) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -2289,9 +2335,7 @@ void StoreRequest::SharedCtor() {
   ttl_ = 0;
   sender_info_ = NULL;
   publish_ = false;
-  public_key_ = const_cast< ::std::string*>(&_default_public_key_);
-  signed_public_key_ = const_cast< ::std::string*>(&_default_signed_public_key_);
-  signed_request_ = const_cast< ::std::string*>(&_default_signed_request_);
+  signed_request_ = NULL;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -2306,18 +2350,10 @@ void StoreRequest::SharedDtor() {
   if (value_ != &_default_value_) {
     delete value_;
   }
-  if (public_key_ != &_default_public_key_) {
-    delete public_key_;
-  }
-  if (signed_public_key_ != &_default_signed_public_key_) {
-    delete signed_public_key_;
-  }
-  if (signed_request_ != &_default_signed_request_) {
-    delete signed_request_;
-  }
   if (this != default_instance_) {
     delete sig_value_;
     delete sender_info_;
+    delete signed_request_;
   }
 }
 
@@ -2357,21 +2393,7 @@ void StoreRequest::Clear() {
     }
     publish_ = false;
     if (_has_bit(6)) {
-      if (public_key_ != &_default_public_key_) {
-        public_key_->clear();
-      }
-    }
-    if (_has_bit(7)) {
-      if (signed_public_key_ != &_default_signed_public_key_) {
-        signed_public_key_->clear();
-      }
-    }
-  }
-  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
-    if (_has_bit(8)) {
-      if (signed_request_ != &_default_signed_request_) {
-        signed_request_->clear();
-      }
+      if (signed_request_ != NULL) signed_request_->::kad::SignedRequest::Clear();
     }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -2457,42 +2479,19 @@ bool StoreRequest::MergePartialFromCodedStream(
         DO_(::google::protobuf::internal::WireFormat::ReadBool(
               input, &publish_));
         _set_bit(5);
-        if (input->ExpectTag(58)) goto parse_public_key;
+        if (input->ExpectTag(58)) goto parse_signed_request;
         break;
       }
       
-      // optional bytes public_key = 7;
+      // optional .kad.SignedRequest signed_request = 7;
       case 7: {
         if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
             ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
           goto handle_uninterpreted;
         }
-       parse_public_key:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_public_key()));
-        if (input->ExpectTag(66)) goto parse_signed_public_key;
-        break;
-      }
-      
-      // optional bytes signed_public_key = 8;
-      case 8: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
-          goto handle_uninterpreted;
-        }
-       parse_signed_public_key:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_signed_public_key()));
-        if (input->ExpectTag(74)) goto parse_signed_request;
-        break;
-      }
-      
-      // optional bytes signed_request = 9;
-      case 9: {
-        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
-            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
-          goto handle_uninterpreted;
-        }
        parse_signed_request:
-        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_signed_request()));
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, mutable_signed_request()));
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -2551,19 +2550,9 @@ void StoreRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBool(6, this->publish(), output);
   }
   
-  // optional bytes public_key = 7;
+  // optional .kad.SignedRequest signed_request = 7;
   if (_has_bit(6)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(7, this->public_key(), output);
-  }
-  
-  // optional bytes signed_public_key = 8;
-  if (_has_bit(7)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(8, this->signed_public_key(), output);
-  }
-  
-  // optional bytes signed_request = 9;
-  if (_has_bit(8)) {
-    ::google::protobuf::internal::WireFormat::WriteBytes(9, this->signed_request(), output);
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(7, this->signed_request(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -2604,19 +2593,9 @@ void StoreRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::WriteBoolToArray(6, this->publish(), target);
   }
   
-  // optional bytes public_key = 7;
+  // optional .kad.SignedRequest signed_request = 7;
   if (_has_bit(6)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(7, this->public_key(), target);
-  }
-  
-  // optional bytes signed_public_key = 8;
-  if (_has_bit(7)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(8, this->signed_public_key(), target);
-  }
-  
-  // optional bytes signed_request = 9;
-  if (_has_bit(8)) {
-    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(9, this->signed_request(), target);
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(7, this->signed_request(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -2668,24 +2647,11 @@ int StoreRequest::ByteSize() const {
       total_size += 1 + 1;
     }
     
-    // optional bytes public_key = 7;
-    if (has_public_key()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->public_key());
-    }
-    
-    // optional bytes signed_public_key = 8;
-    if (has_signed_public_key()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->signed_public_key());
-    }
-    
-  }
-  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
-    // optional bytes signed_request = 9;
+    // optional .kad.SignedRequest signed_request = 7;
     if (has_signed_request()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormat::BytesSize(this->signed_request());
+        ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+          this->signed_request());
     }
     
   }
@@ -2732,15 +2698,7 @@ void StoreRequest::MergeFrom(const StoreRequest& from) {
       set_publish(from.publish());
     }
     if (from._has_bit(6)) {
-      set_public_key(from.public_key());
-    }
-    if (from._has_bit(7)) {
-      set_signed_public_key(from.signed_public_key());
-    }
-  }
-  if (from._has_bits_[8 / 32] & (0xffu << (8 % 32))) {
-    if (from._has_bit(8)) {
-      set_signed_request(from.signed_request());
+      mutable_signed_request()->::kad::SignedRequest::MergeFrom(from.signed_request());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -2766,8 +2724,6 @@ void StoreRequest::Swap(StoreRequest* other) {
     std::swap(ttl_, other->ttl_);
     std::swap(sender_info_, other->sender_info_);
     std::swap(publish_, other->publish_);
-    std::swap(public_key_, other->public_key_);
-    std::swap(signed_public_key_, other->signed_public_key_);
     std::swap(signed_request_, other->signed_request_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
@@ -2783,6 +2739,9 @@ bool StoreRequest::IsInitialized() const {
   }
   if (has_sender_info()) {
     if (!this->sender_info().IsInitialized()) return false;
+  }
+  if (has_signed_request()) {
+    if (!this->signed_request().IsInitialized()) return false;
   }
   return true;
 }
@@ -5418,6 +5377,619 @@ const ::google::protobuf::Descriptor* NatDetectionPingResponse::GetDescriptor() 
 const ::google::protobuf::Reflection* NatDetectionPingResponse::GetReflection() const {
   protobuf_AssignDescriptorsOnce();
   return NatDetectionPingResponse_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string DeleteRequest::_default_key_;
+#ifndef _MSC_VER
+const int DeleteRequest::kKeyFieldNumber;
+const int DeleteRequest::kValueFieldNumber;
+const int DeleteRequest::kSignedRequestFieldNumber;
+const int DeleteRequest::kSenderInfoFieldNumber;
+#endif  // !_MSC_VER
+
+DeleteRequest::DeleteRequest()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    key_(const_cast< ::std::string*>(&_default_key_)),
+    value_(NULL),
+    signed_request_(NULL),
+    sender_info_(NULL) {
+  SharedCtor();
+}
+
+void DeleteRequest::InitAsDefaultInstance() {  value_ = const_cast< ::kad::SignedValue*>(&::kad::SignedValue::default_instance());
+  signed_request_ = const_cast< ::kad::SignedRequest*>(&::kad::SignedRequest::default_instance());
+  sender_info_ = const_cast< ::kad::ContactInfo*>(&::kad::ContactInfo::default_instance());
+}
+
+DeleteRequest::DeleteRequest(const DeleteRequest& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    key_(const_cast< ::std::string*>(&_default_key_)),
+    value_(NULL),
+    signed_request_(NULL),
+    sender_info_(NULL) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void DeleteRequest::SharedCtor() {
+  _cached_size_ = 0;
+  key_ = const_cast< ::std::string*>(&_default_key_);
+  value_ = NULL;
+  signed_request_ = NULL;
+  sender_info_ = NULL;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+DeleteRequest::~DeleteRequest() {
+  SharedDtor();
+}
+
+void DeleteRequest::SharedDtor() {
+  if (key_ != &_default_key_) {
+    delete key_;
+  }
+  if (this != default_instance_) {
+    delete value_;
+    delete signed_request_;
+    delete sender_info_;
+  }
+}
+
+const ::google::protobuf::Descriptor* DeleteRequest::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return DeleteRequest_descriptor_;
+}
+
+const DeleteRequest& DeleteRequest::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();  return *default_instance_;
+}
+
+DeleteRequest* DeleteRequest::default_instance_ = NULL;
+
+DeleteRequest* DeleteRequest::New() const {
+  return new DeleteRequest;
+}
+
+void DeleteRequest::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (key_ != &_default_key_) {
+        key_->clear();
+      }
+    }
+    if (_has_bit(1)) {
+      if (value_ != NULL) value_->::kad::SignedValue::Clear();
+    }
+    if (_has_bit(2)) {
+      if (signed_request_ != NULL) signed_request_->::kad::SignedRequest::Clear();
+    }
+    if (_has_bit(3)) {
+      if (sender_info_ != NULL) sender_info_->::kad::ContactInfo::Clear();
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool DeleteRequest::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required bytes key = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_key()));
+        if (input->ExpectTag(18)) goto parse_value;
+        break;
+      }
+      
+      // required .kad.SignedValue value = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_value:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, mutable_value()));
+        if (input->ExpectTag(26)) goto parse_signed_request;
+        break;
+      }
+      
+      // required .kad.SignedRequest signed_request = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_signed_request:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, mutable_signed_request()));
+        if (input->ExpectTag(34)) goto parse_sender_info;
+        break;
+      }
+      
+      // required .kad.ContactInfo sender_info = 4;
+      case 4: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_sender_info:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, mutable_sender_info()));
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void DeleteRequest::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    DeleteRequest::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required bytes key = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->key(), output);
+  }
+  
+  // required .kad.SignedValue value = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(2, this->value(), output);
+  }
+  
+  // required .kad.SignedRequest signed_request = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(3, this->signed_request(), output);
+  }
+  
+  // required .kad.ContactInfo sender_info = 4;
+  if (_has_bit(3)) {
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(4, this->sender_info(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* DeleteRequest::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required bytes key = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->key(), target);
+  }
+  
+  // required .kad.SignedValue value = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(2, this->value(), target);
+  }
+  
+  // required .kad.SignedRequest signed_request = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(3, this->signed_request(), target);
+  }
+  
+  // required .kad.ContactInfo sender_info = 4;
+  if (_has_bit(3)) {
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(4, this->sender_info(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int DeleteRequest::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required bytes key = 1;
+    if (has_key()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->key());
+    }
+    
+    // required .kad.SignedValue value = 2;
+    if (has_value()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+          this->value());
+    }
+    
+    // required .kad.SignedRequest signed_request = 3;
+    if (has_signed_request()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+          this->signed_request());
+    }
+    
+    // required .kad.ContactInfo sender_info = 4;
+    if (has_sender_info()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+          this->sender_info());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void DeleteRequest::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const DeleteRequest* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const DeleteRequest*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void DeleteRequest::MergeFrom(const DeleteRequest& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_key(from.key());
+    }
+    if (from._has_bit(1)) {
+      mutable_value()->::kad::SignedValue::MergeFrom(from.value());
+    }
+    if (from._has_bit(2)) {
+      mutable_signed_request()->::kad::SignedRequest::MergeFrom(from.signed_request());
+    }
+    if (from._has_bit(3)) {
+      mutable_sender_info()->::kad::ContactInfo::MergeFrom(from.sender_info());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void DeleteRequest::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void DeleteRequest::CopyFrom(const DeleteRequest& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void DeleteRequest::Swap(DeleteRequest* other) {
+  if (other != this) {
+    std::swap(key_, other->key_);
+    std::swap(value_, other->value_);
+    std::swap(signed_request_, other->signed_request_);
+    std::swap(sender_info_, other->sender_info_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool DeleteRequest::IsInitialized() const {
+  if ((_has_bits_[0] & 0x0000000f) != 0x0000000f) return false;
+  
+  if (has_value()) {
+    if (!this->value().IsInitialized()) return false;
+  }
+  if (has_signed_request()) {
+    if (!this->signed_request().IsInitialized()) return false;
+  }
+  if (has_sender_info()) {
+    if (!this->sender_info().IsInitialized()) return false;
+  }
+  return true;
+}
+
+const ::google::protobuf::Descriptor* DeleteRequest::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* DeleteRequest::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return DeleteRequest_reflection_;
+}
+
+// ===================================================================
+
+const ::std::string DeleteResponse::_default_result_;
+const ::std::string DeleteResponse::_default_node_id_;
+#ifndef _MSC_VER
+const int DeleteResponse::kResultFieldNumber;
+const int DeleteResponse::kNodeIdFieldNumber;
+#endif  // !_MSC_VER
+
+DeleteResponse::DeleteResponse()
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    result_(const_cast< ::std::string*>(&_default_result_)),
+    node_id_(const_cast< ::std::string*>(&_default_node_id_)) {
+  SharedCtor();
+}
+
+void DeleteResponse::InitAsDefaultInstance() {}
+
+DeleteResponse::DeleteResponse(const DeleteResponse& from)
+  : ::google::protobuf::Message(),
+    _unknown_fields_(),
+    _cached_size_(0),
+    result_(const_cast< ::std::string*>(&_default_result_)),
+    node_id_(const_cast< ::std::string*>(&_default_node_id_)) {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void DeleteResponse::SharedCtor() {
+  _cached_size_ = 0;
+  result_ = const_cast< ::std::string*>(&_default_result_);
+  node_id_ = const_cast< ::std::string*>(&_default_node_id_);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+DeleteResponse::~DeleteResponse() {
+  SharedDtor();
+}
+
+void DeleteResponse::SharedDtor() {
+  if (result_ != &_default_result_) {
+    delete result_;
+  }
+  if (node_id_ != &_default_node_id_) {
+    delete node_id_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+const ::google::protobuf::Descriptor* DeleteResponse::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return DeleteResponse_descriptor_;
+}
+
+const DeleteResponse& DeleteResponse::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();  return *default_instance_;
+}
+
+DeleteResponse* DeleteResponse::default_instance_ = NULL;
+
+DeleteResponse* DeleteResponse::New() const {
+  return new DeleteResponse;
+}
+
+void DeleteResponse::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (_has_bit(0)) {
+      if (result_ != &_default_result_) {
+        result_->clear();
+      }
+    }
+    if (_has_bit(1)) {
+      if (node_id_ != &_default_node_id_) {
+        node_id_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool DeleteResponse::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormat::GetTagFieldNumber(tag)) {
+      // required bytes result = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_result()));
+        if (input->ExpectTag(18)) goto parse_node_id;
+        break;
+      }
+      
+      // optional bytes node_id = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_node_id:
+        DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_node_id()));
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormat::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void DeleteResponse::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  ::google::protobuf::uint8* raw_buffer = output->GetDirectBufferForNBytesAndAdvance(_cached_size_);
+  if (raw_buffer != NULL) {
+    DeleteResponse::SerializeWithCachedSizesToArray(raw_buffer);
+    return;
+  }
+  
+  // required bytes result = 1;
+  if (_has_bit(0)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(1, this->result(), output);
+  }
+  
+  // optional bytes node_id = 2;
+  if (_has_bit(1)) {
+    ::google::protobuf::internal::WireFormat::WriteBytes(2, this->node_id(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* DeleteResponse::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required bytes result = 1;
+  if (_has_bit(0)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(1, this->result(), target);
+  }
+  
+  // optional bytes node_id = 2;
+  if (_has_bit(1)) {
+    target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->node_id(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int DeleteResponse::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required bytes result = 1;
+    if (has_result()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->result());
+    }
+    
+    // optional bytes node_id = 2;
+    if (has_node_id()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::BytesSize(this->node_id());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  _cached_size_ = total_size;
+  return total_size;
+}
+
+void DeleteResponse::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const DeleteResponse* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const DeleteResponse*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void DeleteResponse::MergeFrom(const DeleteResponse& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from._has_bit(0)) {
+      set_result(from.result());
+    }
+    if (from._has_bit(1)) {
+      set_node_id(from.node_id());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void DeleteResponse::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void DeleteResponse::CopyFrom(const DeleteResponse& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void DeleteResponse::Swap(DeleteResponse* other) {
+  if (other != this) {
+    std::swap(result_, other->result_);
+    std::swap(node_id_, other->node_id_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+bool DeleteResponse::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
+  
+  return true;
+}
+
+const ::google::protobuf::Descriptor* DeleteResponse::GetDescriptor() const {
+  return descriptor();
+}
+
+const ::google::protobuf::Reflection* DeleteResponse::GetReflection() const {
+  protobuf_AssignDescriptorsOnce();
+  return DeleteResponse_reflection_;
 }
 
 }  // namespace kad

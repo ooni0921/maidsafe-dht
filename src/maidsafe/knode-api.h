@@ -41,15 +41,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 13
+#if MAIDSAFE_DHT_VERSION < 14
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
+
+namespace base {
+class SignatureValidator;
+}
 
 // Kademlia
 namespace kad {
 
 class SignedValue;
+class SignedRequest;
 
 class KNode {
  public:
@@ -78,11 +83,12 @@ class KNode {
       const boost::uint16_t &external_port, base::callback_func_type cb);
   void Leave();
   void StoreValue(const std::string &key, const SignedValue &value,
-      const std::string &public_key, const std::string &signed_public_key,
-      const std::string &signed_request, const boost::uint32_t &ttl,
+      const SignedRequest &sreq, const boost::int32_t &ttl,
       base::callback_func_type cb);
   void StoreValue(const std::string &key, const std::string &value,
-      const boost::uint32_t &ttl, base::callback_func_type cb);
+      const boost::int32_t &ttl, base::callback_func_type cb);
+  void DeleteValue(const std::string &key, const SignedValue &value,
+      const SignedRequest &request, base::callback_func_type cb);
   // If any KNode during the iterative lookup has the value in its
   // AlternativeStore, rather than returning this value, it returns its own
   // contact details.  If check_alt_store is true, this node checks its own
@@ -103,9 +109,9 @@ class KNode {
   bool GetContact(const std::string &id, Contact *contact);
   bool FindValueLocal(const std::string &key, std::vector<std::string> *values);
   bool StoreValueLocal(const std::string &key, const std::string &value,
-      const boost::uint32_t &ttl);
+      const boost::int32_t &ttl);
   bool RefreshValueLocal(const std::string &key, const std::string &value,
-      const boost::uint32_t &ttl);
+      const boost::int32_t &ttl);
   void GetRandomContacts(const int &count,
       const std::vector<Contact> &exclude_contacts,
       std::vector<Contact> *contacts);
@@ -130,12 +136,13 @@ class KNode {
   boost::uint32_t KeyExpireTime(const std::string &key,
       const std::string &value);
   bool HasRSAKeys();
-  boost::uint32_t KeyValueTTL(const std::string &key,
+  boost::int32_t KeyValueTTL(const std::string &key,
       const std::string &value) const;
   // If this is set to a non-NULL value, then the AlternativeStore will be used
   // before Kad's native DataStore.
   void SetAlternativeStore(base::AlternativeStore* alternative_store);
   base::AlternativeStore *alternative_store();
+  void set_signature_validator(base::SignatureValidator *validator);
  private:
   boost::shared_ptr<KNodeImpl> pimpl_;
 };

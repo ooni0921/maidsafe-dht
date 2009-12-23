@@ -45,6 +45,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "protobuf/signed_kadvalue.pb.h"
 #include "maidsafe/config.h"
 #include "maidsafe/online.h"
+#include "maidsafe/validationinterface.h"
 
 namespace fs = boost::filesystem;
 
@@ -142,7 +143,7 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
         stopping_(false), port_forwarded_(port_forwarded), use_upnp_(use_upnp),
         contacts_to_add_(), addcontacts_routine_(), add_ctc_cond_(),
         private_key_(private_key), public_key_(public_key), upnp_(),
-        upnp_mapped_port_(0) {}
+        upnp_mapped_port_(0), signature_validator_(NULL) {}
 
 KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
       transport::Transport *trans, node_type type, const boost::uint16_t k,
@@ -164,7 +165,7 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
         stopping_(false), port_forwarded_(port_forwarded), use_upnp_(use_upnp),
         contacts_to_add_(), addcontacts_routine_(), add_ctc_cond_(),
         private_key_(private_key), public_key_(public_key), upnp_(),
-        upnp_mapped_port_(0) {}
+        upnp_mapped_port_(0), signature_validator_(NULL) {}
 
 KNodeImpl::~KNodeImpl() {
   if (is_joined_) {
@@ -756,8 +757,8 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
             &KNodeImpl::StoreValue_IterativeStoreValue, resp, callback_data);
         if (HasRSAKeys()) {
           kadrpcs_.Store(callback_data.data->key, callback_data.data->sig_value,
-              callback_data.data->pub_key, callback_data.data->sig_pub_key,
-              callback_data.data->sig_req, callback_data.remote_ctc.host_ip(),
+              callback_data.data->sig_request,
+              callback_data.remote_ctc.host_ip(),
               callback_data.remote_ctc.host_port(),
               callback_data.remote_ctc.rendezvous_ip(),
               callback_data.remote_ctc.rendezvous_port(),
@@ -853,8 +854,8 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
 
     if (callback_data.data->sig_value.IsInitialized()) {
       kadrpcs_.Store(callback_data.data->key, callback_data.data->sig_value,
-          callback_data.data->pub_key, callback_data.data->sig_pub_key,
-          callback_data.data->sig_req, contact_ip, contact_port, rv_ip, rv_port,
+          callback_data.data->sig_request,
+          contact_ip, contact_port, rv_ip, rv_port,
           resp, callback_args.rpc_ctrler, done, callback_data.data->ttl,
           callback_data.data->publish);
     } else {
@@ -868,8 +869,9 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
 
 void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
     const std::string &key, const std::string &value,
-    const StoreRequestSignature &sig_req, const bool &publish,
-    const boost::uint32_t &ttl, base::callback_func_type cb) {
+    const SignedValue &sig_value, const SignedRequest &sig_req,
+    const bool &publish, const boost::int32_t &ttl,
+    base::callback_func_type cb) {
   if (!is_joined_)
     return;
   // validate the result
@@ -903,8 +905,8 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
         if (stored_local) {
           bool local_result;
           std::string local_value;
-          if (sig_req.value.IsInitialized()) {
-            local_value = sig_req.value.SerializeAsString();
+          if (sig_value.IsInitialized()) {
+            local_value = sig_value.SerializeAsString();
           } else {
             local_value = value;
           }
@@ -923,8 +925,7 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
       }
       boost::shared_ptr<IterativeStoreValueData>
           data(new struct IterativeStoreValueData(closest_nodes, key, value, cb,
-               sig_req.public_key, sig_req.signed_public_key,
-               sig_req.signed_request, publish, ttl, sig_req.value));
+               publish, ttl, sig_value, sig_req));
       if (stored_local)
         data->save_nodes++;
       // decide the parallel level
@@ -950,27 +951,26 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
 }
 
 void KNodeImpl::StoreValue(const std::string &key,
-      const SignedValue &value, const std::string &public_key,
-      const std::string &signed_public_key, const std::string &signed_request,
-      const boost::uint32_t &ttl, base::callback_func_type cb) {
-  if (!value.IsInitialized()) {
+      const SignedValue &value, const SignedRequest &sreq,
+      const boost::int32_t &ttl, base::callback_func_type cb) {
+  if (!value.IsInitialized() || !sreq.IsInitialized()) {
     StoreResponse resp;
     resp.set_result(kad::kRpcResultFailure);
-    std::string ser_resp = resp.SerializeAsString();
+    std::string ser_resp(resp.SerializeAsString());
     cb(ser_resp);
     return;
   }
-  StoreRequestSignature sig(public_key, signed_public_key, signed_request,
-      value);
+
   FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs, this,
-      _1, key, "", sig, true, ttl, cb));
+      _1, key, "", value, sreq, true, ttl, cb));
 }
 
 void KNodeImpl::StoreValue(const std::string &key, const std::string &value,
-      const boost::uint32_t &ttl, base::callback_func_type cb) {
-  StoreRequestSignature sig;
+      const boost::int32_t &ttl, base::callback_func_type cb) {
+  SignedValue svalue;
+  SignedRequest sreq;
   FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs, this,
-      _1, key, value, sig, true, ttl, cb));
+      _1, key, value, svalue, sreq, true, ttl, cb));
 }
 
 void KNodeImpl::FindValue(const std::string &key, const bool &check_alt_store,
@@ -1249,7 +1249,7 @@ bool KNodeImpl::FindValueLocal(const std::string &key,
 }
 
 bool KNodeImpl::StoreValueLocal(const std::string &key,
-      const std::string &value, const boost::uint32_t &ttl) {
+      const std::string &value, const boost::int32_t &ttl) {
   bool hashable = false;
   if (HasRSAKeys()) {
     std::vector< std::pair<std::string, bool> > attr;
@@ -1269,8 +1269,9 @@ bool KNodeImpl::StoreValueLocal(const std::string &key,
 }
 
 bool KNodeImpl::RefreshValueLocal(const std::string &key,
-      const std::string &value, const boost::uint32_t &ttl) {
-  if (pdata_store_->RefreshItem(key, value))
+      const std::string &value, const boost::int32_t &ttl) {
+  std::string ser_del_request;
+  if (pdata_store_->RefreshItem(key, value, &ser_del_request))
     return true;
   return StoreValueLocal(key, value, ttl);
 }
@@ -1371,6 +1372,7 @@ void KNodeImpl::RegisterKadService() {
           base::callback_func_type) > (&KNodeImpl::Ping), this, _1, _2)));
   premote_service_->set_node_info(contact_info());
   premote_service_->set_alternative_store(alternative_store_);
+  premote_service_->set_signature_validator(signature_validator_);
   pservice_channel_.reset(new rpcprotocol::Channel(pchannel_manager_,
       ptransport_));
   pservice_channel_->SetService(premote_service_.get());
@@ -2138,41 +2140,41 @@ bool KNodeImpl::HasRSAKeys() {
   return true;
 }
 
-boost::uint32_t KNodeImpl::KeyValueTTL(const std::string &key,
+boost::int32_t KNodeImpl::KeyValueTTL(const std::string &key,
       const std::string &value) const {
   return pdata_store_->TimeToLive(key, value);
 }
 
 void KNodeImpl::RefreshValue(const std::string &key,
-      const std::string &value, const boost::uint32_t &ttl,
+      const std::string &value, const boost::int32_t &ttl,
       base::callback_func_type cb) {
   if (!is_joined_ || !refresh_routine_started_  || stopping_)
     return;
-  StoreRequestSignature sig;
+  SignedRequest sreq;
+  SignedValue svalue;
   if (HasRSAKeys()) {
     crypto::Crypto cobj;
     cobj.set_hash_algorithm(crypto::SHA_512);
-    sig.public_key = public_key_;
-    sig.signed_public_key = cobj.AsymSign(public_key_, "", private_key_,
-        crypto::STRING_STRING);
-    sig.signed_request = cobj.AsymSign(cobj.Hash(public_key_ +
-        sig.signed_public_key + key, "", crypto::STRING_STRING, true), "",
-        private_key_, crypto::STRING_STRING);
-    SignedValue sig_value;
-    if (!sig_value.ParseFromString(value))
+    if (!svalue.ParseFromString(value))
       return;
-    sig.value = sig_value;
+    sreq.set_signer_id(node_id_);
+    sreq.set_public_key(public_key_);
+    sreq.set_signed_public_key(cobj.AsymSign(public_key_, "", private_key_,
+        crypto::STRING_STRING));
+    sreq.set_signed_request(cobj.AsymSign(cobj.Hash(public_key_ +
+        sreq.signed_public_key() + key, "", crypto::STRING_STRING, true), "",
+        private_key_, crypto::STRING_STRING));
     FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs,
-                                  this, _1, key, "", sig, false, ttl, cb));
+      this, _1, key, "", svalue, sreq, false, ttl, cb));
   } else {
     FindCloseNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs,
-                                  this, _1, key, value, sig, false, ttl, cb));
+      this, _1, key, value, svalue, sreq, false, ttl, cb));
   }
 }
 
 void KNodeImpl::RefreshValueCallback(const std::string &,
       const std::string &key, const std::string &value,
-      const boost::uint32_t &ttl, boost::shared_ptr<int> refreshes_done,
+      const boost::int32_t &ttl, boost::shared_ptr<int> refreshes_done,
       const int &total_refreshes) {
   if (!is_joined_ || !refresh_routine_started_  || stopping_)
     return;
@@ -2200,6 +2202,203 @@ void KNodeImpl::RefreshValuesRoutine() {
               refreshes_done, values.size()));
       }
     }
+  }
+}
+
+void KNodeImpl::DeleteValue(const std::string &key, const SignedValue &value,
+      const SignedRequest &request, base::callback_func_type cb) {
+  if (!value.IsInitialized() || !request.IsInitialized()) {
+    DeleteResponse resp;
+    resp.set_result(kad::kRpcResultFailure);
+    std::string ser_resp(resp.SerializeAsString());
+    cb(ser_resp);
+    return;
+  }
+  FindCloseNodes(key, boost::bind(&KNodeImpl::DelValue_ExecuteDeleteRPCs, this,
+      _1, key, value, request, cb));
+}
+
+void KNodeImpl::DelValue_ExecuteDeleteRPCs(const std::string &result,
+      const std::string &key, const SignedValue &value,
+      const SignedRequest &sig_req, base::callback_func_type cb) {
+  if (!is_joined_)
+    return;
+  // validate the result
+  bool is_valid = true;
+  FindResponse result_msg;
+  if (!result_msg.ParseFromString(result)) {
+    is_valid = false;
+  } else if (result_msg.closest_nodes_size() == 0) {
+    is_valid = false;
+  }
+  if ((is_valid) || (result_msg.result() == kRpcResultSuccess)) {
+    std::vector<Contact> closest_nodes;
+    for (int i = 0; i < result_msg.closest_nodes_size(); ++i) {
+      Contact node;
+      node.ParseFromString(result_msg.closest_nodes(i));
+      closest_nodes.push_back(node);
+    }
+    if (closest_nodes.size() > 0) {
+      bool deleted_local(false);
+      if (type_ != CLIENT) {
+        // Try to delete value from node
+        if (DelValueLocal(key, value, sig_req))
+          deleted_local = true;
+      }
+      boost::shared_ptr<IterativeDelValueData>
+          data(new struct IterativeDelValueData(closest_nodes, key, value,
+              sig_req, cb));
+      if (deleted_local)
+        ++data->del_nodes;
+      // decide the parallel level
+      int parallel_size;
+      if (static_cast<int>(data->closest_nodes.size())>alpha_)
+        parallel_size = alpha_;
+      else
+        parallel_size = data->closest_nodes.size();
+      for (int i = 0; i< parallel_size; ++i) {
+        DeleteCallbackArgs callback_args(data);
+        DelValue_IterativeDeleteValue(NULL, callback_args);
+      }
+      return;
+    }
+    DeleteResponse local_result;
+    local_result.set_result(kRpcResultFailure);
+    std::string local_result_str(local_result.SerializeAsString());
+    cb(local_result_str);
+  } else {
+    DeleteResponse local_result;
+    local_result.set_result(kRpcResultFailure);
+    std::string local_result_str(local_result.SerializeAsString());
+    cb(local_result_str);
+  }
+}
+
+bool KNodeImpl::DelValueLocal(const std::string &key, const SignedValue &value,
+      const SignedRequest &req) {
+  if (signature_validator_ == NULL)
+    return false;
+  // validating request
+  if (!signature_validator_->ValidateSignerId(req.signer_id(),
+      req.signed_public_key(), key) ||
+      !signature_validator_->ValidateRequest(req.signed_request(),
+      req.public_key(), req.signed_public_key(), key))
+    return false;
+
+  // only the signer of the value can delete it
+  std::vector<std::string> values_str;
+  if (!pdata_store_->LoadItem(key, &values_str))
+    return false;
+  crypto::Crypto cobj;
+  if (cobj.AsymCheckSig(value.value(), value.value_signature(),
+      req.public_key(), crypto::STRING_STRING)) {
+    std::string ser_request(req.SerializeAsString());
+    if (pdata_store_->MarkForDeletion(key, value.SerializeAsString(),
+        ser_request))
+      return true;
+  }
+  return false;
+}
+
+void KNodeImpl::DelValue_IterativeDeleteValue(const DeleteResponse *response,
+      DeleteCallbackArgs callback_data) {
+  if (!is_joined_)
+    return;
+  if (callback_data.data->is_callbacked)
+    // Only call back once
+    return;
+
+  if (response != NULL) {
+    if (response->IsInitialized() && response->has_node_id() &&
+        response->node_id() != callback_data.remote_ctc.node_id()) {
+      if (callback_data.retry) {
+        delete response;
+        DeleteResponse *resp = new DeleteResponse;
+        UpdatePDRTContactToRemote(callback_data.remote_ctc.node_id(),
+            callback_data.remote_ctc.host_ip());
+        callback_data.retry = false;
+      // send RPC to this contact's remote address because local failed
+        google::protobuf::Closure *done1 = google::protobuf::NewCallback<
+            KNodeImpl, const DeleteResponse*, DeleteCallbackArgs > (this,
+            &KNodeImpl::DelValue_IterativeDeleteValue, resp, callback_data);
+        kadrpcs_.Delete(callback_data.data->key, callback_data.data->value,
+            callback_data.data->sig_request, callback_data.remote_ctc.host_ip(),
+            callback_data.remote_ctc.host_port(),
+            callback_data.remote_ctc.rendezvous_ip(),
+            callback_data.remote_ctc.rendezvous_port(), resp,
+            callback_data.rpc_ctrler, done1);
+        return;
+      }
+    }
+    if (response->IsInitialized() && !callback_data.rpc_ctrler->Failed()) {
+      if (response->result() == kRpcResultSuccess) {
+        ++callback_data.data->del_nodes;
+      }
+      AddContact(callback_data.remote_ctc, callback_data.rpc_ctrler->rtt(),
+          false);
+    } else {
+      // it has timeout
+      RemoveContact(callback_data.remote_ctc.node_id());
+    }
+    // nodes has been contacted -- timeout, responded with failure or success
+    ++callback_data.data->contacted_nodes;
+    delete callback_data.rpc_ctrler;
+    callback_data.rpc_ctrler = NULL;
+    delete response;
+  }
+  if (callback_data.data->contacted_nodes >=
+      callback_data.data->closest_nodes.size()) {
+    // Finish storing
+    DeleteResponse del_value_result;
+    double d = K_ * kMinSuccessfulPecentageStore;
+    if (callback_data.data->del_nodes >= static_cast<unsigned int>(d)) {
+      // Succeeded - min. number of copies were stored
+      del_value_result.set_result(kRpcResultSuccess);
+    } else {
+      del_value_result.set_result(kRpcResultFailure);
+      DLOG(ERROR) << "Successful Delete rpc's " << callback_data.data->del_nodes
+        << "\nSuccessful Delete rpc's required " <<
+        K_ * kMinSuccessfulPecentageStore << std::endl;
+    }
+    std::string del_value_result_str(del_value_result.SerializeAsString());
+    callback_data.data->is_callbacked = true;
+    callback_data.data->cb(del_value_result_str);
+  } else {
+    // Continues...
+    // send RPC to this contact
+    ++callback_data.data->index;
+    if (callback_data.data->index >= callback_data.data->closest_nodes.size())
+      return;  // all requested were sent out, wait for the result
+    Contact next_node =
+        callback_data.data->closest_nodes[callback_data.data->index];
+    DeleteResponse *resp = new DeleteResponse;
+    DeleteCallbackArgs callback_args(callback_data.data);
+    callback_args.remote_ctc = next_node;
+    callback_args.rpc_ctrler = new rpcprotocol::Controller;
+
+    connect_to_node conn_type = CheckContactLocalAddress(next_node.node_id(),
+      next_node.local_ip(), next_node.local_port(), next_node.host_ip());
+    std::string contact_ip, rv_ip("");
+    boost::uint16_t contact_port, rv_port(0);
+    if (conn_type == LOCAL) {
+      callback_args.retry = true;
+      contact_ip = next_node.local_ip();
+      contact_port = next_node.local_port();
+    } else {
+      contact_ip = next_node.host_ip();
+      contact_port = next_node.host_port();
+      rv_ip = next_node.rendezvous_ip();
+      rv_port = next_node.rendezvous_port();
+    }
+
+    google::protobuf::Closure *done = google::protobuf::NewCallback<
+        KNodeImpl, const DeleteResponse*, DeleteCallbackArgs > (
+            this, &KNodeImpl::DelValue_IterativeDeleteValue, resp,
+            callback_args);
+
+    kadrpcs_.Delete(callback_data.data->key, callback_data.data->value,
+        callback_data.data->sig_request, contact_ip, contact_port, rv_ip,
+        rv_port, resp, callback_args.rpc_ctrler, done);
   }
 }
 
