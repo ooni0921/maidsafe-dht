@@ -53,6 +53,7 @@ message StoreRequest {
 message StoreResponse {
   required bytes result = 1;
   optional bytes node_id = 2;
+  optional SignedRequest signed_request = 3;
 };
 
 message DownlistRequest {

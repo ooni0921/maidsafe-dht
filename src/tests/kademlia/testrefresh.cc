@@ -531,4 +531,136 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   trans.Stop();
   ch_manager.Stop();
 }
+
+TEST_F(TestRefreshSignedValues, FUNC_KAD_InformOfDeletedValue) {
+  // Storing a Value
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string key = co.Hash("key", "", crypto::STRING_STRING, false);
+  std::string value = base::RandomString(1024*5);
+  StoreValueCallback store_cb;
+  crypto::RsaKeyPair keys;
+  keys.GenerateKeys(4096);
+  std::string pub_key = keys.public_key();
+  std::string priv_key = keys.private_key();
+  std::string signed_public_key, signed_request;
+  signed_public_key = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
+  signed_request = co.AsymSign(co.Hash(pub_key+signed_public_key+
+      key, "", crypto::STRING_STRING, true), "", priv_key,
+      crypto::STRING_STRING);
+  kad::SignedValue sig_value;
+  sig_value.set_value(value);
+  sig_value.set_value_signature(co.AsymSign(value, "", priv_key,
+      crypto::STRING_STRING));
+  std::string ser_sig_value = sig_value.SerializeAsString();
+  keys.GenerateKeys(4096);
+  kad::SignedRequest req;
+  req.set_signer_id(nodes[4]->node_id());
+  req.set_public_key(pub_key);
+  req.set_signed_public_key(signed_public_key);
+  req.set_signed_request(signed_request);
+  nodes[4]->StoreValue(key, sig_value, req, 24*3600,
+    boost::bind(&StoreValueCallback::CallbackFunc, &store_cb, _1));
+  wait_result(&store_cb);
+  ASSERT_EQ(kad::kRpcResultSuccess, store_cb.result());
+
+  transport::Transport trans;
+  rpcprotocol::ChannelManager ch_manager(&trans);
+  std::string local_dir = test_dir + std::string("/datastorenewnode");
+  boost::filesystem::create_directories(local_dir);
+  KNode node(&ch_manager, &trans, VAULT, testK, kAlpha, kBeta, testRefresh,
+      keys.private_key(), keys.public_key(), false, false);
+  ASSERT_TRUE(ch_manager.RegisterNotifiersToTransport());
+  ASSERT_TRUE(trans.RegisterOnServerDown(boost::bind(
+      &kad::KNode::HandleDeadRendezvousServer, &node, _1)));
+  ASSERT_EQ(0, trans.Start(0));
+  ASSERT_EQ(0, ch_manager.Start());
+  std::string kconfig_file1 = local_dir + "/.kadconfig";
+  base::KadConfig kad_config1;
+  base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
+  std::string hex_id = base::EncodeToHex(nodes[0]->node_id());
+  kad_contact->set_node_id(hex_id);
+  kad_contact->set_ip(nodes[0]->host_ip());
+  kad_contact->set_port(nodes[0]->host_port());
+  kad_contact->set_local_ip(nodes[0]->local_host_ip());
+  kad_contact->set_local_port(nodes[0]->local_host_port());
+  std::fstream output1(kconfig_file1.c_str(),
+    std::ios::out | std::ios::trunc | std::ios::binary);
+  EXPECT_TRUE(kad_config1.SerializeToOstream(&output1));
+  output1.close();
+  GeneralKadCallback cb;
+  // joining node with id == key of value stored
+  node.Join(key, kconfig_file1,
+    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
+  wait_result(&cb);
+  ASSERT_EQ(kRpcResultSuccess, cb.result());
+  node.set_signature_validator(&validator);
+  cb.Reset();
+  ASSERT_TRUE(node.is_joined());
+
+  boost::this_thread::sleep(boost::posix_time::seconds(testRefresh+8));
+  std::vector<std::string> values;
+  if (!node.FindValueLocal(key, &values)) {
+    node.Leave();
+    trans.Stop();
+    ch_manager.Stop();
+    FAIL();
+  }
+  EXPECT_EQ(ser_sig_value, values[0]);
+  EXPECT_NE(0, node.KeyExpireTime(key, ser_sig_value));
+  EXPECT_NE(0, node.KeyLastRefreshTime(key, ser_sig_value));
+
+  // Find a Node that doesn't have the value
+  int counter = 0;
+  for (counter = 0; counter < testNetworkSize; counter++) {
+    values.clear();
+    if (!nodes[counter]->FindValueLocal(key, &values))
+      break;
+  }
+  // Deleating the value
+  DeleteValueCallback del_cb;
+  nodes[counter]->DeleteValue(key, sig_value, req,
+    boost::bind(&DeleteValueCallback::CallbackFunc, &del_cb, _1));
+  wait_result(&del_cb);
+  EXPECT_EQ(kad::kRpcResultSuccess, del_cb.result());
+
+  // at least one node should have the value
+  counter = 0;
+  for (counter = 0; counter < testNetworkSize; counter++) {
+    values.clear();
+    if (nodes[counter]->FindValueLocal(key, &values))
+      break;
+  }
+  if (counter == testNetworkSize) {
+    node.Leave();
+    trans.Stop();
+    ch_manager.Stop();
+    FAIL() << "All values have been deleted, it will not be refreshed";
+  }
+  boost::this_thread::sleep(boost::posix_time::seconds(testRefresh*2));
+  counter = 0;
+  for (counter = 0; counter < testNetworkSize; counter++) {
+    values.clear();
+    if (nodes[counter]->FindValueLocal(key, &values))
+      break;
+  }
+  values.clear();
+  if (counter < testNetworkSize ||
+      node.FindValueLocal(key, &values)) {
+    node.Leave();
+    trans.Stop();
+    ch_manager.Stop();
+    FAIL() << "Key Value pair was not deleted.";
+  }
+  FindCallback find_cb;
+  node.FindValue(key, false, boost::bind(&FindCallback::CallbackFunc,
+    &find_cb, _1));
+  wait_result(&find_cb);
+  EXPECT_EQ(kad::kRpcResultFailure, find_cb.result());
+
+  node.Leave();
+  EXPECT_FALSE(node.is_joined());
+  trans.Stop();
+  ch_manager.Stop();
+}
 }

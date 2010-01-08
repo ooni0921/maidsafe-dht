@@ -35,28 +35,36 @@ namespace base {
  * Base class to validate with a public key requests signed with a private key
  * and to validate the id of the sender of the request.  This methods should be
  * implemented by the user.
+ * id_ is the ID of the node doing the validation.
  */
 class SignatureValidator {
  public:
+  SignatureValidator(const std::string &id) : id_(id) {}
+  SignatureValidator() : id_("") {}
   virtual ~SignatureValidator() {}
   /**
    * Validates the Id of the signer
    * signer_id - id to be validated
+   * public_key - public key
    * signed_public_key - public key signed
-   * key - key to store/delete value
    */
   virtual bool ValidateSignerId(const std::string &signer_id,
-    const std::string &signed_public_key, const std::string &key) = 0;
+    const std::string &public_key, const std::string &signed_public_key) = 0;
   /**
    * Validates the request signed by sender
    * signed_request - request to be validated with the public key
    * public_key - used to validate signature of the request
    * signed_public_key - public key signed
    * key - key to store/delete value
+   * rec_id - id of the node receiving the request
    */
   virtual bool ValidateRequest(const std::string &signed_request,
     const std::string &public_key, const std::string &signed_public_key,
     const std::string &key) = 0;
+  inline std::string id() const { return id_; }
+  inline void set_id(const std::string &id) { id_ = id; }
+  private:
+    std::string id_;
 };
 
 }  // namespace base

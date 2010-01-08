@@ -121,8 +121,8 @@ class Crypto {
 class RsaKeyPair {
  public:
   RsaKeyPair() : public_key_(""), private_key_("") {}
-  inline std::string public_key() {return public_key_;}
-  inline std::string private_key() {return private_key_;}
+  inline std::string public_key() const {return public_key_;}
+  inline std::string private_key() const {return private_key_;}
   inline void set_public_key(std::string publickey) {
     public_key_ = publickey;
   }

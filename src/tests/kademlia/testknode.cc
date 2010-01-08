@@ -1157,7 +1157,7 @@ TEST_F(KNodeTest, FUNC_KAD_DeleteValue) {
   // Deleting Value
   DeleteValueCallback del_cb;
   knodes_[5]->DeleteValue(key, sig_value, req,
-    boost::bind(&FakeCallback::CallbackFunc, &del_cb, _1));
+    boost::bind(&DeleteValueCallback::CallbackFunc, &del_cb, _1));
   wait_result(&del_cb);
   ASSERT_EQ(kad::kRpcResultSuccess, del_cb.result());
   // Checking no node returns the value
@@ -1233,7 +1233,7 @@ TEST_F(KNodeTest, FUNC_KAD_InvReqDeleteValue) {
   req.set_signed_request(sig_req1);
   DeleteValueCallback del_cb;
   knodes_[5]->DeleteValue(key, sig_value, req,
-    boost::bind(&FakeCallback::CallbackFunc, &del_cb, _1));
+    boost::bind(&DeleteValueCallback::CallbackFunc, &del_cb, _1));
   wait_result(&del_cb);
   ASSERT_EQ(kad::kRpcResultFailure, del_cb.result());
 
@@ -1244,7 +1244,7 @@ TEST_F(KNodeTest, FUNC_KAD_InvReqDeleteValue) {
   req.set_signed_public_key(sig_pub_key);
   req.set_signed_request(sig_req);
   knodes_[4]->DeleteValue(key, sig_value, req,
-    boost::bind(&FakeCallback::CallbackFunc, &del_cb, _1));
+    boost::bind(&DeleteValueCallback::CallbackFunc, &del_cb, _1));
   wait_result(&del_cb);
   ASSERT_EQ(kad::kRpcResultFailure, del_cb.result());
 

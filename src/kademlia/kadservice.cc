@@ -174,10 +174,10 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
     response->set_result(kRpcResultFailure);
   } else if (GetSender(request->sender_info(), &sender)) {
     std::vector<Contact> closest_contacts, exclude_contacts;
-    std::string key = request->key();
+    std::string key(request->key());
     exclude_contacts.push_back(sender);
     get_closestK_contacts_(key, &closest_contacts, exclude_contacts);
-    bool found_node = false;
+    bool found_node(false);
     for (unsigned int i = 0; i < closest_contacts.size(); ++i) {
       std::string contact_str;
       closest_contacts[i].SerialiseToString(&contact_str);
@@ -223,7 +223,7 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
     // If the value exists in the alternative store, add our contact details to
     // field alternative_value_holder.  If not, get the values if present in
     // this node's data store, otherwise execute find_node for this key.
-    std::string key = request->key();
+    std::string key(request->key());
     std::vector<std::string> values_str;
     if (alternative_store_ != NULL) {
       if (alternative_store_->Has(key)) {
@@ -340,8 +340,7 @@ void KadService::Downlist(google::protobuf::RpcController *controller,
 }
 
 bool KadService::GetSender(const ContactInfo &sender_info, Contact *sender) {
-  std::string ser_info;
-  sender_info.SerializeToString(&ser_info);
+  std::string ser_info(sender_info.SerializeAsString());
   return sender->ParseFromString(ser_info);
 }
 
@@ -466,7 +465,7 @@ void KadService::Bootstrap(google::protobuf::RpcController *,
   response->set_newcomer_ext_port(request->newcomer_ext_port());
   response->set_result(kRpcResultSuccess);
 
-  std::string this_node_str = node_info_.SerializeAsString();
+  std::string this_node_str(node_info_.SerializeAsString());
   Contact node_c;
   std::vector<Contact> ex_contacs;
   ex_contacs.push_back(newcomer);
@@ -520,13 +519,17 @@ void KadService::StoreValueLocal(const std::string &key,
       const bool &publish, StoreResponse *response,
       rpcprotocol::Controller *ctrl) {
   bool result;
-  std::string ser_del_request;
   if (publish) {
     result = pdatastore_->StoreItem(key, value, ttl, false);
   } else {
+    std::string ser_del_request;
     result = pdatastore_->RefreshItem(key, value, &ser_del_request);
-    if (!result)
+    if (!result && ser_del_request.empty()) {
       result = pdatastore_->StoreItem(key, value, ttl, false);
+    } else if (!result && !ser_del_request.empty()) {
+      SignedRequest *req = response->mutable_signed_request();
+      req->ParseFromString(ser_del_request);
+    }
   }
   if (result) {
     response->set_result(kRpcResultSuccess);
@@ -545,17 +548,22 @@ void KadService::StoreValueLocal(const std::string &key,
       const bool &publish, StoreResponse *response,
       rpcprotocol::Controller *ctrl) {
   bool result, hashable;
-  std::string ser_del_request;
-  std::string ser_value = value.SerializeAsString();
+  std::string ser_value(value.SerializeAsString());
   if (publish) {
     if (CanStoreSignedValueHashable(key, ser_value, &hashable))
       result = pdatastore_->StoreItem(key, ser_value, ttl, hashable);
     else
       result = false;
   } else {
+    std::string ser_del_request;
     result = pdatastore_->RefreshItem(key, ser_value, &ser_del_request);
-    if (!result && CanStoreSignedValueHashable(key, ser_value, &hashable))
+    if (!result && CanStoreSignedValueHashable(key, ser_value, &hashable) &&
+        ser_del_request.empty()) {
       result = pdatastore_->StoreItem(key, ser_value, ttl, hashable);
+    } else if (!result && !ser_del_request.empty()) {
+      SignedRequest *req = response->mutable_signed_request();
+      req->ParseFromString(ser_del_request);
+    }
   }
   if (result) {
     response->set_result(kRpcResultSuccess);
@@ -623,10 +631,10 @@ void KadService::Delete(google::protobuf::RpcController *controller,
   if (cobj.AsymCheckSig(request->value().value(),
       request->value().value_signature(),
       request->signed_request().public_key(), crypto::STRING_STRING)) {
-    std::string ser_request(request->signed_request().SerializeAsString());
     Contact sender;
     if (pdatastore_->MarkForDeletion(request->key(),
-        request->value().SerializeAsString(), ser_request) &&
+        request->value().SerializeAsString(),
+        request->signed_request().SerializeAsString()) &&
         GetSender(request->sender_info(), &sender)) {
       rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
         (controller);

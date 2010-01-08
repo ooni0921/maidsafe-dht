@@ -893,6 +893,13 @@ class StoreResponse : public ::google::protobuf::Message {
   inline void set_node_id(const void* value, size_t size);
   inline ::std::string* mutable_node_id();
   
+  // optional .kad.SignedRequest signed_request = 3;
+  inline bool has_signed_request() const;
+  inline void clear_signed_request();
+  static const int kSignedRequestFieldNumber = 3;
+  inline const ::kad::SignedRequest& signed_request() const;
+  inline ::kad::SignedRequest* mutable_signed_request();
+  
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   mutable int _cached_size_;
@@ -901,10 +908,11 @@ class StoreResponse : public ::google::protobuf::Message {
   static const ::std::string _default_result_;
   ::std::string* node_id_;
   static const ::std::string _default_node_id_;
+  ::kad::SignedRequest* signed_request_;
   friend void  protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto();
   friend void protobuf_ShutdownFile_kademlia_5fservice_5fmessages_2eproto();
-  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -3027,6 +3035,23 @@ inline ::std::string* StoreResponse::mutable_node_id() {
     node_id_ = new ::std::string;
   }
   return node_id_;
+}
+
+// optional .kad.SignedRequest signed_request = 3;
+inline bool StoreResponse::has_signed_request() const {
+  return _has_bit(2);
+}
+inline void StoreResponse::clear_signed_request() {
+  if (signed_request_ != NULL) signed_request_->::kad::SignedRequest::Clear();
+  _clear_bit(2);
+}
+inline const ::kad::SignedRequest& StoreResponse::signed_request() const {
+  return signed_request_ != NULL ? *signed_request_ : *default_instance_->signed_request_;
+}
+inline ::kad::SignedRequest* StoreResponse::mutable_signed_request() {
+  _set_bit(2);
+  if (signed_request_ == NULL) signed_request_ = new ::kad::SignedRequest;
+  return signed_request_;
 }
 
 // -------------------------------------------------------------------

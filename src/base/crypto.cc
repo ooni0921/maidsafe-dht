@@ -562,8 +562,8 @@ std::string Crypto::Uncompress(const std::string &input,
 
 void RsaKeyPair::GenerateKeys(unsigned int keySize) {
   // CryptoPP::AutoSeededRandomPool rand_pool;
-  private_key_ = "";
-  public_key_ = "";
+  private_key_.clear();
+  public_key_.clear();
   CryptoPP::RandomPool rand_pool;
   std::string seed = base::RandomString(keySize);
   rand_pool.IncorporateEntropy(reinterpret_cast<const byte *>(seed.c_str()),

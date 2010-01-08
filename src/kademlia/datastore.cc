@@ -226,6 +226,9 @@ bool DataStore::MarkForDeletion(const std::string &key,
   datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
   if (it == datastore_.end())
     return false;
+  // Check if already deleted or marked as deleted
+  if (it->del_status_ != NOT_DELETED)
+    return true;
   key_value_tuple tuple(key, value, 0);
   tuple.ttl_ = it->ttl_;
   tuple.expire_time_ = it->expire_time_;

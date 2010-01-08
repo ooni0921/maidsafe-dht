@@ -36,6 +36,7 @@ namespace base {
 
 class TestValidator : public SignatureValidator {
  public:
+  TestValidator() : SignatureValidator() {}
   /**
    * Signer Id is not validated, return always true
    */

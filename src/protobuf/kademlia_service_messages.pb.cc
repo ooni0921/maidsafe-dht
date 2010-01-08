@@ -184,9 +184,10 @@ void protobuf_AssignDesc_kademlia_5fservice_5fmessages_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(StoreRequest));
   StoreResponse_descriptor_ = file->message_type(6);
-  static const int StoreResponse_offsets_[2] = {
+  static const int StoreResponse_offsets_[3] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreResponse, result_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreResponse, node_id_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(StoreResponse, signed_request_),
   };
   StoreResponse_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -484,29 +485,31 @@ void protobuf_AddDesc_kademlia_5fservice_5fmessages_2eproto() {
     "ad.SignedValue\022\013\n\003ttl\030\004 \002(\005\022%\n\013sender_in"
     "fo\030\005 \002(\0132\020.kad.ContactInfo\022\017\n\007publish\030\006 "
     "\002(\010\022*\n\016signed_request\030\007 \001(\0132\022.kad.Signed"
-    "Request\"0\n\rStoreResponse\022\016\n\006result\030\001 \002(\014"
-    "\022\017\n\007node_id\030\002 \001(\014\"J\n\017DownlistRequest\022\020\n\010"
-    "downlist\030\001 \003(\014\022%\n\013sender_info\030\002 \002(\0132\020.ka"
-    "d.ContactInfo\"3\n\020DownlistResponse\022\016\n\006res"
-    "ult\030\001 \002(\014\022\017\n\007node_id\030\002 \001(\014\"\223\001\n\020Bootstrap"
-    "Request\022\023\n\013newcomer_id\030\001 \002(\014\022\031\n\021newcomer"
-    "_local_ip\030\002 \002(\014\022\033\n\023newcomer_local_port\030\003"
-    " \002(\005\022\027\n\017newcomer_ext_ip\030\004 \001(\014\022\031\n\021newcome"
-    "r_ext_port\030\005 \001(\005\"\177\n\021BootstrapResponse\022\016\n"
-    "\006result\030\001 \002(\014\022\024\n\014bootstrap_id\030\002 \001(\014\022\027\n\017n"
-    "ewcomer_ext_ip\030\003 \001(\014\022\031\n\021newcomer_ext_por"
-    "t\030\004 \001(\005\022\020\n\010nat_type\030\005 \001(\005\"`\n\023NatDetectio"
-    "nRequest\022\020\n\010newcomer\030\001 \002(\014\022\026\n\016bootstrap_"
-    "node\030\002 \002(\014\022\014\n\004type\030\003 \002(\005\022\021\n\tsender_id\030\004 "
-    "\002(\014\"&\n\024NatDetectionResponse\022\016\n\006result\030\001 "
-    "\002(\014\"\'\n\027NatDetectionPingRequest\022\014\n\004ping\030\001"
-    " \002(\014\"I\n\030NatDetectionPingResponse\022\016\n\006resu"
-    "lt\030\001 \002(\014\022\014\n\004echo\030\002 \001(\014\022\017\n\007node_id\030\003 \001(\014\""
-    "\220\001\n\rDeleteRequest\022\013\n\003key\030\001 \002(\014\022\037\n\005value\030"
-    "\002 \002(\0132\020.kad.SignedValue\022*\n\016signed_reques"
-    "t\030\003 \002(\0132\022.kad.SignedRequest\022%\n\013sender_in"
-    "fo\030\004 \002(\0132\020.kad.ContactInfo\"1\n\016DeleteResp"
-    "onse\022\016\n\006result\030\001 \002(\014\022\017\n\007node_id\030\002 \001(\014", 1717);
+    "Request\"\\\n\rStoreResponse\022\016\n\006result\030\001 \002(\014"
+    "\022\017\n\007node_id\030\002 \001(\014\022*\n\016signed_request\030\003 \001("
+    "\0132\022.kad.SignedRequest\"J\n\017DownlistRequest"
+    "\022\020\n\010downlist\030\001 \003(\014\022%\n\013sender_info\030\002 \002(\0132"
+    "\020.kad.ContactInfo\"3\n\020DownlistResponse\022\016\n"
+    "\006result\030\001 \002(\014\022\017\n\007node_id\030\002 \001(\014\"\223\001\n\020Boots"
+    "trapRequest\022\023\n\013newcomer_id\030\001 \002(\014\022\031\n\021newc"
+    "omer_local_ip\030\002 \002(\014\022\033\n\023newcomer_local_po"
+    "rt\030\003 \002(\005\022\027\n\017newcomer_ext_ip\030\004 \001(\014\022\031\n\021new"
+    "comer_ext_port\030\005 \001(\005\"\177\n\021BootstrapRespons"
+    "e\022\016\n\006result\030\001 \002(\014\022\024\n\014bootstrap_id\030\002 \001(\014\022"
+    "\027\n\017newcomer_ext_ip\030\003 \001(\014\022\031\n\021newcomer_ext"
+    "_port\030\004 \001(\005\022\020\n\010nat_type\030\005 \001(\005\"`\n\023NatDete"
+    "ctionRequest\022\020\n\010newcomer\030\001 \002(\014\022\026\n\016bootst"
+    "rap_node\030\002 \002(\014\022\014\n\004type\030\003 \002(\005\022\021\n\tsender_i"
+    "d\030\004 \002(\014\"&\n\024NatDetectionResponse\022\016\n\006resul"
+    "t\030\001 \002(\014\"\'\n\027NatDetectionPingRequest\022\014\n\004pi"
+    "ng\030\001 \002(\014\"I\n\030NatDetectionPingResponse\022\016\n\006"
+    "result\030\001 \002(\014\022\014\n\004echo\030\002 \001(\014\022\017\n\007node_id\030\003 "
+    "\001(\014\"\220\001\n\rDeleteRequest\022\013\n\003key\030\001 \002(\014\022\037\n\005va"
+    "lue\030\002 \002(\0132\020.kad.SignedValue\022*\n\016signed_re"
+    "quest\030\003 \002(\0132\022.kad.SignedRequest\022%\n\013sende"
+    "r_info\030\004 \002(\0132\020.kad.ContactInfo\"1\n\016Delete"
+    "Response\022\016\n\006result\030\001 \002(\014\022\017\n\007node_id\030\002 \001("
+    "\014", 1761);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "kademlia_service_messages.proto", &protobuf_RegisterTypes);
   PingRequest::default_instance_ = new PingRequest();
@@ -2762,6 +2765,7 @@ const ::std::string StoreResponse::_default_node_id_;
 #ifndef _MSC_VER
 const int StoreResponse::kResultFieldNumber;
 const int StoreResponse::kNodeIdFieldNumber;
+const int StoreResponse::kSignedRequestFieldNumber;
 #endif  // !_MSC_VER
 
 StoreResponse::StoreResponse()
@@ -2769,18 +2773,21 @@ StoreResponse::StoreResponse()
     _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
-    node_id_(const_cast< ::std::string*>(&_default_node_id_)) {
+    node_id_(const_cast< ::std::string*>(&_default_node_id_)),
+    signed_request_(NULL) {
   SharedCtor();
 }
 
-void StoreResponse::InitAsDefaultInstance() {}
+void StoreResponse::InitAsDefaultInstance() {  signed_request_ = const_cast< ::kad::SignedRequest*>(&::kad::SignedRequest::default_instance());
+}
 
 StoreResponse::StoreResponse(const StoreResponse& from)
   : ::google::protobuf::Message(),
     _unknown_fields_(),
     _cached_size_(0),
     result_(const_cast< ::std::string*>(&_default_result_)),
-    node_id_(const_cast< ::std::string*>(&_default_node_id_)) {
+    node_id_(const_cast< ::std::string*>(&_default_node_id_)),
+    signed_request_(NULL) {
   SharedCtor();
   MergeFrom(from);
 }
@@ -2789,6 +2796,7 @@ void StoreResponse::SharedCtor() {
   _cached_size_ = 0;
   result_ = const_cast< ::std::string*>(&_default_result_);
   node_id_ = const_cast< ::std::string*>(&_default_node_id_);
+  signed_request_ = NULL;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -2804,6 +2812,7 @@ void StoreResponse::SharedDtor() {
     delete node_id_;
   }
   if (this != default_instance_) {
+    delete signed_request_;
   }
 }
 
@@ -2833,6 +2842,9 @@ void StoreResponse::Clear() {
       if (node_id_ != &_default_node_id_) {
         node_id_->clear();
       }
+    }
+    if (_has_bit(2)) {
+      if (signed_request_ != NULL) signed_request_->::kad::SignedRequest::Clear();
     }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -2864,6 +2876,19 @@ bool StoreResponse::MergePartialFromCodedStream(
         }
        parse_node_id:
         DO_(::google::protobuf::internal::WireFormat::ReadBytes(input, mutable_node_id()));
+        if (input->ExpectTag(26)) goto parse_signed_request;
+        break;
+      }
+      
+      // optional .kad.SignedRequest signed_request = 3;
+      case 3: {
+        if (::google::protobuf::internal::WireFormat::GetTagWireType(tag) !=
+            ::google::protobuf::internal::WireFormat::WIRETYPE_LENGTH_DELIMITED) {
+          goto handle_uninterpreted;
+        }
+       parse_signed_request:
+        DO_(::google::protobuf::internal::WireFormat::ReadMessageNoVirtual(
+             input, mutable_signed_request()));
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -2902,6 +2927,11 @@ void StoreResponse::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::WriteBytes(2, this->node_id(), output);
   }
   
+  // optional .kad.SignedRequest signed_request = 3;
+  if (_has_bit(2)) {
+    ::google::protobuf::internal::WireFormat::WriteMessageNoVirtual(3, this->signed_request(), output);
+  }
+  
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -2918,6 +2948,11 @@ void StoreResponse::SerializeWithCachedSizes(
   // optional bytes node_id = 2;
   if (_has_bit(1)) {
     target = ::google::protobuf::internal::WireFormat::WriteBytesToArray(2, this->node_id(), target);
+  }
+  
+  // optional .kad.SignedRequest signed_request = 3;
+  if (_has_bit(2)) {
+    target = ::google::protobuf::internal::WireFormat::WriteMessageNoVirtualToArray(3, this->signed_request(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -2941,6 +2976,13 @@ int StoreResponse::ByteSize() const {
     if (has_node_id()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormat::BytesSize(this->node_id());
+    }
+    
+    // optional .kad.SignedRequest signed_request = 3;
+    if (has_signed_request()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormat::MessageSizeNoVirtual(
+          this->signed_request());
     }
     
   }
@@ -2974,6 +3016,9 @@ void StoreResponse::MergeFrom(const StoreResponse& from) {
     if (from._has_bit(1)) {
       set_node_id(from.node_id());
     }
+    if (from._has_bit(2)) {
+      mutable_signed_request()->::kad::SignedRequest::MergeFrom(from.signed_request());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -2994,6 +3039,7 @@ void StoreResponse::Swap(StoreResponse* other) {
   if (other != this) {
     std::swap(result_, other->result_);
     std::swap(node_id_, other->node_id_);
+    std::swap(signed_request_, other->signed_request_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -3003,6 +3049,9 @@ void StoreResponse::Swap(StoreResponse* other) {
 bool StoreResponse::IsInitialized() const {
   if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
   
+  if (has_signed_request()) {
+    if (!this->signed_request().IsInitialized()) return false;
+  }
   return true;
 }
 
