@@ -59,7 +59,7 @@ std::string Crypto::XOROperation(const std::string &first,
 
 std::string Crypto::Obfuscate(const std::string &first,
                               const std::string &second,
-                              obfuscationtype obt) {
+                              const obfuscationtype &obt) {
   std::string result;
   if ((first.length() != second.length()) || (first.length() == 0))
     return result;
@@ -73,7 +73,8 @@ std::string Crypto::Obfuscate(const std::string &first,
   return result;
 }
 
-std::string Crypto::SecurePassword(const std::string &password, int pin) {
+std::string Crypto::SecurePassword(const std::string &password,
+                                   const int &pin) {
   if ((password == "") || (pin == 0))
     return "";
   byte purpose = 0;
@@ -94,8 +95,8 @@ std::string Crypto::SecurePassword(const std::string &password, int pin) {
 template <class T>
 std::string Crypto::HashFunc(const std::string &input,
                              const std::string &output,
-                             operationtype ot,
-                             bool hex,
+                             const operationtype &ot,
+                             const bool &hex,
                              T hash) {
   std::string result;
   switch (ot) {
@@ -166,8 +167,8 @@ std::string Crypto::HashFunc(const std::string &input,
 
 std::string Crypto::Hash(const std::string &input,
                          const std::string &output,
-                         operationtype ot,
-                         bool hex) {
+                         const operationtype &ot,
+                         const bool &hex) {
   switch (hash_algorithm_) {
     case SHA_512: {
       CryptoPP::SHA512 hash;
@@ -198,7 +199,7 @@ std::string Crypto::Hash(const std::string &input,
 
 std::string Crypto::SymmEncrypt(const std::string &input,
                                 const std::string &output,
-                                operationtype ot,
+                                const operationtype &ot,
                                 const std::string &key) {
   if (symm_algorithm_ != AES_256)
     return "";
@@ -259,7 +260,7 @@ std::string Crypto::SymmEncrypt(const std::string &input,
 
 std::string Crypto::SymmDecrypt(const std::string &input,
                                 const std::string &output,
-                                operationtype ot,
+                                const operationtype &ot,
                                 const std::string &key) {
   if (symm_algorithm_ != AES_256)
     return "";
@@ -322,7 +323,7 @@ std::string Crypto::SymmDecrypt(const std::string &input,
 std::string Crypto::AsymEncrypt(const std::string &input,
                                 const std::string &output,
                                 const std::string &key,
-                                operationtype ot) {
+                                const operationtype &ot) {
   try {
     CryptoPP::StringSource pubkey(key, true);
     CryptoPP::RSAES_OAEP_SHA_Encryptor pub(pubkey);
@@ -364,7 +365,7 @@ std::string Crypto::AsymEncrypt(const std::string &input,
 std::string Crypto::AsymDecrypt(const std::string &input,
                                 const std::string &output,
                                 const std::string &key,
-                                operationtype ot) {
+                                const operationtype &ot) {
   try {
     CryptoPP::StringSource privkey(key, true);
     CryptoPP::RSAES_OAEP_SHA_Decryptor priv(privkey);
@@ -404,7 +405,7 @@ std::string Crypto::AsymDecrypt(const std::string &input,
 std::string Crypto::AsymSign(const std::string &input,
                              const std::string &output,
                              const std::string &key,
-                             operationtype ot) {
+                             const operationtype &ot) {
   try {
     CryptoPP::StringSource privkey(key, true);
     CryptoPP::RSASS<CryptoPP::PKCS1v15, CryptoPP::SHA512>::Signer
@@ -445,7 +446,7 @@ std::string Crypto::AsymSign(const std::string &input,
 bool Crypto::AsymCheckSig(const std::string &input_data,
                           const std::string &input_signature,
                           const std::string &key,
-                          operationtype ot) {
+                          const operationtype &ot) {
   try {
     CryptoPP::StringSource pubkey(key, true);
 
@@ -493,8 +494,8 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
 
 std::string Crypto::Compress(const std::string &input,
                              const std::string &output,
-                             int compression_level,
-                             operationtype ot) {
+                             const int &compression_level,
+                             const operationtype &ot) {
   if (compression_level < 0 || compression_level > 9)
     return "";
   try {
@@ -529,7 +530,7 @@ std::string Crypto::Compress(const std::string &input,
 
 std::string Crypto::Uncompress(const std::string &input,
                                const std::string &output,
-                               operationtype ot) {
+                               const operationtype &ot) {
   try {
     std::string result;
     switch (ot) {
@@ -560,7 +561,7 @@ std::string Crypto::Uncompress(const std::string &input,
   }
 }
 
-void RsaKeyPair::GenerateKeys(unsigned int keySize) {
+void RsaKeyPair::GenerateKeys(const unsigned int &keySize) {  //NOLINT
   // CryptoPP::AutoSeededRandomPool rand_pool;
   private_key_.clear();
   public_key_.clear();

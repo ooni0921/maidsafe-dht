@@ -48,6 +48,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // RPC
 namespace rpcprotocol {
 
+/**
+* @class Controller
+* Implementation of Google Protocol Buffers RpcController interface.  An
+* object of this class is used for a single method call. This
+* implementation has as members the seconds after which the call times out, the
+* RTT (round trip time) to the peer it is comunicating, and the id of the
+* request(call).
+*/
+
 class Controller : public google::protobuf::RpcController {
  public:
   Controller();
@@ -69,21 +78,56 @@ class Controller : public google::protobuf::RpcController {
   boost::shared_ptr<ControllerImpl> controller_pimpl_;
 };
 
+/**
+* @class Controller
+* Implementation of Google Protocol Buffers RpcChannel interface.
+*/
 class Channel : public google::protobuf::RpcChannel {
  public:
+  /**
+  * Constructor. Used for the server that is going to receive RPC's of a service
+  * through this object.
+  * @param channelmanager Pointer to a ChannelManager object
+  * @param ptransport Pointer to a Transport object
+  */
   Channel(rpcprotocol::ChannelManager *channelmanager,
       transport::Transport *ptransport);
+  /**
+  * Constructor. Used for the client that is going to send an RPC.
+  * @param channelmanager Pointer to a ChannelManager object
+  * @param ptransport Pointer to a Transport object
+  * @param remote_ip remote ip of the endpoint that is going to receive the RPC
+  * @param remote_port remote port of the endpoint that is going to receive
+  * the RPC
+  * @param local_ip local ip of the endpoint that is going to receive the RPC
+  * @param local_port local port of the endpoint that is going to receive
+  * the RPC
+  */
   Channel(rpcprotocol::ChannelManager *channelmanager,
       transport::Transport *ptransport, const std::string &remote_ip,
       const boost::uint16_t &remote_port, const std::string &local_ip,
       const boost::uint16_t &local_port, const std::string &rv_ip,
       const boost::uint16_t &rv_port);
   ~Channel();
+  /**
+  * Implementation of virtual method of the interface.
+  */
   void CallMethod(const google::protobuf::MethodDescriptor *method,
       google::protobuf::RpcController *controller,
       const google::protobuf::Message *request,
       google::protobuf::Message *response, google::protobuf::Closure *done);
+  /**
+  * Sets the service for which it is going to receive RPC's requests.
+  * @param service pointer to a Service object (implemenation of the server)
+  */
   void SetService(google::protobuf::Service* service);
+  /**
+  * Handles the request for a RPC of the service registered.
+  * @param request message containg the request of the RPC
+  * @param connection_id id of the connection from which it received the request
+  * message
+  * @param rtt round trip time to the peer from which it received the request
+  */
   void HandleRequest(const RpcMessage &request,
       const boost::uint32_t &connection_id, const float &rtt);
  private:

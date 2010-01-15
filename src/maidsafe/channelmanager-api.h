@@ -52,25 +52,114 @@ class RpcMessage;
 
 // Ensure that a one-to-one relationship is maintained between channelmanager &
 // knode.
+/**
+* @class ChannelManager
+* This object is responsible for handling the RPC messages that come in through
+* the Transport object and handle them accordingly to their type: REQUEST or
+* RESPONSE.  It also keeps all the pending requests of the RPCs sent and makes
+* sure to call the response when the response arrives or the time set for
+* timeout expires.
+* Ensure that a one-to-one relationship is maintained between ChannelManager
+* and KNode.
+*/
+
 class ChannelManager {
  public:
+  /**
+  * Constructor
+  * @param ptransport Pointer to a transport object.
+  */
   explicit ChannelManager(transport::Transport *ptransport);
   ~ChannelManager();
+  /**
+  * Registers a channel and identifies it with the name of the RPC service that
+  * uses that Channel to receive requests.
+  * @param service_name name that identifies the channel
+  * @param channel pointer to a Channel object
+  */
   void RegisterChannel(const std::string &service_name, Channel* channel);
+  /**
+  * Removes a previously registered channel.
+  * @param service_name name that identifies the channel
+  */
   void UnRegisterChannel(const std::string &service_name);
+  /**
+  * Removes all the channels that have been registered.
+  */
   void ClearChannels();
+  /**
+  * Clears the list of all RPC requests sent that are waiting for their response
+  * and have not time out.
+  */
   void ClearCallLaters();
+  /**
+  * Sets status as not stopped if the Transport object has been started.
+  * @return 0 if success otherwise 1
+  */
   int Start();
+  /**
+  * Sets status of the ChannelManager as stopped and clears pending requests
+  * and registered channels.
+  * @return 1 if success and 0 if the status when called was stopped.
+  */
   int Stop();
+  /**
+  * Registeres the notifier to receive RPC messages with the Transport object
+  * and the notifier to now when a message has been sent.
+  * @return True if it succeeds in registering the notifiers, False otherwise
+  */
   bool RegisterNotifiersToTransport();
+  /**
+  * Creates a new id for the pending requests.
+  * @return the id created
+  */
   boost::uint32_t CreateNewId();
+  /**
+  * Adds a new pending request after an RPC has been sent.
+  * @param req_id id to identify the request
+  * @param req structure holding all the information of the request
+  */
   void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
+  /**
+  * Removes a pending request from the list and calls the callback of the
+  * request with status Cancelled.
+  * @param req_id id of the request
+  * @return True if success, False if status of the object is stopped or
+  * no request was found for the id.
+  */
   bool DeletePendingRequest(const boost::uint32_t &req_id);
+  /**
+  * Removes a pending request from the list.
+  * @param req_id id of the request
+  * @return True if success, False if status of the object is stopped or
+  * no request was found for the id.
+  */
   bool CancelPendingRequest(const boost::uint32_t &req_id);
+  /**
+  * Adds a request to the timer to check when it times out.
+  * @param req_id id of the request
+  * @param timeout milliseconds after which the request times out
+  */
   void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
+  /**
+  * Adds a request to a list that holds all request that haven't been
+  * completely sent via the transport.
+  * @param connection_id id of the connection used to send the request
+  * @param req_id id of the request
+  * @param timeout milliseconds after which the request times out
+  */
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout);
+  /**
+  * Creates and adds the id of a Channel to a list that holds all the channels
+  * using the objet.
+  * @param id pointer where the id created is returned
+  */
   void AddChannelId(boost::uint32_t *id);
+  /**
+  * Removes the id of a Channel registered with using the objet.
+  * @param id pointer where the id created is returned
+  */
   void RemoveChannelId(const boost::uint32_t &id);
  private:
   boost::shared_ptr<ChannelManagerImpl> pimpl_;

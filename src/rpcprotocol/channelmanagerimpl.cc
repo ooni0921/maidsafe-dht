@@ -118,7 +118,6 @@ bool ChannelManagerImpl::CancelPendingRequest(const boost::uint32_t &req_id) {
   req_mutex_.unlock();
   if (connection_id != 0)
     ptransport_->CloseConnection(connection_id);
-//  callback->Run();
   return true;
 }
 

@@ -56,71 +56,295 @@ namespace kad {
 class SignedValue;
 class SignedRequest;
 
+/**
+* @class KNode
+* This class represents a kademlia node providing the API to join the network,
+* find nodes and values, store and delete values, ping nodes, as well as the
+* methods to access the local storage of the node and its routing table  .
+*/
+
 class KNode {
  public:
+  /**
+  * Constructor that takes by default the kaemlia values for k, alpha, beta, and
+  * refresh time.
+  * @param channel_manager a reference to the channel manager, where the
+  * services are going to be registered
+  * @param trans a reference to the transport object in charge of transmitting
+  * data from the node to a specific node
+  * @param type the type of node VAULT or CLIENT
+  * @param private_key private key for the node, if no digitally signed values
+  * are used, pass an empty string
+  * @param public_key public key for the node, if no digitally signed values
+  * are used, pass an empty string
+  * @param port_forwarded indicate if the port where the Transport object is
+  * listening has been manually forwarded in the router
+  * @param use_upnp indicate if UPnP is going to be used as the first option
+  * for NAT traversal
+  */
   KNode(rpcprotocol::ChannelManager *channel_manager,
       transport::Transport *trans, node_type type,
       const std::string &private_key, const std::string &public_key,
       const bool &port_forwarded, const bool &use_upnp);
-  // constructor used to set up parameters K, alpha, and beta for kademlia
+  /**
+  * Constructor where the kaemlia values for k, alpha, beta, and
+  * refresh time are set by the user.
+  * @param channel_manager a reference to the channel manager, where the
+  * services are going to be registered
+  * @param trans a reference to the transport object in charge of transmitting
+  * data from the node to a specific node
+  * @param type the type of node VAULT or CLIENT
+  * @param k Maximum number of elements in the node's kbuckets
+  * @param alpha Number of parallelisation during iterative find procedure
+  * @param beta Number of responses to be received before starting a new
+  * iteration
+  * @param refresh_time time in seconds to refresh values stored in the node
+  * @param private_key private key for the node, if no digitally signed values
+  * are used, pass an empty string
+  * @param public_key public key for the node, if no digitally signed values
+  * are used, pass an empty string
+  * @param port_forwarded indicate if the port where the Transport object is
+  * listening has been manually forwarded in the router
+  * @param use_upnp indicate if UPnP is going to be used as the first option
+  * for NAT traversal
+  */
   KNode(rpcprotocol::ChannelManager *channel_manager,
       transport::Transport *trans, node_type type, const boost::uint16_t k,
       const int &alpha, const int &beta, const int &refresh_time,
       const std::string &private_key, const std::string &public_key,
       const bool &port_forwarded, const bool &use_upnp);
   ~KNode();
-  // Join the network with a specific node ID.
+  /**
+  * Join the network using a specific id. This is a non-blocking operation.
+  * @param node_id Id that is going to be used by the node
+  * @param kad_config_file path to the config file where bootstrapping nodes are
+  * stored.
+  * @param cb callback function where result of the operation is notified
+  */
   void Join(const std::string &node_id, const std::string &kad_config_file,
       base::callback_func_type cb);
-  // Join the network with a random node ID.
+  /**
+  * Join the network using a random id. This is a non-blocking operation.
+  * @param kad_config_file path to the config file where bootstrapping nodes are
+  * stored.
+  * @param cb callback function where result of the operation is notified
+  */
   void Join(const std::string &kad_config_file, base::callback_func_type cb);
-  // Start a network (this being the first node) with a specific node ID.
+  /**
+  * Join the first node of the network using a specific id.
+  * This is a non-blocking operation.
+  * @param node_id Id that is going to be used by the node
+  * @param kad_config_file path to the config file where bootstrapping nodes are
+  * stored.
+  * @param external_ip external ip of the node
+  * @param external_port external port of the node
+  * @param cb callback function where result of the operation is notified
+  */
   void Join(const std::string &node_id, const std::string &kad_config_file,
       const std::string &external_ip, const boost::uint16_t &external_port,
       base::callback_func_type cb);
-  // Start a network (this being the first node) with a random node ID.
+  /**
+  * Join the first node of the network using a random id.
+  * This is a non-blocking operation.
+  * @param kad_config_file path to the config file where bootstrapping nodes are
+  * stored.
+  * @param external_ip external ip of the node
+  * @param external_port external port of the node
+  * @param cb callback function where result of the operation is notified
+  */
   void Join(const std::string &kad_config_file, const std::string &external_ip,
       const boost::uint16_t &external_port, base::callback_func_type cb);
+  /**
+  * Leave the kademlia network.  All values stored in the node are erased and
+  * nodes from the routing table are saved as bootstrapping nodes in the
+  * config file
+  */
   void Leave();
+  /**
+  * Store a value of the form (data; signed data) in the network.  Used if the
+  * network is formed by nodes that have private and public key.
+  * @param key key to store the value, must be a hexadecimal string not encoded
+  * @param value value to be stored
+  * @param sreq request to store the value, it is validated before the value is
+  * stored
+  * @param ttl time to live of the value in seconds, if ttl = -1, then it has
+  * infinite time to live
+  * @param cb callback function where result of the operation is notified
+  */
   void StoreValue(const std::string &key, const SignedValue &value,
       const SignedRequest &sreq, const boost::int32_t &ttl,
       base::callback_func_type cb);
+  /**
+  * Store a value (a simple string) in the network.  Used if the
+  * network is formed by nodes that do not have private and public key.
+  * @param key key under which the value is stored, must be a hexadecimal string
+  * not encoded
+  * @param value value to be stored
+  * @param ttl time to live of the value in seconds, if ttl = -1, then it has
+  * infinite time to live
+  * @param cb callback function where result of the operation is notified
+  */
   void StoreValue(const std::string &key, const std::string &value,
       const boost::int32_t &ttl, base::callback_func_type cb);
+  /**
+  * Delete a Value of the network, only in networks with nodes that have public
+  * and private keys a value, that is of the form data; signed data, can be
+  * deleted.  Only the one who signed the value can delete it.
+  * @param key key under which the value is stored, must be a hexadecimal
+  * string not encoded
+  * @param value value to be deleted
+  * @param request request to delete the value, it is validated before the
+  * value is deleted
+  * @param cb callback function where result of the operation is notified
+  */
   void DeleteValue(const std::string &key, const SignedValue &value,
       const SignedRequest &request, base::callback_func_type cb);
-  // If any KNode during the iterative lookup has the value in its
-  // AlternativeStore, rather than returning this value, it returns its own
-  // contact details.  If check_alt_store is true, this node checks its own
-  // AlternativeStore also.
+  /**
+  * Find a value in the network.  If several values are stored under the same
+  * key, a list with all the values is returned.
+  * If any KNode during the iterative lookup has the value in its
+  * AlternativeStore, rather than returning this value, it returns its own
+  * contact details.  If check_alt_store is true, this node checks its own
+  * AlternativeStore also.
+  * @param key key to store the value, must be a hexadecimal string not encoded
+  * @param check_alt_store indicate if the node's alternative store must be
+  * checkec
+  * @param cb callback function where result of the operation is notified
+  */
   void FindValue(const std::string &key, const bool &check_alt_store,
       base::callback_func_type cb);
+  /**
+  * Find the contact details of a node in the network with its id.
+  * @param node_id id of the node, must be a hexadecimal string not encoded
+  * @param cb callback function where result of the operation is notified
+  * @param local false if the we want to find the node in the network and true
+  * if we try to find it in the node's routing table
+  */
   void FindNode(const std::string &node_id, base::callback_func_type cb,
       const bool &local);
+  /**
+  * Find the k closest nodes to an id in the network.
+  * @param node_id id of the node, must be a hexadecimal string not encoded
+  * @param cb callback function where result of the operation is notified
+  */
   void FindCloseNodes(const std::string &node_id, base::callback_func_type cb);
+  /**
+  * Find the k closest nodes to a key in the node's routing table.
+  * @param key must be a hexadecimal string not encoded
+  * @param close_nodes reference to a vector of Contact where the nodes found
+  * are returned
+  * @param exclude_contacts nodes vector of nodes that must be excluded from the
+  * result
+  */
   void FindKClosestNodes(const std::string &key,
       std::vector<Contact> *close_nodes,
       const std::vector<Contact> &exclude_contacts);
+  /**
+  * Ping the node with id node_id.  First the node is found in the network, and
+  * then the node is pinged
+  * @param node_id id of the node, must be a hexadecimal string not encoded
+  * @param cb callback function where result of the operation is notified
+  */
   void Ping(const std::string &node_id, base::callback_func_type cb);
+  /**
+  * Ping a node.
+  * @param remote contact info of the node to be pinged
+  * @param cb callback function where result of the operation is notified
+  */
   void Ping(const Contact &remote, base::callback_func_type cb);
+  /**
+  * Add a node to the routing table and/or to the database routing table.
+  * @param new_contact contact info of the node to be adde
+  * @param rtt Round trip time to the node
+  * @param only_db if true, it is only added to the database routing table.
+  */
   int AddContact(Contact new_contact, const float & rtt,
       const bool &only_db);
+  /**
+  * Remove a node from the routing table.
+  * @param node_id id of the node, must be a hexadecimal string not encoded
+  */
   void RemoveContact(const std::string &node_id);
+  /**
+  * Get a node from the routing table.
+  * @param id id of the node, must be a hexadecimal string not encoded
+  * @param contact referece to a Contact object where the contact info of the
+  * node is returned
+  * @return True if node is found, false otherwise
+  */
   bool GetContact(const std::string &id, Contact *contact);
+  /**
+  * Find a value in the local data store of the node.
+  * @param key key used to find the value, must be a hexadecimal string not
+  * encoded
+  * @param values vector of references where the values stored under key,
+    if found, are retured
+  * @return True if value is found, false otherwise
+  */
   bool FindValueLocal(const std::string &key, std::vector<std::string> *values);
+  /**
+  * Store a value in the local data store of the node.
+  * @param key key under which the value is stored, must be a hexadecimal string
+  * not encoded
+  * @param value value to be stored
+  * @param ttl Time to live of the value in seconds, if ttl = -1, then it has
+  * infinite time to live
+  * @return True if value is found, false otherwise
+  */
   bool StoreValueLocal(const std::string &key, const std::string &value,
       const boost::int32_t &ttl);
+  /**
+  * Refhresh a value in the local data store of the node.  If the value was
+  * already stored, the time to live is not changed, only the refresh time
+  * is updated.
+  * @param key key under which the value is stored, must be a hexadecimal string
+  * not encoded
+  * @param value value to be stored
+  * @param ttl Time to live of the value in seconds, if ttl = -1, then it has
+  * infinite time to live
+  * @return True if value is found, false otherwise
+  */
   bool RefreshValueLocal(const std::string &key, const std::string &value,
       const boost::int32_t &ttl);
+  /**
+  * Get n random nodes from the routing table.
+  * @param count number of nodes to be returned
+  * @param exclude_contacts nodes vector of nodes that cant be included in the
+  * result
+  * @param contacts reference to a vector of Contact where the nodes selected
+  * are returned
+  */
   void GetRandomContacts(const int &count,
       const std::vector<Contact> &exclude_contacts,
       std::vector<Contact> *contacts);
+  /**
+  * Notifier that is passed to the transport object for the case where the
+  * node's randezvous server goes down.
+  * @param dead_server notification of status of the rendezvous server: True
+  * server is up, False server is down
+  */
   void HandleDeadRendezvousServer(const bool &dead_server);
+  /**
+  * Check if the local endpoint corresponding to the local ip and port of a node
+  * can be contacted if it is not already marked in the database routing table.
+  * If the status is in the database routing table, it returns that status.
+  * @param id id of the node we are checking
+  * @param ip local ip
+  * @param port local port
+  * @param ext_ip external ip of the node
+  * @return If the node can be contacted through its local endpoint (LOCAL) or
+  * not (REMOTE)
+  */
   connect_to_node CheckContactLocalAddress(const std::string &id,
       const std::string &ip, const uint16_t &port, const std::string &ext_ip);
+  /**
+  * Updates the database routing table in the entry for the node id passed to be
+  * to be contacted only via the remote endpoint.
+  * @param node_id id of the node, must be a hexadecimal string not encoded
+  * @param host_ip ip of the node
+  */
   void UpdatePDRTContactToRemote(const std::string &node_id,
-                                 const std::string &host_ip);
-  void LogRTInfo();
+      const std::string &host_ip);
   ContactInfo contact_info() const;
   std::string node_id() const;
   std::string host_ip() const;
@@ -130,16 +354,53 @@ class KNode {
   std::string rv_ip() const;
   boost::uint16_t rv_port() const;
   bool is_joined() const;
+  /**
+  * Returns a reference to the KadRpcs object inside the knode
+  * @return Reference to KadRpcs object
+  */
   KadRpcs* kadrpcs();
+  /**
+  * Get the time of the last time a key/value pair stored in the node was
+  * refreshed
+  * @param key key under which the value is stored, must be a hexadecimal string
+  * not encoded
+  * @param value value stored
+  * @return time in seconds from epoch time when the key/value pair was
+  * refreshed.  It key value is not found, then 0 is returned.
+  */
   boost::uint32_t KeyLastRefreshTime(const std::string &key,
       const std::string &value);
+  /**
+  * Get the time when a key/value pair stored in the node is going to expire
+  * @param key key under which the value is stored, must be a hexadecimal string
+  * not encoded
+  * @param value value stored
+  * @return time in seconds from epoch time when the key/value pair is going to
+  * expire.  It key value is not found, then 0 is returned.  If -1 is returned,
+  * then the value doesn't expire
+  */
   boost::uint32_t KeyExpireTime(const std::string &key,
       const std::string &value);
+  /**
+  * Checks if the node has public and private RSA keys.
+  * @return True if the node has the keys, otherwise False.
+  */
   bool HasRSAKeys();
+  /**
+  * Get the time to live of a key/value pair stored in the node
+  * @param key key under which the value is stored, must be a hexadecimal string
+  * not encoded
+  * @param value value stored
+  * @return time to live in seconds of the key/value. It key value is not found,
+  * then 0 is returned.  If -1 is returned, then the value doesn't expire
+  */
   boost::int32_t KeyValueTTL(const std::string &key,
       const std::string &value) const;
-  // If this is set to a non-NULL value, then the AlternativeStore will be used
-  // before Kad's native DataStore.
+  /**
+  * If this is set to a non-NULL value, then the AlternativeStore will be used
+  * before Kad's native DataStore.
+  * @param alternative_store reference to a base::AlternativeStore object
+  */
   void SetAlternativeStore(base::AlternativeStore* alternative_store);
   base::AlternativeStore *alternative_store();
   void set_signature_validator(base::SignatureValidator *validator);

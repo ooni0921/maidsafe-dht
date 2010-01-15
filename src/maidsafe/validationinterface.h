@@ -44,19 +44,19 @@ class SignatureValidator {
   virtual ~SignatureValidator() {}
   /**
    * Validates the Id of the signer
-   * signer_id - id to be validated
-   * public_key - public key
-   * signed_public_key - public key signed
+   * @param signer_id id to be validated
+   * @param public_key public key
+   * @param signed_public_key public key signed
    */
   virtual bool ValidateSignerId(const std::string &signer_id,
     const std::string &public_key, const std::string &signed_public_key) = 0;
   /**
    * Validates the request signed by sender
-   * signed_request - request to be validated with the public key
-   * public_key - used to validate signature of the request
-   * signed_public_key - public key signed
-   * key - key to store/delete value
-   * rec_id - id of the node receiving the request
+   * @param signed_request request to be validated with the public key
+   * @param public_key used to validate signature of the request
+   * @param signed_public_key public key signed
+   * @param key key to store/delete value
+   * @param rec_id id of the node receiving the request
    */
   virtual bool ValidateRequest(const std::string &signed_request,
     const std::string &public_key, const std::string &signed_public_key,
