@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAIDSAFE_MAIDSAFE_DHT_H_
 
 #include "maidsafe/transport-api.h"
+#include "maidsafe/transporthandler-api.h"
 #include "maidsafe/channel-api.h"
 #include "maidsafe/channelmanager-api.h"
 #include "maidsafe/knode-api.h"

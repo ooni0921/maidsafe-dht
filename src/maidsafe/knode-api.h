@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 14
+#if MAIDSAFE_DHT_VERSION < 15
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -70,8 +70,8 @@ class KNode {
   * refresh time.
   * @param channel_manager a reference to the channel manager, where the
   * services are going to be registered
-  * @param trans a reference to the transport object in charge of transmitting
-  * data from the node to a specific node
+  * @param ptrans_handler a reference to the transport handler object in
+  * charge of transmitting data from the node to a specific node
   * @param type the type of node VAULT or CLIENT
   * @param private_key private key for the node, if no digitally signed values
   * are used, pass an empty string
@@ -83,7 +83,7 @@ class KNode {
   * for NAT traversal
   */
   KNode(rpcprotocol::ChannelManager *channel_manager,
-      transport::Transport *trans, node_type type,
+      transport::TransportHandler *ptrans_handler, node_type type,
       const std::string &private_key, const std::string &public_key,
       const bool &port_forwarded, const bool &use_upnp);
   /**
@@ -91,8 +91,8 @@ class KNode {
   * refresh time are set by the user.
   * @param channel_manager a reference to the channel manager, where the
   * services are going to be registered
-  * @param trans a reference to the transport object in charge of transmitting
-  * data from the node to a specific node
+  * @param ptrans_handler a reference to the transport handler object in
+  * charge of transmitting data from the node to a specific node
   * @param type the type of node VAULT or CLIENT
   * @param k Maximum number of elements in the node's kbuckets
   * @param alpha Number of parallelisation during iterative find procedure
@@ -109,11 +109,18 @@ class KNode {
   * for NAT traversal
   */
   KNode(rpcprotocol::ChannelManager *channel_manager,
-      transport::Transport *trans, node_type type, const boost::uint16_t k,
-      const int &alpha, const int &beta, const int &refresh_time,
-      const std::string &private_key, const std::string &public_key,
-      const bool &port_forwarded, const bool &use_upnp);
+      transport::TransportHandler *ptrans_handler, node_type type,
+      const boost::uint16_t k, const int &alpha, const int &beta,
+      const int &refresh_time, const std::string &private_key,
+      const std::string &public_key, const bool &port_forwarded, const bool
+      &use_upnp);
   ~KNode();
+
+  /**
+  *
+  */
+  void SetTransID(boost::int16_t t);
+
   /**
   * Join the network using a specific id. This is a non-blocking operation.
   * @param node_id Id that is going to be used by the node

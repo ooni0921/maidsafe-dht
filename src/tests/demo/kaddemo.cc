@@ -37,6 +37,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "tests/demo/commands.h"
 #include "protobuf/contact_info.pb.h"
 #include "protobuf/general_messages.pb.h"
+#include "maidsafe/transport-api.h"
+#include "maidsafe/transportudt.h"
+#include "maidsafe/transporthandler-api.h"
 
 namespace po = boost::program_options;
 
@@ -259,29 +262,32 @@ int main(int argc, char **argv) {
     google::InitGoogleLogging(argv[0]);
     // Starting transport on port
     port = vm["port"].as<boost::uint16_t>();
-    transport::Transport trans;
-    rpcprotocol::ChannelManager chmanager(&trans);
+    transport::TransportHandler trans_handler;
+    boost::int16_t trans_id;
+    trans_handler.Register(new transport::TransportUDT, &trans_id);
+    rpcprotocol::ChannelManager chmanager(&trans_handler);
     kad::node_type type;
     if (vm["client"].as<bool>())
       type = kad::CLIENT;
     else
       type = kad::VAULT;
-    kad::KNode node(&chmanager, &trans, type, kad::K, kad::kAlpha, kad::kBeta,
-        refresh_time, "", "", vm["port_fw"].as<bool>(),
-        vm["upnp"].as<bool>());
+    kad::KNode node(&chmanager, &trans_handler, type, kad::K,
+      kad::kAlpha, kad::kBeta, refresh_time, "", "", vm["port_fw"].as<bool>(),
+      vm["upnp"].as<bool>());
+    node.SetTransID(trans_id);
     if (!chmanager.RegisterNotifiersToTransport() ||
-        !trans.RegisterOnServerDown(boost::bind(
+        !trans_handler.RegisterOnServerDown(boost::bind(
         &kad::KNode::HandleDeadRendezvousServer, &node, _1))) {
       return 1;
     }
-    if (0 != trans.Start(port) || 0!= chmanager.Start()) {
+    if (0 != trans_handler.Start(port, trans_id) || 0!= chmanager.Start()) {
       printf("Unable to start node on port %d\n", port);
       return 1;
     }
     // setting kadconfig file if it was not in the options
     if (kadconfigpath == "") {
       kadconfigpath = "KnodeInfo" + boost::lexical_cast<std::string>(
-         trans.listening_port());
+         trans_handler.listening_port(trans_id));
       boost::filesystem::create_directories(kadconfigpath);
       kadconfigpath += "/.kadconfig";
     }
@@ -293,7 +299,7 @@ int main(int argc, char **argv) {
           vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>(),
           vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>())) {
         printf("unable to write kadconfig file to %s\n", kadconfigpath.c_str());
-        trans.Stop();
+        trans_handler.Stop(trans_id);
         chmanager.Stop();
         return 1;
       }
@@ -312,7 +318,7 @@ int main(int argc, char **argv) {
     // Checking result of callback
     if (!cb.success()) {
       printf("Failed to join node to the network\n");
-      trans.Stop();
+      trans_handler.Stop(trans_id);
       chmanager.Stop();
       return 1;
     }
@@ -331,9 +337,9 @@ int main(int argc, char **argv) {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
     }
-    trans.StopPingRendezvous();
+    trans_handler.StopPingRendezvous();
     node.Leave();
-    trans.Stop();
+    trans_handler.Stop(trans_id);
     chmanager.Stop();
     printf("\nNode Stopped successfully\n");
   }

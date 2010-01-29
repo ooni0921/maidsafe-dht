@@ -25,8 +25,8 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef TRANSPORT_TRANSPORTIMPL_H_
-#define TRANSPORT_TRANSPORTIMPL_H_
+#ifndef TRANSPORT_TRANSPORTUDTIMPL_H_
+#define TRANSPORT_TRANSPORTUDTIMPL_H_
 
 #include <boost/cstdint.hpp>
 #include <boost/thread.hpp>
@@ -41,16 +41,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "udt/udt.h"
 #include "protobuf/transport_message.pb.h"
 #include "maidsafe/maidsafe-dht_config.h"
+#include "maidsafe/transport-api.h"
 
 namespace transport {
 
 struct IncomingMessages {
-  explicit IncomingMessages(const boost::uint32_t &id)
-    : msg(), raw_data(""), conn_id(id), rtt(0) {}
-  IncomingMessages() : msg(), raw_data(""), conn_id() {}
+  IncomingMessages(const boost::uint32_t &id,
+                   const boost::int16_t &transid)
+    : msg(), raw_data(""), conn_id(id), trans_id(transid), rtt(0) {}
+  IncomingMessages() : msg(), raw_data(""), conn_id(), trans_id() {}
   rpcprotocol::RpcMessage msg;
   std::string raw_data;
   boost::uint32_t conn_id;
+  boost::int16_t trans_id;
   double rtt;
 };
 
@@ -73,47 +76,69 @@ struct OutgoingData {
   bool is_rpc;
 };
 
-class TransportImpl {
+class TransportUDTImpl {
  public:
-  TransportImpl();
-  ~TransportImpl();
-  enum DataType { STRING, FILE };
-  int ConnectToSend(const std::string &remote_ip, const uint16_t &remote_port,
-      const std::string &local_ip, const uint16_t &local_port,
-      const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
-      const bool &keep_connection, boost::uint32_t *conn_id);
-  int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t &conn_id,
-      const bool &new_skt);
-  int Send(const std::string &data, const boost::uint32_t &conn_id,
-      const bool &new_skt);
+  TransportUDTImpl();
+  ~TransportUDTImpl();
+  enum DataType { kString, kFile };
+  Transport::TransportType GetType();
+  boost::int16_t GetID() { return trans_id_; }
+  void SetID(const boost::int16_t id) { trans_id_ = id; }
+  static void CleanUp();
+  int ConnectToSend(const std::string &remote_ip,
+                   const uint16_t &remote_port,
+                   const std::string &local_ip,
+                   const uint16_t &local_port,
+                   const std::string &rendezvous_ip,
+                   const uint16_t &rendezvous_port,
+                   const bool &keep_connection,
+                   boost::uint32_t *conn_id);
+  int Send(const rpcprotocol::RpcMessage &data,
+           const boost::uint32_t &conn_id,
+           const bool &new_skt);
+  int Send(const std::string &data,
+           const boost::uint32_t &conn_id,
+           const bool &new_skt);
   int Start(const boost::uint16_t & port);
   int StartLocal(const boost::uint16_t &port);
-  bool RegisterOnRPCMessage(boost::function<void(const rpcprotocol::RpcMessage&,
-      const boost::uint32_t&, const float &)> on_rpcmessage);
-  bool RegisterOnMessage(boost::function<void(const std::string&,
-      const boost::uint32_t&, const float &)> on_message);
-  bool RegisterOnSend(boost::function<void(const boost::uint32_t&,
-      const bool&)> on_send);
-  bool RegisterOnServerDown(boost::function<void(const bool&,
-        const std::string&, const boost::uint16_t&)> on_server_down);
+  bool RegisterOnRPCMessage(
+      boost::function<void(const rpcprotocol::RpcMessage&,
+                           const boost::uint32_t&,
+                           const boost::int16_t&,
+                           const float &)> on_rpcmessage);
+  bool RegisterOnMessage(
+      boost::function<void(const std::string&,
+                           const boost::uint32_t&,
+                           const boost::int16_t&,
+                           const float &)> on_message);
+  bool RegisterOnSend(
+      boost::function<void(const boost::uint32_t&,
+                           const bool&)> on_send);
+  bool RegisterOnServerDown(
+      boost::function<void(const bool&,
+                           const std::string&,
+                           const boost::uint16_t&)> on_server_down);
   void CloseConnection(const boost::uint32_t &connection_id);
   void Stop();
   inline bool is_stopped() const { return stop_; }
   struct sockaddr& peer_address() { return peer_address_; }
   bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr *addr);
   bool ConnectionExists(const boost::uint32_t &connection_id);
-  bool HasReceivedData(const boost::uint32_t &connection_id, int64_t *size);
-  inline boost::uint16_t listening_port() { return listening_port_; }
-  void StartPingRendezvous(const bool &directly_connected, const std::string
-      &my_rendezvous_ip, const boost::uint16_t &my_rendezvous_port);
+  bool HasReceivedData(const boost::uint32_t &connection_id,
+                       boost::int64_t *size);
+  boost::uint16_t listening_port();
+  void StartPingRendezvous(const bool &directly_connected,
+                           const std::string &my_rendezvous_ip,
+                           const boost::uint16_t &my_rendezvous_port);
   void StopPingRendezvous();
   bool CanConnect(const std::string &ip, const uint16_t &port);
   bool IsAddrUsable(const std::string &local_ip,
-      const std::string &remote_ip, const uint16_t &remote_port);
+                    const std::string &remote_ip,
+                    const uint16_t &remote_port);
   bool IsPortAvailable(const boost::uint16_t &port);
  private:
-  TransportImpl& operator=(const TransportImpl&);
-  TransportImpl(const TransportImpl&);
+  TransportUDTImpl& operator=(const TransportUDTImpl&);
+  TransportUDTImpl(TransportUDTImpl&);
   void AddIncomingConnection(UDTSOCKET u);
   void AddIncomingConnection(UDTSOCKET u, boost::uint32_t *conn_id);
   void HandleRendezvousMsgs(const HolePunchingMsg &message);
@@ -127,14 +152,21 @@ class TransportImpl {
   void ReceiveHandler();
   void MessageHandler();
   volatile bool stop_;
-  boost::function<void(const rpcprotocol::RpcMessage&, const boost::uint32_t&,
-      const float&)> rpcmsg_notifier_;
-  boost::function<void(const std::string&, const boost::uint32_t&,
-      const float&)> msg_notifier_;
+  boost::function<void(const rpcprotocol::RpcMessage&,
+                       const boost::uint32_t&,
+                       const boost::int16_t&,
+                       const float&)> rpcmsg_notifier_;
+  boost::function<void(const std::string&,
+                       const boost::uint32_t&,
+                       const boost::int16_t&,
+                       const float&)> msg_notifier_;
   boost::function<void(const bool&, const std::string&,
-      const boost::uint16_t&)> server_down_notifier_;
-  boost::shared_ptr<boost::thread> accept_routine_, recv_routine_,
-      send_routine_, ping_rendz_routine_, handle_msgs_routine_;
+                       const boost::uint16_t&)> server_down_notifier_;
+  boost::shared_ptr<boost::thread> accept_routine_,
+                                   recv_routine_,
+                                   send_routine_,
+                                   ping_rendz_routine_,
+                                   handle_msgs_routine_;
   UDTSOCKET listening_socket_;
   struct sockaddr peer_address_;
   boost::uint16_t listening_port_, my_rendezvous_port_;
@@ -142,13 +174,18 @@ class TransportImpl {
   std::map<boost::uint32_t, IncomingData> incoming_sockets_;
   std::list<OutgoingData> outgoing_queue_;
   std::list<IncomingMessages> incoming_msgs_queue_;
-  boost::mutex send_mutex_, ping_rendez_mutex_, recv_mutex_, msg_hdl_mutex_,
-    s_skts_mutex_;
+  boost::mutex send_mutex_,
+               ping_rendez_mutex_,
+               recv_mutex_,
+               msg_hdl_mutex_,
+               s_skts_mutex_;
   struct addrinfo addrinfo_hints_;
   struct addrinfo* addrinfo_res_;
   boost::uint32_t current_id_;
-  boost::condition_variable send_cond_, ping_rend_cond_, recv_cond_,
-      msg_hdl_cond_;
+  boost::condition_variable send_cond_,
+                            ping_rend_cond_,
+                            recv_cond_,
+                            msg_hdl_cond_;
   bool ping_rendezvous_, directly_connected_/*, handle_non_transport_msgs_*/;
   int accepted_connections_, msgs_sent_;
   boost::uint32_t last_id_;
@@ -156,8 +193,10 @@ class TransportImpl {
   std::map<boost::uint32_t, struct sockaddr> ips_from_connections_;
   boost::function<void(const boost::uint32_t&, const bool&)> send_notifier_;
   std::map<boost::uint32_t, UDTSOCKET> send_sockets_;
+  Transport::TransportType transportType_;
+  boost::int16_t trans_id_;
 };
 
 };  // namespace transport
 
-#endif  // TRANSPORT_TRANSPORTIMPL_H_
+#endif  // TRANSPORT_TRANSPORTUDTIMPL_H_

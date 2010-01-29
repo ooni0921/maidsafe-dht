@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef MAIDSAFE_CRYPTO_H_
 #define MAIDSAFE_CRYPTO_H_
+#include <boost/asio.hpp>
 #include <string>
 
 namespace crypto {
@@ -35,7 +36,7 @@ const int AES256_KeySize = 32;  // size in bytes
 const int AES256_IVSize = 16;   // in bytes
 /**
 * Types of operation regarding source and destination
-*/ 
+*/
 enum operationtype {FILE_FILE, /**< file source, file destination >*/
                     STRING_FILE, /**< string source, file destination >*/
                     FILE_STRING, /**< file source, string destination >*/
@@ -43,15 +44,15 @@ enum operationtype {FILE_FILE, /**< file source, file destination >*/
   };
 /**
 * Types of Hash handled.
-*/  
+*/
 enum hashtype {SHA_512, SHA_1, /*SHA_224, */SHA_256, SHA_384};
 /**
 * Types of symmetric encryption.
-*/  
+*/
 enum symmtype {AES_256};
 /**
 * Types of symmetric obfuscation.
-*/ 
+*/
 enum obfuscationtype {XOR};
 
 /**
@@ -70,7 +71,7 @@ class Crypto {
   * @param second string used to obfuscate the first one.
   * @param obt type of objuscation, for example XOR
   * @return The objuscated string
-  */ 
+  */
   std::string Obfuscate(const std::string &first, const std::string &second,
     const obfuscationtype &obt);
   /**
@@ -87,14 +88,14 @@ class Crypto {
   * Hash function. It returns an empty string if the input from a file
   * could not be read or cannot write the output to a file.
   * @param input string or path to file that is going to be hashed
-  * @param output path where the result is going to be written, if 
+  * @param output path where the result is going to be written, if
   * the result is going to be returned as a string, then it is ignored
   * @param ot type of operation
   * @param hex sets how the result is going to be retured, True for encoded,
   * False for decoded.
   * @return the result of the hash function or the path of the file where the
   * result is written or an empty string
-  */ 
+  */
   std::string Hash(const std::string &input, const std::string &output,
     const operationtype &ot, const bool &hex);
   inline void set_symm_algorithm(const symmtype &type) {symm_algorithm_ = type;}
@@ -103,8 +104,8 @@ class Crypto {
   * Performs a symetric encrytion of data. It returns an empty string if the input
   * from a file could not be read or cannot write the output to a file.
   * @param input string or path to file that is going to be encrypted
-  * @param output path where the result is going to be written, if 
-  * the result is going to be returned as a string, then it is ignored 
+  * @param output path where the result is going to be written, if
+  * the result is going to be returned as a string, then it is ignored
   * @param ot type of operation
   * @param key key used to encrypt
   * @return the encrypted data or the path of the file where the result is
@@ -117,7 +118,7 @@ class Crypto {
   * the input from a file could not be read or cannot write the output to a
   * file.
   * @param input string or path to file that is going to be decrypted
-  * @param output path where the result is going to be written, if 
+  * @param output path where the result is going to be written, if
   * the result is going to be returned as a string, then it is ignored
   * @param ot type of operation
   * @param key key used to decrypt
@@ -163,7 +164,7 @@ class Crypto {
   * Signs data with a private key.  It returns the 512 bit signature.  It
   * returns an empty string if the input from a file could not be read or
   * cannot write the output to a file or the key is not a valid private key.
-  * @param input string or path to file that is going to be signed 
+  * @param input string or path to file that is going to be signed
   * @param output path where the result is going to be written, if
   * the result is going to be returned as a string, then it is ignored
   * @param key private key used to decrypt
@@ -218,7 +219,7 @@ class Crypto {
  private:
   /**
   * XOR obfuscation operation.
-  */ 
+  */
   std::string XOROperation(const std::string &first,
     const std::string &second);
   template <class T>
@@ -232,7 +233,7 @@ class Crypto {
 * @class RsaKeyPair
 * Object that generates and holds a RSA key pair (private and public keys) of
 * lenght given by the user.
-*/ 
+*/
 class RsaKeyPair {
  public:
   RsaKeyPair() : public_key_(""), private_key_("") {}
@@ -246,13 +247,13 @@ class RsaKeyPair {
   }
   /**
   * Clears the keys and sets them as empty strings.
-  */ 
+  */
   inline void ClearKeys() {private_key_ = public_key_ = "";}
   /**
-  * Generates a pair of RSA keys of given size. 
+  * Generates a pair of RSA keys of given size.
   * @param keySize size in bits of the keys
   */
-  void GenerateKeys(const unsigned int &keySize);
+  void GenerateKeys(const boost::uint32_t &keySize);
  private:
   std::string public_key_;
   std::string private_key_;

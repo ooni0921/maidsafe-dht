@@ -31,8 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace rpcprotocol {
 
-ChannelManager::ChannelManager(transport::Transport *ptransport)
-      : pimpl_(new ChannelManagerImpl(ptransport)) {}
+ChannelManager::ChannelManager(transport::TransportHandler *ptrans_handler)
+      : pimpl_(new ChannelManagerImpl(ptrans_handler)) {}
 
 ChannelManager::~ChannelManager() {}
 

@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 14
+#if MAIDSAFE_DHT_VERSION < 15
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -53,7 +53,7 @@ namespace rpcprotocol {
 * Implementation of Google Protocol Buffers RpcController interface.  An
 * object of this class is used for a single method call. This
 * implementation has as members the seconds after which the call times out, the
-* RTT (round trip time) to the peer it is comunicating, and the id of the
+* RTT (round trip time) to the peer it is communicating, and the id of the
 * request(call).
 */
 
@@ -70,9 +70,11 @@ class Controller : public google::protobuf::RpcController {
   void NotifyOnCancel(google::protobuf::Closure*);
   void set_timeout(const int &seconds);
   void set_rtt(const float &rtt);
+  void set_trans_id(const boost::int16_t &trans_id);
   void set_req_id(const boost::uint32_t &id);
   int timeout() const;
   float rtt() const;
+  boost::int16_t trans_id() const;
   boost::uint32_t req_id() const;
  private:
   boost::shared_ptr<ControllerImpl> controller_pimpl_;
@@ -88,14 +90,15 @@ class Channel : public google::protobuf::RpcChannel {
   * Constructor. Used for the server that is going to receive RPC's of a service
   * through this object.
   * @param channelmanager Pointer to a ChannelManager object
-  * @param ptransport Pointer to a Transport object
+  * @param ptrans_handler Pointer to a TransportHandler object
   */
   Channel(rpcprotocol::ChannelManager *channelmanager,
-      transport::Transport *ptransport);
+      transport::TransportHandler *ptrans_handler);
   /**
   * Constructor. Used for the client that is going to send an RPC.
   * @param channelmanager Pointer to a ChannelManager object
-  * @param ptransport Pointer to a Transport object
+  * @param ptrans_handler Pointer to a TransportHandler object
+  * @param trans_id id of the transport to use
   * @param remote_ip remote ip of the endpoint that is going to receive the RPC
   * @param remote_port remote port of the endpoint that is going to receive
   * the RPC
@@ -104,10 +107,10 @@ class Channel : public google::protobuf::RpcChannel {
   * the RPC
   */
   Channel(rpcprotocol::ChannelManager *channelmanager,
-      transport::Transport *ptransport, const std::string &remote_ip,
-      const boost::uint16_t &remote_port, const std::string &local_ip,
-      const boost::uint16_t &local_port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port);
+      transport::TransportHandler *ptrans_handler, const boost::int16_t
+      &trans_id, const std::string &remote_ip, const boost::uint16_t
+      &remote_port, const std::string &local_ip, const boost::uint16_t
+      &local_port, const std::string &rv_ip, const boost::uint16_t &rv_port);
   ~Channel();
   /**
   * Implementation of virtual method of the interface.
@@ -126,10 +129,14 @@ class Channel : public google::protobuf::RpcChannel {
   * @param request message containg the request of the RPC
   * @param connection_id id of the connection from which it received the request
   * message
+  * @param trans_id id of the transport from which it received the request
+  * message
   * @param rtt round trip time to the peer from which it received the request
   */
   void HandleRequest(const RpcMessage &request,
-      const boost::uint32_t &connection_id, const float &rtt);
+                     const boost::uint32_t &connection_id,
+                     const boost::int16_t &trans_id,
+                     const float &rtt);
  private:
   boost::shared_ptr<ChannelImpl> pimpl_;
 };

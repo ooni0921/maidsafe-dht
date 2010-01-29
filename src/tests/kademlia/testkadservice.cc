@@ -35,6 +35,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "tests/kademlia/fake_callbacks.h"
 #include "protobuf/signed_kadvalue.pb.h"
 #include "maidsafe/config.h"
+#include "maidsafe/transport-api.h"
+#include "maidsafe/transportudt.h"
 #include "tests/validationimpl.h"
 
 inline void CreateRSAKeys(std::string *pub_key, std::string *priv_key) {
@@ -73,7 +75,7 @@ class Callback {
 
 class KadServicesTest: public testing::Test {
  protected:
-  KadServicesTest() : trans_(), channel_manager_(&trans_),
+  KadServicesTest() : trans_handler_(), channel_manager_(&trans_handler_),
       contact_(), crypto_(), node_id_(""), service_(), datastore_(),
       routingtable_(), validator_() {
     crypto_.set_hash_algorithm(crypto::SHA_512);
@@ -93,12 +95,14 @@ class KadServicesTest: public testing::Test {
     contact_.set_local_port(1235);
     contact_.set_rv_ip("127.0.0.3");
     contact_.set_rv_port(1236);
+
+    trans_handler_.Register(new transport::TransportUDT, &trans_id_);
   }
 
   virtual void SetUp() {
     datastore_.reset(new DataStore(kRefreshTime));
     routingtable_.reset(new RoutingTable(node_id_));
-    service_.reset(new KadService(NatRpcs(&channel_manager_, &trans_),
+    service_.reset(new KadService(NatRpcs(&channel_manager_, &trans_handler_),
         datastore_, true,
         boost::bind(&KadServicesTest::AddCtc, this, _1, _2, _3),
         boost::bind(&KadServicesTest::GetRandCtcs, this, _1, _2, _3),
@@ -116,7 +120,13 @@ class KadServicesTest: public testing::Test {
     service_->set_node_joined(true);
   }
 
-  transport::Transport trans_;
+  virtual void TearDown() {
+    delete trans_handler_.Get(trans_id_);
+    trans_handler_.Remove(trans_id_);
+  }
+
+  transport::TransportHandler trans_handler_;
+  boost::int16_t trans_id_;
   rpcprotocol::ChannelManager channel_manager_;
   ContactInfo contact_;
   crypto::Crypto crypto_;

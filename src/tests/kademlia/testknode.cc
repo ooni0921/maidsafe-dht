@@ -49,6 +49,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "udt/udt.h"
 #include "protobuf/signed_kadvalue.pb.h"
 #include "maidsafe/config.h"
+#include "maidsafe/transport-api.h"
+#include "maidsafe/transportudt.h"
 #include "tests/validationimpl.h"
 
 namespace fs = boost::filesystem;
@@ -103,7 +105,8 @@ class KNodeTest: public testing::Test {
 };
 
 std::string kad_config_file_;
-std::vector< boost::shared_ptr< transport::Transport > > transports_;
+std::vector< boost::shared_ptr< transport::TransportHandler > > trans_handlers_;
+std::vector< boost::int16_t > trans_ids_;
 std::vector< boost::shared_ptr<rpcprotocol::ChannelManager> >
     channel_managers_;
 std::vector< boost::shared_ptr<kad::KNode> > knodes_;
@@ -122,9 +125,7 @@ class Env: public testing::Environment {
     cry_obj_.set_hash_algorithm(crypto::SHA_512);
   }
 
-  virtual ~Env() {
-    transport::CleanUp();
-  }
+  virtual ~Env() {}
 
   virtual void SetUp() {
     test_dir_ = std::string("KnodeTest") +
@@ -141,12 +142,16 @@ class Env: public testing::Environment {
     // setup the nodes without starting them
     std::string priv_key, pub_key;
     create_rsakeys(&pub_key, &priv_key);
+    boost::int16_t trans_id;
     for (int  i = 0; i < kNetworkSize; ++i) {
-      transports_.push_back(boost::shared_ptr<transport::Transport>(new
-        transport::Transport()));
+      trans_handlers_.push_back(boost::shared_ptr<transport::TransportHandler>
+        (new transport::TransportHandler()));
+      trans_handlers_.at(i).get()->Register(new transport::TransportUDT,
+        &trans_id);
+      trans_ids_.push_back(trans_id);
       boost::shared_ptr<rpcprotocol::ChannelManager>
           channel_manager_local_(new rpcprotocol::ChannelManager(
-          transports_[i].get()));
+          trans_handlers_[i].get()));
       channel_managers_.push_back(channel_manager_local_);
 
       std::string db_local_ = test_dir_ + std::string("/datastore") +
@@ -156,15 +161,16 @@ class Env: public testing::Environment {
 
       boost::shared_ptr<kad::KNode>
           knode_local_(new kad::KNode(channel_managers_[i].get(),
-          transports_[i].get(), kad::VAULT, kTestK,
+          trans_handlers_[i].get(), kad::VAULT, kTestK,
           kad::kAlpha, kad::kBeta, kad::kRefreshTime, priv_key, pub_key, false,
           false));
+      knode_local_->SetTransID(trans_ids_[i]);
 
       EXPECT_TRUE(channel_managers_[i]->RegisterNotifiersToTransport());
-      EXPECT_TRUE(transports_[i]->RegisterOnServerDown(boost::bind(
+      EXPECT_TRUE(trans_handlers_[i]->RegisterOnServerDown(boost::bind(
         &kad::KNode::HandleDeadRendezvousServer, knode_local_.get(), _1)));
 
-      EXPECT_EQ(0, transports_[i]->Start(0));
+      EXPECT_EQ(0, trans_handlers_[i]->Start(0, trans_ids_[i]));
       EXPECT_EQ(0, channel_managers_[i]->Start());
       knodes_.push_back(knode_local_);
       ports_.insert(knodes_[i]->host_port());
@@ -176,7 +182,7 @@ class Env: public testing::Environment {
     boost::asio::ip::address local_ip;
     ASSERT_TRUE(base::get_local_address(&local_ip));
     knodes_[0]->Join(kad_config_file_, local_ip.to_string(),
-        transports_[0]->listening_port(),
+        trans_handlers_[0]->listening_port(trans_ids_[0]),
         boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
     wait_result(&cb_);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
@@ -226,20 +232,22 @@ class Env: public testing::Environment {
   }
 
   virtual void TearDown() {
+    printf("TestKNode, TearDown Starting..\n");
     boost::this_thread::sleep(boost::posix_time::seconds(5));
+
 #ifdef WIN32
     HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hconsole, 7 | 0 << 4);
 #endif
     for (int i = kNetworkSize-1; i >= 1; i--) {
-      transports_[i]->StopPingRendezvous();
+      trans_handlers_[i]->StopPingRendezvous();
     }
     for (int i = kNetworkSize-1; i >= 0; i--) {
       LOG(INFO) << "stopping node " << i << std::endl;
       cb_.Reset();
       knodes_[i]->Leave();
       EXPECT_FALSE(knodes_[i]->is_joined());
-      transports_[i]->Stop();
+      trans_handlers_[i]->Stop(trans_ids_[i]);
       channel_managers_[i]->Stop();
     }
     std::set<boost::uint16_t>::iterator it;
@@ -262,18 +270,23 @@ class Env: public testing::Environment {
     catch(const std::exception &e) {
       LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
     }
+    transport::TransportUDT::CleanUp();
     knodes_.clear();
     channel_managers_.clear();
-    transports_.clear();
+    // trans_handlers_.clear();
+    trans_ids_.clear();
     dbs_.clear();
     node_ids_.clear();
     ports_.clear();
+    printf("TestKNode, TearDown Finished\n");
   }
 };
 
 TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
-  transport::Transport trans;
-  rpcprotocol::ChannelManager channel_manager_local_(&trans);
+  transport::TransportHandler trans_handler;
+  boost::int16_t trans_id;
+  trans_handler.Register(new transport::TransportUDT, &trans_id);
+  rpcprotocol::ChannelManager channel_manager_local_(&trans_handler);
   std::string db_local = test_dir_ + std::string("/datastore") +
       boost::lexical_cast<std::string>(kNetworkSize + 1);
   boost::filesystem::create_directories(db_local);
@@ -292,12 +305,14 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   output2.close();
   std::string privkey, pubkey;
   create_rsakeys(&pubkey, &privkey);
-  kad::KNode knode_local_(&channel_manager_local_, &trans, kad::CLIENT, kTestK,
-    kad::kAlpha, kad::kBeta, kad::kRefreshTime, pubkey, privkey, false, false);
+  kad::KNode knode_local_(&channel_manager_local_, &trans_handler,
+    kad::CLIENT, kTestK, kad::kAlpha, kad::kBeta, kad::kRefreshTime, pubkey,
+    privkey, false, false);
+  knode_local_.SetTransID(trans_id);
   EXPECT_TRUE(channel_manager_local_.RegisterNotifiersToTransport());
-  EXPECT_TRUE(trans.RegisterOnServerDown(boost::bind(
+  EXPECT_TRUE(trans_handler.RegisterOnServerDown(boost::bind(
     &kad::KNode::HandleDeadRendezvousServer, &knode_local_, _1)));
-  ASSERT_EQ(0, trans.Start(0));
+  ASSERT_EQ(0, trans_handler.Start(0, trans_id));
   EXPECT_EQ(0, channel_manager_local_.Start());
   ports_.insert(knode_local_.host_port());
   knode_local_.Join(config_file, boost::bind(
@@ -406,7 +421,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   cb_.Reset();
   knode_local_.Leave();
   ASSERT_FALSE(knode_local_.is_joined());
-  trans.Stop();
+  trans_handler.Stop(trans_id);
   channel_manager_local_.Stop();
 }
 
@@ -776,7 +791,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
   // value
   for (int i = 0; i < kTestK - 2 && i < kNetworkSize - 2; ++i) {
     knodes_[2 + i]->Leave();
-    transports_[2 + i]->Stop();
+    trans_handlers_[2 + i]->Stop(trans_ids_[2 + i]);
     channel_managers_[2 + i]->Stop();
   }
   boost::this_thread::sleep(boost::posix_time::seconds(2));
@@ -838,10 +853,9 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
     output.close();
 
     EXPECT_TRUE(channel_managers_[2 + i]->RegisterNotifiersToTransport());
-    EXPECT_TRUE(transports_[2 + i]->RegisterOnServerDown(boost::bind(
+    EXPECT_TRUE(trans_handlers_[2 + i]->RegisterOnServerDown(boost::bind(
       &kad::KNode::HandleDeadRendezvousServer, knodes_[2 + i].get(), _1)));
-
-    EXPECT_EQ(0, transports_[2 + i]->Start(0));
+    EXPECT_EQ(0, trans_handlers_[2 + i]->Start(0, trans_ids_[2 + i]));
     EXPECT_EQ(0, channel_managers_[2 + i]->Start());
 
     knodes_[2 + i]->Join(node_ids_[2 + i], conf_file,
@@ -911,7 +925,7 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   GeneralKadCallback cb_;
   knodes_[r_node]->Leave();
   ASSERT_FALSE(knodes_[r_node]->is_joined());
-  transports_[r_node]->Stop();
+  trans_handlers_[r_node].get()->Stop(trans_ids_[r_node]);
   channel_managers_[r_node]->Stop();
   ports_.erase(r_port);
 
@@ -943,9 +957,9 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
 
   // Restart dead node
   ASSERT_TRUE(channel_managers_[r_node]->RegisterNotifiersToTransport());
-  ASSERT_TRUE(transports_[r_node]->RegisterOnServerDown(boost::bind(
+  ASSERT_TRUE(trans_handlers_[r_node]->RegisterOnServerDown(boost::bind(
     &kad::KNode::HandleDeadRendezvousServer, knodes_[r_node].get(), _1)));
-  ASSERT_EQ(0, transports_[r_node]->Start(0));
+  ASSERT_EQ(0, trans_handlers_[r_node]->Start(0, trans_ids_[r_node]));
   ASSERT_EQ(0, channel_managers_[r_node]->Start());
   cb_.Reset();
   std::string conf_file = dbs_[r_node] + "/.kadconfig";
@@ -1037,7 +1051,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
   boost::uint16_t r_port = knodes_[r_node]->host_port();
   knodes_[r_node]->Leave();
   ASSERT_FALSE(knodes_[r_node]->is_joined());
-  transports_[r_node]->Stop();
+  trans_handlers_[r_node]->Stop(trans_ids_[r_node]);
   channel_managers_[r_node]->Stop();
   ports_.erase(r_port);
   // Do a find node
@@ -1052,9 +1066,9 @@ TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
   // Restart dead node
   printf("+++++++++++++++++Restarting %d \n", r_node);
   ASSERT_TRUE(channel_managers_[r_node]->RegisterNotifiersToTransport());
-  ASSERT_TRUE(transports_[r_node]->RegisterOnServerDown(boost::bind(
+  ASSERT_TRUE(trans_handlers_[r_node]->RegisterOnServerDown(boost::bind(
     &kad::KNode::HandleDeadRendezvousServer, knodes_[r_node].get(), _1)));
-  ASSERT_EQ(0, transports_[r_node]->Start(0));
+  ASSERT_EQ(0, trans_handlers_[r_node]->Start(0, trans_ids_[r_node]));
   ASSERT_EQ(0, channel_managers_[r_node]->Start());
   cb_.Reset();
   std::string conf_file = dbs_[r_node] + "/.kadconfig";
@@ -1258,8 +1272,8 @@ TEST_F(KNodeTest, FUNC_KAD_InvReqDeleteValue) {
 
   // trying to load the value from no.1 node
   cb_1.Reset();
-  knodes_[kNetworkSize - 2]->FindValue(key, false, boost::bind(&FakeCallback::CallbackFunc,
-    &cb_1, _1));
+  knodes_[kNetworkSize - 2]->FindValue(key, false,
+    boost::bind(&FakeCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_LE(size_t(1), cb_1.values().size());

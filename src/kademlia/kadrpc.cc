@@ -27,12 +27,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "kademlia/kadrpc.h"
 #include "maidsafe/channel-api.h"
+#include "maidsafe/transporthandler-api.h"
 
 namespace kad {
 
 KadRpcs::KadRpcs(rpcprotocol::ChannelManager *channel_manager,
-    transport::Transport *trans) : info_(), pchannel_manager_(channel_manager),
-    ptransport_(trans) {
+                 transport::TransportHandler *ptrans_handler)
+                  : info_(),
+                    pchannel_manager_(channel_manager),
+                    ptrans_handler_(ptrans_handler) {
 }
 
 void KadRpcs::set_info(const ContactInfo &info) {
@@ -52,8 +55,8 @@ void KadRpcs::FindNode(const std::string &key, const std::string &ip,
   args.set_key(key);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_, ptransport_, ip, port, "", 0,
-      rv_ip, rv_port);
+  rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
+      ctler->trans_id(), ip, port, "", 0, rv_ip, rv_port);
   KademliaService::Stub service(&channel);
   service.FindNode(ctler, &args, resp, cb);
 }
@@ -66,8 +69,8 @@ void KadRpcs::FindValue(const std::string &key, const std::string &ip,
   args.set_key(key);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_, ptransport_, ip, port, "", 0,
-      rv_ip, rv_port);
+  rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
+      ctler->trans_id(), ip, port, "", 0, rv_ip, rv_port);
   KademliaService::Stub service(&channel);
   service.FindValue(ctler, &args, resp, cb);
 }
@@ -81,8 +84,8 @@ void KadRpcs::Ping(const std::string &ip, const boost::uint16_t &port,
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   ctler->set_timeout(kRpcPingTimeout);
-  rpcprotocol::Channel channel(pchannel_manager_, ptransport_, ip, port, "", 0,
-      rv_ip, rv_port);
+  rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
+      ctler->trans_id(), ip, port, "", 0, rv_ip, rv_port);
   KademliaService::Stub service(&channel);
   service.Ping(ctler, &args, resp, cb);
 }
@@ -103,8 +106,8 @@ void KadRpcs::Store(const std::string &key, const SignedValue &value,
   *sreq = sig_req;
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_, ptransport_, ip, port, "", 0,
-      rv_ip, rv_port);
+  rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
+      ctler->trans_id(), ip, port, "", 0, rv_ip, rv_port);
   KademliaService::Stub service(&channel);
   service.Store(ctler, &args, resp, cb);
 }
@@ -122,8 +125,8 @@ void KadRpcs::Store(const std::string &key, const std::string &value,
   args.set_publish(publish);
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_, ptransport_, ip, port, "", 0,
-      rv_ip, rv_port);
+  rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
+      ctler->trans_id(), ip, port, "", 0, rv_ip, rv_port);
   KademliaService::Stub service(&channel);
   service.Store(ctler, &args, resp, cb);
 }
@@ -139,8 +142,8 @@ void KadRpcs::Downlist(const std::vector<std::string> downlist,
   rpcprotocol::Controller controller;
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_, ptransport_, ip, port, "", 0,
-      rv_ip, rv_port);
+  rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
+      ctler->trans_id(), ip, port, "", 0, rv_ip, rv_port);
   KademliaService::Stub service(&channel);
   service.Downlist(ctler, &args, resp, cb);
 }
@@ -155,8 +158,8 @@ void KadRpcs::Bootstrap(const std::string &local_id,
   args.set_newcomer_local_ip(local_ip);
   args.set_newcomer_local_port(local_port);
   ctler->set_timeout(20);
-  rpcprotocol::Channel channel(pchannel_manager_, ptransport_, remote_ip,
-      remote_port, "", 0, "", 0);
+  rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
+      ctler->trans_id(), remote_ip, remote_port, "", 0, "", 0);
   KademliaService::Stub service(&channel);
   service.Bootstrap(ctler, &args, resp, cb);
 }
@@ -174,8 +177,8 @@ void KadRpcs::Delete(const std::string &key, const SignedValue &value,
   *sreq = sig_req;
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
-  rpcprotocol::Channel channel(pchannel_manager_, ptransport_, ip, port, "", 0,
-      rv_ip, rv_port);
+  rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
+      ctler->trans_id(), ip, port, "", 0, rv_ip, rv_port);
   KademliaService::Stub service(&channel);
   service.Delete(ctler, &args, resp, cb);
 }

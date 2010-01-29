@@ -81,10 +81,6 @@ void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
     data.done->Run();
   } else {
     data.ex_contacts.push_back(data.node_c);
-    if (data.controller != NULL) {
-      delete data.controller;
-      data.controller = NULL;
-    }
     delete response;
     SendNatDetection(data);
   }
@@ -106,8 +102,10 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
       } else {
         add_contact_(sender, 0.0, false);
       }
+      /*
       delete data.controller;
       data.controller = NULL;
+      */
       data.done->Run();
     } else {
       // Node B asks C to try a rendezvous to A with B as rendezvous
@@ -124,8 +122,10 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
           "", 0, resp, data.controller, done);
     }
   } else {
+    /*
     delete data.controller;
     data.controller = NULL;
+    */
     data.ex_contacts.push_back(data.node_c);
     SendNatDetection(data);
   }
@@ -281,7 +281,8 @@ void KadService::Store(google::protobuf::RpcController *controller,
     if (signature_validator_ == NULL ||
         !signature_validator_->ValidateSignerId(
           request->signed_request().signer_id(),
-          request->signed_request().signed_public_key(), request->key()) ||
+          request->signed_request().public_key(),
+          request->signed_request().signed_public_key()) ||
         !signature_validator_->ValidateRequest(
           request->signed_request().signed_request(),
           request->signed_request().public_key(),
@@ -363,7 +364,7 @@ void KadService::Bootstrap_NatDetectionRzPing(
   Bootstrap_NatDetectionPing(response, data);
 }
 
-void KadService::NatDetection(google::protobuf::RpcController *,
+void KadService::NatDetection(google::protobuf::RpcController *controller,
       const NatDetectionRequest *request, NatDetectionResponse *response,
       google::protobuf::Closure *done) {
   if (request->IsInitialized()) {
@@ -374,7 +375,10 @@ void KadService::NatDetection(google::protobuf::RpcController *,
         NatDetectionPingResponse *resp = new NatDetectionPingResponse;
         struct NatDetectionPingData data = {request->sender_id(), response,
             done, NULL};
+        rpcprotocol::Controller *ctrler =
+            static_cast<rpcprotocol::Controller*>(controller);
         data.controller = new rpcprotocol::Controller;
+        data.controller->set_trans_id(ctrler->trans_id());
         google::protobuf::Closure *done =
             google::protobuf::NewCallback<KadService,
             const NatDetectionPingResponse*, struct NatDetectionPingData>
@@ -393,7 +397,10 @@ void KadService::NatDetection(google::protobuf::RpcController *,
         NatDetectionPingResponse *resp = new NatDetectionPingResponse;
         struct NatDetectionPingData data =
           {request->sender_id(), response, done, NULL};
+        rpcprotocol::Controller *ctrler =
+            static_cast<rpcprotocol::Controller*>(controller);
         data.controller = new rpcprotocol::Controller;
+        data.controller->set_trans_id(ctrler->trans_id());
         google::protobuf::Closure *done =
           google::protobuf::NewCallback<KadService,
             const NatDetectionPingResponse*,
@@ -429,7 +436,7 @@ void KadService::NatDetectionPing(google::protobuf::RpcController *,
   done->Run();
 }
 
-void KadService::Bootstrap(google::protobuf::RpcController *,
+void KadService::Bootstrap(google::protobuf::RpcController *controller,
       const BootstrapRequest *request, BootstrapResponse *response,
       google::protobuf::Closure *done) {
   if (!request->IsInitialized() || !node_joined_) {
@@ -470,11 +477,14 @@ void KadService::Bootstrap(google::protobuf::RpcController *,
   std::vector<Contact> ex_contacs;
   ex_contacs.push_back(newcomer);
   struct NatDetectionData data = {newcomer, this_node_str, node_c,
-      response, done, NULL, ex_contacs};
+      response, done, static_cast<rpcprotocol::Controller*>(controller),
+      ex_contacs};
   SendNatDetection(data);
 }
 
-void KadService::SendNatDetection(struct NatDetectionData data) {
+void KadService::SendNatDetection(NatDetectionData data) {
+  if (NULL == data.controller)
+    printf("Empty\n");
   std::vector<Contact> random_contacts;
   get_random_contacts_(1, data.ex_contacts, &random_contacts);
   if (random_contacts.size() != 1) {
@@ -488,7 +498,11 @@ void KadService::SendNatDetection(struct NatDetectionData data) {
     // Node B asks C to try ping A
     std::string newcomer_str;
     data.newcomer.SerialiseToString(&newcomer_str);
+    rpcprotocol::Controller *temp_controller =
+        static_cast<rpcprotocol::Controller*>(data.controller);
+    boost::int16_t temp_trans_id = temp_controller->trans_id();
     data.controller = new rpcprotocol::Controller;
+    data.controller->set_trans_id(temp_trans_id);
     NatDetectionResponse *resp = new NatDetectionResponse;
     google::protobuf::Closure *done = google::protobuf::NewCallback<
       KadService, const NatDetectionResponse*, struct NatDetectionData>(this,
@@ -608,13 +622,15 @@ void KadService::Delete(google::protobuf::RpcController *controller,
 
   response->set_node_id(node_info_.node_id());
   // validating request
-  if (!signature_validator_->ValidateSignerId(
-      request->signed_request().signer_id(),
-      request->signed_request().signed_public_key(), request->key()) ||
-      !signature_validator_->ValidateRequest(
-      request->signed_request().signed_request(),
-      request->signed_request().public_key(),
-      request->signed_request().signed_public_key(), request->key())) {
+  if (signature_validator_ == NULL ||
+        !signature_validator_->ValidateSignerId(
+          request->signed_request().signer_id(),
+          request->signed_request().public_key(),
+          request->signed_request().signed_public_key()) ||
+        !signature_validator_->ValidateRequest(
+          request->signed_request().signed_request(),
+          request->signed_request().public_key(),
+          request->signed_request().signed_public_key(), request->key())) {
     response->set_result(kRpcResultFailure);
     done->Run();
     return;

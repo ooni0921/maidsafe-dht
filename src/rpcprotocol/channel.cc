@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/channel-api.h"
 #include "rpcprotocol/channelimpl.h"
+#include "maidsafe/transporthandler-api.h"
 
 namespace rpcprotocol {
 
@@ -78,6 +79,14 @@ float Controller::rtt() const {
   return controller_pimpl_->rtt();
 }
 
+void Controller::set_trans_id(const boost::int16_t &trans_id) {
+  controller_pimpl_->set_trans_id(trans_id);
+}
+
+boost::int16_t Controller::trans_id() const {
+  return controller_pimpl_->trans_id();
+}
+
 void Controller::set_req_id(const boost::uint32_t &id) {
   return controller_pimpl_->set_req_id(id);
 }
@@ -87,16 +96,16 @@ boost::uint32_t Controller::req_id() const {
 }
 
 Channel::Channel(rpcprotocol::ChannelManager *channelmanager,
-      transport::Transport *ptransport)
-      : pimpl_(new ChannelImpl(channelmanager, ptransport)) {}
+      transport::TransportHandler *ptrans_handler) :
+      pimpl_(new ChannelImpl(channelmanager, ptrans_handler)) {}
 
 Channel::Channel(rpcprotocol::ChannelManager *channelmanager,
-      transport::Transport *ptransport, const std::string &remote_ip,
-      const boost::uint16_t &remote_port, const std::string &local_ip,
-      const boost::uint16_t &local_port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port)
-      : pimpl_(new ChannelImpl(channelmanager, ptransport, remote_ip,
-        remote_port, local_ip, local_port, rv_ip, rv_port)) {}
+      transport::TransportHandler *ptrans_handler, const boost::int16_t
+      &trans_id, const std::string &remote_ip, const boost::uint16_t
+      &remote_port, const std::string &local_ip, const boost::uint16_t
+      &local_port, const std::string &rv_ip, const boost::uint16_t &rv_port)
+      : pimpl_(new ChannelImpl(channelmanager, ptrans_handler, trans_id,
+      remote_ip, remote_port, local_ip, local_port, rv_ip, rv_port)) {}
 
 Channel::~Channel() {}
 
@@ -112,8 +121,9 @@ void Channel::SetService(google::protobuf::Service* service) {
 }
 
 void Channel::HandleRequest(const RpcMessage &request,
-      const boost::uint32_t &connection_id, const float &rtt) {
-  pimpl_->HandleRequest(request, connection_id, rtt);
+  const boost::uint32_t &connection_id, const boost::int16_t &trans_id,
+  const float &rtt) {
+  pimpl_->HandleRequest(request, connection_id, trans_id, rtt);
 }
 
 }  // namespace rpcprotocol

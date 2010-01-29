@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 14
+#if MAIDSAFE_DHT_VERSION < 15
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -67,9 +67,9 @@ class ChannelManager {
  public:
   /**
   * Constructor
-  * @param ptransport Pointer to a transport object.
+  * @param ptransport_handler Pointer to a transport handler object.
   */
-  explicit ChannelManager(transport::Transport *ptransport);
+  explicit ChannelManager(transport::TransportHandler *ptrans_handler);
   ~ChannelManager();
   /**
   * Registers a channel and identifies it with the name of the RPC service that

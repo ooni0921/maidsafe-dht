@@ -39,17 +39,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/calllatertimer.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "rpcprotocol/channelimpl.h"
-#include "transport/transportimpl.h"
+#include "maidsafe/transport-api.h"
 
 namespace rpcprotocol {
 
 struct PendingReq {
   PendingReq() : args(NULL), callback(NULL), ctrl(NULL), connection_id(0),
-    timeout(0), size_rec(0) {}
+    trans_id(0), timeout(0), size_rec(0) {}
   google::protobuf::Message* args;
   google::protobuf::Closure* callback;
   Controller *ctrl;
   boost::uint32_t connection_id;
+  boost::int16_t trans_id;
   int timeout;
   int64_t size_rec;
 };
@@ -62,7 +63,7 @@ struct PendingTimeOut {
 
 class ChannelManagerImpl {
  public:
-  explicit ChannelManagerImpl(transport::Transport *ptransport);
+  explicit ChannelManagerImpl(transport::TransportHandler *ptrans_handler);
   ~ChannelManagerImpl();
   void RegisterChannel(const std::string &service_name, Channel* channel);
   void UnRegisterChannel(const std::string &service_name);
@@ -85,8 +86,10 @@ class ChannelManagerImpl {
   void RequestSent(const boost::uint32_t &connection_id, const bool &success);
   void OnlineStatusChanged(const bool &online);
   void MessageArrive(const RpcMessage &msg,
-      const boost::uint32_t &connection_id, const float &rtt);
-  transport::Transport *ptransport_;
+                     const boost::uint32_t &connection_id,
+                     const boost::int16_t trans_id,
+                     const float &rtt);
+  transport::TransportHandler *ptrans_handler_;
   bool is_started_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
   boost::mutex req_mutex_, channels_mutex_, id_mutex_, pend_timeout_mutex_,

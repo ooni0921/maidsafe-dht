@@ -32,9 +32,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
 #include "maidsafe/transport-api.h"
+#include "maidsafe/transportudt.h"
 #include "maidsafe/channelmanager-api.h"
 #include "maidsafe/config.h"
 #include "protobuf/rpcmessage.pb.h"
+#include "maidsafe/transporthandler-api.h"
 
 namespace kad {
 
@@ -49,7 +51,7 @@ class MessageHandler {
     msgs.push_back(message);
     ids.push_back(conn_id);
     if (node_ != NULL)
-      node_->CloseConnection(conn_id);
+      node_->CloseConnection(conn_id, id_);
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
     const boost::uint16_t &port) {
@@ -57,8 +59,9 @@ class MessageHandler {
     server_ip_ = ip;
     server_port_ = port;
   }
-  void set_node(transport::Transport *node) {
+  void set_node(transport::TransportHandler *node, boost::int16_t id) {
     node_ = node;
+    id_ = id;
   }
   void OnSend(const boost::uint32_t &, const bool &success) {
     if (success)
@@ -69,7 +72,8 @@ class MessageHandler {
   bool dead_server_;
   std::string server_ip_;
   boost::uint16_t server_port_;
-  transport::Transport *node_;
+  transport::TransportHandler *node_;
+  boost::int16_t id_;
   int msgs_sent_;
  private:
   MessageHandler(const MessageHandler&);
@@ -78,11 +82,9 @@ class MessageHandler {
 
 class TestKnodes : public testing::Test {
  public:
-  TestKnodes() : nodes_(), ch_managers_(), transports_(), msg_handlers_(),
-      datastore_dir_(2), test_dir_("") {}
-  virtual ~TestKnodes() {
-    transport::CleanUp();
-  }
+  TestKnodes() : nodes_(), ch_managers_(), trans_handlers_(), transports_(),
+    msg_handlers_(), datastore_dir_(2), test_dir_("") {}
+  virtual ~TestKnodes() {}
  protected:
   void SetUp() {
     test_dir_ = std::string("TestKnodes") + boost::lexical_cast<std::string>(
@@ -94,32 +96,47 @@ class TestKnodes : public testing::Test {
     catch(const std::exception &e) {
       LOG(ERROR) << "filesystem exception: " << e.what() << std::endl;
     }
+
     for (int i = 0; i < 2; i++) {
+      boost::int16_t id;
       msg_handlers_.push_back(new MessageHandler);
-      transports_.push_back(new transport::Transport);
-      ch_managers_.push_back(new rpcprotocol::ChannelManager(transports_[i]));
+      trans_handlers_.push_back(new transport::TransportHandler);
+      trans_handlers_[i]->Register(new transport::TransportUDT, &id);
+      transports_.push_back(id);
+      ch_managers_.push_back(new
+        rpcprotocol::ChannelManager(trans_handlers_[i]));
       ASSERT_TRUE(ch_managers_[i]->RegisterNotifiersToTransport());
-      ASSERT_TRUE(transports_[i]->RegisterOnServerDown(
+      ASSERT_TRUE(trans_handlers_[i]->RegisterOnServerDown(
         boost::bind(&MessageHandler::OnDeadRendezvousServer, msg_handlers_[i],
         _1, _2, _3)));
-      ASSERT_EQ(0, transports_[i]->Start(0));
+      ASSERT_EQ(0, trans_handlers_[i]->Start(0, transports_[i]));
+      printf("Listening port for Transport %d: %d\n", transports_[i],
+        trans_handlers_[i]->listening_port(transports_[i]));
       ASSERT_EQ(0, ch_managers_[i]->Start());
       datastore_dir_[i] = test_dir_ + "/Datastore" +
-          boost::lexical_cast<std::string>(transports_[i]->listening_port());
+          boost::lexical_cast<std::string>(trans_handlers_[i]->
+          listening_port(transports_[i]));
       boost::filesystem::create_directories(
           boost::filesystem::path(datastore_dir_[i]));
-      nodes_.push_back(KNode(ch_managers_[i], transports_[i], VAULT, "",
-        "", false, false));
+      nodes_.push_back(KNode(ch_managers_[i], trans_handlers_[i], VAULT, "",
+          "", false, false));
+      nodes_[i].SetTransID(transports_[i]);
     }
   }
   void TearDown() {
+    transport::TransportUDT * trans_temp =
+      static_cast<transport::TransportUDT*>(trans_handlers_[0]->Get(0));
+    trans_temp->CleanUp();
     for (int i = 0; i < 2; i++) {
-      transports_[i]->Stop();
+      trans_handlers_[i]->Stop(transports_[i]);
       ch_managers_[i]->Stop();
-      delete transports_[i];
+      delete trans_handlers_[i]->Get(transports_[i]);
+      trans_handlers_[i]->Remove(transports_[i]);
+      delete trans_handlers_[i];
       delete ch_managers_[i];
       delete msg_handlers_[i];
     }
+    transports_.clear();
     try {
       if (boost::filesystem::exists(test_dir_))
         boost::filesystem::remove_all(test_dir_);
@@ -133,7 +150,9 @@ class TestKnodes : public testing::Test {
   }
   std::vector<KNode> nodes_;
   std::vector<rpcprotocol::ChannelManager*> ch_managers_;
-  std::vector<transport::Transport*> transports_;
+  // std::vector<transport::Transport*> transports_;
+  std::vector<transport::TransportHandler*> trans_handlers_;
+  std::vector<boost::int16_t> transports_;
   std::vector<MessageHandler*> msg_handlers_;
   std::vector<std::string> datastore_dir_;
   std::string test_dir_;
@@ -148,7 +167,7 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   boost::asio::ip::address local_ip;
   ASSERT_TRUE(base::get_local_address(&local_ip));
   nodes_[0].Join(id, kconfig_file,
-    local_ip.to_string(), transports_[0]->listening_port(),
+    local_ip.to_string(), trans_handlers_[0]->listening_port(transports_[0]),
     boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
   ASSERT_EQ(kRpcResultSuccess, cb.result());
@@ -234,7 +253,7 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   boost::asio::ip::address local_ip;
   ASSERT_TRUE(base::get_local_address(&local_ip));
   nodes_[0].Join(id, kconfig_file,
-    local_ip.to_string(), transports_[0]->listening_port(),
+    local_ip.to_string(), trans_handlers_[0]->listening_port(transports_[0]),
     boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
   ASSERT_EQ(kRpcResultSuccess, cb.result());

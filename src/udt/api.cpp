@@ -1375,7 +1375,12 @@ void CUDTUnited::updateMux(CUDT* u, const CUDTSocket* ls)
    // remove all sockets and multiplexers
    for (map<UDTSOCKET, CUDTSocket*>::iterator i = self->m_Sockets.begin(); i != self->m_Sockets.end(); ++ i)
    {
-      i->second->m_pUDT->close();
+      if (NULL != i->second->m_pUDT) {
+        printf("UDT: Not NULL\n");
+        i->second->m_pUDT->close();
+      } else {
+        printf("UDT: NULL\n");
+      }
       i->second->m_Status = CUDTSocket::CLOSED;
       i->second->m_TimeStamp = CTimer::getTime();
       self->m_ClosedSockets[i->first] = i->second;

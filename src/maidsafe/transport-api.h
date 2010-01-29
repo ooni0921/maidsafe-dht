@@ -40,54 +40,63 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 14
+#if MAIDSAFE_DHT_VERSION < 15
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
 
 namespace transport {
 
-void CleanUp();
-
 class Transport {
  public:
-  Transport();
-  int ConnectToSend(const std::string &remote_ip, const uint16_t &remote_port,
-      const std::string &local_ip, const uint16_t &local_port,
+  Transport() {}
+  virtual ~Transport() {}
+  enum TransportType { kUdt, kTcp, kOther };
+  virtual TransportType GetType() = 0;
+  virtual boost::int16_t GetID() = 0;
+  virtual void SetID(boost::int16_t id) = 0;
+  virtual int ConnectToSend(const std::string &remote_ip, const uint16_t
+      &remote_port, const std::string &local_ip, const uint16_t &local_port,
       const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
-      const bool &keep_connection, boost::uint32_t *conn_id);
-  int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t &conn_id,
-      const bool &new_skt);
-  int Send(const std::string &data, const boost::uint32_t &conn_id,
-      const bool &new_skt);
-  int Start(const boost::uint16_t &port);
-  int StartLocal(const boost::uint16_t &port);
-  bool RegisterOnRPCMessage(boost::function<void(const rpcprotocol::RpcMessage&,
-      const boost::uint32_t&, const float &)> on_rpcmessage);
-  bool RegisterOnMessage(boost::function<void(const std::string&,
-      const boost::uint32_t&, const float &)> on_message);
-  bool RegisterOnSend(boost::function<void(const boost::uint32_t&,
-      const bool&)> on_send);
-  bool RegisterOnServerDown(boost::function<void(const bool&,
-        const std::string&, const boost::uint16_t&)> on_server_down);
-  void CloseConnection(const boost::uint32_t &connection_id);
-  void Stop();
-  bool is_stopped() const;
-  struct sockaddr& peer_address();
-  bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr *addr);
-  bool ConnectionExists(const boost::uint32_t &connection_id);
-  bool HasReceivedData(const boost::uint32_t &connection_id, int64_t *size);
-  boost::uint16_t listening_port();
-  void StartPingRendezvous(const bool &directly_connected,
+      const bool &keep_connection, boost::uint32_t *conn_id) = 0;
+  virtual int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t
+      &conn_id, const bool &new_skt) = 0;
+  virtual int Send(const std::string &data, const boost::uint32_t &conn_id,
+      const bool &new_skt) = 0;
+  virtual int Start(const boost::uint16_t &port) = 0;  // PV
+  virtual int StartLocal(const boost::uint16_t &port) = 0;
+  virtual bool RegisterOnRPCMessage(
+      boost::function<void(const rpcprotocol::RpcMessage&,
+                           const boost::uint32_t&,
+                           const boost::int16_t&,
+                           const float &)> on_rpcmessage) = 0;  // PV
+  virtual bool RegisterOnMessage(
+      boost::function<void(const std::string&,
+                           const boost::uint32_t&,
+                           const boost::int16_t&,
+                           const float &)> on_message) = 0;  // PV
+  virtual bool RegisterOnSend(boost::function<void(const boost::uint32_t&,
+      const bool&)> on_send) = 0;  // PV
+  virtual bool RegisterOnServerDown(boost::function < void(const bool&,  // PV
+        const std::string&, const boost::uint16_t&) > on_server_down) = 0;
+  virtual void CloseConnection(const boost::uint32_t &connection_id) = 0;
+  virtual void Stop() = 0;  // PV
+  virtual bool is_stopped() const = 0;
+  virtual struct sockaddr& peer_address() = 0;
+  virtual bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr
+      *addr) = 0;
+  virtual bool ConnectionExists(const boost::uint32_t &connection_id) = 0;
+  virtual bool HasReceivedData(const boost::uint32_t &connection_id, int64_t
+      *size) = 0;
+  virtual boost::uint16_t listening_port() = 0;
+  virtual void StartPingRendezvous(const bool &directly_connected,
       const std::string &my_rendezvous_ip, const boost::uint16_t
-      &my_rendezvous_port);
-  void StopPingRendezvous();
-  bool CanConnect(const std::string &ip, const uint16_t &port);
-  bool IsAddrUsable(const std::string &local_ip,
-      const std::string &remote_ip, const uint16_t &remote_port);
-  bool IsPortAvailable(const boost::uint16_t &port);
- private:
-  boost::shared_ptr<TransportImpl> pimpl_;
+      &my_rendezvous_port) = 0;
+  virtual void StopPingRendezvous() = 0;
+  virtual bool CanConnect(const std::string &ip, const uint16_t &port) = 0;
+  virtual bool IsAddrUsable(const std::string &local_ip,
+      const std::string &remote_ip, const uint16_t &remote_port) = 0;  // PV
+  virtual bool IsPortAvailable(const boost::uint16_t &port) = 0;  // PV
 };
 }  // namespace transport
 

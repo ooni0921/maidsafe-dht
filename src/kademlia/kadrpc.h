@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/channelmanager-api.h"
 #include "protobuf/kademlia_service.pb.h"
+#include "maidsafe/transporthandler-api.h"
 
 namespace kad {
 // different RPCs have different timeouts, normally it is 5 seconds
@@ -42,7 +43,7 @@ const int kRpcBootstrapTimeout = 7;  // 7secs
 class KadRpcs {
  public:
   KadRpcs(rpcprotocol::ChannelManager *channel_manager,
-      transport::Transport *trans);
+      transport::TransportHandler *ptrans_handler);
   void FindNode(const std::string &key, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, FindResponse *resp,
@@ -87,7 +88,7 @@ class KadRpcs {
   KadRpcs& operator=(const KadRpcs&);
   ContactInfo info_;
   rpcprotocol::ChannelManager *pchannel_manager_;
-  transport::Transport *ptransport_;
+  transport::TransportHandler *ptrans_handler_;
 };
 }  // namespace kad
 

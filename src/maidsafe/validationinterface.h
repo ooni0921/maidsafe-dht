@@ -39,7 +39,7 @@ namespace base {
  */
 class SignatureValidator {
  public:
-  SignatureValidator(const std::string &id) : id_(id) {}
+  explicit SignatureValidator(const std::string &id) : id_(id) {}
   SignatureValidator() : id_("") {}
   virtual ~SignatureValidator() {}
   /**

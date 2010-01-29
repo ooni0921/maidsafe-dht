@@ -31,21 +31,26 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 
 KNode::KNode(rpcprotocol::ChannelManager *channel_manager,
-      transport::Transport *trans, node_type type,
-      const std::string &private_key, const std::string &public_key,
-      const bool &port_forwarded, const bool &use_upnp)
-      : pimpl_(new KNodeImpl(channel_manager, trans, type, private_key,
-        public_key, port_forwarded, use_upnp)) {}
+      transport::TransportHandler *ptrans_handler,
+      node_type type, const std::string &private_key, const std::string
+      &public_key, const bool &port_forwarded, const bool &use_upnp)
+      : pimpl_(new KNodeImpl(channel_manager, ptrans_handler, type,
+      private_key, public_key, port_forwarded, use_upnp)) {}
 
 KNode::KNode(rpcprotocol::ChannelManager *channel_manager,
-      transport::Transport *trans, node_type type, const boost::uint16_t k,
-      const int &alpha, const int &beta, const int &refresh_time,
-      const std::string &private_key, const std::string &public_key,
-      const bool &port_forwarded, const bool &use_upnp)
-      : pimpl_(new KNodeImpl(channel_manager, trans, type, k, alpha, beta,
-        refresh_time, private_key, public_key, port_forwarded, use_upnp)) {}
+      transport::TransportHandler *ptrans_handler,
+      node_type type, const boost::uint16_t k, const int &alpha, const int
+      &beta, const int &refresh_time, const std::string &private_key, const
+      std::string &public_key, const bool &port_forwarded, const bool
+      &use_upnp) : pimpl_(new KNodeImpl(channel_manager, ptrans_handler,
+      type, k, alpha, beta, refresh_time, private_key, public_key,
+      port_forwarded, use_upnp)) {}
 
 KNode::~KNode() {}
+
+void KNode::SetTransID(boost::int16_t t) {
+  pimpl_->SetTransID(t);
+}
 
 void KNode::Join(const std::string &node_id, const std::string &kad_config_file,
       base::callback_func_type cb) {

@@ -56,6 +56,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service.pb.h"
 #include "upnp/upnpclient.h"
+#include "maidsafe/transporthandler-api.h"
 
 namespace kad {
 class ContactInfo;
@@ -215,16 +216,19 @@ struct BootstrapArgs {
 class KNodeImpl {
  public:
   KNodeImpl(rpcprotocol::ChannelManager* channel_manager,
-      transport::Transport *trans, node_type type,
+      transport::TransportHandler *ptrans_handler, node_type type,
       const std::string &private_key, const std::string &public_key,
       const bool &port_forwarded, const bool &use_upnp);
   // constructor used to set up parameters k, alpha, and beta for kademlia
   KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
-      transport::Transport *trans, node_type type, const boost::uint16_t k,
-      const int &alpha, const int &beta, const int &refresh_time,
-      const std::string &private_key, const std::string &public_key,
-      const bool &port_forwarded, const bool &use_upnp);
+      transport::TransportHandler *ptrans_handler, node_type type,
+      const boost::uint16_t k, const int &alpha, const int &beta,
+      const int &refresh_time, const std::string &private_key,
+      const std::string &public_key, const bool &port_forwarded,
+      const bool &use_upnp);
   ~KNodeImpl();
+
+  void SetTransID(boost::int16_t t) { trans_id_ = t; }
 
   void Join(const std::string &node_id, const std::string &kad_config_file,
       base::callback_func_type cb);
@@ -379,7 +383,8 @@ class KNodeImpl {
       pendingcts_mutex_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
   rpcprotocol::ChannelManager *pchannel_manager_;
-  transport::Transport *ptransport_;
+  transport::TransportHandler *ptrans_handler_;
+  boost::int16_t trans_id_;
   boost::shared_ptr<rpcprotocol::Channel> pservice_channel_;
   boost::shared_ptr<DataStore> pdata_store_;
   base::AlternativeStore *alternative_store_;

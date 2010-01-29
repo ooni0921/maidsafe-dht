@@ -25,22 +25,24 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <list>
 #include "maidsafe/config.h"
 #include "maidsafe/online.h"
 #include "rpcprotocol/channelmanagerimpl.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 #include "protobuf/rpcmessage.pb.h"
+#include "maidsafe/transport-api.h"
 
 namespace rpcprotocol {
 
-ChannelManagerImpl::ChannelManagerImpl(transport::Transport *ptransport)
-    : ptransport_(ptransport), is_started_(false),
-      ptimer_(new base::CallLaterTimer), req_mutex_(), channels_mutex_(),
-      id_mutex_(), pend_timeout_mutex_(), channels_ids_mutex_(),
-      current_request_id_(0), current_channel_id_(0), channels_(),
-      pending_req_(), pending_timeout_(), channels_ids_(),
-      delete_channels_cond_(), online_status_id_(0) {}
+ChannelManagerImpl::ChannelManagerImpl(transport::TransportHandler
+  *ptrans_handler) : ptrans_handler_(ptrans_handler), is_started_(false),
+  ptimer_(new base::CallLaterTimer), req_mutex_(), channels_mutex_(),
+  id_mutex_(), pend_timeout_mutex_(), channels_ids_mutex_(),
+  current_request_id_(0), current_channel_id_(0), channels_(),
+  pending_req_(), pending_timeout_(), channels_ids_(),
+  delete_channels_cond_(), online_status_id_(0) {}
 
 ChannelManagerImpl::~ChannelManagerImpl() {
   if (is_started_) {
@@ -91,12 +93,13 @@ bool ChannelManagerImpl::DeletePendingRequest(const boost::uint32_t &req_id) {
     return false;
   }
   boost::uint32_t connection_id = it->second.connection_id;
+  boost::int16_t trans_id = it->second.trans_id;
   it->second.ctrl->SetFailed(kCancelled);
   google::protobuf::Closure *callback = it->second.callback;
   pending_req_.erase(it);
   req_mutex_.unlock();
   if (connection_id != 0)
-    ptransport_->CloseConnection(connection_id);
+    ptrans_handler_->CloseConnection(connection_id, trans_id);
   callback->Run();
   return true;
 }
@@ -113,11 +116,12 @@ bool ChannelManagerImpl::CancelPendingRequest(const boost::uint32_t &req_id) {
     return false;
   }
   boost::uint32_t connection_id = it->second.connection_id;
+  boost::int16_t trans_id = it->second.trans_id;
   delete it->second.callback;
   pending_req_.erase(it);
   req_mutex_.unlock();
   if (connection_id != 0)
-    ptransport_->CloseConnection(connection_id);
+    ptrans_handler_->CloseConnection(connection_id, trans_id);
   return true;
 }
 
@@ -143,19 +147,34 @@ void ChannelManagerImpl::RegisterChannel(const std::string &service_name,
 }
 
 int ChannelManagerImpl::Start() {
-  if (is_started_)
-    return 0;
-  if (!ptransport_->is_stopped()) {
-    current_request_id_ =
-      base::generate_next_transaction_id(current_request_id_) +
-        (ptransport_->listening_port()*100);
-    is_started_ = true;
-    online_status_id_ = base::OnlineController::instance()->RegisterObserver(
-        ptransport_->listening_port(),
-        boost::bind(&ChannelManagerImpl::OnlineStatusChanged, this, _1));
+  if (is_started_) {
+#ifdef DEBUG
+    printf("ChannelManagerImpl::Start(): Already started\n");
+#endif
     return 0;
   }
-  return 1;
+  if (ptrans_handler_->AllAreStopped()) {
+#ifdef DEBUG
+    printf("No transports are running\n");
+#endif
+    return 1;
+  }
+  std::list<boost::int16_t> udt_transports =
+      ptrans_handler_->GetTransportIDByType(transport::Transport::kUdt);
+
+  if (udt_transports.empty())
+    return 1;
+
+  boost::int16_t udtID = udt_transports.front();
+
+  current_request_id_ =
+    base::generate_next_transaction_id(current_request_id_) +
+    (ptrans_handler_->listening_port(udtID)*100);
+  is_started_ = true;
+  online_status_id_ = base::OnlineController::instance()->RegisterObserver(
+    ptrans_handler_->listening_port(udtID),
+    boost::bind(&ChannelManagerImpl::OnlineStatusChanged, this, _1));
+    return 0;
 }
 
 int ChannelManagerImpl::Stop() {
@@ -179,11 +198,13 @@ int ChannelManagerImpl::Stop() {
 }
 
 void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
-    const boost::uint32_t &connection_id, const float &rtt) {
+                                       const boost::uint32_t &connection_id,
+                                       const boost::int16_t trans_id,
+                                       const float &rtt) {
   RpcMessage decoded_msg = msg;
   if (decoded_msg.rpc_type() == REQUEST) {
     if (!decoded_msg.has_service() || !decoded_msg.has_method()) {
-      DLOG(ERROR) << ptransport_->listening_port() <<
+      DLOG(ERROR) << ptrans_handler_->listening_port(trans_id) <<
           " --- request arrived cannot parse message" << std::endl;
       return;
     }
@@ -195,7 +216,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
         return;
       }
       struct sockaddr peer_addr;
-      if (!ptransport_->GetPeerAddr(connection_id, &peer_addr))
+      if (!ptrans_handler_->GetPeerAddr(connection_id, &peer_addr, trans_id))
         return;
       std::string peer_ip(inet_ntoa(((\
         struct sockaddr_in *)&peer_addr)->sin_addr));
@@ -214,7 +235,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
     channels_mutex_.lock();
     it = channels_.find(decoded_msg.service());
     if (it != channels_.end()) {
-      it->second->HandleRequest(decoded_msg, connection_id, rtt);
+      it->second->HandleRequest(decoded_msg, connection_id, trans_id, rtt);
       channels_mutex_.unlock();
     } else {
       LOG(ERROR) << "Message arrived for unregistered service" << std::endl;
@@ -223,7 +244,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
   } else if (decoded_msg.rpc_type() == RESPONSE) {
     std::map<boost::uint32_t, PendingReq>::iterator it;
     req_mutex_.lock();
-    DLOG(INFO) << ptransport_->listening_port() <<
+    DLOG(INFO) << ptrans_handler_->listening_port(trans_id) <<
         " --- response arrived for " << decoded_msg.method() << " -- " <<
         decoded_msg.message_id() << std::endl;
     it = pending_req_.find(decoded_msg.message_id());
@@ -234,22 +255,23 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
         google::protobuf::Closure* done = (*it).second.callback;
         pending_req_.erase(decoded_msg.message_id());
         req_mutex_.unlock();
+        printf("MessageArrive: RTT: %f\n", rtt);
         done->Run();
-        ptransport_->CloseConnection(connection_id);
+        ptrans_handler_->CloseConnection(connection_id, trans_id);
       } else {
         req_mutex_.unlock();
-        DLOG(INFO) << ptransport_->listening_port() <<
+        DLOG(INFO) << ptrans_handler_->listening_port(trans_id) <<
             " --ChannelManager no callback for id " << decoded_msg.message_id()
              << std::endl;
       }
     } else {
       req_mutex_.unlock();
-      DLOG(INFO) << ptransport_->listening_port() <<
+      DLOG(INFO) << ptrans_handler_->listening_port(trans_id) <<
           "ChannelManager no request for id " << decoded_msg.message_id() <<
           std::endl;
     }
   } else {
-    DLOG(ERROR) << ptransport_->listening_port() <<
+    DLOG(ERROR) << ptrans_handler_->listening_port(trans_id) <<
         " --- ChannelManager::MessageArrive " <<
         "unknown type of message received" << std::endl;
   }
@@ -265,17 +287,18 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
   if (it != pending_req_.end()) {
     int64_t size_rec = it->second.size_rec;
     boost::uint32_t connection_id = it->second.connection_id;
+    boost::int16_t trans_id = it->second.trans_id;
     int timeout = it->second.timeout;
-    if (ptransport_->HasReceivedData(connection_id, &size_rec)) {
+    if (ptrans_handler_->HasReceivedData(connection_id, &size_rec, trans_id)) {
       it->second.size_rec = size_rec;
       req_mutex_.unlock();
-      DLOG(INFO) << ptransport_->listening_port() <<
+      DLOG(INFO) << ptrans_handler_->listening_port(trans_id) <<
         " -- Reseting timeout for RPC ID: " << req_id << ". Connection ID: " <<
         connection_id << std::endl;
       AddReqToTimer(req_id, timeout);
     } else {
-      DLOG(INFO) << ptransport_->listening_port() << "Request " << req_id <<
-          " times out.  Connection ID: " << connection_id << std::endl;
+      DLOG(INFO) << ptrans_handler_->listening_port(trans_id) << "Request " <<
+      req_id << " times out.  Connection ID: " << connection_id << std::endl;
       // call back without modifying the response
       google::protobuf::Closure* done = (*it).second.callback;
       (*it).second.ctrl->SetFailed(kTimeOut);
@@ -283,7 +306,7 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
       req_mutex_.unlock();
       done->Run();
       if (connection_id != 0)
-        ptransport_->CloseConnection(connection_id);
+        ptrans_handler_->CloseConnection(connection_id, trans_id);
     }
   } else {
     req_mutex_.unlock();
@@ -342,13 +365,13 @@ void ChannelManagerImpl::OnlineStatusChanged(const bool&) {
 }
 
 bool ChannelManagerImpl::RegisterNotifiersToTransport() {
-  if (is_started_)
+  if (is_started_) {
     return true;  // Everything has already been registered
-
-  if (ptransport_->RegisterOnRPCMessage(
-    boost::bind(&ChannelManagerImpl::MessageArrive, this, _1, _2, _3))) {
-    return ptransport_->RegisterOnSend(boost::bind(
-      &ChannelManagerImpl::RequestSent, this, _1, _2));
+  }
+  if (ptrans_handler_->RegisterOnRPCMessage(
+    boost::bind(&ChannelManagerImpl::MessageArrive, this, _1, _2, _3, _4))) {
+      return ptrans_handler_->RegisterOnSend(boost::bind(
+        &ChannelManagerImpl::RequestSent, this, _1, _2));
   }
   return false;
 }
