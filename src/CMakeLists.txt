@@ -445,7 +445,6 @@ LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} 
 # traverse subdirs for imported 3rd party libs                                                    #
 ###################################################################################################
 ADD_SUBDIRECTORY(udt)
-#ADD_SUBDIRECTORY(libupnp)
 ADD_SUBDIRECTORY(cryptopp)
 
 ###################################################################################################
@@ -472,30 +471,18 @@ ELSE(MSVC)
 	SET(EXTENS .a)
 ENDIF(MSVC)	
 SET(LINK_DIRECTORIES ${LIBRARY_OUTPUT_PATH} ${LIB_DIR})
-#message(FATAL_ERROR "lib out " ${LIBRARY_OUTPUT_PATH})
-#TARGET_LINK_LIBRARIES(TESTbase libprotobuf${EXTENS} libcryptopp${EXTENS} gtest ${SYS_LIB})
-#TARGET_LINK_LIBRARIES(TESTtransport  gtest libudt${EXTENS} libcryptopp${EXTENS} ${SYS_LIB})
-#TARGET_LINK_LIBRARIES(TESTrpcprotocol  gtest libudt${EXTENS} libcryptopp${EXTENS} ${SYS_LIB})
-#TARGET_LINK_LIBRARIES(TESTkademlia   libmaidsafe${EXTENS} gtest  ${SYS_LIB})
-#TARGET_LINK_LIBRARIES(TESTknode   libmaidsafe${EXTENS} gtest ${SYS_LIB})
-#TARGET_LINK_LIBRARIES(TESTnatpmp   libcryptopp${EXTENS}  gtest ${SYS_LIB} )
-#TARGET_LINK_LIBRARIES(TESTupnp  gtest libupnp${EXTENS} libcryptopp${EXTENS} ${SYS_LIB})
-#TARGET_LINK_LIBRARIES(maidsafe udt upnp cryptopp ${SYS_LIB})
-#TARGET_LINK_LIBRARIES(maidsafe_static  libudt${EXTENS} libupnp${EXTENS} libcryptopp${EXTENS} ${SYS_LIB})
-#TARGET_LINK_LIBRARIES(kaddemo  maidsafe ${DEMO_LIBS})
-#TARGET_LINK_LIBRARIES(kaddemostatic  libmaidsafe${EXTENS} ${DEMO_LIBS})
 
 TARGET_LINK_LIBRARIES(TESTbase maidsafe_static  gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTtransport maidsafe_static  gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe_static gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTkademlia  maidsafe_static gtest  ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTknode   maidsafe_static gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_static gtest  ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTknode maidsafe_static gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static  gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static  gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(maidsafe udt cryptopp ${SYS_LIB})
-TARGET_LINK_LIBRARIES(maidsafe_static   udt  cryptopp ${SYS_LIB})
-TARGET_LINK_LIBRARIES(kaddemo  maidsafe ${DEMO_LIBS})
-TARGET_LINK_LIBRARIES(kaddemostatic  maidsafe_static${DEMO_LIBS})
+TARGET_LINK_LIBRARIES(maidsafe_static udt cryptopp ${SYS_LIB})
+TARGET_LINK_LIBRARIES(kaddemo maidsafe ${DEMO_LIBS})
+TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static${DEMO_LIBS})
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
 ###################################################################################################
@@ -532,10 +519,12 @@ ELSEIF(WIN32)
     SET(MAIDSAFE_DHT_CXX_FLAGS "-mthreads -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
     ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
     SET(MAIDSAFE_DHT_CXX_FLAGS "${MAIDSAFE_DHT_CXX_FLAGS} -Wall -finline-functions  -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__ -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501")
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__  -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501") # -g -O0 -Wall -W -fprofile-arcs -ftest-coverage")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__  -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501") 
     #SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}") # -fprofile-arcs -ftest-coverage -lgcov")
+    
     SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo PROPERTIES LINK_FLAGS "-mthreads " )
     #  IF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
+    ##FIXME !!!!
     #  	SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTupnp kaddemo PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
     #  ENDIF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   ENDIF(NOT MSVC)
