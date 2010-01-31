@@ -329,7 +329,7 @@ ELSEIF(WIN32)
 ENDIF(UNIX)
 
 SET(SYS_LIB ${SYS_LIB} ${Boost_LIBRARIES} ${GLOG_LIB} ${PROTOBUF_LIBRARY} )
-INCLUDE_DIRECTORIES(${MAIDSAFE_SOURCE_DIR} ${MAIDSAFE_SOURCE_DIR}/libupnp ${INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${MAIDSAFE_SOURCE_DIR}  ${INCLUDE_DIR})
 INCLUDE_DIRECTORIES(AFTER SYSTEM ${GTEST_INCLUDE_DIRS} ${PROTOBUF_INCLUDE}  ${Boost_INCLUDE_DIRS})
 MESSAGE("================================================================================")
 
@@ -383,8 +383,8 @@ LIST(APPEND M_NATPMP_DIR ${M_NATPMP_C} ${M_NATPMP_H})
 FILE(GLOB M_UPNP_C "upnp/*.c*")
 FILE(GLOB M_UPNP_H "upnp/*.h*")
 LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})
-LIST(REMOVE_ITEM M_UPNP_DIR "${maidsafe_SOURCE_DIR}/upnp/upnpclientimpl.cc")
-LIST(REMOVE_ITEM M_UPNP_DIR "${maidsafe_SOURCE_DIR}/upnp/upnpclientimpl.h")
+LIST(REMOVE_ITEM M_UPNP_DIR "${MAIDSAFE_SOURCE_DIR}/upnp/upnpclientimpl.cc")
+LIST(REMOVE_ITEM M_UPNP_DIR "${MAIDSAFE_SOURCE_DIR}/upnp/upnpclientimpl.h")
 FILE(GLOB M_PROTOBUF_C "protobuf/*.c*")
 FILE(GLOB M_PROTOBUF_H "protobuf/*.h*")
 LIST(APPEND M_PROTOBUF_DIR ${M_PROTOBUF_C} ${M_PROTOBUF_H})
@@ -440,27 +440,28 @@ FILE(GLOB T_DEMO_C "tests/demo/*.c*")
 FILE(GLOB T_DEMO_H "tests/demo/*.h*")
 LIST(APPEND T_DEMO_DIR ${T_DEMO_C} ${T_DEMO_H})
 LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR} ${M_NATPMP_DIR} ${MAIDSAFE_DIR})
-
 ###################################################################################################
 # traverse subdirs for imported 3rd party libs                                                    #
 ###################################################################################################
 ADD_SUBDIRECTORY(udt)
+#ADD_SUBDIRECTORY(libupnp)
 ADD_SUBDIRECTORY(cryptopp)
-
 ###################################################################################################
 # All Platforms:  Add Test Exes and Create all maidsafe-dht libs                                  #
 ###################################################################################################
-ADD_EXECUTABLE(TESTbase ${T_MAIN} ${T_BASE_DIR} ${M_BASE_DIR} ${MAIDSAFE_DIR})
-ADD_EXECUTABLE(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_DIR})
-ADD_EXECUTABLE(TESTknode "tests/kademlia/testknode.cc" ${MAIDSAFE_DIR})
-ADD_EXECUTABLE(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${M_BASE_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${MAIDSAFE_DIR})
-ADD_EXECUTABLE(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${M_BASE_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR})
-ADD_EXECUTABLE(TESTnatpmp ${T_MAIN} ${T_NATPMP_DIR} ${M_BASE_DIR} ${M_NATPMP_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP})
-ADD_EXECUTABLE(TESTupnp ${T_MAIN} ${T_UPNP_DIR} ${M_BASE_DIR} ${M_UPNP_DIR} ${MAIDSAFE_DIR} ${CRYPTOPP})
-ADD_EXECUTABLE(kaddemo ${T_DEMO_DIR})
-ADD_EXECUTABLE(kaddemostatic ${T_DEMO_DIR})
-ADD_LIBRARY(maidsafe SHARED ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR}  ${MAIDSAFE_DIR}  ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${M_NATPMP_DIR})
-ADD_LIBRARY(maidsafe_static STATIC ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR}   ${M_RPCPROTO_DIR} ${MAIDSAFE_DIR}   ${M_LIBUPNP_DIR} ${M_UPNP_DIR}  ${M_NATPMP_DIR}  )
+ADD_EXECUTABLE(TESTbase ${T_MAIN} ${T_BASE_DIR}  ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTknode "tests/kademlia/testknode.cc" ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR}  ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR}  ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTnatpmp ${T_MAIN} ${T_NATPMP_DIR}  ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTupnp ${T_MAIN} ${T_UPNP_DIR} ${MAIDSAFE_H})
+ADD_EXECUTABLE(kaddemo ${T_DEMO_DIR} ${MAIDSAFE_H} )
+ADD_EXECUTABLE(kaddemostatic ${T_DEMO_DIR} ${MAIDSAFE_H} )
+
+ADD_LIBRARY(maidsafe SHARED  ${DHT_SOURCE_FILES})
+ADD_LIBRARY(maidsafe_static STATIC  ${DHT_SOURCE_FILES})
+#Rename maidsa_static as maidsafe on way out !
 SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES OUTPUT_NAME maidsafe)
 ###################################################################################################
 # Builds                                                                                          #
@@ -472,21 +473,22 @@ ELSE(MSVC)
 ENDIF(MSVC)	
 SET(LINK_DIRECTORIES ${LIBRARY_OUTPUT_PATH} ${LIB_DIR})
 
+SET(BUILD_SHARED_LIBS OFF)
+
 TARGET_LINK_LIBRARIES(TESTbase maidsafe_static  gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTtransport maidsafe_static  gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe_static gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_static gtest  ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTknode maidsafe_static gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static  gtest ${SYS_LIB} )
-TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static  gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static gtest ${SYS_LIB} )
+TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(maidsafe udt cryptopp ${SYS_LIB})
 TARGET_LINK_LIBRARIES(maidsafe_static udt cryptopp ${SYS_LIB})
 TARGET_LINK_LIBRARIES(kaddemo maidsafe ${DEMO_LIBS})
-TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static${DEMO_LIBS})
+TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static ${DEMO_LIBS})
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
 ###################################################################################################
-SET(BUILD_SHARED_LIBS OFF)
 ####APPLE##############################
 IF(APPLE)
   SET(CMAKE_AR "/usr/bin/libtool")
@@ -509,8 +511,8 @@ ELSEIF(UNIX AND NOT APPLE)
   IF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   	SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTupnp TESTnatpmp kaddemo PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
   ENDIF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
-  SET_SOURCE_FILES_PROPERTIES(${CRYPTOPP} PROPERTIES COMPILE_FLAGS "-DNDEBUG -O3 -march=native -mtune=native -pipe")
-  SET_SOURCE_FILES_PROPERTIES(${M_UPNP_DIR} PROPERTIES COMPILE_FLAGS "-Wall -pipe -DLINUX -finline-functions -O3")
+  # SET_SOURCE_FILES_PROPERTIES(${CRYPTOPP} PROPERTIES COMPILE_FLAGS "-DNDEBUG -O3 -march=native -mtune=native -pipe")
+  #SET_SOURCE_FILES_PROPERTIES(${M_UPNP_DIR} PROPERTIES COMPILE_FLAGS "-Wall -pipe -DLINUX -finline-functions -O3")
 #######WINDOWS##############
 ELSEIF(WIN32)
   IF (NOT MSVC)
