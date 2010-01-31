@@ -1167,11 +1167,9 @@ void CUDTUnited::removeSocket(const UDTSOCKET u)
          m_Sockets[*q]->m_pUDT->close();
          m_Sockets[*q]->m_TimeStamp = CTimer::getTime();
          m_Sockets[*q]->m_Status = CUDTSocket::CLOSED;
-         tbc.insert(*q);
          m_ClosedSockets[*q] = m_Sockets[*q];
+         m_Sockets.erase(*q);
       }
-      for (set<UDTSOCKET>::iterator c = tbc.begin(); c != tbc.end(); ++ c)
-         m_Sockets.erase(*c);
 
       CGuard::leaveCS(i->second->m_AcceptLock);
    }
@@ -1387,15 +1385,20 @@ void CUDTUnited::updateMux(CUDT* u, const CUDTSocket* ls)
    }
    self->m_Sockets.clear();
 
+   for (map<UDTSOCKET, CUDTSocket*>::iterator j = self->m_ClosedSockets.begin(); j != self->m_ClosedSockets.end(); ++ j)
+   {
+      j->second->m_TimeStamp = 0;
+   }
+
    while (!self->m_ClosedSockets.empty())
    {
+      self->checkBrokenSockets();
+
       #ifndef WIN32
-         usleep(1000);
+         usleep(10);
       #else
          Sleep(1);
       #endif
-
-      self->checkBrokenSockets();
    }
 
    #ifndef WIN32

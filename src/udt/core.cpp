@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 10/10/2009
+   Yunhong Gu, last updated 10/27/2009
 *****************************************************************************/
 
 #ifndef WIN32
@@ -605,7 +605,8 @@ void CUDT::connect(const sockaddr* serv_addr)
                response.setLength(-1);
             else if ((0 == res->m_iReqType) || (0 == req->m_iReqType))
             {
-               tmp = new char [m_iPayloadSize];
+               if (NULL == tmp)
+                  tmp = new char [m_iPayloadSize];
                memcpy(tmp, resdata, sizeof(CHandShake));
 
                req->m_iReqType = -1;
@@ -1395,7 +1396,7 @@ void CUDT::sample(CPerfMon* perf, bool clear)
 
    if (clear)
    {
-      m_llTraceSent = m_llTraceRecv = m_iTraceSndLoss = m_iTraceSndLoss = m_iTraceRetrans = m_iSentACK = m_iRecvACK = m_iSentNAK = m_iRecvNAK = 0;
+      m_llTraceSent = m_llTraceRecv = m_iTraceSndLoss = m_iTraceRcvLoss = m_iTraceRetrans = m_iSentACK = m_iRecvACK = m_iSentNAK = m_iRecvNAK = 0;
       m_llSndDuration = 0;
       m_LastSampleTime = currtime;
    }
@@ -2276,10 +2277,8 @@ void CUDT::checkTimers()
    if (currtime > m_ullNextEXPTime)
    {
       // Haven't receive any information from the peer, is it dead?!
-      // timeout: at least 16 expirations and must be greater than 3 seconds and be less than 30 seconds
-      if (((m_iEXPCount > 16) && (m_iEXPCount * ((m_iEXPCount - 1) * (m_iRTT + 4 * m_iRTTVar) / 2 + m_iSYNInterval) > 3000000))
-          || (m_iEXPCount > 30)
-          || (m_iEXPCount * ((m_iEXPCount - 1) * (m_iRTT + 4 * m_iRTTVar) / 2 + m_iSYNInterval) > 30000000))
+      // timeout: at least 16 expirations and must be greater than 3 seconds
+      if ((m_iEXPCount > 16) && (m_iEXPCount * ((m_iEXPCount - 1) * (m_iRTT + 4 * m_iRTTVar) / 2 + m_iSYNInterval) > 3000000))
       {
          //
          // Connection is broken. 
