@@ -11,7 +11,7 @@ ENDIF (MSVC)
 
 ADD_LIBRARY (cryptopp SHARED ${cryptopp_SOURCES})
 #IF(NOT WIN32)
-	ADD_LIBRARY (cryptopp_static SHARED  ${cryptopp_SOURCES})
+	ADD_LIBRARY (cryptopp_static STATIC  ${cryptopp_SOURCES})
 	SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES OUTPUT_NAME cryptopp)
 	#ENDIF(NOT WIN32)
 
@@ -20,8 +20,6 @@ IF (WIN32)
 		TARGET_LINK_LIBRARIES (cryptopp_static Ws2_32.lib)
 	# We cannot build static versions of this in windows for some reason
 ENDIF (WIN32)
-#TARGET_LINK_LIBRARIES (cryptopp ${Boost_LIBRARIES})
-#SET_TARGET_PROPERTIES (cryptopp PROPERTIES VERSION 0.1 SOVERSION 0.1)
 
 IF (WIN32)
 	INSTALL (TARGETS cryptopp 
@@ -46,7 +44,7 @@ ELSEIF(UNIX AND NOT APPLE)
 ELSEIF(WIN32)
   IF(NOT MSVC)
     SET_TARGET_PROPERTIES(cryptopp PROPERTIES COMPILE_FLAGS "-mthreads -w -finline-functions -O3 -DNDEBUG -D__MINGW__ -DWIN32 -D_WIN32_WINNT=0x0501 -D_WIN32")
-    SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "-mthreads -w -finline-functions -O3 -DNDEBUG -D__MINGW__ -DWIN32 -D_WIN32_WINNT=0x0501 -D_WIN32")
+        SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "-mthreads -w -finline-functions -O3 -DNDEBUG -D__MINGW__ -DWIN32 -D_WIN32_WINNT=0x0501 -D_WIN32")
   ENDIF(NOT MSVC)
 ENDIF(APPLE)
 
