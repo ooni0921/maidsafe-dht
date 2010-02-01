@@ -433,16 +433,24 @@ ENDIF(MSVC)
 SET(LINK_DIRECTORIES ${LIBRARY_OUTPUT_PATH} ${LIB_DIR})
 
 SET(BUILD_SHARED_LIBS OFF)
+#Ensure we pick up corret libs and not some older installed on 
+set_property(TARGET maidsafe_static PROPERTY IMPORTED_LOCATION bin/)
+set_property(TARGET maidsafe PROPERTY IMPORTED_LOCATION bin/)
+set_property(TARGET cryptopp_static PROPERTY IMPORTED_LOCATION bin/)
+set_property(TARGET cryptopp PROPERTY IMPORTED_LOCATION bin/)
+set_property(TARGET udt_static PROPERTY IMPORTED_LOCATION bin/)
+set_property(TARGET udt PROPERTY IMPORTED_LOCATION bin/)
 
-TARGET_LINK_LIBRARIES(TESTbase maidsafe_static  gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTtransport maidsafe_static  gtest ${SYS_LIB})
+
+TARGET_LINK_LIBRARIES(TESTbase maidsafe_static gtest ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTtransport maidsafe_static gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe_static gtest ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_static gtest  ${SYS_LIB})
+TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_static gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTknode maidsafe_static gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(maidsafe udt cryptopp ${SYS_LIB})
-TARGET_LINK_LIBRARIES(maidsafe_static udt_static  cryptopp_static  ${SYS_LIB})
+TARGET_LINK_LIBRARIES(maidsafe_static udt_static  cryptopp_static ${SYS_LIB})
 TARGET_LINK_LIBRARIES(kaddemo maidsafe ${DEMO_LIBS})
 TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static ${DEMO_LIBS})
 ###################################################################################################
