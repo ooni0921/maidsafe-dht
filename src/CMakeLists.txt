@@ -236,47 +236,6 @@ ELSE (NOT PROTOBUF_INCLUDE OR NOT PROTOBUF_LIBRARY)
 ENDIF (NOT PROTOBUF_INCLUDE OR NOT PROTOBUF_LIBRARY)
 
 ###################################################################################################
-# Libconfig search                                                                                #
-###################################################################################################
-#MESSAGE (STATUS "Check libconfig c++ interface and lib")
-#IF (MSVC)
-#  FIND_PATH (LIBCONFIG_INCLUDE libconfig.h++
-#    DOC "Libconfig++ include files"
-#    PATHS ${LIBCONFIG_ROOT}/lib/ INCLUDE )
-#  IF (CMAKE_CL_64)
-#    FIND_LIBRARY (Libconfig_LIBRARY_RELEASE libconfig++.lib
-#      DOC "Libconfig C++ libconfig++ (release)"
-#      PATHS ${LIBCONFIG_ROOT}/x64/release LIB NO_DEFAULT_PATH )
-##    FIND_LIBRARY (Libconfig_LIBRARY_DEBUG libconfig++_d.lib
-#      DOC "Libconfig C++ libconfig++ (debug)"
-#      PATHS ${LIBCONFIG_ROOT}/x64/debug LIB NO_DEFAULT_PATH )
-#    ELSE (CMAKE_CL_64)
-#      FIND_LIBRARY (Libconfig_LIBRARY_RELEASE libconfig++.lib
-#        DOC "Libconfig C++ libconfig++ (release)"
-#        PATHS ${LIBCONFIG_ROOT}/release LIB NO_DEFAULT_PATH )
-#     FIND_LIBRARY (Libconfig_LIBRARY_DEBUG libconfig++_d.lib
-#        DOC "Libconfig C++ libconfig++ (debug)"
-#        PATHS ${LIBCONFIG_ROOT}/debug LIB NO_DEFAULT_PATH )
-#    ENDIF (CMAKE_CL_64)
-#  SET (LIBCONFIG_LIBRARY optimized ${Libconfig_LIBRARY_RELEASE} debug ${Libconfig_LIBRARY_DEBUG} CACHE STRING "libconfig libary" )
-#ELSE (MSVC)
-#  FIND_PATH (LIBCONFIG_INCLUDE libconfig.h++
-#    DOC "Libconfig include files")
-#  FIND_LIBRARY (LIBCONFIG_LIBRARY config
-#    DOC "libconfig"
-#    PATHS "/usr/lib" "/usr/lib64" "/usr/local/lib" LIB )
-#ENDIF (MSVC)
-#IF (NOT LIBCONFIG_INCLUDE OR NOT LIBCONFIG_LIBRARY)
-#  MESSAGE (FATAL " No Libconfig found. Get it here: http://www.hyperrealm.com/libconfig/")
-#  SET (ERROR_MESSAGE "\nAT LEAST ONE HEADER or LIBRARY FILE IS MISSING - ")
-#  SET (ERROR_MESSAGE "${ERROR_MESSAGE}If Libconfig is already installed, run:\n")
-#  SET (ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DLIBCONFIG_ROOT=<Path to (compiled) protobuf root directory>")
-#  MESSAGE (FATAL_ERROR "${ERROR_MESSAGE}")
-#ELSE (NOT LIBCONFIG_INCLUDE OR NOT LIBCONFIG_LIBRARY)
-#  MESSAGE (STATUS "Found libconfig runtime " ${LIBCONFIG_INCLUDE})
-#ENDIF (NOT LIBCONFIG_INCLUDE OR NOT LIBCONFIG_LIBRARY)
-
-###################################################################################################
 # Python library search                                                                           #
 ###################################################################################################
 UNSET(PYTHON_EXECUTABLE CACHE)
@@ -439,7 +398,7 @@ LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "tests/kademlia/testknode.cc")
 FILE(GLOB T_DEMO_C "tests/demo/*.c*")
 FILE(GLOB T_DEMO_H "tests/demo/*.h*")
 LIST(APPEND T_DEMO_DIR ${T_DEMO_C} ${T_DEMO_H})
-LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_UPNP_DIR} ${M_NATPMP_DIR} ${MAIDSAFE_DIR})
+LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${M_NATPMP_DIR} ${MAIDSAFE_DIR})
 ###################################################################################################
 # traverse subdirs for imported 3rd party libs                                                    #
 ###################################################################################################
@@ -449,7 +408,7 @@ ADD_SUBDIRECTORY(cryptopp)
 ###################################################################################################
 # All Platforms:  Add Test Exes and Create all maidsafe-dht libs                                  #
 ###################################################################################################
-ADD_EXECUTABLE(TESTbase ${T_MAIN} ${T_BASE_DIR}  ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTbase ${T_MAIN} ${T_BASE_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTknode "tests/kademlia/testknode.cc" ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR}  ${MAIDSAFE_H})
@@ -461,7 +420,7 @@ ADD_EXECUTABLE(kaddemostatic ${T_DEMO_DIR} ${MAIDSAFE_H} )
 
 ADD_LIBRARY(maidsafe SHARED  ${DHT_SOURCE_FILES})
 ADD_LIBRARY(maidsafe_static STATIC  ${DHT_SOURCE_FILES})
-#Rename maidsa_static as maidsafe on way out !
+#Rename maidsafe_static as maidsafe on way out !
 SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES OUTPUT_NAME maidsafe)
 ###################################################################################################
 # Builds                                                                                          #
@@ -483,7 +442,7 @@ TARGET_LINK_LIBRARIES(TESTknode maidsafe_static gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(maidsafe udt cryptopp ${SYS_LIB})
-TARGET_LINK_LIBRARIES(maidsafe_static udt cryptopp ${SYS_LIB})
+TARGET_LINK_LIBRARIES(maidsafe_static udt_static  cryptopp_static  ${SYS_LIB})
 TARGET_LINK_LIBRARIES(kaddemo maidsafe ${DEMO_LIBS})
 TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static ${DEMO_LIBS})
 ###################################################################################################
@@ -505,14 +464,13 @@ IF(APPLE)
   SET(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} -lgcov" CACHE INTERNAL "" FORCE)
 ######LINUX################################
 ELSEIF(UNIX AND NOT APPLE)
-  SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wformat -Wformat-security -Wall -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wfloat-equal -Wlong-long -Wredundant-decls -Wstrict-overflow=5 -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64 -DMAIDSAFE_LINUX")
-  SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -pg -fprofile-arcs -ftest-coverage")
-  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized")
+  SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fPIC -Wl,-z,relro -Wformat -Wformat-security -Wall -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wfloat-equal -Wlong-long -Wredundant-decls -Wstrict-overflow=5 -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64 -DMAIDSAFE_LINUX")
+  SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG}  -DDEBUG -pg -fprofile-arcs -ftest-coverage")
+  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE}  -Wuninitialized")
   IF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   	SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTupnp TESTnatpmp kaddemo PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
   ENDIF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
-  # SET_SOURCE_FILES_PROPERTIES(${CRYPTOPP} PROPERTIES COMPILE_FLAGS "-DNDEBUG -O3 -march=native -mtune=native -pipe")
-  #SET_SOURCE_FILES_PROPERTIES(${M_UPNP_DIR} PROPERTIES COMPILE_FLAGS "-Wall -pipe -DLINUX -finline-functions -O3")
+  SET(SILENT_BUILD "-w -fPIC -DNDEBUG -O3 -march=native -mtune=native -pipe")
 #######WINDOWS##############
 ELSEIF(WIN32)
   IF (NOT MSVC)
@@ -525,6 +483,7 @@ ELSEIF(WIN32)
     #SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}") # -fprofile-arcs -ftest-coverage -lgcov")
     
     SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo PROPERTIES LINK_FLAGS "-mthreads " )
+  SET(SILENT_BUILD  "-mthreads -w -finline-functions -O3 -DNDEBUG -D__MINGW__ -DWIN32 -D_WIN32_WINNT=0x0501 -D_WIN32")
     #  IF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
     ##FIXME !!!!
     #  	SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTupnp kaddemo PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
@@ -533,9 +492,9 @@ ELSEIF(WIN32)
 ENDIF(APPLE)
 
 IF(NOT MSVC)
-	#SET(CMAKE_CXX_FLAGS "")
-	#SET(CMAKE_CXX_FLAGS_RELEASE "")
-	#SET(CMAKE_CXX_FLAGS_DEBUG "")
+	SET(CMAKE_CXX_FLAGS "")
+	SET(CMAKE_CXX_FLAGS_RELEASE "")
+	SET(CMAKE_CXX_FLAGS_DEBUG "")
 	IF(CMAKE_BUILD_TYPE MATCHES "Release")
 		SET(MAIDSAFE_DHT_CXX_FLAGS "${MAIDSAFE_DHT_CXX_FLAGS} ${MAIDSAFE_DHT_CXX_FLAGS_RELEASE}")
 	ELSE()
@@ -544,12 +503,21 @@ IF(NOT MSVC)
     IF(NOT APPLE)
 	    SET_SOURCE_FILES_PROPERTIES(${cryptopp_sources} PROPERTIES COMPILE_FLAGS "-DNDEBUG -O3 -march=native -mtune=native -pipe")
     ENDIF(NOT APPLE)
-	SET_SOURCE_FILES_PROPERTIES(${DHT_SOURCE_FILES} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
-	SET_SOURCE_FILES_PROPERTIES(${T_BASE_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
-	SET_SOURCE_FILES_PROPERTIES(${T_TRANSPORT_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
-	SET_SOURCE_FILES_PROPERTIES(${T_RPCPROTO_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
-	SET_SOURCE_FILES_PROPERTIES(${T_UPNP_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
-	SET_TARGET_PROPERTIES(TESTkademlia TESTknode kaddemo PROPERTIES COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+    	SET_SOURCE_FILES_PROPERTIES(${DHT_SOURCE_FILES} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+    	SET_SOURCE_FILES_PROPERTIES(${T_BASE_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+    	SET_SOURCE_FILES_PROPERTIES(${T_TRANSPORT_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+    	SET_SOURCE_FILES_PROPERTIES(${T_RPCPROTO_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+    	SET_SOURCE_FILES_PROPERTIES(${T_UPNP_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+    	SET_TARGET_PROPERTIES(TESTkademlia TESTknode kaddemo PROPERTIES COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+	#External libs or where we have not created pimple API files (crypto.cc utils.cc as example)
+   	SET_SOURCE_FILES_PROPERTIES(${cryptopp_SOURCES}  PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
+   	SET_SOURCE_FILES_PROPERTIES(base/crypto.cc  PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
+   	SET_SOURCE_FILES_PROPERTIES(base/utils.cc  PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
+   	SET_SOURCE_FILES_PROPERTIES("*boost/*" PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
+   	SET_SOURCE_FILES_PROPERTIES("*google/*" PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
+   	SET_SOURCE_FILES_PROPERTIES(${M_PROTOBUF_DIR}  PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
+  	SET_SOURCE_FILES_PROPERTIES("${M_UPNP_DIR}" PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
+  	SET_SOURCE_FILES_PROPERTIES(${M_LIBUPNP_DIR} PROPERTIES COMPILE_FLAGS "${CMAKE_C_FLAGS}")
 ENDIF (NOT MSVC)
 
 ###################################################################################################
