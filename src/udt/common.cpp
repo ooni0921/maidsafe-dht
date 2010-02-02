@@ -556,7 +556,7 @@ const char* CUDTException::getErrorMessage()
    return m_strMsg.c_str();
 }
 
-int CUDTException::getErrorCode() const
+const int CUDTException::getErrorCode() const
 {
    return m_iMajor * 1000 + m_iMinor;
 }

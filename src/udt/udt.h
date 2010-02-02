@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2010, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 06/10/2009
+   Yunhong Gu, last updated 01/07/2010
 *****************************************************************************/
 
 #ifndef __UDT_H__
@@ -49,8 +49,7 @@ written by
 #else
    #include <windows.h>
    #ifdef __MINGW__
-        #include <ws2tcpip.h>
-	#include <winsock2.h>
+      #include <ws2tcpip.h>
    #endif
 #endif
 #include <fstream>
@@ -64,12 +63,12 @@ written by
 //if compiling on VC6.0 or pre-WindowsXP systems
 //use -DLEGACY_WIN32
 
-//if compiling with MinGW, only works on XP or above
+//if compiling with MinGW, it only works on XP or above
 //use -D_WIN32_WINNT=0x0501
 
 
 #ifdef WIN32
- #ifndef __MINGW__
+   #ifndef __MINGW__
       // Explicitly define 32-bit and 64-bit numbers
       typedef __int32 int32_t;
       typedef __int64 int64_t;
@@ -81,16 +80,16 @@ written by
          typedef __int64 uint64_t;
       #endif
 
-   #ifdef UDT_EXPORTS
-      #define UDT_API __declspec(dllexport)
+      #ifdef UDT_EXPORTS
+         #define UDT_API __declspec(dllexport)
+      #else
+         #define UDT_API __declspec(dllimport)
+      #endif
    #else
-      #define UDT_API __declspec(dllimport)
+      #define UDT_API
    #endif
- #else 
-  #define UDT_API
- #endif
 #else
- #define UDT_API
+   #define UDT_API
 #endif
 
 #define NO_BUSY_WAITING
@@ -203,7 +202,7 @@ public:
       // Returned value:
       //    errno.
 
-   virtual int getErrorCode() const;
+   virtual const int getErrorCode() const;
 
       // Functionality:
       //    Clear the error code.

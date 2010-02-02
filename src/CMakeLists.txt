@@ -181,6 +181,93 @@ ENDIF(GTEST_LIBRARY)
 ###################################################################################################
 # Protocol Buffers library search                                                                 #
 ###################################################################################################
+FUNCTION(GENERATE_PROTO_FILES PROTO_FILE CACHE_NAME)
+  FILE(STRINGS ${PROTO_FILE} PROTO_STRING)
+  UNSET(NEW_${ARGV1} CACHE)
+  SET(NEW_${ARGV1} ${PROTO_STRING} CACHE STRING "Google Protocol Buffers - new file contents for ${ARGV1}")
+  IF((${FORCE_PROTOC_COMPILE}) OR (NOT "${NEW_${ARGV1}}" STREQUAL "${${ARGV1}}"))
+    GET_FILENAME_COMPONENT(PROTO_FILE_ROOT ${PROTO_FILE} PATH)
+    GET_FILENAME_COMPONENT(PROTO_FILE_NAME ${PROTO_FILE} NAME)
+    EXECUTE_PROCESS(COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --proto_path=${MAIDSAFE_SOURCE_DIR}/${PROTO_FILE_ROOT} --cpp_out=${MAIDSAFE_SOURCE_DIR}/${PROTO_FILE_ROOT} ${MAIDSAFE_SOURCE_DIR}/${PROTO_FILE} RESULT_VARIABLE PROTO_RES ERROR_VARIABLE PROTO_ERR)
+    UNSET(${ARGV1} CACHE)
+    IF(NOT ${PROTO_RES})
+      MESSAGE("--   Generated files from ${PROTO_FILE_NAME}")
+      SET(${ARGV1} ${PROTO_STRING} CACHE STRING "Google Protocol Buffers - file contents for ${PROTO_FILE}")
+    ELSE()
+      MESSAGE(FATAL_ERROR "Failed trying to generate files from ${PROTO_FILE}\n${PROTO_ERR}")
+    ENDIF()
+  ENDIF()
+  UNSET(NEW_${ARGV1} CACHE)
+ENDFUNCTION()
+
+UNSET(PROTOBUF_PROTOC_EXECUTABLE CACHE)
+UNSET(PROTOBUF_INCLUDE CACHE)
+UNSET(Protobuf_LIBRARY_RELEASE CACHE)
+UNSET(Protobuf_LIBRARY_DEBUG CACHE)
+UNSET(PROTOBUF_LIBRARY CACHE)
+
+INCLUDE(CheckLibraryExists)
+IF(MSVC)
+  FIND_PROGRAM(PROTOBUF_PROTOC_EXECUTABLE "protoc.exe" PATHS "C:\\Program Files" "C:\\Program Files (x86)")
+ELSE(MSVC)
+  FIND_PROGRAM(PROTOBUF_PROTOC_EXECUTABLE "protoc")
+ENDIF(MSVC)
+
+IF(NOT PROTOBUF_PROTOC_EXECUTABLE)
+  MESSAGE(FATAL "No Protocol Buffers package found. Get it here: http://code.google.com/apis/protocolbuffers")
+ELSE(NOT PROTOBUF_PROTOC_EXECUTABLE)
+  MESSAGE(STATUS "Found Protocol Buffers compiler: ${PROTOBUF_PROTOC_EXECUTABLE}")
+  EXECUTE_PROCESS(COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --version OUTPUT_VARIABLE CURRENT_PROTOC_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+  IF(NOT "${PROTOC_VERSION}" STREQUAL "${CURRENT_PROTOC_VERSION}")
+    SET(FORCE_PROTOC_COMPILE TRUE)
+    UNSET(PROTOC_VERSION CACHE)
+    SET(PROTOC_VERSION ${CURRENT_PROTOC_VERSION} CACHE STRING "Google Protocol Buffer Compiler Version")
+  ENDIF()
+ENDIF(NOT PROTOBUF_PROTOC_EXECUTABLE)
+
+IF(MSVC)
+  FIND_PATH(PROTOBUF_INCLUDE google/protobuf/message.h
+    DOC "Google Protocol Buffers include files"
+    PATHS ${PROTOBUF_ROOT}/src/ INCLUDE )
+  IF(CMAKE_CL_64)
+    FIND_LIBRARY(Protobuf_LIBRARY_RELEASE libprotobuf.lib
+      DOC "Protocol Buffers C++ libprotobuf (release)"
+      PATHS ${PROTOBUF_ROOT}/vsprojects/x64/Release LIB NO_DEFAULT_PATH )
+    FIND_LIBRARY(Protobuf_LIBRARY_DEBUG libprotobuf.lib
+      DOC "Protocol Buffers C++ libprotobuf (debug)"
+      PATHS ${PROTOBUF_ROOT}/vsprojects/x64/Debug LIB NO_DEFAULT_PATH )
+    ELSE(CMAKE_CL_64)
+      FIND_LIBRARY(Protobuf_LIBRARY_RELEASE libprotobuf.lib
+        DOC "Protocol Buffers C++ libprotobuf (release)"
+        PATHS ${PROTOBUF_ROOT}/vsprojects/Release LIB NO_DEFAULT_PATH )
+      FIND_LIBRARY(Protobuf_LIBRARY_DEBUG libprotobuf.lib
+        DOC "Protocol Buffers C++ libprotobuf (debug)"
+        PATHS ${PROTOBUF_ROOT}/vsprojects/Debug LIB NO_DEFAULT_PATH )
+    ENDIF(CMAKE_CL_64)
+  SET(PROTOBUF_LIBRARY optimized ${Protobuf_LIBRARY_RELEASE} debug ${Protobuf_LIBRARY_DEBUG} CACHE STRING "Google Protocol Buffers library" )
+ELSE(MSVC)
+  FIND_PATH(PROTOBUF_INCLUDE google/protobuf/message.h
+    DOC "Google Protocol Buffers include files"
+    PATHS ${PROTOBUF_ROOT}/src/ INCLUDE ${INCLUDE_DIR})
+  FIND_LIBRARY(PROTOBUF_LIBRARY protobuf DOC "libprotobuf"
+    PATHS "/usr/lib" "/usr/lib64" "/usr/local/lib" LIB )
+ENDIF(MSVC)
+IF(NOT PROTOBUF_INCLUDE OR NOT PROTOBUF_LIBRARY)
+  SET(ERROR_MESSAGE "\nCould not find Protocol Buffers.  AT LEAST ONE HEADER or LIBRARY FILE IS MISSING - ")
+  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/protobuf\n")
+  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Protocol Buffers is already installed, run:\n")
+  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DPROTOBUF_ROOT=<Path to (compiled) protobuf root directory>")
+  #MESSAGE(FATAL_ERROR "${ERROR_MESSAGE} ${LIB_ERROR_MESSAGE}")
+ELSE(NOT PROTOBUF_INCLUDE OR NOT PROTOBUF_LIBRARY)
+  MESSAGE(STATUS "Found Protocol Buffers runtime: " ${PROTOBUF_INCLUDE})
+  FILE(GLOB PROTO_FILES RELATIVE ${MAIDSAFE_SOURCE_DIR} "protobuf/*.proto")
+  FILE(GLOB TEST_PROTO_FILES RELATIVE ${MAIDSAFE_SOURCE_DIR} "tests/rpcprotocol/*.proto")
+  SET(PROTO_FILES ${PROTO_FILES} ${TEST_PROTO_FILES})
+  FOREACH(PROTO_FILE ${PROTO_FILES})
+    STRING(REGEX REPLACE "[\\/.]" "_" PROTO_CACHE_NAME ${PROTO_FILE})
+    GENERATE_PROTO_FILES(${PROTO_FILE} ${PROTO_CACHE_NAME})
+  ENDFOREACH()
+ENDIF(NOT PROTOBUF_INCLUDE OR NOT PROTOBUF_LIBRARY)
 
 INCLUDE (CheckLibraryExists)
 IF (WIN32)
@@ -321,6 +408,7 @@ IF(MSVC)
 
 	# please document us
 	ADD_DEFINITIONS(-D__MSVC__)
+	ADD_DEFINITIONS(-D__WIN32__)
 	ADD_DEFINITIONS(-D_CONSOLE)
 	ADD_DEFINITIONS(-D_UNICODE)
 ENDIF(MSVC)
@@ -439,6 +527,7 @@ ENDIF(MSVC)
 SET(LINK_DIRECTORIES ${LIBRARY_OUTPUT_PATH} ${LIB_DIR})
 
 SET(BUILD_SHARED_LIBS OFF)
+ADD_DEFINITIONS(-DSTATICLIB)
 #Ensure we pick up corret libs and not some older installed on 
 IF(NOT MSVC)
 	IF(NOT WIN32)
@@ -689,6 +778,7 @@ IF (MSVC)
 	INSTALL (TARGETS maidsafe maidsafe_static
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION bin
+		ARCHIVE DESTINATION lib
 		CONFIGURATIONS Release
 		)
 	INSTALL (FILES ${MAIDSAFE_H} ${PROTOBUF_INSTALL_FILES}
