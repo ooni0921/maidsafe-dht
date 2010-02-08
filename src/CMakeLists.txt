@@ -363,7 +363,7 @@ ELSEIF(WIN32)
     SET(SYS_LIB WSock32.lib IPHlpApi.lib)
    # SET(SYS_LIB c:/lib/WSock32.lib c:/lib/IPHlpApi.lib)   These libs seems to be in system path on MSVC
   ELSE(MSVC)
-    SET(SYS_LIB advapi32 kernel32 ws2_32 iphlpapi)
+    SET(SYS_LIB advapi32 kernel32 ws2_32 iphlpapi mswsock)
   ENDIF(MSVC)
   FOREACH(library ${SYS_LIB})
     FIND_LIBRARY(CURRENT_LIB ${library} c:/usr/lib)
