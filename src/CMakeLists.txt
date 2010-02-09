@@ -249,7 +249,7 @@ ELSE(MSVC)
   FIND_PATH(PROTOBUF_INCLUDE google/protobuf/message.h
     DOC "Google Protocol Buffers include files"
     PATHS ${PROTOBUF_ROOT}/src/ INCLUDE ${INCLUDE_DIR})
-  FIND_LIBRARY(PROTOBUF_LIBRARY protobuf DOC "libprotobuf"
+  FIND_LIBRARY(PROTOBUF_LIBRARY libprotobuf.a DOC "libprotobuf.a"
     PATHS "/usr/lib" "/usr/lib64" "/usr/local/lib" LIB )
 ENDIF(MSVC)
 IF(NOT PROTOBUF_INCLUDE OR NOT PROTOBUF_LIBRARY)
@@ -507,11 +507,9 @@ ADD_EXECUTABLE(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR}  ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR}  ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTnatpmp ${T_MAIN} ${T_NATPMP_DIR}  ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTupnp ${T_MAIN} ${T_UPNP_DIR} ${MAIDSAFE_H})
-IF(CMAKE_BUILD_TYPE MATCHES "Release")
-	ADD_EXECUTABLE(kaddemo ${T_DEMO_DIR} ${MAIDSAFE_H} )
-	ADD_EXECUTABLE(kaddemostatic ${T_DEMO_DIR} ${MAIDSAFE_H} )
-ENDIF(CMAKE_BUILD_TYPE MATCHES "Release")
-
+ADD_EXECUTABLE(kaddemo ${T_DEMO_DIR} ${MAIDSAFE_H} )
+ADD_EXECUTABLE(kaddemostatic ${T_DEMO_DIR} ${MAIDSAFE_H} )
+###Libraries
 ADD_LIBRARY(maidsafe SHARED  ${DHT_SOURCE_FILES})
 ADD_LIBRARY(maidsafe_static STATIC  ${DHT_SOURCE_FILES})
 #Rename maidsafe_static as maidsafe on way out !
@@ -528,7 +526,7 @@ SET(LINK_DIRECTORIES ${LIBRARY_OUTPUT_PATH} ${LIB_DIR})
 
 SET(BUILD_SHARED_LIBS OFF)
 ADD_DEFINITIONS(-DSTATICLIB)
-#Ensure we pick up corret libs and not some older installed on 
+#Ensure we pick up correct libs and not some older installed on 
 IF(NOT MSVC)
 	IF(NOT WIN32)
 		set_property(TARGET maidsafe PROPERTY IMPORTED_LOCATION bin/libmaidsafe.so)
@@ -561,13 +559,12 @@ TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static gtest ${SYS_LIB} )
 TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static gtest ${SYS_LIB})
 TARGET_LINK_LIBRARIES(maidsafe udt cryptopp ${SYS_LIB})
 TARGET_LINK_LIBRARIES(maidsafe_static udt_static  cryptopp_static ${SYS_LIB})
-IF(CMAKE_BUILD_TYPE MATCHES "Release")
 TARGET_LINK_LIBRARIES(kaddemo maidsafe ${DEMO_LIBS} ${SYS_LIB})
 TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static ${DEMO_LIBS} ${SYS_LIB})
-ENDIF(CMAKE_BUILD_TYPE MATCHES "Release")
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
 ###################################################################################################
+
 ####APPLE##############################
 IF(APPLE)
   SET(CMAKE_AR "/usr/bin/libtool")
@@ -575,7 +572,7 @@ IF(APPLE)
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_DARWIN_C_SOURCE")
   SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS} -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10 -D_FILE_OFFSET_BITS=64 -DCRYPTOPP_DISABLE_ASM")
   SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized")
-  SET(MAIDSAFE_DHT_CXX_FLAGS "-w")
+  #######Coverage and Profiling#############
   IF(CMAKE_BUILD_TYPE MATCHES "Debug")
   	SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
   ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
@@ -583,19 +580,24 @@ IF(APPLE)
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lprotobuf" CACHE INTERNAL "" FORCE)
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -lgcov" CACHE INTERNAL "" FORCE)
   SET(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} -lgcov" CACHE INTERNAL "" FORCE)
-######LINUX################################
-ELSEIF(UNIX AND NOT APPLE)
+ENDIF(APPLE)
+
+######LINUX#################################
+IF(UNIX AND NOT APPLE)
   SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fPIC -Wl,-z,relro -Wformat  -Wno-system-headers  -Wformat-security -Wall -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wfloat-equal -Wlong-long -Wredundant-decls -Wstrict-overflow=5 -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64 -DMAIDSAFE_LINUX")
-  SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -fPIC -DDEBUG ") # -pg -fprofile-arcs -ftest-coverage")
+  SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -fPIC -DDEBUG ") 
   SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE}  -Wuninitialized")
+  #######Coverage and Profiling#############
   IF(CMAKE_BUILD_TYPE MATCHES "Debug")
   	SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
   ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -lgcov" CACHE INTERNAL "" FORCE)
   SET(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} -lgcov" CACHE INTERNAL "" FORCE)
-  SET(SILENT_BUILD "-w -fPIC -DNDEBUG -O3 -march=native -mtune=native -pipe")
-#######WINDOWS##############
-ELSEIF(WIN32)
+  SET(SILENT_BUILD "-w -fPIC -DNDEBUG  -march=native -mtune=native -pipe")
+ENDIF(UNIX AND NOT APPLE)
+
+#######WINDOWS##############################
+IF(WIN32)
   IF (NOT MSVC)
     SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3 -Wuninitialized")
     SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG  -Wall -Wshadow -Wunused-variable -Wunused-parameter -Wunused-function -Wunused -Wno-system-headers -Wno-deprecated -Woverloaded-virtual -Wwrite-strings")
@@ -603,15 +605,15 @@ ELSEIF(WIN32)
     ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
     SET(MAIDSAFE_DHT_CXX_FLAGS "${MAIDSAFE_DHT_CXX_FLAGS} -Wall -finline-functions  -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__ -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501")
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__  -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501") 
-    # SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage -lgcov")
-    
-    SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp  PROPERTIES LINK_FLAGS "-mthreads " )
-  SET(SILENT_BUILD  "-mthreads -w -finline-functions -O3 -DNDEBUG -D__MINGW__ -DWIN32 -D_WIN32_WINNT=0x0501 -D_WIN32")
-      IF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
-      	SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
-      ENDIF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
+    SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo kaddemostatic PROPERTIES LINK_FLAGS "-mthreads " )
+  #######Coverage and Profiling#############
+  IF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
+      	SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp PROPERTIES LINK_FLAGS "-lgcov -pg -fprofile-arcs -ftest-coverage")
+  ENDIF(NOT CMAKE_BUILD_TYPE MATCHES "Release")
+SET(SILENT_BUILD  "-mthreads -w -finline-functions -DNDEBUG -D__MINGW__ -DWIN32 -D_WIN32_WINNT=0x0501 -D_WIN32")
+
   ENDIF(NOT MSVC)
-ENDIF(APPLE)
+ENDIF(WIN32)
 
 IF(NOT MSVC)
 	SET(CMAKE_CXX_FLAGS "")
@@ -757,17 +759,13 @@ ENDIF(UNIX)
 MESSAGE("")
 MESSAGE("Package version is set to \"${pddate}\"")
 MESSAGE("================================================================================")
-MESSAGE("")
 MESSAGE("Tests included: \"${MAIDSAFE_TEST_TYPE}\"")
-MESSAGE("")
-MESSAGE("    To include all tests,                     cmake ../.. -DMAIDSAFE_TEST_TYPE=_")
-MESSAGE("    To include behavioural tests,           cmake ../.. -DMAIDSAFE_TEST_TYPE=BEH")
-MESSAGE("    To include functional tests,           cmake ../.. -DMAIDSAFE_TEST_TYPE=FUNC")
+MESSAGE("    To include all tests,          cmake ../.. -DMAIDSAFE_TEST_TYPE=_")
+MESSAGE("    To include behavioural tests,  cmake ../.. -DMAIDSAFE_TEST_TYPE=BEH")
+MESSAGE("    To include functional tests,   cmake ../.. -DMAIDSAFE_TEST_TYPE=FUNC")
 MESSAGE("================================================================================")
-MESSAGE("")
 MESSAGE("Build type is set to \"${CMAKE_BUILD_TYPE}\"")
-MESSAGE("")
-MESSAGE("    To alter this (e.g. to Debug),          cmake ../.. -DCMAKE_BUILD_TYPE=Debug")
+MESSAGE("    To alter this (e.g. to Debug), cmake ../.. -DCMAKE_BUILD_TYPE=Debug")
 MESSAGE("    Options are Release, Debug, RelWithDebInfo, MinSizeRel")
 MESSAGE("================================================================================")
 MESSAGE("")
