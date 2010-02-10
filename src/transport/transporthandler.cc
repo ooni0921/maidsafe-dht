@@ -40,8 +40,8 @@ TransportHandler::TransportHandler()
       started_count_(0),
       rpcmsg_notifier_(),
       msg_notifier_(),
-      send_notifier_(),
-      server_down_notifier_() {}
+      server_down_notifier_(),
+      send_notifier_() {}
 
 TransportHandler::~TransportHandler() {
   // StopAll();
@@ -154,7 +154,7 @@ std::list<boost::int16_t> TransportHandler::GetTransportIDByType(
 
 bool TransportHandler::IsRegistered(transport::Transport *t) {
   bool result = false;
-  for (int i = 0; i < transports_.size(); ++i) {
+  for (size_t i = 0; i < transports_.size(); ++i) {
     if (transports_[i] == t) {
       result = true;
       break;

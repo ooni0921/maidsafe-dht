@@ -255,7 +255,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
         google::protobuf::Closure* done = (*it).second.callback;
         pending_req_.erase(decoded_msg.message_id());
         req_mutex_.unlock();
-        printf("MessageArrive: RTT: %f\n", rtt);
+        DLOG(INFO) << "MessageArrive: RTT: " << rtt << std::endl;
         done->Run();
         ptrans_handler_->CloseConnection(connection_id, trans_id);
       } else {

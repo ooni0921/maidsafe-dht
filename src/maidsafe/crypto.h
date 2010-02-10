@@ -32,8 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace crypto {
 
-const int AES256_KeySize = 32;  // size in bytes
-const int AES256_IVSize = 16;   // in bytes
+const boost::uint16_t AES256_KeySize = 32;  // size in bytes
+const boost::uint16_t  AES256_IVSize = 16;   // in bytes
 /**
 * Types of operation regarding source and destination
 */
@@ -81,7 +81,8 @@ class Crypto {
   * @param pin number from which the number of iterations is derived.
   * @return The derived key
   */
-  std::string SecurePassword(const std::string &password, const int &pin);
+  std::string SecurePassword(const std::string &password,
+    const boost::uint32_t &pin);
   inline void set_hash_algorithm(hashtype type) {hash_algorithm_ = type;}
   inline hashtype hash_algorithm() const {return hash_algorithm_;}
   /**
@@ -202,7 +203,7 @@ class Crypto {
   * empty string
   */
   std::string Compress(const std::string &input, const std::string &output,
-    const int &compression_level, const operationtype &ot);
+    const boost::uint16_t &compression_level, const operationtype &ot);
   /**
   * Uncompressed a string or a file using gzip. It returns an
   * empty string if input from a file could not be read or cannot write the
@@ -253,7 +254,7 @@ class RsaKeyPair {
   * Generates a pair of RSA keys of given size.
   * @param keySize size in bits of the keys
   */
-  void GenerateKeys(const boost::uint32_t &keySize);
+  void GenerateKeys(const boost::uint16_t &keySize);
  private:
   std::string public_key_;
   std::string private_key_;

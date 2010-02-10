@@ -74,13 +74,13 @@ std::string Crypto::Obfuscate(const std::string &first,
 }
 
 std::string Crypto::SecurePassword(const std::string &password,
-                                   const int &pin) {
+                                   const boost::uint32_t &pin) {
   if ((password == "") || (pin == 0))
     return "";
   byte purpose = 0;
   std::string derived_password;
   std::string salt = "maidsafe_salt";
-  unsigned int iter = (pin % 1000)+1000;
+  boost::uint16_t iter = (pin % 1000)+1000;
   CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA512> pbkdf;
   CryptoPP::SecByteBlock derived(32);
   pbkdf.DeriveKey(derived, derived.size(), purpose,
@@ -494,7 +494,7 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
 
 std::string Crypto::Compress(const std::string &input,
                              const std::string &output,
-                             const int &compression_level,
+                             const boost::uint16_t &compression_level,
                              const operationtype &ot) {
   if (compression_level < 0 || compression_level > 9)
     return "";
@@ -561,7 +561,7 @@ std::string Crypto::Uncompress(const std::string &input,
   }
 }
 
-void RsaKeyPair::GenerateKeys(const unsigned int &keySize) {  //NOLINT
+void RsaKeyPair::GenerateKeys(const boost::uint16_t &keySize) {  //NOLINT
   // CryptoPP::AutoSeededRandomPool rand_pool;
   private_key_.clear();
   public_key_.clear();

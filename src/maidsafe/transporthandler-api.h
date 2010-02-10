@@ -201,6 +201,7 @@ class TransportHandler {
       const boost::uint16_t&)> server_down_notifier_;
   boost::function<void(const boost::uint32_t&, const bool&)> send_notifier_;
 };
+
 }  // namespace transport
 
 #endif  // MAIDSAFE_TRANSPORTHANDLER_API_H_

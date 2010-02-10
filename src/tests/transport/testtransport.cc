@@ -683,7 +683,7 @@ TEST_F(TransportTest, BEH_TRANS_Send1000Msgs) {
   }
 
   thr_grp.join_all();
-  unsigned int messages_size = 0;
+  int messages_size = 0;
   for (int i = 0; i < kNumNodes - 1; i++) {
     messages_size += tnodes[i]->successful_conn();
   }
