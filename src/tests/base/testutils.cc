@@ -241,8 +241,8 @@ TEST(UtilsTest, BEH_BASE_RandomNumberGen) {
   }
   int j = 1;
   while (j < 10) {
-    int randnum1 = base::random_32bit_integer();
-    int randnum2 = base::random_32bit_integer();
+    boost::int32_t randnum1 = base::random_32bit_integer();
+    boost::int32_t randnum2 = base::random_32bit_integer();
     ASSERT_NE(randnum1, randnum2);
     ASSERT_NE(randnum1, 0);
     ASSERT_NE(randnum2, 0);

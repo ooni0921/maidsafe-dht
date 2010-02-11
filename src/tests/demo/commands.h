@@ -58,10 +58,9 @@ class Commands {
   void Store50Callback(const std::string &result, const std::string &key,
       bool *arrived);
   kad::KNode *node_;
-  bool result_arrived_;
+  bool result_arrived_, finish_;
   double min_succ_stores_;
   crypto::Crypto cryobj_;
-  bool finish_;
 };
 
 }  // namespace

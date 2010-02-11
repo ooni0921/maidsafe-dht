@@ -45,8 +45,9 @@ class Contact;
 
 typedef boost::function< int(Contact, const float&, const bool&) >  // NOLINT
     add_contact_function;
-typedef boost::function< void(const int&, const std::vector<Contact>&,
-    std::vector<Contact>*) > get_random_contacts_function;
+typedef boost::function< void(const boost::uint16_t&, const
+    std::vector<Contact>&, std::vector<Contact>*) >
+    get_random_contacts_function;
 typedef boost::function< bool(const std::string&, Contact*) >  // NOLINT
     get_contact_function;
 typedef boost::function< void(const std::string&, std::vector<Contact>*,

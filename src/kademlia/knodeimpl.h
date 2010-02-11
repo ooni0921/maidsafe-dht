@@ -135,7 +135,7 @@ struct IterativeStoreValueData {
         ttl(timetolive), sig_value(), sig_request() {}
   std::vector<Contact> closest_nodes;
   std::string key, value;
-  unsigned int save_nodes, contacted_nodes, index;
+  boost::uint32_t save_nodes, contacted_nodes, index;
   base::callback_func_type cb;
   bool is_callbacked;
   int data_type;
@@ -154,7 +154,7 @@ struct IterativeDelValueData {
         sig_request(sreq) {}
   std::vector<Contact> closest_nodes;
   std::string key;
-  unsigned int del_nodes, contacted_nodes, index;
+  boost::uint32_t del_nodes, contacted_nodes, index;
   base::callback_func_type cb;
   bool is_callbacked;
   SignedValue value;
@@ -209,7 +209,7 @@ struct BootstrapArgs {
       is_callbacked(false), dir_connected(false) {}
   std::vector<Contact> cached_nodes;
   base::callback_func_type cb;
-  int active_process;
+  boost::uint16_t active_process;
   bool is_callbacked, dir_connected;
 };
 
@@ -222,10 +222,10 @@ class KNodeImpl {
   // constructor used to set up parameters k, alpha, and beta for kademlia
   KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
       transport::TransportHandler *ptrans_handler, node_type type,
-      const boost::uint16_t k, const int &alpha, const int &beta,
-      const int &refresh_time, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded,
-      const bool &use_upnp);
+      const boost::uint16_t &k, const boost::uint16_t &alpha,
+      const boost::uint16_t &beta, const boost::uint32_t &refresh_time,
+      const std::string &private_key, const std::string &public_key,
+      const bool &port_forwarded, const bool &use_upnp);
   ~KNodeImpl();
 
   void SetTransID(boost::int16_t t) { trans_id_ = t; }
@@ -269,7 +269,7 @@ class KNodeImpl {
       const boost::int32_t &ttl);
   bool DelValueLocal(const std::string &key, const SignedValue &value,
       const SignedRequest &req);
-  void GetRandomContacts(const int &count,
+  void GetRandomContacts(const boost::uint16_t &count,
       const std::vector<Contact> &exclude_contacts,
       std::vector<Contact> *contacts);
   void HandleDeadRendezvousServer(const bool &dead_server);
@@ -331,7 +331,7 @@ class KNodeImpl {
   void Join_RefreshNode(base::callback_func_type cb,
       const bool &port_forwarded);
   void SaveBootstrapContacts();  // save the routing table into .kadconfig file
-  int LoadBootstrapContacts();
+  boost::int16_t LoadBootstrapContacts();
   void RefreshRoutine();
   void StartSearchIteration(const std::string &key,
       const remote_find_method &method, base::callback_func_type cb);
@@ -377,7 +377,8 @@ class KNodeImpl {
       const boost::int32_t &ttl, base::callback_func_type cb);
   void RefreshValueCallback(const std::string &result, const std::string &key,
       const std::string &value, const boost::int32_t &ttl,
-      boost::shared_ptr<int> refreshes_done, const int &total_refreshes);
+      boost::shared_ptr<boost::uint32_t> refreshes_done,
+      const boost::uint32_t &total_refreshes);
   boost::mutex routingtable_mutex_, kadconfig_mutex_, extendshortlist_mutex_,
       joinbootstrapping_mutex_, leave_mutex_, activeprobes_mutex_,
       pendingcts_mutex_;
@@ -399,8 +400,7 @@ class KNodeImpl {
   std::string rv_ip_;
   boost::uint16_t rv_port_;
   std::vector<Contact> bootstrapping_nodes_;
-  const boost::uint16_t K_;
-  int alpha_, beta_;
+  const boost::uint16_t K_, alpha_, beta_;
   bool refresh_routine_started_;
   boost::filesystem::path kad_config_path_;
   std::string local_host_ip_;
@@ -412,7 +412,7 @@ class KNodeImpl {
   std::string private_key_, public_key_;
   // for UPnP
   upnp::UpnpIgdClient upnp_;
-  int upnp_mapped_port_;
+  boost::uint32_t upnp_mapped_port_;
   //
   base::SignatureValidator *signature_validator_;
 };

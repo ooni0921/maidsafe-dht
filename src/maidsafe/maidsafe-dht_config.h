@@ -53,7 +53,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                       // when new soln impmltd.
 #endif
 
-#include <stdint.h>
 #include <boost/asio.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/function.hpp>
@@ -96,27 +95,27 @@ namespace kad {
 // KADEMLIA CONSTANTS
 
 // The size of DHT keys and node IDs in bytes.
-const int kKeySizeBytes = 64;
+const boost::uint16_t kKeySizeBytes = 64;
 
 // Kademlia constant k which defines the size of each "k-bucket" and the number
 // of nodes upon which a given <key,value> is stored.
 const boost::uint16_t K = 16;
 
 // The parallel level of search iterations.
-const int kAlpha = 3;
+const boost::uint16_t kAlpha = 3;
 
 // The number of replies required in a search iteration to allow the next
 // iteration to begin.
-const int kBeta = 1;
+const boost::uint16_t kBeta = 1;
 
 // The frequency (in seconds) of the refresh routine.
-const int kRefreshTime = 3600;  // 1 hour
+const boost::uint32_t kRefreshTime = 3600;  // 1 hour
 
 // The frequency (in seconds) of the <key,value> republish routine.
-const int kRepublishTime = 43200;  // 12 hours
+const boost::uint32_t kRepublishTime = 43200;  // 12 hours
 
 // The duration (in seconds) after which a given <key,value> is deleted locally.
-const int kExpireTime = kRepublishTime+3600;
+const boost::uint32_t kExpireTime = kRepublishTime+3600;
 
 // Kademlia RPC timeout duration (in milliseconds).
 // const int kRpcTimeout = 10000;
@@ -138,7 +137,7 @@ const double kMinSuccessfulPecentageStore = 0.75;
 const boost::uint16_t kFailedRpc = 0;
 
 // The maximum number of bootstrap contacts allowed in the .kadconfig file.
-const int kMaxBootstrapContacts = 10000;
+const boost::uint32_t kMaxBootstrapContacts = 10000;
 
 // Signature used to sign anonymous RPC requests.
 const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffff"
@@ -267,11 +266,11 @@ std::vector<std::string> get_local_addresses();
 // Generate a 32bit signed integer
 // Use this function if receiving it in a variable that is int or int32_t
 // or if before assinging to a signed int variable you are doing a modulo op
-int32_t random_32bit_integer();
+boost::int32_t random_32bit_integer();
 
 // Generate a 32bit unsigned integer
 // Use this one if receiving it in a variable that is unsigned int or uint32_t
-uint32_t random_32bit_uinteger();
+boost::uint32_t random_32bit_uinteger();
 
 // Generate a random string.
 std::string RandomString(int length);
@@ -324,13 +323,13 @@ namespace rpcprotocol {
 // RPC CONSTANTS
 
 // Maximum port number.
-const int kMaxPort = 65535;
+const boost::uint16_t kMaxPort = 65535;
 
 // Minimum port number.
-const int kMinPort = 5000;
+const boost::uint16_t kMinPort = 5000;
 
 // RPC timeout duration (in milliseconds).
-const int kRpcTimeout = 10000;  // 10 seconds
+const boost::uint32_t kRpcTimeout = 10000;  // 10 seconds
 
 // RPC result constants.
 const std::string kStartTransportSuccess("T");

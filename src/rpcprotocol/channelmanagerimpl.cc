@@ -126,7 +126,7 @@ bool ChannelManagerImpl::CancelPendingRequest(const boost::uint32_t &req_id) {
 }
 
 void ChannelManagerImpl::AddReqToTimer(const boost::uint32_t &req_id,
-    const int &timeout) {
+    const boost::uint64_t &timeout) {
   if (!is_started_) {
     return;
   }
@@ -148,15 +148,10 @@ void ChannelManagerImpl::RegisterChannel(const std::string &service_name,
 
 int ChannelManagerImpl::Start() {
   if (is_started_) {
-#ifdef DEBUG
-    printf("ChannelManagerImpl::Start(): Already started\n");
-#endif
     return 0;
   }
   if (ptrans_handler_->AllAreStopped()) {
-#ifdef DEBUG
-    printf("No transports are running\n");
-#endif
+    DLOG(ERROR) << "No transports are running\n";
     return 1;
   }
   std::list<boost::int16_t> udt_transports =
@@ -205,7 +200,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
   if (decoded_msg.rpc_type() == REQUEST) {
     if (!decoded_msg.has_service() || !decoded_msg.has_method()) {
       DLOG(ERROR) << ptrans_handler_->listening_port(trans_id) <<
-          " --- request arrived cannot parse message" << std::endl;
+          " --- request arrived cannot parse message\n";
       return;
     }
     // If this is a special find node for boostrapping,
@@ -238,7 +233,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
       it->second->HandleRequest(decoded_msg, connection_id, trans_id, rtt);
       channels_mutex_.unlock();
     } else {
-      LOG(ERROR) << "Message arrived for unregistered service" << std::endl;
+      LOG(ERROR) << "Message arrived for unregistered service\n";
       channels_mutex_.unlock();
     }
   } else if (decoded_msg.rpc_type() == RESPONSE) {
@@ -273,7 +268,7 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
   } else {
     DLOG(ERROR) << ptrans_handler_->listening_port(trans_id) <<
         " --- ChannelManager::MessageArrive " <<
-        "unknown type of message received" << std::endl;
+        "unknown type of message received\n";
   }
 }
 
@@ -285,10 +280,10 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &req_id) {
   req_mutex_.lock();
   it = pending_req_.find(req_id);
   if (it != pending_req_.end()) {
-    int64_t size_rec = it->second.size_rec;
+    boost::int64_t size_rec = it->second.size_rec;
     boost::uint32_t connection_id = it->second.connection_id;
     boost::int16_t trans_id = it->second.trans_id;
-    int timeout = it->second.timeout;
+    boost::uint64_t timeout = it->second.timeout;
     if (ptrans_handler_->HasReceivedData(connection_id, &size_rec, trans_id)) {
       it->second.size_rec = size_rec;
       req_mutex_.unlock();

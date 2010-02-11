@@ -97,9 +97,9 @@ class MirrorTestService : public tests::MirrorTest {
     if (request->IsInitialized()) {
       std::string message(request->message());
       std::string inverted(request->message());
-      int index = 0;
+      boost::int32_t index(0);
       LOG(INFO) << "Before reversing the string" << std::endl;
-      for (int n = message.length() -1; n > -1 ; n--) {
+      for (boost::int32_t n = message.length() -1; n > -1 ; n--) {
         inverted[index] = message[n];
         index++;
       }
@@ -181,7 +181,6 @@ inline void HandleDeadServer(const bool &, const std::string &,
 class RpcProtocolTest : public testing::Test {
  protected:
   static void SetUpTestCase() {
-    printf("Starting RpcProtocolTest SetUpTestCase()\n");
     server_transport_handler = new transport::TransportHandler;
     server_transport_handler->Register(new transport::TransportUDT,
       &server_transport_id);
@@ -192,10 +191,8 @@ class RpcProtocolTest : public testing::Test {
       &client_transport_id);
     client_chann_manager = new
       rpcprotocol::ChannelManager(client_transport_handler);
-    printf("Finished RpcProtocolTest SetUpTestCase()\n");
   }
   static void TearDownTestCase() {
-    printf("RpcProtocolTest: TearDownTestCase\n");
     delete client_chann_manager;
     delete server_chann_manager;
     transport::TransportUDT* trans_temp =
@@ -203,10 +200,8 @@ class RpcProtocolTest : public testing::Test {
     trans_temp->CleanUp();
     delete server_transport_handler;
     delete client_transport_handler;
-    printf("RpcProtocolTest: TearDownTestCase\n");
   }
   virtual void SetUp() {
-    printf("Running RpcProtocolTest SetUp()\n");
     ASSERT_TRUE(server_chann_manager->RegisterNotifiersToTransport());
     ASSERT_TRUE(server_transport_handler->RegisterOnServerDown(boost::bind(
       &HandleDeadServer, _1, _2, _3)));
@@ -221,7 +216,6 @@ class RpcProtocolTest : public testing::Test {
       client_transport_id);
     ASSERT_EQ(0, server_chann_manager->Start());
     ASSERT_EQ(0, client_chann_manager->Start());
-    printf("Finished RpcProtocolTest SetUp()\n");
   }
   virtual void TearDown() {
     client_transport_handler->StopAll();
@@ -480,7 +474,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ServerAndClientAtSameTime) {
 TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
   // creating a channel for the client to send a request to the service
   rpcprotocol::Controller controller;
-  int timeout = 3;
+  boost::uint32_t timeout = 3;
   controller.set_timeout(timeout);
   rpcprotocol::Channel out_channel(client_chann_manager,
     client_transport_handler, client_transport_id, "127.0.0.1",
@@ -717,7 +711,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
       &ResultHolder::GetPingRes, &resp2, &controller);
   stubservice2.Ping(&controller, &req, &resp2, done2);
-  while (resultholder.ping_res.result() == "")
+  while (resultholder.ping_res.result().empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ("F", resultholder.ping_res.result());
   ASSERT_FALSE(resultholder.ping_res.has_pong());
@@ -823,7 +817,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
       &ResultHolder::GetPingRes, &resp3, &controller);
   stubservice3.Ping(&controller, &req, &resp3, done3);
-  while (resultholder.ping_res.result() == "")
+  while (resultholder.ping_res.result().empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
   ASSERT_EQ("S", resultholder.ping_res.result());
@@ -843,7 +837,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
       &ResultHolder::GetPingRes, &resp4, &controller);
   stubservice4.Ping(&controller, &req, &resp4, done4);
-  while (resultholder.ping_res.result() == "")
+  while (resultholder.ping_res.result().empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ("S", resultholder.ping_res.result());
   ASSERT_TRUE(resultholder.ping_res.has_pong());
@@ -857,8 +851,8 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
 TEST(RpcControllerTest, BEH_RPC_RpcController) {
   rpcprotocol::Controller controller;
   ASSERT_FALSE(controller.Failed());
-  ASSERT_EQ(std::string(""), controller.ErrorText());
-  ASSERT_EQ(boost::uint32_t(0), controller.req_id());
+  ASSERT_TRUE(controller.ErrorText().empty());
+  ASSERT_EQ(0, controller.req_id());
   controller.SetFailed(rpcprotocol::kTimeOut);
   boost::uint32_t id = 1234;
   controller.set_req_id(id);
@@ -869,6 +863,6 @@ TEST(RpcControllerTest, BEH_RPC_RpcController) {
   ASSERT_FALSE(controller.IsCanceled());
   controller.Reset();
   ASSERT_FALSE(controller.Failed());
-  ASSERT_EQ(std::string(""), controller.ErrorText());
-  ASSERT_EQ(boost::uint32_t(0), controller.req_id());
+  ASSERT_TRUE(controller.ErrorText().empty());
+  ASSERT_EQ(0, controller.req_id());
 }

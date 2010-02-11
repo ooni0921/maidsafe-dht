@@ -43,7 +43,7 @@ struct CallLaterMap {
   CallLaterMap() : time_to_execute(0), cb(), calllater_id(0) {}
   boost::uint64_t time_to_execute;
   calllater_func cb;
-  int calllater_id;
+  boost::uint32_t calllater_id;
 };
 
 class CallLaterTimer {
@@ -54,7 +54,7 @@ class CallLaterTimer {
   void TryExecute();
   inline bool IsStarted() { return is_started_; }
   int CancelAll();
-  bool CancelOne(const int &calllater_id);
+  bool CancelOne(const boost::uint32_t &calllater_id);
   // Delay msecs milliseconds to call the function specified by cb
   int AddCallLater(const boost::uint64_t &msecs, calllater_func cb);
   friend class CallLaterTest;
@@ -70,9 +70,9 @@ class CallLaterTimer {
   FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyAgainPtrCallLater);
   CallLaterTimer(const CallLaterTimer&);
   CallLaterTimer& operator=(const CallLaterTimer&);
-  int list_size();
+  size_t list_size();
   boost::mutex mutex_;
-  int calllater_id_;
+  boost::uint32_t calllater_id_;
   bool is_started_;
   boost::shared_ptr<boost::thread> blocking_routine_;
   std::list<CallLaterMap> calllaters_;

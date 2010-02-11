@@ -81,8 +81,8 @@ TEST_F(UpnpTest, BEH_UPNP_PortMappingTest) {
 
   // boost::this_thread::sleep(boost::posix_time::seconds(2));
 
-  int start_port = static_cast<int>(base::random_32bit_uinteger() % 15000)
-                   + 50000;
+  boost::int32_t start_port((base::random_32bit_uinteger() % 15000)
+                   + 50000);
 
   bool all_added = true;
   for (int i = 0; i < num_total_mappings; ++i) {

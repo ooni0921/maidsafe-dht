@@ -47,7 +47,7 @@ class TestKbucket : public testing::Test {
 TEST_F(TestKbucket, BEH_KAD_IsInRange) {
   BigInt min_value(0);
   std::string hex_max_val;
-  for (int i = 0; i < kKeySizeBytes * 2; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value(hex_max_val);
@@ -56,13 +56,13 @@ TEST_F(TestKbucket, BEH_KAD_IsInRange) {
       false);
   ASSERT_TRUE(kbucket1.KeyInRange(id));
   hex_max_val = "";
-  for (int i = 0; i < kKeySizeBytes; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes; ++i)
     hex_max_val += "a";
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value1(hex_max_val);
   KBucket kbucket2(min_value, max_value1);
   std::string enc_id;
-  for (int i = 0; i < kKeySizeBytes * 2; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     enc_id += "b";
   ASSERT_FALSE(kbucket2.KeyInRange(base::DecodeFromHex(enc_id)));
 }
@@ -70,15 +70,15 @@ TEST_F(TestKbucket, BEH_KAD_IsInRange) {
 TEST_F(TestKbucket, BEH_KAD_AddAndGetContact) {
   BigInt min_value(0);
   std::string hex_max_val;
-  for (int i = 0; i < kKeySizeBytes * 2; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
   std::string id[K];
   std::string ip("127.0.0.1");
-  unsigned short port = 8880;
-  for (int i = 0; i < K; ++i) {
+  boost::int16_t port = 8880;
+  for (boost::int16_t i = 0; i < K; ++i) {
     ASSERT_EQ(i, kbucket.Size());
     id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
         crypto::STRING_STRING, false);
@@ -94,7 +94,7 @@ TEST_F(TestKbucket, BEH_KAD_AddAndGetContact) {
   ASSERT_EQ(FULL, kbucket.AddContact(contact1));
   ASSERT_EQ(K, kbucket.Size());
   port = 8880;
-  for (int i = 0; i < K; ++i) {
+  for (boost::int16_t i = 0; i < K; ++i) {
     ++port;
     Contact contact(id[i], ip, port, ip, port);
     Contact contact_rec;
@@ -112,15 +112,15 @@ TEST_F(TestKbucket, BEH_KAD_AddAndGetContact) {
 TEST_F(TestKbucket, BEH_KAD_GetContacts) {
   BigInt min_value(0);
   std::string hex_max_val;
-  for (int i = 0; i < kKeySizeBytes * 2; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
   std::string id[kad::K - 1];
   std::string ip("127.0.0.1");
-  unsigned short port[kad::K - 1];
-  for (int i = 0; i < kad::K - 1; ++i) {
+  boost::int16_t port[kad::K - 1];
+  for (boost::int16_t i = 0; i < kad::K - 1; ++i) {
     id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
         crypto::STRING_STRING, false);
     port[i] = 8880 + i;
@@ -129,10 +129,10 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
   }
   ASSERT_EQ(kad::K - 1, kbucket.Size());
   std::vector<Contact> contacts, ex_contacts;
-  for (int i = 0; i < kad::K - 1; ++i) {
+  for (boost::int16_t i = 0; i < kad::K - 1; ++i) {
     kbucket.GetContacts(i + 1, ex_contacts, &contacts);
     ASSERT_EQ(i + 1, static_cast<int>(contacts.size()));
-    for (int j = 0; j <= i; ++j) {
+    for (boost::int16_t j = 0; j <= i; ++j) {
       Contact contact;
       ASSERT_TRUE(kbucket.GetContact(id[kad::K - 2 - j], &contact));
       ASSERT_TRUE(contact == contacts[j]);
@@ -146,7 +146,7 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
   ex_contacts.push_back(ex_contact2);
   kbucket.GetContacts(kad::K - 1, ex_contacts, &contacts);
   ASSERT_EQ(kad::K - 3, static_cast<int>(contacts.size()));
-  for (int i = 0; i < kad::K - 3; ++i) {
+  for (boost::int16_t i = 0; i < kad::K - 3; ++i) {
     EXPECT_TRUE(contacts[i] != ex_contacts[0]);
     EXPECT_TRUE(contacts[i] !=  ex_contacts[1]);
   }
@@ -167,22 +167,22 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
 TEST_F(TestKbucket, BEH_KAD_DeleteContact) {
   BigInt min_value(0);
   std::string hex_max_val;
-  for (int i = 0; i < kKeySizeBytes * 2; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
   std::string id[kad::K - 1];
   std::string ip("127.0.0.1");
-  unsigned short port = 8880;
-  for (int i = 0; i < kad::K - 1; ++i) {
+  boost::int16_t port = 8880;
+  for (boost::int16_t i = 0; i < kad::K - 1; ++i) {
     id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
         crypto::STRING_STRING, false);
     ++port;
     Contact contact(id[i], ip, port, ip, port);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
   }
-  for (int i = 0; i < kFailedRpc; ++i) {
+  for (boost::int16_t i = 0; i < kFailedRpc; ++i) {
     ASSERT_EQ(kad::K - 1, kbucket.Size());
     kbucket.RemoveContact(id[2], false);
     Contact contact;
@@ -204,29 +204,28 @@ TEST_F(TestKbucket, BEH_KAD_DeleteContact) {
 TEST_F(TestKbucket, BEH_KAD_SetLastAccessed) {
   BigInt min_value(0);
   std::string hex_max_val;
-  for (int i = 0; i < kKeySizeBytes * 2; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
-  boost::int32_t time_accessed = base::get_epoch_time();
+  boost::uint32_t time_accessed = base::get_epoch_time();
   kbucket.set_last_accessed(time_accessed);
-  ASSERT_EQ(static_cast<boost::uint32_t>(time_accessed),
-            kbucket.last_accessed());
+  ASSERT_EQ(time_accessed, kbucket.last_accessed());
 }
 
 TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
   BigInt min_value(0);
   std::string hex_max_val;
-  for (int i = 0; i < kKeySizeBytes * 2; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
   std::string id[K];
   std::string ip = "127.0.0.1";
-  unsigned short port[K];
-  for (int i = 0; i < K; ++i) {
+  boost::int16_t port[K];
+  for (boost::int16_t i = 0; i < K; ++i) {
     id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
         crypto::STRING_STRING, false);
     port[i] = 8880 + i;
@@ -237,7 +236,7 @@ TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
   std::vector<Contact> contacts, ex_contacts;
   Contact contact1(id[kad::K - 1], ip, port[kad::K - 1], ip, port[kad::K - 1]);
   ASSERT_EQ(SUCCEED, kbucket.AddContact(contact1));
-  for (int i = 0; i < K; ++i) {
+  for (boost::int16_t i = 0; i < K; ++i) {
     std::cout << "contacts retrieved = " << i + 1 << std::endl;
     kbucket.GetContacts(i + 1, ex_contacts, &contacts);
     ASSERT_EQ(i + 1, static_cast<int>(contacts.size()));
@@ -251,14 +250,14 @@ TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
 TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   BigInt min_value(0);
   std::string hex_max_val;
-  for (int i = 0; i < kKeySizeBytes * 2; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
   std::string id[kad::K - 1], ip("127.0.0.1");
-  unsigned short port[kad::K - 1];
-  for (int i = 0; i < kad::K - 1; ++i) {
+  boost::int16_t port[kad::K - 1];
+  for (boost::int16_t i = 0; i < kad::K - 1; ++i) {
     id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
         crypto::STRING_STRING, false);
     port[i] = 8880 + i;
@@ -267,11 +266,11 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   }
   ASSERT_EQ(kad::K - 1, kbucket.Size());
   std::vector<Contact> contacts, ex_contacts;
-  for (int i = 0; i < kad::K - 1; ++i) {
+  for (boost::int16_t i = 0; i < kad::K - 1; ++i) {
     std::cout << "contacts retrieved = " << i + 1 << std::endl;
     kbucket.GetContacts(i + 1, ex_contacts, &contacts);
     ASSERT_EQ(i + 1, static_cast<int>(contacts.size()));
-    for (int j = 0; j <= i; ++j) {
+    for (boost::int16_t j = 0; j <= i; ++j) {
       Contact contact;
       ASSERT_TRUE(kbucket.GetContact(id[kad::K - 2-j], &contact));
       ASSERT_TRUE(contact == contacts[j]);
@@ -284,8 +283,8 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   ex_contacts.push_back(ex_contact1);
   ex_contacts.push_back(ex_contact2);
   kbucket.GetContacts(kad::K - 1, ex_contacts, &contacts);
-  ASSERT_EQ(kad::K - 3, static_cast<int>(contacts.size()));
-  for (int i = 0; i < kad::K - 3; ++i) {
+  ASSERT_EQ(kad::K - 3, contacts.size());
+  for (boost::int16_t i = 0; i < kad::K - 3; ++i) {
     EXPECT_TRUE(contacts[i] != ex_contacts[0]);
     EXPECT_TRUE(contacts[i] !=  ex_contacts[1]);
   }
@@ -304,7 +303,7 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   ex_contacts.clear();
   contacts.clear();
 
-  int currsize = kbucket.Size();
+  size_t currsize = kbucket.Size();
   Contact contact3(cry_obj.Hash("newid", "", crypto::STRING_STRING, false),
     ip, 8880, ip, 8880);
   ASSERT_EQ(SUCCEED, kbucket.AddContact(contact3));
@@ -320,18 +319,18 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
 TEST_F(TestKbucket, BEH_KAD_GetOldestContact) {
   BigInt min_value(0);
   std::string hex_max_val;
-  for (int i = 0; i < kKeySizeBytes * 2; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
   hex_max_val = "0x" + hex_max_val;
   BigInt max_value(hex_max_val);
   KBucket kbucket(min_value, max_value);
   std::string id[kad::K - 1], ip("127.0.0.1");
-  unsigned short port[kad::K - 1];
+  boost::int16_t port[kad::K - 1];
   Contact empty;
   Contact rec;
   rec = kbucket.LastSeenContact();
   ASSERT_TRUE(empty == rec);
-  for (int i = 0; i < kad::K - 1; ++i) {
+  for (boost::int16_t i = 0; i < kad::K - 1; ++i) {
     id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
         crypto::STRING_STRING, false);
     port[i] = 8880 + i;

@@ -110,10 +110,10 @@ class KNode {
   */
   KNode(rpcprotocol::ChannelManager *channel_manager,
       transport::TransportHandler *ptrans_handler, node_type type,
-      const boost::uint16_t k, const int &alpha, const int &beta,
-      const int &refresh_time, const std::string &private_key,
-      const std::string &public_key, const bool &port_forwarded, const bool
-      &use_upnp);
+      const boost::uint16_t &k, const boost::uint16_t &alpha,
+      const boost::uint16_t &beta, const boost::uint32_t &refresh_time,
+      const std::string &private_key, const std::string &public_key,
+      const bool &port_forwarded, const bool &use_upnp);
   ~KNode();
 
   /**
@@ -321,7 +321,7 @@ class KNode {
   * @param contacts reference to a vector of Contact where the nodes selected
   * are returned
   */
-  void GetRandomContacts(const int &count,
+  void GetRandomContacts(const boost::uint16_t &count,
       const std::vector<Contact> &exclude_contacts,
       std::vector<Contact> *contacts);
   /**

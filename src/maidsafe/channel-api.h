@@ -68,13 +68,36 @@ class Controller : public google::protobuf::RpcController {
   void StartCancel();
   bool IsCanceled() const;
   void NotifyOnCancel(google::protobuf::Closure*);
-  void set_timeout(const int &seconds);
+  /**
+  * Sets the timeout for the rpc request.
+  * @param id timeout time in seconds.
+  */
+  void set_timeout(const boost::uint32_t &seconds);
+  /**
+  * Sets the RTT of the communication between the client who is requesting
+  * a remote procedure and the server that is executing the procedure
+  * @param rtt RTT in milliseconds
+  */
   void set_rtt(const float &rtt);
   void set_trans_id(const boost::int16_t &trans_id);
+  /**
+  * Sets the id of the rpc request
+  * @param id Idenditifier of the rpc request/respons
+  */ 
   void set_req_id(const boost::uint32_t &id);
-  int timeout() const;
+  /**
+  * Returns the timeout for the rpc request.
+  * @return the timeout time in milliseconds.
+  */ 
+  boost::uint64_t timeout() const;
+  /**
+  * @return The rtt in milliseconds
+  */
   float rtt() const;
   boost::int16_t trans_id() const;
+  /**
+  * @return the identifier of the rpc request/response 
+  */
   boost::uint32_t req_id() const;
  private:
   boost::shared_ptr<ControllerImpl> controller_pimpl_;

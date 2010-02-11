@@ -61,7 +61,7 @@ class TestRefresh : public testing::Test {
     }
     // Creating the nodes_
     boost::int16_t trans_id;
-    for (int i = 0; i < testNetworkSize_; ++i) {
+    for (boost::int16_t i = 0; i < testNetworkSize_; ++i) {
       trans_handlers_.push_back(boost::shared_ptr<transport::TransportHandler>(
           new transport::TransportHandler));
       trans_handlers_.at(i)->Register(new transport::TransportUDT, &trans_id);
@@ -92,7 +92,7 @@ class TestRefresh : public testing::Test {
     ASSERT_EQ(kRpcResultSuccess, cb.result());
     cb.Reset();
     ASSERT_TRUE(nodes_[0]->is_joined());
-    for (int i = 1; i < testNetworkSize_; ++i) {
+    for (boost::int16_t i = 1; i < testNetworkSize_; ++i) {
       LOG(INFO) << "starting node " <<  i << std::endl;
       std::string kconfig_file1 = datadirs_[i] + "/.kadconfig";
       base::KadConfig kad_config1;
@@ -119,10 +119,10 @@ class TestRefresh : public testing::Test {
 
   void TearDown() {
     // Stopping nodes_
-    for (int i = 0; i < testNetworkSize_; ++i) {
+    for (boost::int16_t i = 0; i < testNetworkSize_; ++i) {
       trans_handlers_[i]->StopPingRendezvous();
     }
-    for (int i = testNetworkSize_-1; i >= 0; --i) {
+    for (boost::int16_t i = testNetworkSize_-1; i >= 0; --i) {
       LOG(INFO) << "stopping node " << i << std::endl;
       nodes_[i]->Leave();
       EXPECT_FALSE(nodes_[i]->is_joined());
@@ -148,7 +148,7 @@ class TestRefresh : public testing::Test {
   std::string test_dir_;
   boost::uint16_t testK_;
   boost::uint32_t testRefresh_;
-  int testNetworkSize_;
+  boost::int16_t testNetworkSize_;
 };
 
 TEST_F(TestRefresh, FUNC_KAD_RefreshValue) {
@@ -162,10 +162,10 @@ TEST_F(TestRefresh, FUNC_KAD_RefreshValue) {
       &StoreValueCallback::CallbackFunc, &store_cb, _1));
   wait_result(&store_cb);
   ASSERT_EQ(kad::kRpcResultSuccess, store_cb.result());
-  std::vector<int> indxs;
+  std::vector<boost::int16_t> indxs;
   std::vector<boost::uint32_t> last_refresh_times;
   std::vector<boost::uint32_t> expire_times;
-  for (int i = 0; i < testNetworkSize_; ++i) {
+  for (boost::int16_t i = 0; i < testNetworkSize_; ++i) {
     std::vector<std::string> values;
     if (nodes_[i]->FindValueLocal(key, &values)) {
       ASSERT_EQ(value, values[0]);
@@ -180,7 +180,7 @@ TEST_F(TestRefresh, FUNC_KAD_RefreshValue) {
   }
   ASSERT_EQ(testK_, indxs.size());
   boost::this_thread::sleep(boost::posix_time::seconds(testRefresh_+8));
-  for (unsigned int i = 0; i < indxs.size(); i++) {
+  for (size_t i = 0; i < indxs.size(); i++) {
     std::vector<std::string> values;
     EXPECT_TRUE(nodes_[indxs[i]]->FindValueLocal(key, &values));
     EXPECT_EQ(value, values[0]);
@@ -202,10 +202,10 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
       &StoreValueCallback::CallbackFunc, &store_cb, _1));
   wait_result(&store_cb);
   ASSERT_EQ(kad::kRpcResultSuccess, store_cb.result());
-  std::vector<int> indxs;
+  std::vector<boost::int16_t> indxs;
   std::vector<boost::uint32_t> last_refresh_times;
   std::vector<boost::uint32_t> expire_times;
-  for (int i = 0; i < testNetworkSize_; ++i) {
+  for (boost::int16_t i = 0; i < testNetworkSize_; ++i) {
     std::vector<std::string> values;
     if (nodes_[i]->FindValueLocal(key, &values)) {
       ASSERT_EQ(value, values[0]);
@@ -293,7 +293,7 @@ class TestRefreshSignedValues : public testing::Test {
     crypto::RsaKeyPair keys;
     keys.GenerateKeys(4096);
     boost::int16_t trans_id;
-    for (int i = 0; i < testNetworkSize_; i++) {
+    for (boost::int16_t i = 0; i < testNetworkSize_; i++) {
       trans_handlers_.push_back(boost::shared_ptr<transport::TransportHandler>(
           new transport::TransportHandler));
       trans_handlers_.at(i)->Register(new transport::TransportUDT, &trans_id);
@@ -325,7 +325,7 @@ class TestRefreshSignedValues : public testing::Test {
     nodes_[0]->set_signature_validator(&validator);
     cb.Reset();
     ASSERT_TRUE(nodes_[0]->is_joined());
-    for (int i = 1; i < testNetworkSize_; i++) {
+    for (boost::int16_t i = 1; i < testNetworkSize_; i++) {
       LOG(INFO) << "starting node " << i << std::endl;
       std::string kconfig_file1 = datadirs_[i] + "/.kadconfig";
       base::KadConfig kad_config1;
@@ -347,16 +347,16 @@ class TestRefreshSignedValues : public testing::Test {
       ASSERT_EQ(kRpcResultSuccess, cb.result());
       cb.Reset();
       ASSERT_TRUE(nodes_[i]->is_joined());
-nodes_[i]->set_signature_validator(&validator);
+      nodes_[i]->set_signature_validator(&validator);
     }
   }
 
   void TearDown() {
     // Stopping nodes_
-    for (int i = 0; i < testNetworkSize_; ++i) {
+    for (boost::int16_t i = 0; i < testNetworkSize_; ++i) {
       trans_handlers_[i]->StopPingRendezvous();
     }
-    for (int i = testNetworkSize_-1; i >= 0; --i) {
+    for (boost::int16_t i = testNetworkSize_-1; i >= 0; --i) {
       LOG(INFO) << "stopping node " << i << std::endl;
       nodes_[i]->Leave();
       EXPECT_FALSE(nodes_[i]->is_joined());
@@ -383,8 +383,8 @@ nodes_[i]->set_signature_validator(&validator);
   std::string test_dir_;
   boost::uint16_t testK_;
   boost::uint32_t testRefresh_;
-  int testNetworkSize_;
-base::TestValidator validator;
+  boost::int16_t testNetworkSize_;
+  base::TestValidator validator;
 };
 
 TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
@@ -416,10 +416,10 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
     boost::bind(&StoreValueCallback::CallbackFunc, &store_cb, _1));
   wait_result(&store_cb);
   ASSERT_EQ(kad::kRpcResultSuccess, store_cb.result());
-  std::vector<int> indxs;
+  std::vector<boost::int16_t> indxs;
   std::vector<boost::uint32_t> last_refresh_times;
   std::vector<boost::uint32_t> expire_times;
-  for (int i = 0; i < testNetworkSize_; ++i) {
+  for (boost::int16_t i = 0; i < testNetworkSize_; ++i) {
     std::vector<std::string> values;
     if (nodes_[i]->FindValueLocal(key, &values)) {
       ASSERT_EQ(ser_sig_value, values[0]);
@@ -436,7 +436,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
   }
   ASSERT_EQ(testK_, indxs.size());
   boost::this_thread::sleep(boost::posix_time::seconds(testRefresh_+8));
-  for (unsigned int i = 0; i < indxs.size(); i++) {
+  for (size_t i = 0; i < indxs.size(); i++) {
     std::vector<std::string> values;
     EXPECT_TRUE(nodes_[indxs[i]]->FindValueLocal(key, &values));
     EXPECT_EQ(ser_sig_value, values[0]);
@@ -479,10 +479,10 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
     boost::bind(&StoreValueCallback::CallbackFunc, &store_cb, _1));
   wait_result(&store_cb);
   ASSERT_EQ(kad::kRpcResultSuccess, store_cb.result());
-  std::vector<int> indxs;
+  std::vector<boost::int16_t> indxs;
   std::vector<boost::uint32_t> last_refresh_times;
   std::vector<boost::uint32_t> expire_times;
-  for (int i = 0; i < testNetworkSize_; i++) {
+  for (boost::int16_t i = 0; i < testNetworkSize_; i++) {
     std::vector<std::string> values;
     if (nodes_[i]->FindValueLocal(key, &values)) {
       ASSERT_EQ(ser_sig_value, values[0]);
@@ -637,7 +637,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_InformOfDeletedValue) {
   EXPECT_NE(0, node.KeyLastRefreshTime(key, ser_sig_value));
 
   // Find a Node that doesn't have the value
-  int counter = 0;
+  boost::int16_t counter = 0;
   for (counter = 0; counter < testNetworkSize_; counter++) {
     values.clear();
     if (!nodes_[counter]->FindValueLocal(key, &values))
@@ -664,7 +664,6 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_InformOfDeletedValue) {
     FAIL() << "All values have been deleted, it will not be refreshed";
   }
   boost::this_thread::sleep(boost::posix_time::seconds(testRefresh_*2));
-  counter = 0;
   for (counter = 0; counter < testNetworkSize_; counter++) {
     values.clear();
     if (nodes_[counter]->FindValueLocal(key, &values))

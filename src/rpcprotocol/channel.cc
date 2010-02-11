@@ -63,11 +63,11 @@ void Controller::NotifyOnCancel(google::protobuf::Closure* done) {
   controller_pimpl_->NotifyOnCancel(done);
 }
 
-void Controller::set_timeout(const int &seconds) {
+void Controller::set_timeout(const boost::uint32_t &seconds) {
   controller_pimpl_->set_timeout(seconds);
 }
 
-int Controller::timeout() const {
+boost::uint64_t Controller::timeout() const {
   return controller_pimpl_->timeout();
 }
 

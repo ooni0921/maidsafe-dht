@@ -37,7 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rpcprotocol {
 
 bool ControllerImpl::Failed() const {
-  if (failure_ != "")
+  if (!failure_.empty())
     return true;
   return false;
 }
@@ -45,7 +45,7 @@ bool ControllerImpl::Failed() const {
 void ControllerImpl::Reset() {
   timeout_ = kRpcTimeout;
   rtt_ = 0.0;
-  failure_ = "";
+  failure_.clear();
   req_id_ = 0;
 }
 
@@ -97,8 +97,7 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
   *request, google::protobuf::Message *response, google::protobuf::Closure
   *done) {
     if ((remote_ip_ == "") || (remote_port_ == 0)) {
-      DLOG(ERROR) << "ChannelImpl::CallMethod. No remote_ip or remote_port"
-      << std::endl;
+      DLOG(ERROR) << "ChannelImpl::CallMethod. No remote_ip or remote_port\n";
       done->Run();
       return;
     }

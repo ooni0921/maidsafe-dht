@@ -139,8 +139,8 @@ int main(int argc, char **argv) {
   try {
     std::string logpath, kadconfigpath, bs_ip, bs_id, ext_ip, configfile,
         bs_local_ip;
-    boost::uint16_t bs_port, bs_local_port, port(0), ext_port;
-    int refresh_time;
+    boost::uint16_t bs_port(0), bs_local_port(0), port(0), ext_port(0);
+    boost::uint32_t refresh_time(0);
     bool first_node = false;
     po::options_description desc("Options");
     desc.add_options()
@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
       first_node = true;
 
     if (vm.count("refresh_time")) {
-      refresh_time = vm["refresh_time"].as<int>();
+      refresh_time = vm["refresh_time"].as<boost::uint32_t>();
       refresh_time = refresh_time * 60;
     } else {
       refresh_time = kad::kRefreshTime;

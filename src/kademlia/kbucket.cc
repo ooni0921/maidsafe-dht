@@ -30,9 +30,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 
-KBucket::KBucket(const BigInt &range_min, const BigInt &range_max, const int &K)
-    : last_accessed_(0), contacts_(), range_min_(range_min),
-    range_max_(range_max), K_(K) {}
+KBucket::KBucket(const BigInt &range_min, const BigInt &range_max,
+    const boost::uint16_t &K) : last_accessed_(0), contacts_(),
+      range_min_(range_min), range_max_(range_max), K_(K) {}
 
 KBucket::~KBucket() {
   contacts_.clear();
@@ -45,7 +45,7 @@ bool KBucket::KeyInRange(const std::string &key) {
   return static_cast<bool>((range_min_ <= key_val) && (key_val < range_max_));
 }
 
-int KBucket::Size() const { return contacts_.size(); }
+size_t KBucket::Size() const { return contacts_.size(); }
 
 boost::uint32_t KBucket::last_accessed() const { return last_accessed_; }
 
@@ -122,15 +122,16 @@ bool KBucket::GetContact(const std::string &node_id, Contact *contact) {
   return result;
 }
 
-void KBucket::GetContacts(int count, const std::vector<Contact>
-      &exclude_contacts, std::vector<Contact> *contacts) {
+void KBucket::GetContacts(const boost::uint16_t &count,
+      const std::vector<Contact> &exclude_contacts,
+      std::vector<Contact> *contacts) {
     bool insert;
-    int i = 0;
+    boost::uint16_t i(0);
     for (std::list<Contact>::iterator it = contacts_.begin();
       it != contacts_.end() && i < count; it++) {
       insert = true;
       Contact current_element = *it;
-      for (unsigned int j = 0; j < exclude_contacts.size() && insert; j++) {
+      for (size_t j = 0; j < exclude_contacts.size() && insert; j++) {
         if (current_element.node_id() == exclude_contacts[j].node_id())
           insert = false;
       }

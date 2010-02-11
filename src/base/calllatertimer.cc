@@ -106,7 +106,7 @@ int CallLaterTimer::AddCallLater(const boost::uint64_t &msecs,
   return calllater_id_;
 }
 
-bool CallLaterTimer::CancelOne(const int &calllater_id) {
+bool CallLaterTimer::CancelOne(const boost::uint32_t &calllater_id) {
   std::list<CallLaterMap>::iterator it;
   boost::mutex::scoped_lock guard(mutex_);
   for (it = calllaters_.begin(); it != calllaters_.end(); it++) {
@@ -125,7 +125,7 @@ int CallLaterTimer::CancelAll() {
   return n;
 }
 
-int CallLaterTimer::list_size() {
+size_t CallLaterTimer::list_size() {
   boost::mutex::scoped_lock guard(mutex_);
   return calllaters_.size();
 }

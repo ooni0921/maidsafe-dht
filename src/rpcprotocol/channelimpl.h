@@ -48,8 +48,11 @@ class ControllerImpl {
   bool IsCanceled() const { return false; }
   void NotifyOnCancel(google::protobuf::Closure*) {}
   // input is in seconds
-  void set_timeout(const int &seconds) { timeout_ = seconds*1000; }
-  int timeout() const { return timeout_; }
+  void set_timeout(const boost::uint32_t &seconds) {
+    timeout_ = static_cast<boost::uint64_t>(seconds)*1000;
+  }
+  // returns timeout in milliseconds
+  boost::uint64_t timeout() const { return timeout_; }
   // rtt in milliseconds
   void set_rtt(const float &rtt) { rtt_ = rtt; }
   float rtt() const { return rtt_; }
@@ -58,7 +61,7 @@ class ControllerImpl {
   void set_req_id(const boost::uint32_t &id) { req_id_ = id; }
   boost::uint32_t req_id() const { return req_id_; }
  private:
-  int timeout_;
+  boost::uint64_t timeout_;
   float rtt_;
   std::string failure_;
   boost::uint32_t req_id_;

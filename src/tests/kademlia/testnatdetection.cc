@@ -66,7 +66,7 @@ class NatDetectionTest: public testing::Test {
       routingtableA_(), routingtableB_(), routingtableC_(), channelA_(),
       channelB_(), channelC_() {
     boost::int16_t trans_id;
-    for (int i = 0; i < 3; ++i) {
+    for (boost::uint16_t i = 0; i < 3; ++i) {
       trans_handlers_.push_back(new transport::TransportHandler);
       transport::TransportUDT *temp_trans = new transport::TransportUDT;
       trans_handlers_[i]->Register(temp_trans, &trans_id);
@@ -81,9 +81,9 @@ class NatDetectionTest: public testing::Test {
 
   virtual void SetUp() {
     // Node A.
-    std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    std::string hex_id("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        "aaa01";
+        "aaa01");
     ASSERT_TRUE(channel_managerA_.RegisterNotifiersToTransport());
     ASSERT_TRUE(trans_handlers_[0]->RegisterOnServerDown(boost::bind(
       &NatDetectionTest::HandleDeadRVServer, this, _1)));
@@ -217,7 +217,7 @@ class NatDetectionTest: public testing::Test {
     transport::TransportUDT * trans_temp =
       static_cast<transport::TransportUDT*>(trans_handlers_[0]->Get(0));
     trans_temp->CleanUp();
-    for (int i = 0; i < 3; ++i) {
+    for (boost::uint16_t i = 0; i < 3; ++i) {
       trans_handlers_[i]->Stop(transports_[i]);
       // trans_handlers_[i]->Remove(transports_[i]);
       // delete trans_handlers_[i]->Get(transports_[i]);
@@ -277,11 +277,12 @@ class NatDetectionTest: public testing::Test {
     }
     return result;
   }
-  void GetRandCtcs(const int &count, const std::vector<Contact> &ex_ctcs,
-      std::vector<Contact> *ctcs, const int &rt_id) {
+  void GetRandCtcs(const boost::uint16_t &count,
+      const std::vector<Contact> &ex_ctcs, std::vector<Contact> *ctcs,
+      const boost::uint16_t &rt_id) {
     ctcs->clear();
     std::vector<Contact> all_contacts;
-    int kbuckets;
+    boost::uint16_t kbuckets;
     switch (rt_id) {
       case 1: kbuckets = routingtableA_->KbucketSize();
               break;
@@ -291,7 +292,7 @@ class NatDetectionTest: public testing::Test {
               break;
       default: kbuckets = 0;
     }
-    for (int i = 0; i < kbuckets; ++i) {
+    for (boost::uint16_t i = 0; i < kbuckets; ++i) {
       std::vector<kad::Contact> contacts_i;
       switch (rt_id) {
         case 1: routingtableA_->GetContacts(i, &contacts_i, ex_ctcs);
@@ -301,10 +302,10 @@ class NatDetectionTest: public testing::Test {
         case 3: routingtableC_->GetContacts(i, &contacts_i, ex_ctcs);
                 break;
       }
-      for (int j = 0; j < static_cast<int>(contacts_i.size()); ++j)
+      for (size_t j = 0; j < contacts_i.size(); ++j)
         all_contacts.push_back(contacts_i[j]);
     }
-    if (static_cast<int>(all_contacts.size()) < count+1) {
+    if (static_cast<boost::uint16_t>(all_contacts.size()) < count + 1) {
       *ctcs = all_contacts;
       return;
     }
@@ -314,7 +315,7 @@ class NatDetectionTest: public testing::Test {
     *ctcs = temp_vector;
   }
   void GetKCtcs(const std::string &key, std::vector<Contact> *ctcs,
-      const std::vector<Contact> &ex_ctcs, const int &rt_id) {
+      const std::vector<Contact> &ex_ctcs, const boost::uint16_t &rt_id) {
     switch (rt_id) {
       case 1: routingtableA_->FindCloseNodes(key, K, ctcs, ex_ctcs);
               break;

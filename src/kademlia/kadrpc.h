@@ -38,8 +38,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 // different RPCs have different timeouts, normally it is 5 seconds
-const int kRpcPingTimeout = 3;  // 3 secs
-const int kRpcBootstrapTimeout = 7;  // 7secs
+const boost::uint32_t kRpcPingTimeout = 3;  // 3 secs
+const boost::uint32_t kRpcBootstrapTimeout = 7;  // 7secs
 class KadRpcs {
  public:
   KadRpcs(rpcprotocol::ChannelManager *channel_manager,

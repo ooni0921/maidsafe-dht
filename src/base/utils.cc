@@ -26,6 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/lexical_cast.hpp>
 #include <ctype.h>
 #include <cryptopp/integer.h>
 #include <cryptopp/osrng.h>
@@ -54,55 +55,43 @@ std::string TidyPath(const std::string &original_path_) {
 }
 
 std::string itos_ull(boost::uint64_t value) {
-  std::stringstream out;
-  out << value;
-  return out.str();
+  std::string str_value(boost::lexical_cast<std::string>(value));
+  return str_value;
 }
 
 boost::uint64_t stoi_ull(std::string value) {
-  boost::uint64_t result;
-  std::istringstream i(value);
-  i >> result;
-  return result;
+  boost::uint64_t int_value(boost::lexical_cast<boost::uint64_t>(value));
+  return int_value;
 }
 
 std::string itos_ul(boost::uint32_t value) {
-  std::stringstream out;
-  out << value;
-  return out.str();
+  std::string str_value(boost::lexical_cast<std::string>(value));
+  return str_value;
 }
 
 boost::uint32_t stoi_ul(std::string value) {
-  boost::uint32_t result;
-  std::istringstream i(value);
-  i >> result;
-  return result;
+  boost::uint32_t int_value(boost::lexical_cast<boost::uint32_t>(value));
+  return int_value;
 }
 
 std::string itos_l(boost::int32_t value) {
-  std::stringstream out;
-  out << value;
-  return out.str();
+  std::string str_value(boost::lexical_cast<std::string>(value));
+  return str_value;
 }
 
 boost::int32_t stoi_l(std::string value) {
-  boost::int32_t result;
-  std::istringstream i(value);
-  i >> result;
-  return result;
+  boost::int32_t int_value(boost::lexical_cast<boost::int32_t>(value));
+  return int_value;
 }
 
 std::string itos(int value) {
-  std::ostringstream out;
-  out << value;
-  return out.str();
+  std::string str_value(boost::lexical_cast<std::string>(value));
+  return str_value;
 }
 
 int stoi(std::string value) {
-  int result;
-  std::istringstream i(value);
-  i >> result;
-  return result;
+  int int_value(boost::lexical_cast<int>(value));
+  return int_value;
 }
 
 std::wstring StrToWStr(const std::string &string_) {
@@ -431,8 +420,8 @@ bool get_local_address(boost::asio::ip::address *local_address) {
   return false;
 }
 
-int32_t random_32bit_integer() {
-  int32_t result(0);
+boost::int32_t random_32bit_integer() {
+  boost::int32_t result(0);
   bool success = false;
   while (!success) {
     try {
@@ -440,9 +429,9 @@ int32_t random_32bit_integer() {
       CryptoPP::Integer rand_num(rng, 32);
       if (!rand_num.IsConvertableToLong()) {
         result = std::numeric_limits<int32_t>::max() +
-          static_cast<int32_t>(rand_num.AbsoluteValue().ConvertToLong());
+        static_cast<boost::int32_t>(rand_num.AbsoluteValue().ConvertToLong());
       } else {
-        result =  static_cast<int32_t>(
+        result =  static_cast<boost::int32_t>(
             rand_num.AbsoluteValue().ConvertToLong());
       }
       success = true;
@@ -453,18 +442,18 @@ int32_t random_32bit_integer() {
   return result;
 }
 
-uint32_t random_32bit_uinteger() {
-  uint32_t result(0);
+boost::uint32_t random_32bit_uinteger() {
+  boost::uint32_t result(0);
   bool success = false;
   while (!success) {
     try {
       CryptoPP::AutoSeededRandomPool rng;
       CryptoPP::Integer rand_num(rng, 32);
       if (!rand_num.IsConvertableToLong()) {
-        result = std::numeric_limits<uint32_t>::max() +
-          static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+        result = std::numeric_limits<boost::uint32_t>::max() +
+        static_cast<boost::uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
       } else {
-        result = static_cast<uint32_t>(
+        result = static_cast<boost::uint32_t>(
             rand_num.AbsoluteValue().ConvertToLong());
       }
       success = true;
@@ -482,7 +471,7 @@ std::vector<std::string> get_local_addresses() {
   get_net_interfaces(&alldevices);
   if (!alldevices.empty()) {
     // take the first non-bogus IP address
-    for (unsigned int i = 0; i < alldevices.size(); i++) {
+    for (size_t i = 0; i < alldevices.size(); i++) {
       if (alldevices[i].ip_address.to_string().substr(0, 2) != "0." &&
           alldevices[i].ip_address.to_string().substr(0, 4) != "127." &&
           alldevices[i].ip_address.to_string().substr(0, 8) != "169.254.") {

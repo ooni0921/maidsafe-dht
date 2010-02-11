@@ -60,9 +60,7 @@ bool TransportHandler::Registered(transport::Transport *t) {
 
 int TransportHandler::Register(transport::Transport *t, boost::int16_t *id) {
   if (Registered(t)) {
-#ifdef DEBUG
-    printf("Transport is already registered\n");
-#endif
+    DLOG(ERROR) << "Transport is already registered\n";
     return 1;
   }
   std::pair< std::map< boost::int16_t, transport::Transport* >::iterator, bool >
@@ -97,17 +95,13 @@ int TransportHandler::Start(const boost::uint16_t &port,
                             const boost::int16_t &id) {
   if ((rpcmsg_notifier_.empty() && msg_notifier_.empty()) ||
        server_down_notifier_.empty() || send_notifier_.empty()) {
-#ifdef DEBUG
-    printf("TransportHandler::Start: Notifiers empty\n");
-#endif
+    DLOG(ERROR) << "TransportHandler::Start: Notifiers empty\n";
     return 1;
   }
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("Start: Couldn't find Transport matching ID: %d\n", id);
-#endif
+    DLOG(ERROR) << "Start: Couldn't find Transport matching ID: " << id << "\n";
     return 1;
   }
 
@@ -119,9 +113,7 @@ void TransportHandler::Stop(const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("Stop: Couldn't find Transport matching ID: %d\n", id);
-#endif
+    DLOG(ERROR) << "Stop: Couldn't find Transport matching ID: " << id << "\n";
     return;
   }
 
@@ -170,9 +162,8 @@ bool TransportHandler::IsAddrUsable(const std::string &local_ip,
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("IsAddrUsable: Couldn't find Transport matching ID: %d\n", id);
-#endif
+    DLOG(ERROR) << "IsAddrUsable: Couldn't find Transport matching ID: " << id
+      << "\n";
     return false;
   }
 
@@ -184,9 +175,8 @@ bool TransportHandler::IsPortAvailable(const boost::uint16_t &port,
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("IsPortAvailable: Couldn't find Transport matching ID: %d\n", id);
-#endif
+    DLOG(ERROR) << "IsPortAvailable: Couldn't find Transport matching ID: "
+      << id << "\n";
     return false;
   }
 
@@ -250,9 +240,8 @@ int TransportHandler::ConnectToSend(const std::string &remote_ip,
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("ConnectToSend: Couldn't find Transport matching ID: %d\n", id);
-#endif
+    DLOG(ERROR) << "ConnectToSend: Couldn't find Transport matching ID: "
+      << id << "\n";
     return 1;
   }
 
@@ -267,16 +256,9 @@ int TransportHandler::Send(const rpcprotocol::RpcMessage &data,
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("SendRPC: Couldn't find Transport matching ID: %d\n", id);
-    printf("transports_.size(): %d\n", transports_.size());
-    std::map< boost::int16_t, transport::Transport* >::iterator it_tmp =
-        transports_.begin();
-    while (it_tmp != transports_.end()) {
-      printf("In map: %d, %d\n", (*it_tmp).first, (*it_tmp).second);
-      ++it_tmp;
-    }
-#endif
+    DLOG(ERROR) << "SendRPC: Couldn't find Transport matching ID: " << id
+      <<"\n";
+    DLOG(INFO) << "transports_.size(): " << transports_.size() << "\n";
     return 1;
   }
 
@@ -289,19 +271,8 @@ int TransportHandler::Send(const std::string &data,
                            const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
-  if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("SendStr: Couldn't find Transport matching ID: %d\n", id);
-    printf("transports_.size(): %d\n", transports_.size());
-    std::map< boost::int16_t, transport::Transport* >::iterator it_tmp =
-        transports_.begin();
-    while (it_tmp != transports_.end()) {
-      printf("In map: %d, %d\n", (*it_tmp).first, (*it_tmp).second);
-      ++it_tmp;
-    }
-#endif
+  if (it == transports_.end())
     return 1;
-  }
 
   return (*it).second->Send(data, conn_id, new_skt);
 }
@@ -311,9 +282,8 @@ int TransportHandler::StartLocal(const boost::uint16_t &port,
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("StartLocal: Couldn't find Transport matching ID: %d\n", id);
-#endif
+  DLOG(ERROR) << "StartLocal: Couldn't find Transport matching ID: " << id
+    << "\n";
     return 1;
   }
 
@@ -326,9 +296,8 @@ void TransportHandler::CloseConnection(const boost::uint32_t &connection_id,
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("CloseConnection: Couldn't find Transport matching ID: %d\n", id);
-#endif
+    DLOG(ERROR) << "CloseConnection: Couldn't find Transport matching ID: "
+      << id << "\n";
     return;
   }
 
@@ -338,12 +307,8 @@ void TransportHandler::CloseConnection(const boost::uint32_t &connection_id,
 bool TransportHandler::is_stopped(const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
-  if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("is_stopped: Couldn't find Transport matching ID: %d\n", id);
-#endif
+  if (it == transports_.end())
     return false;
-  }
 
   return (*it).second->is_stopped();
 }
@@ -352,10 +317,10 @@ struct sockaddr& TransportHandler::peer_address(const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("peer_address: Couldn't find Transport matching ID: %d\n", id);
-#endif
-    // TODO(Alec): Deal with this failure somehow
+    struct sockaddr *addr;
+    DLOG(ERROR) << "peer_address: Couldn't find Transport matching ID: " << id
+      << "\n";
+    return *addr;
   }
 
   return (*it).second->peer_address();
@@ -366,12 +331,8 @@ bool TransportHandler::GetPeerAddr(const boost::uint32_t &conn_id,
                                    const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
-  if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("GetPeerAddress: Couldn't find Transport matching ID: %d\n", id);
-#endif
+  if (it == transports_.end())
     return false;
-  }
 
   return (*it).second->GetPeerAddr(conn_id, addr);
 }
@@ -380,12 +341,8 @@ bool TransportHandler::ConnectionExists(const boost::uint32_t &connection_id,
                                         const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
-  if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("ConnectionExists: Couldn't find Transport matching ID: %d\n", id);
-#endif
+  if (it == transports_.end())
     return false;
-  }
 
   return (*it).second->ConnectionExists(connection_id);
 }
@@ -395,12 +352,8 @@ bool TransportHandler::HasReceivedData(const boost::uint32_t &connection_id,
                                         const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
-  if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("HasReceivedData: Couldn't find Transport matching ID: %d\n", id);
-#endif
+  if (it == transports_.end())
     return false;
-  }
 
   return (*it).second->HasReceivedData(connection_id, size);
 }
@@ -409,12 +362,8 @@ bool TransportHandler::HasReceivedData(const boost::uint32_t &connection_id,
 boost::uint16_t TransportHandler::listening_port(const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
-  if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("listening_port: Couldn't find Transport matching ID: %d\n", id);
-#endif
+  if (it == transports_.end())
     return false;
-  }
 
   return (*it).second->listening_port();
 }
@@ -426,13 +375,8 @@ void TransportHandler::StartPingRendezvous(
     const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
-  if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("StartPingRendezvous: Couldn't find Transport matching ID: %d\n",
-      id);
-#endif
+  if (it == transports_.end())
     return;
-  }
 
   (*it).second->StartPingRendezvous(directly_connected,
     my_rendezvous_ip, my_rendezvous_port);
@@ -449,12 +393,8 @@ bool TransportHandler::CanConnect(const std::string &ip,
                                   const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
-  if (it == transports_.end()) {
-#ifdef DEBUG
-    printf("CanConnect: Couldn't find Transport matching ID: %d\n", id);
-#endif
+  if (it == transports_.end())
     return false;
-  }
 
   return (*it).second->CanConnect(ip, port);
 }

@@ -39,12 +39,13 @@ KNode::KNode(rpcprotocol::ChannelManager *channel_manager,
 
 KNode::KNode(rpcprotocol::ChannelManager *channel_manager,
       transport::TransportHandler *ptrans_handler,
-      node_type type, const boost::uint16_t k, const int &alpha, const int
-      &beta, const int &refresh_time, const std::string &private_key, const
-      std::string &public_key, const bool &port_forwarded, const bool
-      &use_upnp) : pimpl_(new KNodeImpl(channel_manager, ptrans_handler,
-      type, k, alpha, beta, refresh_time, private_key, public_key,
-      port_forwarded, use_upnp)) {}
+      node_type type, const boost::uint16_t &k, const boost::uint16_t &alpha,
+      const boost::uint16_t &beta, const boost::uint32_t &refresh_time,
+      const std::string &private_key, const std::string &public_key,
+      const bool &port_forwarded, const bool &use_upnp)
+      : pimpl_(new KNodeImpl(channel_manager, ptrans_handler, type, k, alpha,
+      beta, refresh_time, private_key, public_key, port_forwarded,
+      use_upnp)) {}
 
 KNode::~KNode() {}
 
@@ -147,7 +148,7 @@ bool KNode::RefreshValueLocal(const std::string &key,
   return pimpl_->RefreshValueLocal(key, value, ttl);
 }
 
-void KNode::GetRandomContacts(const int &count,
+void KNode::GetRandomContacts(const boost::uint16_t &count,
                               const std::vector<Contact> &exclude_contacts,
                               std::vector<Contact> *contacts) {
   pimpl_->GetRandomContacts(count, exclude_contacts, contacts);

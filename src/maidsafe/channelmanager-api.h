@@ -138,9 +138,10 @@ class ChannelManager {
   /**
   * Adds a request to the timer to check when it times out.
   * @param req_id id of the request
-  * @param timeout milliseconds after which the request times out
+  * @param timeout time in milliseconds after which the request times out
   */
-  void AddReqToTimer(const boost::uint32_t &req_id, const int &timeout);
+  void AddReqToTimer(const boost::uint32_t &req_id,
+    const boost::uint64_t &timeout);
   /**
   * Adds a request to a list that holds all request that haven't been
   * completely sent via the transport.

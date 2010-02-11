@@ -113,10 +113,8 @@ class MessageHandler {
     if (node_handler_ != NULL)
       node_handler_->CloseConnection(conn_id, trans_id);
   }
-  void OnMessage(const std::string &msg,
-                 const boost::uint32_t &conn_id,
-                 const boost::int16_t &trans_id,
-                 const float&) {
+  void OnMessage(const std::string &msg, const boost::uint32_t &conn_id,
+      const boost::int16_t &, const float&) {
     raw_msgs.push_back(msg);
     raw_ids.push_back(conn_id);
   }

@@ -43,9 +43,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kaddemo {
 
 Commands::Commands(kad::KNode *node, const boost::uint16_t &K)
-      : node_(node), result_arrived_(false),
-        min_succ_stores_(K * kad::kMinSuccessfulPecentageStore), cryobj_(),
-        finish_(false) {
+      : node_(node), result_arrived_(false), finish_(false),
+        min_succ_stores_(K * kad::kMinSuccessfulPecentageStore), cryobj_() {
   cryobj_.set_hash_algorithm(crypto::SHA_512);
 }
 
@@ -154,7 +153,7 @@ void Commands::FindValueCallback(const std::string &result,
 }
 
 bool Commands::ReadFile(const std::string &path, std::string *content) {
-  *content = "";
+  content->empty();
   if (!boost::filesystem::exists(path) ||
       boost::filesystem::is_directory(path)) {
     printf("%s does not exist or is a directory\n", path.c_str());
@@ -369,13 +368,13 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
 void Commands::Store50Values(const std::string &prefix) {
   bool arrived;
   std::string key, value;
-  for (int i = 0; i < 50; i++) {
+  for (boost::uint16_t i = 0; i < 50; ++i) {
     arrived = false;
     key = "";
     key = cryobj_.Hash(prefix + boost::lexical_cast<std::string>(i), "",
         crypto::STRING_STRING, false);
     value = "";
-    for (int j = 0; j < 1024*100; j++)
+    for (boost::uint16_t j = 0; j < 1024*100; j++)
       value += prefix + boost::lexical_cast<std::string>(i);
       node_->StoreValue(key, value, 1040*60, boost::bind(
             &Commands::Store50Callback, this, _1, prefix +

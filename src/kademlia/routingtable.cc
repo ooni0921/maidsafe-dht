@@ -31,7 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 
-RoutingTable::RoutingTable(const std::string &holder_id, const int &K)
+RoutingTable::RoutingTable(const std::string &holder_id,
+      const boost::uint16_t &K)
       : k_buckets_(), bucket_upper_address_(), holder_id_(holder_id),
         bucket_of_holder_(0), brother_bucket_of_holder_(-1),
         address_space_upper_address_("2"), K_(K) {
@@ -41,7 +42,7 @@ RoutingTable::RoutingTable(const std::string &holder_id, const int &K)
   boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
       address_space_upper_address_, K_));
   k_buckets_.push_back(kbucket);
-  bucket_upper_address_.insert(std::pair<BigInt, int>
+  bucket_upper_address_.insert(std::pair<BigInt, boost::uint16_t>
       (address_space_upper_address_, 0));
 }
 
@@ -50,27 +51,29 @@ RoutingTable::~RoutingTable() {
   bucket_upper_address_.clear();
 }
 
-int RoutingTable::KBucketIndex(const std::string &key) {
+boost::uint16_t RoutingTable::KBucketIndex(const std::string &key) {
   BigInt bint = StrToBigInt(key);
   if (bint > address_space_upper_address_)
     return -1;
-  std::map<BigInt, int>::iterator lower_bound_iter =
+  std::map<BigInt, boost::uint16_t>::iterator lower_bound_iter =
       bucket_upper_address_.lower_bound(bint);
   return (*lower_bound_iter).second;
 }
 
-std::vector<int> RoutingTable::SortBucketsByDistance(const std::string &key) {
+std::vector<boost::uint16_t> RoutingTable::SortBucketsByDistance(
+    const std::string &key) {
   BigInt bint = StrToBigInt(key);
-  std::map<BigInt, int> distance;
+  std::map<BigInt, boost::uint16_t> distance;
   // For a given k-bucket, all contacts are either all closer to or all further
   // from a given key than every other contact outwith that k-bucket.  Hence we
   // iterate through each k-bucket's max id and insert xor distance to map.
-  for (std::map<BigInt, int>::iterator iter = bucket_upper_address_.begin();
+  for (std::map<BigInt, boost::uint16_t>::iterator iter =
+    bucket_upper_address_.begin();
        iter != bucket_upper_address_.end(); ++iter)
-    distance.insert(std::pair<BigInt, int>(((*iter).first ^ bint),
+    distance.insert(std::pair<BigInt, boost::uint16_t>(((*iter).first ^ bint),
         (*iter).second));
-  std::vector<int> indices;
-  for (std::map<BigInt, int>::iterator dist_iter = distance.begin();
+  std::vector<boost::uint16_t> indices;
+  for (std::map<BigInt, boost::uint16_t>::iterator dist_iter = distance.begin();
        dist_iter != distance.end(); ++dist_iter)
     indices.push_back((*dist_iter).second);
   return indices;
@@ -115,7 +118,7 @@ void RoutingTable::RemoveContact(const std::string &node_id,
   k_buckets_[index]->RemoveContact(node_id, force);
 }
 
-void RoutingTable::SplitKbucket(const int &index) {
+void RoutingTable::SplitKbucket(const boost::uint16_t &index) {
   BigInt split_point = k_buckets_[index]->range_max()-
     ((k_buckets_[index]->range_max()-k_buckets_[index]->range_min())/2);
   BigInt range_min_kb_left = k_buckets_[index]->range_min();
@@ -142,8 +145,8 @@ void RoutingTable::SplitKbucket(const int &index) {
   k_buckets_.insert(k_buckets_.begin()+index, kb_left);
   k_buckets_.insert(k_buckets_.begin()+index+1, kb_right);
   bucket_upper_address_.clear();
-  for (boost::uint32_t j = 0; j < k_buckets_.size(); ++j)
-  bucket_upper_address_.insert(std::pair<BigInt, int>
+  for (size_t j = 0; j < k_buckets_.size(); ++j)
+  bucket_upper_address_.insert(std::pair<BigInt, boost::uint16_t>
       (k_buckets_[j]->range_max(), j));
   // Implement Force K algorithm
   // Keep tracking the bucket of the peer and brother bucket of the peer
@@ -193,7 +196,7 @@ void RoutingTable::FindCloseNodes(const std::string &key, int count,
   bool full = (count == static_cast<int>(close_nodes->size()));
   if (full)
     return;
-  std::vector<int> indices = SortBucketsByDistance(key);
+  std::vector<boost::uint16_t> indices = SortBucketsByDistance(key);
   // Start for loop at 1, as we have already added contacts from closest bucket.
   for (boost::uint32_t index_no = 1; index_no < indices.size(); ++index_no) {
     std::vector<Contact> contacts;
@@ -212,30 +215,29 @@ void RoutingTable::FindCloseNodes(const std::string &key, int count,
 }
 
 void RoutingTable::GetRefreshList(std::vector<std::string> *ids,
-  const int &start_kbucket, const bool &force) {
+  const boost::uint16_t &start_kbucket, const bool &force) {
   boost::uint32_t curr_time = base::get_epoch_time();
-  for (int i = start_kbucket; i < static_cast<int>(k_buckets_.size()); i++)
-    if (force || static_cast<int>(curr_time-k_buckets_[i]->last_accessed())
-        > kRefreshTime) {
+  for (size_t i = start_kbucket; i < k_buckets_.size(); i++)
+    if (force || curr_time-k_buckets_[i]->last_accessed() > kRefreshTime) {
       std::string random_id = random_kademlia_id(k_buckets_[i]->range_min(),
         k_buckets_[i]->range_max());
       ids->push_back(random_id);
     }
 }
 
-int RoutingTable::KbucketSize() const { return k_buckets_.size(); }
+size_t RoutingTable::KbucketSize() const { return k_buckets_.size(); }
 
-int RoutingTable::Size() const {
-  int size = 0;
-  for (int i = 0; i < static_cast<int>(k_buckets_.size()); i++)
+size_t RoutingTable::Size() const {
+  size_t size(0);
+  for (size_t i = 0; i < k_buckets_.size(); i++)
     size += k_buckets_[i]->Size();
   return size;
 }
 
-bool RoutingTable::GetContacts(const int &index,
+bool RoutingTable::GetContacts(const boost::uint16_t &index,
   std::vector<Contact> *contacts,
   const std::vector<Contact> &exclude_contacts) {
-  if (index > static_cast<int>(k_buckets_.size()))
+  if (index > k_buckets_.size())
     return false;
   contacts->clear();
   k_buckets_[index]->GetContacts(K_, exclude_contacts, contacts);
@@ -251,7 +253,7 @@ void RoutingTable::Clear() {
   boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
       address_space_upper_address_, K_));
   k_buckets_.push_back(kbucket);
-  bucket_upper_address_.insert(std::pair<BigInt, int>
+  bucket_upper_address_.insert(std::pair<BigInt, boost::uint16_t>
       (address_space_upper_address_, 0));
 }
 
@@ -365,7 +367,7 @@ int RoutingTable::ForceKAcceptNewPeer(const Contact &new_contact) {
   return -1;
 }
 
-Contact RoutingTable::GetLastSeenContact(const int &kbucket_index) {
+Contact RoutingTable::GetLastSeenContact(const boost::uint16_t &kbucket_index) {
   Contact last_seen;
   if (kbucket_index > static_cast<int>(k_buckets_.size()) - 1)
     return last_seen;

@@ -55,8 +55,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace fs = boost::filesystem;
 
-const int kNetworkSize = 17;
-const int kTestK = 16;
+const boost::int16_t kNetworkSize = 17;
+const boost::int16_t kTestK = 16;
 
 inline void create_rsakeys(std::string *pub_key, std::string *priv_key) {
   crypto::RsaKeyPair kp;
@@ -143,7 +143,7 @@ class Env: public testing::Environment {
     std::string priv_key, pub_key;
     create_rsakeys(&pub_key, &priv_key);
     boost::int16_t trans_id;
-    for (int  i = 0; i < kNetworkSize; ++i) {
+    for (boost::int16_t  i = 0; i < kNetworkSize; ++i) {
       trans_handlers_.push_back(boost::shared_ptr<transport::TransportHandler>
         (new transport::TransportHandler()));
       trans_handlers_.at(i).get()->Register(new transport::TransportUDT,
@@ -199,7 +199,7 @@ class Env: public testing::Environment {
     kad_contact->set_local_ip(knodes_[0]->local_host_ip());
     kad_contact->set_local_port(knodes_[0]->local_host_port());
 
-    for (int i = 1; i < kNetworkSize; i++) {
+    for (boost::int16_t i = 1; i < kNetworkSize; i++) {
       kad_config_file_ = dbs_[i] + "/.kadconfig";
       std::fstream output2(kad_config_file_.c_str(),
         std::ios::out | std::ios::trunc | std::ios::binary);
@@ -208,7 +208,7 @@ class Env: public testing::Environment {
     }
 
     // start the rest of the nodes (including node 1 again)
-    for (int  i = 1; i < kNetworkSize; ++i) {
+    for (boost::int16_t  i = 1; i < kNetworkSize; ++i) {
       cb_.Reset();
       kad_config_file_ = dbs_[i] + "/.kadconfig";
       knodes_[i]->Join(kad_config_file_,
@@ -239,10 +239,10 @@ class Env: public testing::Environment {
     HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hconsole, 7 | 0 << 4);
 #endif
-    for (int i = kNetworkSize-1; i >= 1; i--) {
+    for (boost::int16_t i = kNetworkSize-1; i >= 1; i--) {
       trans_handlers_[i]->StopPingRendezvous();
     }
-    for (int i = kNetworkSize-1; i >= 0; i--) {
+    for (boost::int16_t i = kNetworkSize-1; i >= 0; i--) {
       LOG(INFO) << "stopping node " << i << std::endl;
       cb_.Reset();
       knodes_[i]->Leave();
@@ -348,9 +348,9 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(size_t(1), cb_2.values().size());
+  ASSERT_LE(1, cb_2.values().size());
   bool got_value = false;
-  for (unsigned int i = 0; i < cb_2.values().size(); i++) {
+  for (size_t i = 0; i < cb_2.values().size(); i++) {
     if (value == cb_2.values()[i]) {
       got_value = true;
       break;
@@ -365,9 +365,9 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(size_t(1), cb_2.values().size());
+  ASSERT_LE(1, cb_2.values().size());
   got_value = false;
-  for (unsigned int i = 0; i < cb_2.values().size(); i++) {
+  for (size_t i = 0; i < cb_2.values().size(); i++) {
     if (value == cb_2.values()[i]) {
       got_value = true;
       break;
@@ -386,9 +386,9 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   wait_result(&cb_3);
   // make sure the nodes returned are what we expect.
   ASSERT_EQ(kad::kRpcResultSuccess, cb_3.result());
-  ASSERT_NE(size_t(0), cb_3.closest_nodes().size());
+  ASSERT_FALSE(cb_3.closest_nodes().empty());
   std::list<std::string> closest_nodes_str;  // = cb_3.closest_nodes();
-  for (unsigned int i = 0; i < cb_3.closest_nodes().size(); i++)
+  for (size_t i = 0; i < cb_3.closest_nodes().size(); i++)
     closest_nodes_str.push_back(cb_3.closest_nodes()[i]);
   std::list<std::string>::iterator it;
   std::list<kad::Contact> closest_nodes;
@@ -398,9 +398,9 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     node.ParseFromString(*it);
     closest_nodes.push_back(node);
   }
-  ASSERT_EQ(size_t(kTestK), closest_nodes.size());
+  ASSERT_EQ(kTestK, closest_nodes.size());
   std::list<kad::Contact> all_nodes;
-  for (int i = 0; i < kNetworkSize; i++) {
+  for (boost::int16_t i = 0; i < kNetworkSize; i++) {
     kad::Contact node(knodes_[i]->node_id(), knodes_[i]->host_ip(),
         knodes_[i]->host_port());
     all_nodes.push_back(node);
@@ -414,7 +414,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
   }
 
   // Checking no node has stored the clients node in its routing table
-  for (int i = 0; i < kNetworkSize; i++) {
+  for (boost::int16_t i = 0; i < kNetworkSize; i++) {
     kad::Contact client_node;
     ASSERT_FALSE(knodes_[i]->GetContact(knode_local_.node_id(), &client_node));
   }
@@ -434,9 +434,9 @@ TEST_F(KNodeTest, FUNC_KAD_FindClosestNodes) {
   wait_result(&cb_1);
   // make sure the nodes returned are what we expect.
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_NE(size_t(0), cb_1.closest_nodes().size());
+  ASSERT_FALSE(cb_1.closest_nodes().empty());
   std::list<std::string> closest_nodes_str;  // = cb_1.closest_nodes();
-  for (unsigned int i = 0; i < cb_1.closest_nodes().size(); i++)
+  for (size_t i = 0; i < cb_1.closest_nodes().size(); i++)
     closest_nodes_str.push_back(cb_1.closest_nodes()[i]);
   std::list<std::string>::iterator it;
   std::list<kad::Contact> closest_nodes;
@@ -446,9 +446,9 @@ TEST_F(KNodeTest, FUNC_KAD_FindClosestNodes) {
     node.ParseFromString(*it);
     closest_nodes.push_back(node);
   }
-  ASSERT_EQ(size_t(kTestK), closest_nodes.size());
+  ASSERT_EQ(kTestK, closest_nodes.size());
   std::list<kad::Contact> all_nodes;
-  for (int i = 0; i < kNetworkSize; i++) {
+  for (boost::int16_t i = 0; i < kNetworkSize; i++) {
     kad::Contact node(knodes_[i]->node_id(), knodes_[i]->host_ip(),
         knodes_[i]->host_port(), knodes_[i]->local_host_ip(),
         knodes_[i]->local_host_port(), knodes_[i]->rv_ip(),
@@ -494,12 +494,12 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   // calculate number of nodes which hold this key/value pair
-  int number = 0;
-  for (int i = 0; i < kNetworkSize; i++) {
+  boost::int16_t number(0);
+  for (boost::int16_t i = 0; i < kNetworkSize; i++) {
     std::vector<std::string> values;
     bool b = false;
     knodes_[i]->FindValueLocal(key, &values);
-    if (values.size() > 0) {
+    if (!values.empty()) {
       for (boost::uint32_t n = 0; n < values.size() && !b; ++n) {
         kad::SignedValue sig_value;
         ASSERT_TRUE(sig_value.ParseFromString(values[n]));
@@ -510,8 +510,9 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
       }
     }
   }
-  double d = kTestK * kad::kMinSuccessfulPecentageStore;
-  ASSERT_LE(static_cast<int>(d), number);
+  boost::int16_t d = static_cast<boost::int16_t>
+    (kTestK * kad::kMinSuccessfulPecentageStore);
+  ASSERT_LE(d, number);
   // load the value from no.kNetworkSize-1 node
   cb_.Reset();
   FindCallback cb_1;
@@ -519,9 +520,9 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
     &FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(size_t(1), cb_1.values().size());
+  ASSERT_LE(1, cb_1.values().size());
   bool got_value = false;
-  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+  for (size_t i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
       got_value = true;
       break;
@@ -537,9 +538,9 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
     &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(size_t(1), cb_1.values().size());
+  ASSERT_LE(1, cb_1.values().size());
   got_value = false;
-  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+  for (size_t i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
       got_value = true;
       break;
@@ -575,12 +576,12 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   // calculate number of nodes which hold this key/value pair
-  int number = 0;
-  for (int i = 0; i < kNetworkSize; i++) {
+  boost::int16_t number = 0;
+  for (boost::int16_t i = 0; i < kNetworkSize; i++) {
     bool b = false;
     std::vector<std::string> values;
     knodes_[i]->FindValueLocal(key, &values);
-    if (values.size() > 0) {
+    if (!values.empty()) {
       for (boost::uint32_t n = 0; n < values.size(); ++n) {
         kad::SignedValue sig_value;
         ASSERT_TRUE(sig_value.ParseFromString(values[n]));
@@ -591,17 +592,18 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
       }
     }
   }
-  double d = kTestK * kad::kMinSuccessfulPecentageStore;
-  ASSERT_LE(static_cast<int>(d), number);
+  boost::int16_t d(static_cast<boost::int16_t>
+    (kTestK * kad::kMinSuccessfulPecentageStore));
+  ASSERT_LE(d, number);
   // load the value from no.10 node
   FindCallback cb_1;
   knodes_[10]->FindValue(key, false,
       boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(size_t(1), cb_1.values().size());
+  ASSERT_LE(1, cb_1.values().size());
   bool got_value = false;
-  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+  for (size_t i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
       got_value = true;
       break;
@@ -615,9 +617,9 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
       boost::bind(&FindCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(size_t(1), cb_2.values().size());
+  ASSERT_LE(1, cb_2.values().size());
   got_value = false;
-  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+  for (size_t i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
       got_value = true;
       break;
@@ -628,14 +630,14 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
 }
 
 TEST_F(KNodeTest, FUNC_KAD_StoreAndLoad100Values) {
-  size_t count(100);
+  boost::int16_t count(100);
   std::vector<std::string> keys(count);
   std::vector<kad::SignedValue> values(count);
   std::vector<StoreValueCallback> cbs(count);
   std::string pub_key, priv_key, sig_pub_key, sig_req;
   create_rsakeys(&pub_key, &priv_key);
   printf("Store: ");
-  for (size_t n = 0; n < count; ++n) {
+  for (boost::int16_t n = 0; n < count; ++n) {
     keys[n] = cry_obj_.Hash("key" + base::itos(n), "", crypto::STRING_STRING,
               false);
     values[n].set_value(base::RandomString(1024));
@@ -653,17 +655,17 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoad100Values) {
       printf(".");
   }
   printf("\nLoad:  ");
-  for (size_t p = 0; p < count; ++p) {
+  for (boost::int16_t p = 0; p < count; ++p) {
     wait_result(&cbs[p]);
     ASSERT_EQ(kad::kRpcResultSuccess, cbs[p].result());
   }
-  for (size_t p = 0; p < count; ++p) {
+  for (boost::int16_t p = 0; p < count; ++p) {
     FindCallback cb_1;
     knodes_[7]->FindValue(keys[p], false,
                           boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
     wait_result(&cb_1);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-    ASSERT_EQ(size_t(1), cb_1.values().size());
+    ASSERT_EQ(1, cb_1.values().size());
     ASSERT_EQ(values[p].value(), cb_1.values()[0]);
     if (!(p % 5))
       printf(".");
@@ -680,8 +682,8 @@ TEST_F(KNodeTest, FUNC_KAD_LoadNonExistingValue) {
       boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultFailure, cb_1.result());
-  ASSERT_LT(size_t(0), cb_1.closest_nodes().size());
-  ASSERT_EQ(size_t(0), cb_1.values().size());
+  ASSERT_FALSE(cb_1.closest_nodes().empty());
+  ASSERT_TRUE(cb_1.values().empty());
 }
 
 TEST_F(KNodeTest, FUNC_KAD_FindNode) {
@@ -725,7 +727,7 @@ TEST_F(KNodeTest, FUNC_KAD_Ping) {
   wait_result(&cb_2);
   // ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
   if (kad::kRpcResultSuccess != cb_2.result()) {
-    for (int i = 0; i < kNetworkSize; i++) {
+    for (boost::int16_t i = 0; i < kNetworkSize; i++) {
       kad::Contact ctc;
       if (knodes_[i]->GetContact(remote_id, &ctc))
         printf("node %d port %d, has knodes_[9]\n", i, knodes_[i]->host_port());
@@ -789,7 +791,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   // kill k-1 nodes, there should be at least one node left which holds this
   // value
-  for (int i = 0; i < kTestK - 2 && i < kNetworkSize - 2; ++i) {
+  for (boost::int16_t i = 0; i < kTestK - 2 && i < kNetworkSize - 2; ++i) {
     knodes_[2 + i]->Leave();
     trans_handlers_[2 + i]->Stop(trans_ids_[2 + i]);
     channel_managers_[2 + i]->Stop();
@@ -802,9 +804,9 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
       boost::bind(&FakeCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(size_t(1), cb_2.values().size());
+  ASSERT_LE(1, cb_2.values().size());
   bool got_value = false;
-  for (unsigned int i = 0; i < cb_2.values().size(); ++i) {
+  for (size_t i = 0; i < cb_2.values().size(); ++i) {
     if (value == cb_2.values()[i]) {
       got_value = true;
       break;
@@ -813,7 +815,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
   if (!got_value) {
     FAIL();
   }
-  for (int i = 0; i < kTestK - 2 && i < kNetworkSize - 2; ++i) {
+  for (boost::int16_t i = 0; i < kTestK - 2 && i < kNetworkSize - 2; ++i) {
     kad::Contact ctc(knodes_[2 + i]->node_id(), knodes_[2 + i]->host_ip(),
       knodes_[2 + i]->host_port(), knodes_[2 + i]->local_host_ip(),
       knodes_[2 + i]->local_host_port());
@@ -843,7 +845,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
   kad_contact->set_local_ip(knodes_[0]->local_host_ip());
   kad_contact->set_local_port(knodes_[0]->local_host_port());
 
-  for (int i = 0; i < kTestK - 2 && i < kNetworkSize - 2; ++i) {
+  for (boost::int16_t i = 0; i < kTestK - 2 && i < kNetworkSize - 2; ++i) {
     cb_.Reset();
     std::string conf_file = dbs_[2 + i] + "/.kadconfig";
 
@@ -875,8 +877,8 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   std::string r_node_id = knodes_[r_node]->node_id();
   // Compute the sum of the nodes whose routing table contain r_node
   int sum_0 = 0;
-  std::vector<int> holders;
-  for (int i = 1; i < kNetworkSize; i++) {
+  std::vector<boost::int16_t> holders;
+  for (boost::int16_t i = 1; i < kNetworkSize; i++) {
     if (i != r_node) {
       kad::Contact test_contact;
       if (knodes_[i]->GetContact(r_node_id, &test_contact)) {
@@ -889,10 +891,10 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   }
   cb_.Reset();
   // finding the closest node to the dead node
-  int closest_node = 0;
+  boost::int16_t closest_node(0);
   kad::BigInt smallest_distance = kad::kademlia_distance(r_node_id,
     knodes_[holders[0]]->node_id());
-  for (unsigned int i = 1; i < holders.size(); i++) {
+  for (size_t i = 1; i < holders.size(); i++) {
     kad::BigInt distance = kad::kademlia_distance(r_node_id,
       knodes_[holders[i]]->node_id());
     if (smallest_distance > distance) {
@@ -939,8 +941,8 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   boost::this_thread::sleep(boost::posix_time::seconds(
       rpcprotocol::kRpcTimeout/1000));
   // Compute the sum of the nodes whose routing table contain r_node again
-  int sum_1 = 0;
-  for (int i = 1; i < kNetworkSize; i++) {
+  boost::int16_t sum_1(0);
+  for (boost::int16_t i = 1; i < kNetworkSize; i++) {
     if (i != r_node) {
       kad::Contact test_contact;
       if (knodes_[i]->GetContact(r_node_id, &test_contact)) {
@@ -1009,12 +1011,12 @@ TEST_F(KNodeTest, FUNC_KAD_StoreWithInvalidRequest) {
 }
 
 TEST_F(KNodeTest, FUNC_KAD_AllDirectlyConnected) {
-  for (int i = 0; i < kNetworkSize; i++) {
+  for (boost::int16_t i = 0; i < kNetworkSize; i++) {
     std::vector<kad::Contact> exclude_contacts;
     std::vector<kad::Contact> contacts;
     knodes_[i]->GetRandomContacts(kNetworkSize, exclude_contacts, &contacts);
-    ASSERT_LT(0, static_cast<int>(contacts.size()));
-    for (int j = 0; j < static_cast<int>(contacts.size()); j++) {
+    ASSERT_FALSE(contacts.empty());
+    for (size_t j = 0; j < contacts.size(); j++) {
       ASSERT_EQ(std::string(""), contacts[j].rendezvous_ip());
       ASSERT_EQ(0, contacts[j].rendezvous_port());
     }
@@ -1045,8 +1047,8 @@ TEST_F(KNodeTest, FUNC_KAD_IncorrectNodeLocalAddrPing) {
 TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
   // find an existing node that has gone down
   // select a random node from node 1 to node kNetworkSize
-  int r_node = 1 + rand() % (kNetworkSize - 2);  // NOLINT (Fraser)
-  printf("+++++++++++++++++ r_node = %d \n", r_node);
+  boost::uint16_t r_node = 1 + rand() % (kNetworkSize - 2);  // NOLINT (Fraser)
+  LOG(INFO) << "+++++++++++++++++ r_node = " << r_node << "\n";
   std::string r_node_id = knodes_[r_node]->node_id();
   boost::uint16_t r_port = knodes_[r_node]->host_port();
   knodes_[r_node]->Leave();
@@ -1055,7 +1057,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
   channel_managers_[r_node]->Stop();
   ports_.erase(r_port);
   // Do a find node
-  printf("+++++++++++++++++ Node %d stopped\n", r_node);
+  LOG(INFO) << "+++++++++++++++++ Node " << r_node << " stopped\n";
   FindNodeCallback cb_1;
   knodes_[kNetworkSize - 1]->FindNode(r_node_id,
       boost::bind(&FindNodeCallback::CallbackFunc, &cb_1, _1), false);
@@ -1064,7 +1066,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
   boost::this_thread::sleep(boost::posix_time::seconds(3*
       (rpcprotocol::kRpcTimeout/1000+1)));
   // Restart dead node
-  printf("+++++++++++++++++Restarting %d \n", r_node);
+  LOG(INFO) << "+++++++++++++++++Restarting " << r_node << "\n";
   ASSERT_TRUE(channel_managers_[r_node]->RegisterNotifiersToTransport());
   ASSERT_TRUE(trans_handlers_[r_node]->RegisterOnServerDown(boost::bind(
     &kad::KNode::HandleDeadRendezvousServer, knodes_[r_node].get(), _1)));
@@ -1082,7 +1084,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindDeadNode) {
 }
 
 TEST_F(KNodeTest, FUNC_KAD_StartStopNode) {
-  int r_node = 1 + rand() % (kNetworkSize - 1);  // NOLINT (Fraser)
+  boost::uint16_t r_node = 1 + rand() % (kNetworkSize - 1);  // NOLINT (Fraser)
   std::string kadconfig_path(dbs_[r_node] + "/.kadconfig");
   knodes_[r_node]->Leave();
   EXPECT_FALSE(knodes_[r_node]->is_joined());
@@ -1131,13 +1133,13 @@ TEST_F(KNodeTest, FUNC_KAD_DeleteValue) {
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   // calculate number of nodes which hold this key/value pair
-  int number = 0;
-  for (int i = 0; i < kNetworkSize; i++) {
+  boost::uint16_t number = 0;
+  for (boost::uint16_t i = 0; i < kNetworkSize; i++) {
     std::vector<std::string> values;
     bool b = false;
     knodes_[i]->FindValueLocal(key, &values);
-    if (values.size() > 0) {
-      for (boost::uint32_t n = 0; n < values.size() && !b; ++n) {
+    if (!values.empty()) {
+      for (size_t n = 0; n < values.size() && !b; ++n) {
         kad::SignedValue sig_value;
         ASSERT_TRUE(sig_value.ParseFromString(values[n]));
         if (value == sig_value.value()) {
@@ -1147,8 +1149,9 @@ TEST_F(KNodeTest, FUNC_KAD_DeleteValue) {
       }
     }
   }
-  double d = kTestK * kad::kMinSuccessfulPecentageStore;
-  ASSERT_LE(static_cast<int>(d), number);
+  boost::uint16_t d(static_cast<boost::uint16_t>
+    (kTestK * kad::kMinSuccessfulPecentageStore));
+  ASSERT_LE(d, number);
   // load the value from no.kNetworkSize-1 node
   cb_.Reset();
   FindCallback cb_1;
@@ -1156,9 +1159,9 @@ TEST_F(KNodeTest, FUNC_KAD_DeleteValue) {
     &FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(size_t(1), cb_1.values().size());
+  ASSERT_LE(1, cb_1.values().size());
   bool got_value = false;
-  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+  for (size_t i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
       got_value = true;
       break;
@@ -1175,7 +1178,7 @@ TEST_F(KNodeTest, FUNC_KAD_DeleteValue) {
   wait_result(&del_cb);
   ASSERT_EQ(kad::kRpcResultSuccess, del_cb.result());
   // Checking no node returns the value
-  for (int i = 0; i < kNetworkSize; i++) {
+  for (boost::uint16_t i = 0; i < kNetworkSize; i++) {
     std::vector<std::string> values;
     ASSERT_FALSE(knodes_[i]->FindValueLocal(key, &values));
     ASSERT_TRUE(values.empty());
@@ -1188,7 +1191,7 @@ TEST_F(KNodeTest, FUNC_KAD_DeleteValue) {
     &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultFailure, cb_1.result());
-  ASSERT_LE(size_t(0), cb_1.values().size());
+  ASSERT_LE(0, cb_1.values().size());
   cb_1.Reset();
 }
 
@@ -1226,7 +1229,7 @@ TEST_F(KNodeTest, FUNC_KAD_InvReqDeleteValue) {
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_LE(size_t(1), cb_1.values().size());
   bool got_value = false;
-  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+  for (size_t i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
       got_value = true;
       break;
@@ -1276,9 +1279,9 @@ TEST_F(KNodeTest, FUNC_KAD_InvReqDeleteValue) {
     boost::bind(&FakeCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(size_t(1), cb_1.values().size());
+  ASSERT_LE(1, cb_1.values().size());
   got_value = false;
-  for (unsigned int i = 0; i < cb_1.values().size(); i++) {
+  for (size_t i = 0; i < cb_1.values().size(); i++) {
     if (value == cb_1.values()[i]) {
       got_value = true;
       break;

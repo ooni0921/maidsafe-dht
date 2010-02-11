@@ -36,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/transporthandler-api.h"
 
 namespace kad {
-const int kRpcNatPingTimeout = 3;
+const boost::uint32_t kRpcNatPingTimeout = 3;
 class NatRpcs {
  public:
   NatRpcs(rpcprotocol::ChannelManager *ch_manager, transport::TransportHandler

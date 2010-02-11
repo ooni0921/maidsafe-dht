@@ -50,7 +50,7 @@ bool ChannelManager::CancelPendingRequest(const boost::uint32_t &req_id) {
 }
 
 void ChannelManager::AddReqToTimer(const boost::uint32_t &req_id,
-      const int &timeout) {
+      const boost::uint64_t &timeout) {
   pimpl_->AddReqToTimer(req_id, timeout);
 }
 

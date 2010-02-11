@@ -148,12 +148,12 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
 
 KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
   transport::TransportHandler *ptrans_handler,
-  node_type type, const boost::uint16_t k, const int &alpha, const int
-  &beta, const int &refresh_time, const std::string &private_key, const
-  std::string &public_key, const bool &port_forwarded, const bool
-  &use_upnp) : routingtable_mutex_(), kadconfig_mutex_(),
-  extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
-  activeprobes_mutex_(), pendingcts_mutex_(),
+  node_type type, const boost::uint16_t &k, const boost::uint16_t &alpha,
+  const boost::uint16_t &beta, const boost::uint32_t &refresh_time, const
+  std::string &private_key, const std::string &public_key,
+  const bool &port_forwarded, const bool &use_upnp) : routingtable_mutex_(),
+  kadconfig_mutex_(), extendshortlist_mutex_(), joinbootstrapping_mutex_(),
+  leave_mutex_(), activeprobes_mutex_(), pendingcts_mutex_(),
   ptimer_(new base::CallLaterTimer), pchannel_manager_(channel_manager),
   ptrans_handler_(ptrans_handler), trans_id_(0), pservice_channel_(),
   pdata_store_(new DataStore(refresh_time)), alternative_store_(NULL),
@@ -292,18 +292,17 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
       rv_port_ = 0;
     } else if (result_msg.nat_type() == 1) {
       // Direct connection
-      DLOG(INFO) << "Node is behind a NAT of type 1" << std::endl;
+      DLOG(INFO) << "Node is behind NAT of type 1\n";
       rv_ip_ = "";
       rv_port_ = 0;
     } else if (result_msg.nat_type() == 2) {
       // need rendezvous server
-      DLOG(INFO) << "Node is behind a NAT of type 2 (needs rendezvous server)"
-           << std::endl;
+      DLOG(INFO) << "Node is behind NAT of type 2 (needs rendezvous server)\n";
       rv_ip_ = bootstrap_node.host_ip();
       rv_port_ = bootstrap_node.host_port();
     } else if (result_msg.nat_type() == 3) {
       // behind symmetric router or no connection
-      DLOG(INFO) << "Node is behind a NAT of type 3" << std::endl;
+      DLOG(INFO) << "Node is behind NAT of type 3\n";
       UPnPMap(local_host_port_);
       if (upnp_mapped_port_ != 0) {
         host_port_ = upnp_mapped_port_;
@@ -372,7 +371,7 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
       UnRegisterKadService();
     }
     kadrpcs_.set_info(contact_info());
-    DLOG(WARNING) << "No more bootstrap contacts" << std::endl;
+    DLOG(WARNING) << "No more bootstrap contacts\n";
     std::string local_result_str(local_result.SerializeAsString());
     cb(local_result_str);
     return;
@@ -610,15 +609,14 @@ void KNodeImpl::SaveBootstrapContacts() {
   try {
     std::vector<Contact> exclude_contacts, bs_contacts;
     bool reached_max = false;
-    int added_nodes = 0;
+    boost::uint32_t added_nodes = 0;
     {
       boost::mutex::scoped_lock gaurd(routingtable_mutex_);
-      int kbuckets = prouting_table_->KbucketSize();
-      for (int i = 0; i < kbuckets && !reached_max; ++i) {
+      size_t kbuckets = prouting_table_->KbucketSize();
+      for (size_t i = 0; i < kbuckets && !reached_max; ++i) {
         std::vector<Contact> contacts_i;
         prouting_table_->GetContacts(i, &contacts_i, exclude_contacts);
-        for (int j = 0; j < static_cast<int>(contacts_i.size()) &&
-             !reached_max; ++j) {
+        for (size_t j = 0; j < contacts_i.size() && !reached_max; ++j) {
         // store only the nodes that are directly connected to bootstrap vector
           if (contacts_i[j].rendezvous_ip() == "" &&
               contacts_i[j].rendezvous_port() == 0) {
@@ -679,7 +677,7 @@ void KNodeImpl::SaveBootstrapContacts() {
   }
 }
 
-int KNodeImpl::LoadBootstrapContacts() {
+boost::int16_t KNodeImpl::LoadBootstrapContacts() {
   // Get the saved contacts - most recent are listed last
   base::KadConfig kad_config;
   try {
@@ -687,13 +685,12 @@ int KNodeImpl::LoadBootstrapContacts() {
       std::ifstream input_(kad_config_path_.string().c_str(),
                            std::ios::in | std::ios::binary);
       if (!kad_config.ParseFromIstream(&input_)) {
-        DLOG(ERROR) << "Failed to parse kademlia config file" << std::endl;
+        DLOG(ERROR) << "Failed to parse kademlia config file\n";
         return -1;
       }
       input_.close();
       if (0 == kad_config.contact_size()) {
-        DLOG(ERROR) << "Kademlia config file has no bootstrap nodes"
-             << std::endl;
+        DLOG(ERROR) << "Kademlia config file has no bootstrap nodes\n";
         return -1;
       }
     }
@@ -795,8 +792,9 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
       callback_data.data->closest_nodes.size() || del_req.IsInitialized()) {
     // Finish storing
     StoreResponse store_value_result;
-    double d = K_ * kMinSuccessfulPecentageStore;
-    if (callback_data.data->save_nodes >= static_cast<unsigned int>(d)) {
+    boost::uint32_t d(static_cast<boost::uint32_t>
+      (K_ * kMinSuccessfulPecentageStore));
+    if (callback_data.data->save_nodes >= d) {
       // Succeeded - min. number of copies were stored
       store_value_result.set_result(kRpcResultSuccess);
     } else if (del_req.IsInitialized()) {
@@ -897,7 +895,7 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
       if (type_ != CLIENT) {
         // If this node itself is closer to the key than the last (furtherest)
         // node in the returned list, store the value at this node as well.
-        if (static_cast<int>(closest_nodes.size()) < K_) {
+        if (closest_nodes.size() < K_) {
           stored_local = true;
         } else {
           Contact furthest_contact = closest_nodes[closest_nodes.size()-1];
@@ -918,11 +916,9 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
           } else {
             local_result = RefreshValueLocal(key, local_value, ttl);
           }
-          if (local_result &&
-              static_cast<int>(closest_nodes.size()) >= K_) {
+          if (local_result && closest_nodes.size() >= K_) {
             closest_nodes.pop_back();
-            DLOG(INFO) << "StoreValue_ExecuteStoreRPCs storing locally"
-                 << std::endl;
+            DLOG(INFO) << "StoreValue_ExecuteStoreRPCs storing locally\n";
           }
         }
       }
@@ -933,7 +929,7 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
         data->save_nodes++;
       // decide the parallel level
       int parallel_size;
-      if (static_cast<int>(data->closest_nodes.size())>alpha_)
+      if (data->closest_nodes.size() > alpha_)
         parallel_size = alpha_;
       else
         parallel_size = data->closest_nodes.size();
@@ -1274,22 +1270,22 @@ bool KNodeImpl::RefreshValueLocal(const std::string &key,
   return StoreValueLocal(key, value, ttl);
 }
 
-void KNodeImpl::GetRandomContacts(const int &count,
+void KNodeImpl::GetRandomContacts(const boost::uint16_t &count,
       const std::vector<Contact> &exclude_contacts,
       std::vector<Contact> *contacts) {
   contacts->clear();
   std::vector<Contact> all_contacts;
   {
     boost::mutex::scoped_lock gaurd(routingtable_mutex_);
-    int kbuckets = prouting_table_->KbucketSize();
-    for (int i = 0; i < kbuckets; ++i) {
+    size_t kbuckets = prouting_table_->KbucketSize();
+    for (size_t i = 0; i < kbuckets; ++i) {
       std::vector<kad::Contact> contacts_i;
       prouting_table_->GetContacts(i, &contacts_i, exclude_contacts);
-      for (int j = 0; j < static_cast<int>(contacts_i.size()); ++j)
+      for (size_t j = 0; j < contacts_i.size(); ++j)
         all_contacts.push_back(contacts_i[j]);
     }
   }
-  if (static_cast<int>(all_contacts.size()) < count+1) {
+  if (static_cast<boost::uint16_t>(all_contacts.size()) < count + 1) {
     *contacts = all_contacts;
     return;
   }
@@ -1303,13 +1299,12 @@ void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
   if (stopping_)
     return;
   if (dead_server) {
-    DLOG(WARNING) << "(" << local_host_port_ << ") -- Failed to ping RV server"
-      << std::endl;
+    DLOG(WARNING) << "(" << local_host_port_ << ")--Failed to ping RV server\n";
     if (rv_ip_ == "" && rv_port_ == 0) {
       // node has no rendezvous server, it does not need to rejoin, just finding
       // out if it is offline by trying to connect with one of its contacts
       std::vector<Contact> ctcs, ex_ctcs;
-      for (int i = 0; i < prouting_table_->KbucketSize(); i++) {
+      for (size_t i = 0; i < prouting_table_->KbucketSize(); i++) {
         std::vector<Contact> tmp_ctcs;
         prouting_table_->GetContacts(i, &tmp_ctcs, ex_ctcs);
         for (unsigned int j = 0; j < tmp_ctcs.size(); j++)
@@ -1346,14 +1341,13 @@ void KNodeImpl::ReBootstrapping_Callback(const std::string &result) {
     // TODO(David): who should we inform if after trying to bootstrap again
     // because the rendezvous server died, the bootstrap operation fails?
     DLOG(WARNING) << "(" << local_host_port_ << ") -- Failed to rejoin ..."
-        << " Retrying."<< std::endl;
+        << " Retrying.\n";
     is_joined_ = false;
     stopping_ = false;
     Join(node_id_, kad_config_path_.string(),
          boost::bind(&KNodeImpl::ReBootstrapping_Callback, this, _1));
   } else {
-    DLOG(INFO) << "(" << local_host_port_ << ") Rejoining successful."
-        << std::endl;
+    DLOG(INFO) << "(" << local_host_port_ << ") Rejoining successful.\n";
     is_joined_ = true;
     premote_service_->set_node_joined(true);
     premote_service_->set_node_info(contact_info());
@@ -1421,7 +1415,7 @@ connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
 void KNodeImpl::UPnPMap(boost::uint16_t host_port) {
   // Get a UPnP mapping port
   upnp_mapped_port_ = 0;
-  DLOG(INFO) << "Initialising UPNP" << std::endl;
+  DLOG(INFO) << "Initialising UPNP\n";
   // ignore result, in case it's already initialised
   upnp_.InitControlPoint();
 
@@ -1438,7 +1432,7 @@ void KNodeImpl::UPnPMap(boost::uint16_t host_port) {
 }
 
 void KNodeImpl::UnMapUPnP() {
-  DLOG(INFO) << "Deleting the UPnP mapped port" << std::endl;
+  DLOG(INFO) << "Deleting the UPnP mapped port\n";
   upnp_.DeletePortMapping(upnp_mapped_port_, upnp::kUdp);
   upnp_mapped_port_ = 0;
 }
@@ -1605,8 +1599,7 @@ void KNodeImpl::SearchIteration(boost::shared_ptr<IterativeLookUpData> data) {
   activeprobes_mutex_.lock();
   unsigned int remaining_of_iter = data->current_alpha.size();
   activeprobes_mutex_.unlock();
-  if (remaining_of_iter > static_cast<unsigned int>(beta_)
-      || data->wait_for_key) {
+  if (remaining_of_iter > beta_ || data->wait_for_key) {
     return;
   }
 
@@ -2172,8 +2165,8 @@ void KNodeImpl::RefreshValue(const std::string &key,
 
 void KNodeImpl::RefreshValueCallback(const std::string &result,
       const std::string &key, const std::string &value,
-      const boost::int32_t &ttl, boost::shared_ptr<int> refreshes_done,
-      const int &total_refreshes) {
+      const boost::int32_t &ttl, boost::shared_ptr<boost::uint32_t>
+      refreshes_done, const boost::uint32_t &total_refreshes) {
   if (!is_joined_ || !refresh_routine_started_  || stopping_)
     return;
   StoreResponse refresh_result;
@@ -2195,9 +2188,9 @@ void KNodeImpl::RefreshValuesRoutine() {
       ptimer_->AddCallLater(2000, boost::bind(&KNodeImpl::RefreshValuesRoutine,
         this));
     } else  {
-      boost::shared_ptr<int> refreshes_done(new int);
-      *refreshes_done = 0;
-      for (unsigned int i = 0; i < values.size(); i++) {
+      boost::shared_ptr<boost::uint32_t> refreshes_done(new boost::uint32_t(0));
+      // *refreshes_done = 0;
+      for (size_t i = 0; i < values.size(); i++) {
         switch (values[i].del_status_) {
           case NOT_DELETED: RefreshValue(values[i].key_, values[i].value_,
                               values[i].ttl_,
@@ -2264,7 +2257,7 @@ void KNodeImpl::DelValue_ExecuteDeleteRPCs(const std::string &result,
         ++data->del_nodes;
       // decide the parallel level
       int parallel_size;
-      if (static_cast<int>(data->closest_nodes.size())>alpha_)
+      if (data->closest_nodes.size() > alpha_)
         parallel_size = alpha_;
       else
         parallel_size = data->closest_nodes.size();
@@ -2361,8 +2354,9 @@ void KNodeImpl::DelValue_IterativeDeleteValue(const DeleteResponse *response,
       callback_data.data->closest_nodes.size()) {
     // Finish storing
     DeleteResponse del_value_result;
-    double d = K_ * kMinSuccessfulPecentageStore;
-    if (callback_data.data->del_nodes >= static_cast<unsigned int>(d)) {
+    boost::uint32_t d(static_cast<boost::uint32_t>
+      (K_ * kMinSuccessfulPecentageStore));
+    if (callback_data.data->del_nodes >= d) {
       // Succeeded - min. number of copies were stored
       del_value_result.set_result(kRpcResultSuccess);
     } else {

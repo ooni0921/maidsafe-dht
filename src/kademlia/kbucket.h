@@ -44,7 +44,7 @@ class KBucket {
   // The lower and upper boundary for the range in the 160-bit ID
   // space covered by this k-bucket
   KBucket(const BigInt &range_min, const BigInt &range_max,
-      const int &K = kad::K);
+      const boost::uint16_t &K = kad::K);
   ~KBucket();
   // add a new contact to the k-bucket
   KBucketExitCode AddContact(const Contact &new_contact);
@@ -52,7 +52,8 @@ class KBucket {
   bool GetContact(const std::string &node_id, Contact *contact);
   // Returns a list containing up to the first count number of contacts
   // excluding the list of contacts provided.
-  void GetContacts(int count, const std::vector<Contact> &exclude_contacts,
+  void GetContacts(const boost::uint16_t &count,
+      const std::vector<Contact> &exclude_contacts,
       std::vector<Contact> *contacts);
   // remove the existing contact with the specified node_id
   void RemoveContact(const std::string &node_id, const bool &force);
@@ -62,7 +63,7 @@ class KBucket {
   // k-bucket)
   bool KeyInRange(const std::string &key);
   // return the number of contacts in this k-bucket
-  int Size() const;
+  size_t Size() const;
   // returns last seen contact of the kbucket (end of the list)
   Contact LastSeenContact();
   boost::uint32_t last_accessed() const;
@@ -75,7 +76,7 @@ class KBucket {
   std::list<Contact> contacts_;
   BigInt range_min_;
   BigInt range_max_;
-  int K_;
+  boost::uint16_t K_;
 };
 }  // namespace kad
 
