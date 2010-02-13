@@ -335,8 +335,8 @@ ELSE(PYTHONINTERP_FOUND)
   MESSAGE("-- Didn't find python executable: style checking disabled.")
 ENDIF(PYTHONINTERP_FOUND)
 
-FIND_PACKAGE (PythonLibs REQUIRED)
-
+#FIND_PACKAGE (PythonLibs REQUIRED)
+#We have no need for this
 ###################################################################################################
 # All other libraries search                                                                      #
 ###################################################################################################

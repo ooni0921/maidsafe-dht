@@ -147,3 +147,4 @@ void divide(const mp_int<A,T>& x, const mp_int<A,T>& y, mp_int<A,T>& q, mp_int<A
 {
   detail::classic_divide(x, y, q, &r);
 }
+
