@@ -1293,6 +1293,11 @@ TEST_F(KNodeTest, FUNC_KAD_InvReqDeleteValue) {
 }
 
 int main(int argc, char **argv) {
+  google::InitGoogleLogging(argv[0]);
+#ifndef HAVE_GLOG
+  bool FLAGS_logtostderr;
+#endif
+  FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);
   testing::AddGlobalTestEnvironment(new Env);
   return RUN_ALL_TESTS();

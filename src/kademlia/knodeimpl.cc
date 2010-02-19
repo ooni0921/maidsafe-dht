@@ -1112,7 +1112,6 @@ void KNodeImpl::Ping_HandleResult(const PingResponse *response,
   } else {
     result_msg = *response;
     if (response->result() == kRpcResultSuccess) {
-      printf("Ping_HandleResult: RTT %f\n", callback_data.rpc_ctrler->rtt());
       AddContact(callback_data.remote_ctc, callback_data.rpc_ctrler->rtt(),
           false);
     } else {
