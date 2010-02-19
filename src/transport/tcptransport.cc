@@ -382,7 +382,7 @@ bool TCPTransport::GetPeerAddr(const boost::uint32_t &conn_id,
 }
 
 bool TCPTransport::HasReceivedData(const boost::uint32_t &connection_id,
-    int64_t *size) {
+    boost::int64_t *size) {
   std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
   boost::mutex::scoped_lock guard(conn_mutex_);
   it = connections_.find(connection_id);

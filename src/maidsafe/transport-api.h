@@ -86,8 +86,8 @@ class Transport {
   virtual bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr
       *addr) = 0;
   virtual bool ConnectionExists(const boost::uint32_t &connection_id) = 0;
-  virtual bool HasReceivedData(const boost::uint32_t &connection_id, int64_t
-      *size) = 0;
+  virtual bool HasReceivedData(const boost::uint32_t &connection_id,
+      boost::int64_t *size) = 0;
   virtual boost::uint16_t listening_port() = 0;
   virtual void StartPingRendezvous(const bool &directly_connected,
       const std::string &my_rendezvous_ip, const boost::uint16_t

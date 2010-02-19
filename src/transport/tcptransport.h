@@ -75,7 +75,8 @@ class TCPTransport : public Transport {
   struct sockaddr& peer_address();
   bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr *addr);
   bool ConnectionExists(const boost::uint32_t &connection_id);
-  bool HasReceivedData(const boost::uint32_t &connection_id, int64_t *size);
+  bool HasReceivedData(const boost::uint32_t &connection_id,
+    boost::int64_t *size);
   boost::uint16_t listening_port() { return listening_port_; }
   bool CanConnect(const std::string &ip, const uint16_t &port);
   bool IsPortAvailable(const boost::uint16_t &port);
