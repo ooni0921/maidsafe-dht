@@ -55,10 +55,11 @@ class Transport {
   virtual TransportType GetType() = 0;
   virtual boost::int16_t GetID() = 0;
   virtual void SetID(boost::int16_t id) = 0;
-  virtual int ConnectToSend(const std::string &remote_ip, const uint16_t
-      &remote_port, const std::string &local_ip, const uint16_t &local_port,
-      const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
-      const bool &keep_connection, boost::uint32_t *conn_id) = 0;
+  virtual int ConnectToSend(const std::string &remote_ip, const boost::uint16_t
+      &remote_port, const std::string &local_ip, const boost::uint16_t
+      &local_port, const std::string &rendezvous_ip, const boost::uint16_t
+      &rendezvous_port, const bool &keep_connection,
+      boost::uint32_t *conn_id) = 0;
   virtual int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t
       &conn_id, const bool &new_skt) = 0;
   virtual int Send(const std::string &data, const boost::uint32_t &conn_id,
@@ -93,9 +94,10 @@ class Transport {
       const std::string &my_rendezvous_ip, const boost::uint16_t
       &my_rendezvous_port) = 0;
   virtual void StopPingRendezvous() = 0;
-  virtual bool CanConnect(const std::string &ip, const uint16_t &port) = 0;
+  virtual bool CanConnect(const std::string &ip,
+      const boost::uint16_t &port) = 0;
   virtual bool IsAddrUsable(const std::string &local_ip,
-      const std::string &remote_ip, const uint16_t &remote_port) = 0;  // PV
+      const std::string &remote_ip, const boost::uint16_t &remote_port) = 0;  // PV
   virtual bool IsPortAvailable(const boost::uint16_t &port) = 0;  // PV
 };
 }  // namespace transport

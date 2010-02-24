@@ -138,10 +138,12 @@ std::string RandomString(int length) {
   for ( int i = 0 ; i < length ; ++i ) {
     boost::uint32_t num;
     if (!rand_num.IsConvertableToLong()) {
-      num = std::numeric_limits<uint32_t>::max() + static_cast<uint32_t>(\
-        rand_num.AbsoluteValue().ConvertToLong());
+      num = std::numeric_limits<boost::uint32_t>::max()
+        + static_cast<boost::uint32_t>(
+          rand_num.AbsoluteValue().ConvertToLong());
     } else {
-      num = static_cast<uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
+      num = static_cast<boost::uint32_t>(
+        rand_num.AbsoluteValue().ConvertToLong());
     }
     num = num % 122;
     if ( 48 > num )
@@ -228,8 +230,13 @@ boost::uint32_t generate_next_transaction_id(const boost::uint32_t &id) {
 void inet_ntoa(boost::uint32_t addr, char * ipbuf) {
   // TODO(dan): warning thrown on 64-bit machine
   const int sizer = 15;
-  snprintf(ipbuf, sizer, "%u.%u.%u.%u", (addr>>24)&0xFF, \
-    (addr>>16)&0xFF, (addr>>8)&0xFF, (addr>>0)&0xFF);
+  #ifdef __MSVC__
+    _snprintf(ipbuf, sizer, "%u.%u.%u.%u", (addr>>24)&0xFF, \
+      (addr>>16)&0xFF, (addr>>8)&0xFF, (addr>>0)&0xFF);
+  #else
+    snprintf(ipbuf, sizer, "%u.%u.%u.%u", (addr>>24)&0xFF, \
+      (addr>>16)&0xFF, (addr>>8)&0xFF, (addr>>0)&0xFF);
+  #endif
 }
 
 boost::uint32_t inet_aton(const char * buf) {
@@ -366,7 +373,11 @@ void get_net_interfaces(std::vector<struct device_struct> *alldevices) {
 
       char buf[128];
       if (name == NULL) {
-        snprintf(buf, sizeof(buf), "unnamed-%lu", i);
+        #ifdef __MSVC__
+          _snprintf(buf, sizeof(buf), "unnamed-%lu", i);
+        #else
+          snprintf(buf, sizeof(buf), "unnamed-%lu", i);
+        #endif
         name = buf;
         break;
       }
@@ -428,7 +439,7 @@ boost::int32_t random_32bit_integer() {
       CryptoPP::AutoSeededRandomPool rng;
       CryptoPP::Integer rand_num(rng, 32);
       if (!rand_num.IsConvertableToLong()) {
-        result = std::numeric_limits<int32_t>::max() +
+        result = std::numeric_limits<boost::int32_t>::max() +
         static_cast<boost::int32_t>(rand_num.AbsoluteValue().ConvertToLong());
       } else {
         result =  static_cast<boost::int32_t>(

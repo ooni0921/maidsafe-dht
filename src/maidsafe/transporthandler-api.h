@@ -111,7 +111,7 @@ class TransportHandler {
 
   bool IsAddrUsable(const std::string &local_ip,
                     const std::string &remote_ip,
-                    const uint16_t &remote_port,
+                    const boost::uint16_t &remote_port,
                     const boost::int16_t id);
   bool IsPortAvailable(const boost::uint16_t &port, const boost::int16_t id);
   bool RegisterOnMessage(boost::function<void(const std::string&,
@@ -132,9 +132,9 @@ class TransportHandler {
   virtual int ConnectToSend(const std::string &remote_ip,
                             const uint16_t &remote_port,
                             const std::string &local_ip,
-                            const uint16_t &local_port,
+                            const boost::uint16_t &local_port,
                             const std::string &rendezvous_ip,
-                            const uint16_t &rendezvous_port,
+                            const boost::uint16_t &rendezvous_port,
                             const bool &keep_connection,
                             boost::uint32_t *conn_id,
                             const boost::int16_t id);
@@ -166,7 +166,7 @@ class TransportHandler {
                            const boost::int16_t id);
   void StopPingRendezvous();
   bool CanConnect(const std::string &ip,
-                  const uint16_t &port,
+                  const boost::uint16_t &port,
                   const boost::int16_t id);
   void OnRPCMessage(const rpcprotocol::RpcMessage &request,
                     const boost::uint32_t &connection_id,

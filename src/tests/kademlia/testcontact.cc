@@ -43,8 +43,7 @@ class TestContact : public testing::Test {
 TEST_F(TestContact, BEH_KAD_GetIp_Port_NodeId) {
   std::string ip("192.168.1.55");
   std::string local_ip(ip);
-  uint16_t port(8888);
-  uint16_t local_port(port);
+  boost::uint16_t port(8888), local_port(port);
   std::string node_id(cry_obj.Hash("1238425", "", crypto::STRING_STRING,
       false));
   kad::Contact contact(node_id, ip, port, local_ip, local_port);

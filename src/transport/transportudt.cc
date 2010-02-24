@@ -51,11 +51,11 @@ void TransportUDT::CleanUp() {
 }
 
 int TransportUDT::ConnectToSend(const std::string &remote_ip,
-                                const uint16_t &remote_port,
+                                const boost::uint16_t &remote_port,
                                 const std::string &local_ip,
-                                const uint16_t &local_port,
+                                const boost::uint16_t &local_port,
                                 const std::string &rendezvous_ip,
-                                const uint16_t &rendezvous_port,
+                                const boost::uint16_t &rendezvous_port,
                                 const bool &keep_connection,
                                 boost::uint32_t *conn_id) {
   return pimpl_->ConnectToSend(remote_ip, remote_port, local_ip, local_port,
@@ -158,13 +158,14 @@ void TransportUDT::StopPingRendezvous() {
   pimpl_->StopPingRendezvous();
 }
 
-bool TransportUDT::CanConnect(const std::string &ip, const uint16_t &port) {
+bool TransportUDT::CanConnect(const std::string &ip,
+      const boost::uint16_t &port) {
   return pimpl_->CanConnect(ip, port);
 }
 
 bool TransportUDT::IsAddrUsable(const std::string &local_ip,
                                 const std::string &remote_ip,
-                                const uint16_t &remote_port) {
+                                const boost::uint16_t &remote_port) {
   return pimpl_->IsAddrUsable(local_ip, remote_ip, remote_port);
 }
 

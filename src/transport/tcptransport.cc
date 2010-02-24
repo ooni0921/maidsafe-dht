@@ -211,7 +211,8 @@ bool TCPTransport::RegisterOnSend(boost::function < void(const boost::uint32_t&,
   return false;
 }
 
-bool TCPTransport::CanConnect(const std::string &ip, const uint16_t &port) {
+bool TCPTransport::CanConnect(const std::string &ip,
+      const boost::uint16_t &port) {
   if (stop_)
     return false;
   TCPConnection conn(io_service_, 0, 0);

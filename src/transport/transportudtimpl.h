@@ -38,10 +38,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <set>
 #include <string>
 #include <vector>
-#include "udt/udt.h"
-#include "protobuf/transport_message.pb.h"
 #include "maidsafe/maidsafe-dht_config.h"
+#include "protobuf/transport_message.pb.h"
 #include "maidsafe/transport-api.h"
+#include "udt/udt.h"
 
 namespace transport {
 
@@ -86,11 +86,11 @@ class TransportUDTImpl {
   void SetID(const boost::int16_t id) { trans_id_ = id; }
   static void CleanUp();
   int ConnectToSend(const std::string &remote_ip,
-                   const uint16_t &remote_port,
+                   const boost::uint16_t &remote_port,
                    const std::string &local_ip,
-                   const uint16_t &local_port,
+                   const boost::uint16_t &local_port,
                    const std::string &rendezvous_ip,
-                   const uint16_t &rendezvous_port,
+                   const boost::uint16_t &rendezvous_port,
                    const bool &keep_connection,
                    boost::uint32_t *conn_id);
   int Send(const rpcprotocol::RpcMessage &data,
@@ -131,10 +131,10 @@ class TransportUDTImpl {
                            const std::string &my_rendezvous_ip,
                            const boost::uint16_t &my_rendezvous_port);
   void StopPingRendezvous();
-  bool CanConnect(const std::string &ip, const uint16_t &port);
+  bool CanConnect(const std::string &ip, const boost::uint16_t &port);
   bool IsAddrUsable(const std::string &local_ip,
                     const std::string &remote_ip,
-                    const uint16_t &remote_port);
+                    const boost::uint16_t &remote_port);
   bool IsPortAvailable(const boost::uint16_t &port);
  private:
   TransportUDTImpl& operator=(const TransportUDTImpl&);
@@ -146,7 +146,7 @@ class TransportUDTImpl {
       const boost::uint32_t &conn_id, const bool &new_skt, const bool &is_rpc);
   void SendHandle();
   int Connect(UDTSOCKET *skt, const std::string &peer_address,
-      const uint16_t &peer_port, bool short_timeout);
+      const boost::uint16_t &peer_port, bool short_timeout);
   void PingHandle();
   void AcceptConnHandler();
   void ReceiveHandler();

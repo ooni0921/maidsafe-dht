@@ -54,9 +54,10 @@ class TCPTransport : public Transport {
   int Start(const boost::uint16_t &port);
   int StartLocal(const boost::uint16_t &port);
   int ConnectToSend(const std::string &remote_ip, const uint16_t
-      &remote_port, const std::string &local_ip, const uint16_t &local_port,
-      const std::string &rendezvous_ip, const uint16_t &rendezvous_port,
-      const bool &keep_connection, boost::uint32_t *conn_id);
+      &remote_port, const std::string &local_ip,
+      const boost::uint16_t &local_port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, const bool &keep_connection,
+      boost::uint32_t *conn_id);
   int Send(const rpcprotocol::RpcMessage &data, const boost::uint32_t
       &conn_id, const bool &new_skt);
   int Send(const std::string &data, const boost::uint32_t &conn_id,
@@ -78,11 +79,11 @@ class TCPTransport : public Transport {
   bool HasReceivedData(const boost::uint32_t &connection_id,
     boost::int64_t *size);
   boost::uint16_t listening_port() { return listening_port_; }
-  bool CanConnect(const std::string &ip, const uint16_t &port);
+  bool CanConnect(const std::string &ip, const boost::uint16_t &port);
   bool IsPortAvailable(const boost::uint16_t &port);
   // This test for address does not apply for tcp since it always works
   bool IsAddrUsable(const std::string &, const std::string &,
-      const uint16_t &) { return true; }
+      const boost::uint16_t &) { return true; }
   // Rendezvous servers are not used in TCP
   void StartPingRendezvous(const bool&, const std::string&,
       const boost::uint16_t&) {}

@@ -61,7 +61,7 @@ int PDRoutingTableHandler::GetClosestRtt(const float &rtt,
   routingtable::index<t_rtt>::type::iterator indx1 = rtt_indx.upper_bound(rtt);
   bool found_closest = false;
   float distance_ideal = -1;
-  std::set<std::string>::iterator set_it;
+  std::set<std::string>::const_iterator set_it;
   while (indx0 != rtt_indx.end() && !found_closest) {
     set_it = exclude_ids.find(indx0->kademlia_id_);
     if (set_it == exclude_ids.end()) {

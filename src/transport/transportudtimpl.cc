@@ -593,7 +593,7 @@ void TransportUDTImpl::SendHandle() {
 
 int TransportUDTImpl::Connect(UDTSOCKET *skt,
                           const std::string &peer_address,
-                          const uint16_t &peer_port,
+                          const boost::uint16_t &peer_port,
                           bool) {
   if (stop_)
     return -1;
@@ -735,7 +735,8 @@ void TransportUDTImpl::PingHandle() {
   }
 }
 
-bool TransportUDTImpl::CanConnect(const std::string &ip, const uint16_t &port) {
+bool TransportUDTImpl::CanConnect(const std::string &ip,
+      const boost::uint16_t &port) {
   UDTSOCKET skt;
   std::string dec_lip;
   if (ip.size() == 4)
@@ -849,7 +850,7 @@ int TransportUDTImpl::Send(const std::string &data,
 }
 
 bool TransportUDTImpl::IsAddrUsable(const std::string &local_ip,
-      const std::string &remote_ip, const uint16_t &remote_port) {
+      const std::string &remote_ip, const boost::uint16_t &remote_port) {
   // Ensure that local and remote addresses aren't empty
   if (local_ip.empty() || remote_ip.empty())
     return false;
@@ -919,9 +920,9 @@ bool TransportUDTImpl::GetPeerAddr(const boost::uint32_t &conn_id,
 }
 
 int TransportUDTImpl::ConnectToSend(const std::string &remote_ip,
-    const uint16_t &remote_port, const std::string &local_ip,
-    const uint16_t &local_port, const std::string &rendezvous_ip,
-    const uint16_t &rendezvous_port, const bool &keep_connection,
+    const boost::uint16_t &remote_port, const std::string &local_ip,
+    const boost::uint16_t &local_port, const std::string &rendezvous_ip,
+    const boost::uint16_t &rendezvous_port, const bool &keep_connection,
     boost::uint32_t *conn_id) {
   UDTSOCKET skt;
   // the node receiver is directly connected, no rendezvous information

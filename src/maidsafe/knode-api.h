@@ -343,7 +343,8 @@ class KNode {
   * not (REMOTE)
   */
   connect_to_node CheckContactLocalAddress(const std::string &id,
-      const std::string &ip, const uint16_t &port, const std::string &ext_ip);
+      const std::string &ip, const boost::uint16_t &port,
+      const std::string &ext_ip);
   /**
   * Updates the database routing table in the entry for the node id passed to be
   * to be contacted only via the remote endpoint.

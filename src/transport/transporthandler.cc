@@ -157,7 +157,7 @@ bool TransportHandler::IsRegistered(transport::Transport *t) {
 
 bool TransportHandler::IsAddrUsable(const std::string &local_ip,
                                     const std::string &remote_ip,
-                                    const uint16_t &remote_port,
+                                    const boost::uint16_t &remote_port,
                                     const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
@@ -229,11 +229,11 @@ bool TransportHandler::RegisterOnServerDown(
 }
 
 int TransportHandler::ConnectToSend(const std::string &remote_ip,
-                                    const uint16_t &remote_port,
+                                    const boost::uint16_t &remote_port,
                                     const std::string &local_ip,
-                                    const uint16_t &local_port,
+                                    const boost::uint16_t &local_port,
                                     const std::string &rendezvous_ip,
-                                    const uint16_t &rendezvous_port,
+                                    const boost::uint16_t &rendezvous_port,
                                     const bool &keep_connection,
                                     boost::uint32_t *conn_id,
                                     const boost::int16_t id) {
@@ -389,7 +389,7 @@ void TransportHandler::StopPingRendezvous() {
 }
 
 bool TransportHandler::CanConnect(const std::string &ip,
-                                  const uint16_t &port,
+                                  const boost::uint16_t &port,
                                   const boost::int16_t id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
