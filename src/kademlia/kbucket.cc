@@ -63,8 +63,8 @@ KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
   int i = 0;
   // Check if the contact is already in the kbucket to remove it from
   // it and adding it at the top of it
-  for (std::list<Contact>::iterator it = contacts_.begin();
-      it != contacts_.end()&& position == -1; it++) {
+  for (std::list<Contact>::const_iterator it = contacts_.begin();
+      it != contacts_.end() && position == -1; it++) {
     Contact current_element = *it;
     if (new_contact_local == current_element)
       position = i;
@@ -76,7 +76,7 @@ KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
     contacts_.erase(it);
   }
 
-  if (static_cast<boost::uint16_t>(contacts_.size()) == K_)
+  if (contacts_.size() == K_)
     return FULL;
 
   contacts_.push_front(new_contact_local);
@@ -86,7 +86,7 @@ KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
 void KBucket::RemoveContact(const std::string &node_id, const bool &force) {
   int position = -1;
   int i = 0;
-  for (std::list<Contact>::iterator it = contacts_.begin();
+  for (std::list<Contact>::const_iterator it = contacts_.begin();
     it != contacts_.end(); it++) {
     Contact current_element = *it;
     if (current_element.node_id() == node_id) {
@@ -111,7 +111,7 @@ void KBucket::RemoveContact(const std::string &node_id, const bool &force) {
 
 bool KBucket::GetContact(const std::string &node_id, Contact *contact) {
   bool result = false;
-  for (std::list<Contact>::iterator it = contacts_.begin();
+  for (std::list<Contact>::const_iterator it = contacts_.begin();
     it != contacts_.end() && !result; it++) {
     Contact current_element = *it;
     if (current_element.node_id() == node_id) {
@@ -127,7 +127,7 @@ void KBucket::GetContacts(const boost::uint16_t &count,
       std::vector<Contact> *contacts) {
     bool insert;
     boost::uint16_t i(0);
-    for (std::list<Contact>::iterator it = contacts_.begin();
+    for (std::list<Contact>::const_iterator it = contacts_.begin();
       it != contacts_.end() && i < count; it++) {
       insert = true;
       Contact current_element = *it;

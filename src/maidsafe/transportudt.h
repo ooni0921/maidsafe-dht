@@ -48,11 +48,11 @@ class TransportUDT:public Transport {
   void SetID(const boost::int16_t id);
   static void CleanUp();
   int ConnectToSend(const std::string &remote_ip,
-                   const uint16_t &remote_port,
+                   const boost::uint16_t &remote_port,
                    const std::string &local_ip,
-                   const uint16_t &local_port,
+                   const boost::uint16_t &local_port,
                    const std::string &rendezvous_ip,
-                   const uint16_t &rendezvous_port,
+                   const boost::uint16_t &rendezvous_port,
                    const bool &keep_connection,
                    boost::uint32_t *conn_id);
   int Send(const rpcprotocol::RpcMessage &data,
@@ -93,10 +93,10 @@ class TransportUDT:public Transport {
                            const std::string &my_rendezvous_ip,
                            const boost::uint16_t &my_rendezvous_port);
   void StopPingRendezvous();
-  bool CanConnect(const std::string &ip, const uint16_t &port);
+  bool CanConnect(const std::string &ip, const boost::uint16_t &port);
   bool IsAddrUsable(const std::string &local_ip,
                     const std::string &remote_ip,
-                    const uint16_t &remote_port);
+                    const boost::uint16_t &remote_port);
   bool IsPortAvailable(const boost::uint16_t &port);
  private:
   boost::shared_ptr<TransportUDTImpl> pimpl_;

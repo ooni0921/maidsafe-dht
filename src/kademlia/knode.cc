@@ -160,7 +160,7 @@ void KNode::HandleDeadRendezvousServer(const bool &dead_server) {
 
 connect_to_node KNode::CheckContactLocalAddress(const std::string &id,
                                                 const std::string &ip,
-                                                const uint16_t &port,
+                                                const boost::uint16_t &port,
                                                 const std::string &ext_ip) {
   return pimpl_->CheckContactLocalAddress(id, ip, port, ext_ip);
 }

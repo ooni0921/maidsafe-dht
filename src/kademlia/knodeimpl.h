@@ -274,7 +274,8 @@ class KNodeImpl {
       std::vector<Contact> *contacts);
   void HandleDeadRendezvousServer(const bool &dead_server);
   connect_to_node CheckContactLocalAddress(const std::string &id,
-      const std::string &ip, const uint16_t &port, const std::string &ext_ip);
+      const std::string &ip, const boost::uint16_t &port,
+      const std::string &ext_ip);
   void UpdatePDRTContactToRemote(const std::string &node_id,
                                  const std::string &host_ip);
   ContactInfo contact_info() const;

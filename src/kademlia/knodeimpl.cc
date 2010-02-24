@@ -704,7 +704,7 @@ boost::int16_t KNodeImpl::LoadBootstrapContacts() {
   for (int i = 0; i < kad_config.contact_size(); ++i) {
     std::string dec_id = base::DecodeFromHex(kad_config.contact(i).node_id());
     Contact bootstrap_contact(dec_id, kad_config.contact(i).ip(),
-        static_cast<uint16_t>(kad_config.contact(i).port()),
+        static_cast<boost::uint16_t>(kad_config.contact(i).port()),
         kad_config.contact(i).local_ip(), kad_config.contact(i).local_port());
     bootstrapping_nodes_.push_back(bootstrap_contact);
   }
@@ -1380,7 +1380,8 @@ void KNodeImpl::UnRegisterKadService() {
 }
 
 connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
-      const std::string &ip, const uint16_t &port, const std::string &ext_ip) {
+      const std::string &ip, const boost::uint16_t &port,
+      const std::string &ext_ip) {
   if (ip == "" || port == 0)
     return REMOTE;
   int result = (*base::PDRoutingTable::getInstance())[
