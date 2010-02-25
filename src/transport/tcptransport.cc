@@ -31,16 +31,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace transport {
 
-void fake_call() {
-  printf("at fake call called by io service\n");
-}
-
 TCPTransport::TCPTransport()
     : id_(-1), listening_port_(0), outgoing_port_(0), current_id_(0),
       io_service_(), acceptor_(io_service_), stop_(true), rpcmsg_notifier_(),
       msg_notifier_(), service_routine_(), connections_(), conn_mutex_(),
       msg_handler_mutex_(), rpcmsg_handler_mutex_(), send_handler_mutex_(),
-      peer_addr_() {
+      peer_addr_(), new_connection_() {
 }
 
 TCPTransport::~TCPTransport() {
@@ -75,21 +71,20 @@ int TCPTransport::Start(const boost::uint16_t &port) {
     return 1;
   }
 
-  tcpconnection_ptr new_connection(new TCPConnection(io_service_,
+  new_connection_.reset(new TCPConnection(io_service_,
     boost::bind(&TCPTransport::HandleConnSend, this, _1, _2, _3, _4),
     boost::bind(&TCPTransport::HandleConnRecv, this, _1, _2, _3)));
 
-  acceptor_.async_accept(new_connection->Socket(), peer_addr_,
-    boost::bind(&TCPTransport::HandleAccept, this, new_connection,
+  acceptor_.async_accept(new_connection_->Socket(), peer_addr_,
+    boost::bind(&TCPTransport::HandleAccept, this,
       boost::asio::placeholders::error));
   stop_ = false;
   try {
     service_routine_.reset(new boost::thread(
       boost::bind(&TCPTransport::StartService, this)));
-  } catch(const std::exception&) {
+  } catch(...) {
     stop_ = true;
     acceptor_.close();
-//    delete new_connection;
     return 1;
   }
   current_id_ = base::generate_next_transaction_id(current_id_);
@@ -128,21 +123,20 @@ int TCPTransport::StartLocal(const boost::uint16_t &port) {
     return 1;
   }
 
-  tcpconnection_ptr new_connection(new TCPConnection(io_service_,
+  new_connection_.reset(new TCPConnection(io_service_,
     boost::bind(&TCPTransport::HandleConnSend, this, _1, _2, _3, _4),
     boost::bind(&TCPTransport::HandleConnRecv, this, _1, _2, _3)));
 
-  acceptor_.async_accept(new_connection->Socket(),
-    boost::bind(&TCPTransport::HandleAccept, this, new_connection,
+  acceptor_.async_accept(new_connection_->Socket(),
+    boost::bind(&TCPTransport::HandleAccept, this,
       boost::asio::placeholders::error));
   stop_ = false;
   try {
     service_routine_.reset(new boost::thread(
       boost::bind(&TCPTransport::StartService, this)));
-  } catch(const std::exception &e) {
+  } catch(...) {
     stop_ = true;
     acceptor_.close();
-//    delete new_connection;
     return 1;
   }
   current_id_ = base::generate_next_transaction_id(current_id_);
@@ -160,13 +154,12 @@ void TCPTransport::Stop() {
 }
 
 void TCPTransport::HandleStop() {
+  acceptor_.close();
   boost::mutex::scoped_lock guard(conn_mutex_);
   std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
   for (it = connections_.begin(); it != connections_.end(); ++it) {
     it->second->Close();
-//    delete it->second;
   }
-  acceptor_.close();
   connections_.clear();
   stop_ = true;
 }
@@ -177,7 +170,6 @@ void TCPTransport::CloseConnection(const boost::uint32_t &conn_id) {
   it = connections_.find(conn_id);
   if (it != connections_.end()) {
     it->second->Close();
-//    delete it->second;
     connections_.erase(conn_id);
   }
 }
@@ -261,29 +253,29 @@ bool TCPTransport::IsPortAvailable(const boost::uint16_t &port) {
   return true;
 }
 
-void TCPTransport::HandleAccept(tcpconnection_ptr conn,
-    const boost::system::error_code &ec) {
+void TCPTransport::HandleAccept(const boost::system::error_code &ec) {
   if (ec) {
     DLOG(ERROR) << "TCP(" << listening_port_ <<
       ") Error accepting a connection: " << ec << " - " << ec.message() << "\n";
-    if (ec == boost::asio::error::operation_aborted)
+    if (ec == boost::asio::error::operation_aborted) {
       return;
+    }
     Stop();
     return;
   }
   {
     boost::mutex::scoped_lock guard(conn_mutex_);
-    connections_[current_id_] = conn;
-    conn->set_conn_id(current_id_);
+    connections_[current_id_] = new_connection_;
+    new_connection_->set_conn_id(current_id_);
     current_id_ = base::generate_next_transaction_id(current_id_);
   }
-  conn->StartReceiving();
-  tcpconnection_ptr new_connection(new TCPConnection(io_service_,
+  new_connection_->StartReceiving();
+  new_connection_.reset(new TCPConnection(io_service_,
     boost::bind(&TCPTransport::HandleConnSend, this, _1, _2, _3, _4),
     boost::bind(&TCPTransport::HandleConnRecv, this, _1, _2, _3)));
 
-  acceptor_.async_accept(new_connection->Socket(), peer_addr_,
-    boost::bind(&TCPTransport::HandleAccept, this, new_connection,
+  acceptor_.async_accept(new_connection_->Socket(), peer_addr_,
+    boost::bind(&TCPTransport::HandleAccept, this,
       boost::asio::placeholders::error));
 }
 
@@ -297,8 +289,6 @@ void TCPTransport::HandleConnSend(const boost::uint32_t &conn_id,
       std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
       it = connections_.find(conn_id);
       if (it != connections_.end()) {
-        it->second->Close();
-//        delete it->second;
         connections_.erase(it);
       }
     }
@@ -331,13 +321,14 @@ void TCPTransport::HandleConnRecv(const std::string &msg,
       it = connections_.find(conn_id);
       if (it != connections_.end()) {
         it->second->Close();
-//        delete it->second;
         connections_.erase(it);
       }
     }
     DLOG(ERROR) << "TCP(" << listening_port_ <<
-      ") Error reading from a socket: " << ec << " - " << ec.message() << "\n";
-    return;
+      ") Error reading from a socket: " << ec << " - " <<
+      ec.message() << "\n";
+    if (msg.empty())
+      return;
   }
 
   TransportMessage t_msg;
@@ -354,7 +345,6 @@ void TCPTransport::HandleConnRecv(const std::string &msg,
         ") Invalid Message received" << std::endl;
   }
 
-  // Starting the async read operation of the connection
   {
     boost::mutex::scoped_lock guard(conn_mutex_);
     std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
@@ -458,7 +448,6 @@ int TCPTransport::Send(const rpcprotocol::RpcMessage &data,
           connections_.find(conn_id);
       if (it != connections_.end()) {
         it->second->Close();
-//        delete it->second;
         connections_.erase(it);
       }
     }
@@ -487,7 +476,6 @@ int TCPTransport::Send(const std::string &data, const boost::uint32_t &conn_id,
           connections_.find(conn_id);
       if (it != connections_.end()) {
         it->second->Close();
-//        delete it->second;
         connections_.erase(it);
       }
     }

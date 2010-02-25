@@ -91,8 +91,7 @@ class TCPTransport : public Transport {
   bool RegisterOnServerDown(boost::function < void(const bool&,
         const std::string&, const boost::uint16_t&) >) { return true; }
  private:
-  void HandleAccept(tcpconnection_ptr conn,
-    const boost::system::error_code &ec);
+  void HandleAccept(const boost::system::error_code &ec);
   void HandleConnSend(const boost::uint32_t &conn_id, const bool &send_once,
     const bool &rpc_sent, const boost::system::error_code &ec);
   void HandleConnRecv(const std::string &msg, const boost::uint32_t &conn_id,
@@ -116,6 +115,7 @@ class TCPTransport : public Transport {
   boost::mutex conn_mutex_, msg_handler_mutex_, rpcmsg_handler_mutex_,
     send_handler_mutex_;
   boost::asio::ip::tcp::endpoint peer_addr_;
+  tcpconnection_ptr new_connection_;
 };
 }  // namespace transport
 

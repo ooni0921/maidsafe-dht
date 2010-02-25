@@ -88,7 +88,7 @@ void TCPConnection::ReadHandle(const bool &read_size,
     }
     DLOG(ERROR) << "error reading in a connection: " << ec << " - "
       << ec.message() << "\n";
-    read_notifier_("", conn_id_, ec);
+    read_notifier_(in_data_, conn_id_, ec);
     return;
   }
 
