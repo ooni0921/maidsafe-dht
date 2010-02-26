@@ -313,34 +313,15 @@ INCLUDE_DIRECTORIES(AFTER SYSTEM ${LIBS_INCLUDE_DIRS})
 MESSAGE("================================================================================")
 
 
-# Stephan: I have moved preprocessor defines for MSVC here to have 
-#          them with a little more explanation
-#          you may consider doing the same for other targets such as MingW
-IF(MSVC)
-  # these are apparently necessary for MSVC to work
-  ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
-  ADD_DEFINITIONS(-D_WIN32_WINNT=0x501)
-	
-  # This disables bogus warnings of the MS compiler trying to be witty.
-  # It annoys and hides real issues, so better keep it
-  ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-	
-  # This is important! Those switches are necessary for boot to work, and yet 
-  # they break ABI compatibility for C++ libs at least in Debug mode.
-  # In most 3rd party libs they should be set as well, but if you add one,
-  # remember this. SET THOSE VALUES EVERYWHERE YOU CAN!
-  ADD_DEFINITIONS(-D_SECURE_SCL=0)
-  ADD_DEFINITIONS(-D_HAS_ITERATOR_DEBUGGING=0)
-
-  # prevents std::min() and std::max() to be overwritten
-  ADD_DEFINITIONS(-DNOMINMAX)
-
-  # please document us
-  ADD_DEFINITIONS(-D__MSVC__)
-  ADD_DEFINITIONS(-D__WIN32__)
-  ADD_DEFINITIONS(-D_CONSOLE)
-  ADD_DEFINITIONS(-D_UNICODE)
-ENDIF(MSVC)
+# Adding definitions that will be used in all directories
+IF(WIN32)
+  ADD_DEFINITIONS(-D__WIN32__ -DWIN32 -D_WIN32)
+  IF (MSVC)
+    ADD_DEFINITIONS(-D_CONSOLE)
+  ELSE (MSVC)
+    ADD_DEFINITIONS(-D__MINGW__)
+  ENDIF(MSVC)
+ENDIF(WIN32)
 
 
 ###################################################################################################
@@ -424,7 +405,6 @@ LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} 
 # traverse subdirs for imported 3rd party libs                                                    #
 ###################################################################################################
 ADD_SUBDIRECTORY(udt)
-#ADD_SUBDIRECTORY(libupnp)
 ADD_SUBDIRECTORY(cryptopp)
 ###################################################################################################
 # All Platforms:  Add Test Exes and Create all maidsafe-dht libs                                  #
@@ -493,22 +473,48 @@ ELSE (WIN32 AND NOT MSVC)
 ENDIF (WIN32 AND NOT MSVC)
 TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static udt_static cryptopp_static ${SYS_LIB})
 ###################################################################################################
-# Compiler and linker flags - after all targets declared                                          #
+# Compiler definitions only for targets that are not defined in their own
+# directory (cryptopp and udt)
 ###################################################################################################
-IF (CMAKE_BUILD_TYPE MATCHES "Release")
-  ADD_DEFINITIONS(-DNDEBUG)
-ELSEIF (CMAKE_BUILD_TYPE MATCHES "Debug")
+IF (CMAKE_BUILD_TYPE MATCHES "Debug")
   ADD_DEFINITIONS(-DDEBUG)
-ENDIF(CMAKE_BUILD_TYPE MATCHES "Release")
+ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
+
+# Stephan: I have moved preprocessor defines for MSVC here to have 
+#          them with a little more explanation
+#          you may consider doing the same for other targets such as MingW
+IF(MSVC)
+  # these are apparently necessary for MSVC to work
+  ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
+  ADD_DEFINITIONS(-D_WIN32_WINNT=0x501)
+
+  # This disables bogus warnings of the MS compiler trying to be witty.
+  # It annoys and hides real issues, so better keep it
+  ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
+
+  # This is important! Those switches are necessary for boot to work, and yet 
+  # they break ABI compatibility for C++ libs at least in Debug mode.
+  # In most 3rd party libs they should be set as well, but if you add one,
+  # remember this. SET THOSE VALUES EVERYWHERE YOU CAN!
+  ADD_DEFINITIONS(-D_SECURE_SCL=0)
+  ADD_DEFINITIONS(-D_HAS_ITERATOR_DEBUGGING=0)
+
+  # prevents std::min() and std::max() to be overwritten
+  ADD_DEFINITIONS(-DNOMINMAX)
+
+  # please document us
+  ADD_DEFINITIONS(-D__MSVC__)
+  ADD_DEFINITIONS(-D__WIN32__)
+  ADD_DEFINITIONS(-D_CONSOLE)
+  ADD_DEFINITIONS(-D_UNICODE)
+ENDIF(MSVC)
 
 ####APPLE##############################
 IF (APPLE)
   SET(CMAKE_AR "/usr/bin/libtool")
   SET(CMAKE_CXX_CREATE_STATIC_LIBRARY "<CMAKE_AR> -static -o <TARGET> <LINK_FLAGS> <OBJECTS>" "<CMAKE_RANLIB> <TARGET>")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_DARWIN_C_SOURCE")
-  ADD_DEFINITIONS(-DOSX)
-  ADD_DEFINITIONS(-DBSD)
-  ADD_DEFINITIONS(-DCRYPTOPP_DISABLE_ASM)
+  ADD_DEFINITIONS(-DMAIDSAFE_APPLE -DBSD)
   SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS} -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -D_FORTIFY_SOURCE=2 -D__FreeBSD__=10 -D_FILE_OFFSET_BITS=64")
   SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized")
   SET(MAIDSAFE_DHT_CXX_FLAGS "-w")
@@ -522,7 +528,7 @@ IF (APPLE)
 ELSEIF (UNIX AND NOT APPLE)
   ADD_DEFINITIONS(-DMAIDSAFE_LINUX)
   SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fPIC -Wl,-z,relro -Wformat  -Wno-system-headers  -Wformat-security -Wall -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wfloat-equal -Wlong-long -Wredundant-decls -Wstrict-overflow=5 -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
-  SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -fPIC")
+  SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG}")
   SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE}  -Wuninitialized")
   IF(CMAKE_BUILD_TYPE MATCHES "Debug")
     SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
@@ -533,12 +539,10 @@ ELSEIF (UNIX AND NOT APPLE)
 #######WINDOWS##############
 ELSEIF (WIN32 AND NOT MSVC)
   ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
-  ADD_DEFINITIONS(-D__MINGW__)
   ADD_DEFINITIONS(-D_GLIBCXX_USE_WCHAR_T)
   ADD_DEFINITIONS(-DUNICODE)
   ADD_DEFINITIONS(-D_UNICODE)
-  ADD_DEFINITIONS(-DWIN32)
-  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Wuninitialized")
+  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized")
   SET(MAIDSAFE_DHT_CXX_FLAGS "-Wall -finline-functions -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wunused-function -Wunused-parameter -Wunused-label -Wunused-value -Wunused-variable -Wwrite-strings -Wno-deprecated -Woverloaded-virtual -D_WIN32_WINNT=0x0501 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__  -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501") 
   IF(CMAKE_BUILD_TYPE MATCHES "Debug")
@@ -546,7 +550,7 @@ ELSEIF (WIN32 AND NOT MSVC)
   ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")   
  
   SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo kaddemostatic  PROPERTIES LINK_FLAGS "-mthreads " )
-  SET(SILENT_BUILD  "-mthreads -w -finline-functions -O3 -DNDEBUG -D__MINGW__ -DWIN32 -D_WIN32_WINNT=0x0501 -D_WIN32")
+  SET(SILENT_BUILD  "-w -finline-functions -O3 -DNDEBUG -D_WIN32_WINNT=0x0501 -D_WIN32")
 ENDIF (APPLE)
 
 IF (NOT MSVC)
