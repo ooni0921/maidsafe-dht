@@ -51,7 +51,7 @@ ELSE (CMAKE_BUILD_TYPE MATCHES "Release")
   SET(pddate "DEVELOPER_${pddate}")
 ENDIF (CMAKE_BUILD_TYPE MATCHES "Release")
 
-# setup a single target path for libraries and executables - 
+# setup a single target path for libraries and executables -
 # this avoids copying all the dlls and exes together
 UNSET(LIBRARY_OUTPUT_PATH CACHE)
 UNSET(EXECUTABLE_OUTPUT_PATH CACHE)
@@ -78,7 +78,7 @@ SET(Boost_FIND_REQUIRED "1.41.0")
 SET(Boost_USE_STATIC_LIBS ON)
 SET(BOOST_LIB_DIAGNOSTIC OFF)
 #ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK)
-  
+
 IF (NOT MSVC)
   SET(OpenSSL_INCLUDE_DIR "/usr/include")
 ENDIF (NOT MSVC)
@@ -103,7 +103,7 @@ IF (UNIX)
   UNSET(GLOG_LIB CACHE)
   UNSET(GLOG_INCLUDE CACHE)
   SET(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} "${GLOG_ROOT}/include")
-  FIND_LIBRARY(GLOG_LIB NAMES libglog.a glog 
+  FIND_LIBRARY(GLOG_LIB NAMES libglog.a glog
                PATHS "${GLOG_ROOT}/lib"
                DOC "Path to glog library${DOC_LIB_DIR}")
   CHECK_INCLUDE_FILE_CXX(glog/logging.h GLOG_INCLUDE)
@@ -328,15 +328,15 @@ ENDIF(WIN32)
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
 ####    CODE    ####
-LIST(APPEND M_LIBUPNP_DIR 
-       libupnp/igd_desc_parse.c  
-       libupnp/minixml.c 
-       libupnp/minisoap.c 
-       libupnp/miniwget.c  	
-       libupnp/upnpcommands.c 
-       libupnp/upnpreplyparse.c 
-       libupnp/upnperrors.c 
-       libupnp/miniupnpc.c 	
+LIST(APPEND M_LIBUPNP_DIR
+       libupnp/igd_desc_parse.c
+       libupnp/minixml.c
+       libupnp/minisoap.c
+       libupnp/miniwget.c
+       libupnp/upnpcommands.c
+       libupnp/upnpreplyparse.c
+       libupnp/upnperrors.c
+       libupnp/miniupnpc.c
        libupnp/minissdpc.c)
 FILE(GLOB M_NATPMP_C "nat-pmp/*.c*")
 FILE(GLOB M_NATPMP_H "nat-pmp/*.h*")
@@ -430,12 +430,12 @@ IF (MSVC)
   SET(EXTENS .lib)
 ELSE (MSVC)
   SET(EXTENS .a)
-ENDIF(MSVC)	
+ENDIF(MSVC)
 SET(LINK_DIRECTORIES ${LIBRARY_OUTPUT_PATH} ${LIBS_DIRS})
 
 SET(BUILD_SHARED_LIBS OFF)
 ADD_DEFINITIONS(-DSTATICLIB)
-#Ensure we pick up corret libs and not some older installed on 
+#Ensure we pick up corret libs and not some older installed on
 IF (NOT MSVC)
   IF (NOT WIN32)
     SET_TARGET_PROPERTIES(maidsafe PROPERTIES IMPORTED_LOCATION bin/libmaidsafe.so)
@@ -468,6 +468,9 @@ TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static udt_static cryptopp_static ${GTES
 IF (WIN32 AND NOT MSVC)
   TARGET_LINK_LIBRARIES(maidsafe "-Wl,--enable-auto-import" udt cryptopp ${SYS_LIB})
   TARGET_LINK_LIBRARIES(kaddemo "-Wl,--enable-auto-import" maidsafe udt cryptopp ${SYS_LIB})
+ELSEIF (APPLE)
+  TARGET_LINK_LIBRARIES(maidsafe udt cryptopp ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(kaddemo maidsafe udt cryptopp ${SYS_LIB})
 ELSE (WIN32 AND NOT MSVC)
   TARGET_LINK_LIBRARIES(kaddemo maidsafe udt cryptopp ${SYS_LIB})
 ENDIF (WIN32 AND NOT MSVC)
@@ -480,7 +483,7 @@ IF (CMAKE_BUILD_TYPE MATCHES "Debug")
   ADD_DEFINITIONS(-DDEBUG)
 ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
 
-# Stephan: I have moved preprocessor defines for MSVC here to have 
+# Stephan: I have moved preprocessor defines for MSVC here to have
 #          them with a little more explanation
 #          you may consider doing the same for other targets such as MingW
 IF(MSVC)
@@ -492,7 +495,7 @@ IF(MSVC)
   # It annoys and hides real issues, so better keep it
   ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
 
-  # This is important! Those switches are necessary for boot to work, and yet 
+  # This is important! Those switches are necessary for boot to work, and yet
   # they break ABI compatibility for C++ libs at least in Debug mode.
   # In most 3rd party libs they should be set as well, but if you add one,
   # remember this. SET THOSE VALUES EVERYWHERE YOU CAN!
@@ -544,11 +547,11 @@ ELSEIF (WIN32 AND NOT MSVC)
   ADD_DEFINITIONS(-D_UNICODE)
   SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized")
   SET(MAIDSAFE_DHT_CXX_FLAGS "-Wall -finline-functions -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wunused-function -Wunused-parameter -Wunused-label -Wunused-value -Wunused-variable -Wwrite-strings -Wno-deprecated -Woverloaded-virtual -D_WIN32_WINNT=0x0501 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__  -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501") 
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__  -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501")
   IF(CMAKE_BUILD_TYPE MATCHES "Debug")
     SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp PROPERTIES LINK_FLAGS "-lgcov -pg -fprofile-arcs -ftest-coverage")
-  ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")   
- 
+  ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
+
   SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo kaddemostatic  PROPERTIES LINK_FLAGS "-mthreads " )
   SET(SILENT_BUILD  "-w -finline-functions -O3 -DNDEBUG -D_WIN32_WINNT=0x0501 -D_WIN32")
 ENDIF (APPLE)
