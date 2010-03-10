@@ -235,6 +235,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   EXPECT_EQ(kRpcResultSuccess, find_value_response.result());
   EXPECT_EQ(0, find_value_response.closest_nodes_size());
   EXPECT_EQ(0, find_value_response.values_size());
+  EXPECT_EQ(0, find_value_response.signed_values_size());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_, find_value_response.node_id());
   Contact contactback;
@@ -288,6 +289,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   }
   EXPECT_EQ(static_cast<unsigned int>(0), ids.size());
   EXPECT_EQ(0, find_value_response.values_size());
+  EXPECT_EQ(0, find_value_response.values_size());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_, find_value_response.node_id());
 
@@ -310,11 +312,12 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   EXPECT_TRUE(find_value_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_value_response.result());
   EXPECT_EQ(0, find_value_response.closest_nodes_size());
-  EXPECT_EQ(100, find_value_response.values_size());
+  EXPECT_EQ(0, find_value_response.values_size());
+  ASSERT_EQ(100, find_value_response.signed_values_size());
   for (int i = 0; i < 100; i++) {
     bool found = false;
     for (int j = 0; j < 100; j++) {
-      if (values[i] == find_value_response.values(j)) {
+      if (values[i] == find_value_response.signed_values(j).value()) {
         found = true;
         break;
       }
@@ -904,6 +907,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
   }
   EXPECT_EQ(static_cast<unsigned int>(0), ids.size());
   EXPECT_EQ(0, find_value_response.values_size());
+  EXPECT_EQ(0, find_value_response.signed_values_size());
   EXPECT_FALSE(find_value_response.has_alternative_value_holder());
   EXPECT_FALSE(find_value_response.has_needs_cache_copy());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
@@ -928,11 +932,12 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
   EXPECT_TRUE(find_value_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_value_response.result());
   EXPECT_EQ(0, find_value_response.closest_nodes_size());
-  EXPECT_EQ(100, find_value_response.values_size());
+  EXPECT_EQ(0, find_value_response.values_size());
+  ASSERT_EQ(100, find_value_response.signed_values_size());
   for (int i = 0; i < 100; ++i) {
     bool found = false;
     for (int j = 0; j < 100; ++j) {
-      if (values[i] == find_value_response.values(j)) {
+      if (values[i] == find_value_response.signed_values(j).value()) {
         found = true;
         break;
       }

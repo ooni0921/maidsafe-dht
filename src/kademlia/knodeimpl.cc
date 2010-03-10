@@ -992,9 +992,8 @@ void KNodeImpl::FindValue(const std::string &key, const bool &check_alt_store,
     result_msg.set_result(kad::kRpcResultSuccess);
     if (HasRSAKeys()) {
       for (boost::uint64_t n = 0; n < values.size(); ++n) {
-        SignedValue sig_value;
-        if (sig_value.ParseFromString(values[n]))
-          result_msg.add_values(sig_value.value());
+        SignedValue *sig_value = result_msg.add_signed_values();
+        sig_value->ParseFromString(values[n]);
       }
     } else {
       for (boost::uint64_t n = 0; n < values.size(); ++n)
@@ -1587,7 +1586,8 @@ void KNodeImpl::SearchIteration(boost::shared_ptr<IterativeLookUpData> data) {
   if ((data->is_callbacked)||(!is_joined_ && data->method != BOOTSTRAP))
     return;
   // Found an alternative value holder or the actual value
-  if (data->method == FIND_VALUE && (data->values_found.size() > 0 ||
+  if (data->method == FIND_VALUE && (!data->values_found.empty() ||
+      !data->sig_values_found.empty() ||
       !data->alternative_value_holder.node_id().empty()))
     SearchIteration_Callback(data);
 
@@ -1770,6 +1770,23 @@ void KNodeImpl::SearchIteration_ExtendShortList(const FindResponse *response,
       }
       if (is_new) {
         callback_data.data->values_found.push_back(response->values(i));
+      }
+    }
+    std::list<kad::SignedValue>::iterator it_svals;
+    for (int i = 0; i < response->signed_values_size(); ++i) {
+      is_new = true;
+      for (it_svals = callback_data.data->sig_values_found.begin();
+           it_svals != callback_data.data->sig_values_found.end(); ++it_svals) {
+        if (it_svals->value() == response->signed_values(i).value() &&
+            it_svals->value_signature() ==
+              response->signed_values(i).value_signature()) {
+          is_new = false;
+          break;
+        }
+      }
+      if (is_new) {
+        callback_data.data->sig_values_found.push_back(
+          response->signed_values(i));
       }
     }
 
@@ -2009,11 +2026,18 @@ void KNodeImpl::SearchIteration_Callback(
       result.set_result(kRpcResultSuccess);
       *result.mutable_alternative_value_holder() =
           data->alternative_value_holder;
-    } else if (data->method == FIND_VALUE && data->values_found.size() > 0) {
+    } else if (data->method == FIND_VALUE && (!data->values_found.empty() ||
+               !data->sig_values_found.empty())) {
       result.set_result(kRpcResultSuccess);
       for (std::list<std::string>::iterator it2 = data->values_found.begin();
            it2 != data->values_found.end(); it2++) {
-      result.add_values(*it2);
+        result.add_values(*it2);
+      }
+      for (std::list<SignedValue>::iterator it2 =
+           data->sig_values_found.begin(); it2 != data->sig_values_found.end();
+           it2++) {
+        SignedValue *svalue = result.add_signed_values();
+        *svalue = *it2;
       }
     } else {
       for (it1 = data->active_contacts.begin(), count = 0;

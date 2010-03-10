@@ -104,7 +104,7 @@ struct IterativeLookUpData {
         active_contacts(), active_probes(),
         values_found(), dead_ids(), downlist(), downlist_sent(false),
         in_final_iteration(false), is_callbacked(false), wait_for_key(false),
-        cb(cb), alternative_value_holder() {}
+        cb(cb), alternative_value_holder(), sig_values_found() {}
   remote_find_method method;
   std::string key;
   std::list<LookupContact> short_list;
@@ -114,6 +114,7 @@ struct IterativeLookUpData {
   bool downlist_sent, in_final_iteration, is_callbacked, wait_for_key;
   base::callback_func_type cb;
   ContactInfo alternative_value_holder;
+  std::list<kad::SignedValue> sig_values_found;
 };
 
 struct IterativeStoreValueData {

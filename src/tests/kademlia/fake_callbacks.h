@@ -37,8 +37,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class FakeCallback {
  public:
-  FakeCallback() : result_("") {}
-  virtual ~FakeCallback() {}
+  FakeCallback() : result_("") {
+  }
+  virtual ~FakeCallback() {
+  }
   virtual void CallbackFunc(const std::string& res) = 0;
   virtual void Reset() = 0;
   std::string result() const {return result_;}
@@ -48,7 +50,8 @@ class FakeCallback {
 
 class PingCallback : public FakeCallback {
  public:
-  PingCallback():FakeCallback(), result_msg() {}
+  PingCallback() : FakeCallback(), result_msg() {
+  }
   void CallbackFunc(const std::string &res) {
     if (!result_msg.ParseFromString(res))
       result_msg.set_result(kad::kRpcResultFailure);
@@ -64,7 +67,8 @@ class PingCallback : public FakeCallback {
 
 class StoreValueCallback :public FakeCallback {
  public:
-  StoreValueCallback():FakeCallback(), result_msg() {}
+  StoreValueCallback() : FakeCallback(), result_msg() {
+  }
   void CallbackFunc(const std::string &res) {
     if (!result_msg.ParseFromString(res)) {
       result_msg.set_result(kad::kRpcResultFailure);
@@ -81,7 +85,9 @@ class StoreValueCallback :public FakeCallback {
 
 class FindCallback : public FakeCallback {
  public:
-  FindCallback() : FakeCallback(), result_msg(), values_(), closest_nodes_() {}
+  FindCallback() : FakeCallback(), result_msg(), values_(), closest_nodes_(),
+                   signed_values_() {
+  }
   void CallbackFunc(const std::string &res) {
     if (!result_msg.ParseFromString(res)) {
       result_msg.set_result(kad::kRpcResultFailure);
@@ -90,6 +96,8 @@ class FindCallback : public FakeCallback {
       values_.push_back(result_msg.values(i));
     for (int i = 0; i < result_msg.closest_nodes_size(); i++)
       closest_nodes_.push_back(result_msg.closest_nodes(i));
+    for (int i = 0; i < result_msg.signed_values_size(); i++)
+      signed_values_.push_back(result_msg.signed_values(i));
     result_ = result_msg.result();
   };
   void Reset() {
@@ -97,18 +105,22 @@ class FindCallback : public FakeCallback {
     result_ = "";
     values_.clear();
     closest_nodes_.clear();
+    signed_values_.clear();
   };
   std::vector<std::string> values() const {return values_;}
   std::vector<std::string> closest_nodes() const {return closest_nodes_;}
+  std::vector<kad::SignedValue> signed_values() {return signed_values_;}
  private:
   kad::FindResponse result_msg;
   std::vector<std::string> values_;
   std::vector<std::string> closest_nodes_;
+  std::vector<kad::SignedValue> signed_values_;
 };
 
 class FindNodeCallback : public FakeCallback {
  public:
-  FindNodeCallback() : FakeCallback(), result_msg(), contact_("") {}
+  FindNodeCallback() : FakeCallback(), result_msg(), contact_("") {
+  }
   void CallbackFunc(const std::string &res) {
     if (!result_msg.ParseFromString(res)) {
       result_msg.set_result(kad::kRpcResultFailure);
@@ -130,7 +142,8 @@ class FindNodeCallback : public FakeCallback {
 
 class GeneralKadCallback : public FakeCallback {
  public:
-  GeneralKadCallback():FakeCallback(), result_msg() {}
+  GeneralKadCallback() : FakeCallback(), result_msg() {
+  }
   void CallbackFunc(const std::string &res) {
     if (!result_msg.ParseFromString(res)) {
       result_msg.set_result(kad::kRpcResultFailure);
@@ -147,7 +160,8 @@ class GeneralKadCallback : public FakeCallback {
 
 class DeleteValueCallback :public FakeCallback {
  public:
-  DeleteValueCallback():FakeCallback(), result_msg() {}
+  DeleteValueCallback() : FakeCallback(), result_msg() {
+  }
   void CallbackFunc(const std::string &res) {
     if (!result_msg.ParseFromString(res)) {
       result_msg.set_result(kad::kRpcResultFailure);

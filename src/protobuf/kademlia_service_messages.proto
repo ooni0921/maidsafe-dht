@@ -27,10 +27,11 @@ message FindResponse {
   required bytes result = 1;
   repeated bytes closest_nodes = 2;
   repeated bytes values = 3;
-  optional ContactInfo alternative_value_holder = 4;
-  optional bytes needs_cache_copy = 5;
-  optional bytes requester_ext_addr = 6;
-  optional bytes node_id = 7;
+  repeated SignedValue signed_values = 4;
+  optional ContactInfo alternative_value_holder = 5;
+  optional bytes needs_cache_copy = 6;
+  optional bytes requester_ext_addr = 7;
+  optional bytes node_id = 8;
 };
 
 message FindNodeResult {

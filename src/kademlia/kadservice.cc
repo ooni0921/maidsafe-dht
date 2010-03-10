@@ -237,9 +237,8 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
     if (pdatastore_->LoadItem(key, &values_str)) {
       if (node_hasRSAkeys_) {
         for (unsigned int i = 0; i < values_str.size(); i++) {
-          SignedValue signed_value;
-          if (signed_value.ParseFromString(values_str[i]))
-            response->add_values(signed_value.value());
+          SignedValue *signed_value = response->add_signed_values();
+          signed_value->ParseFromString(values_str[i]);
         }
       } else {
         for (unsigned int i = 0; i < values_str.size(); i++)
