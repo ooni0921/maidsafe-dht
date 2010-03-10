@@ -387,9 +387,11 @@ bool TCPTransport::HasReceivedData(const boost::uint32_t &connection_id,
   return false;
 }
 
-int TCPTransport::ConnectToSend(const std::string &remote_ip, const uint16_t
-      &remote_port, const std::string&, const uint16_t&, const std::string&,
-      const uint16_t&, const bool &keep_connection, boost::uint32_t *conn_id) {
+int TCPTransport::ConnectToSend(const std::string &remote_ip,
+      const boost::uint16_t &remote_port, const std::string&,
+      const boost::uint16_t&, const std::string&, const boost::uint16_t&,
+      const bool &keep_connection,
+      boost::uint32_t *conn_id) {
   tcpconnection_ptr conn(new TCPConnection(io_service_,
     boost::bind(&TCPTransport::HandleConnSend, this, _1, _2, _3, _4),
     boost::bind(&TCPTransport::HandleConnRecv, this, _1, _2, _3)));

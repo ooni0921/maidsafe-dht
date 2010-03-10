@@ -54,7 +54,7 @@ class Transport {
   enum TransportType { kUdt, kTcp, kOther };
   virtual TransportType GetType() = 0;
   virtual boost::int16_t GetID() = 0;
-  virtual void SetID(boost::int16_t id) = 0;
+  virtual void SetID(const boost::int16_t id) = 0;
   virtual int ConnectToSend(const std::string &remote_ip, const boost::uint16_t
       &remote_port, const std::string &local_ip, const boost::uint16_t
       &local_port, const std::string &rendezvous_ip, const boost::uint16_t

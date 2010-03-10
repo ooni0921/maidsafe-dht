@@ -130,7 +130,7 @@ class TransportHandler {
                            const std::string&,
                            const boost::uint16_t&)> on_server_down);
   virtual int ConnectToSend(const std::string &remote_ip,
-                            const uint16_t &remote_port,
+                            const boost::uint16_t &remote_port,
                             const std::string &local_ip,
                             const boost::uint16_t &local_port,
                             const std::string &rendezvous_ip,

@@ -146,13 +146,8 @@ TEST(KadUtilsTest, BEH_KAD_InsertKadContact) {
   std::vector<kad::Contact> contacts_before(contacts);
   std::string key(64, 'b');
   kad::Contact new_contact(std::string(64, 'a'), "IP", 10000);
-//  for (int i = 0; i < 10; ++i)
-//    printf("ID %i - %s\n", i, contacts.at(i).node_id().c_str());
-//  printf("\n");
   kad::InsertKadContact(key, new_contact, &contacts);
   ASSERT_EQ(size_t(11), contacts.size());
-//  for (int i = 0; i < 11; ++i) {
-//    printf("ID %i - %s\n", i, contacts.at(i).node_id().c_str());
   // Check contacts have been re-ordered correctly.
   ASSERT_EQ(contacts.at(0).node_id(), new_contact.node_id());
   ASSERT_EQ(contacts.at(1).node_id(), contacts_before.at(7).node_id());

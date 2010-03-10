@@ -44,7 +44,6 @@ TransportHandler::TransportHandler()
       send_notifier_() {}
 
 TransportHandler::~TransportHandler() {
-  // StopAll();
 }
 
 bool TransportHandler::Registered(transport::Transport *t) {
@@ -258,7 +257,6 @@ int TransportHandler::Send(const rpcprotocol::RpcMessage &data,
   if (it == transports_.end()) {
     DLOG(ERROR) << "SendRPC: Couldn't find Transport matching ID: " << id
       <<"\n";
-    DLOG(INFO) << "transports_.size(): " << transports_.size() << "\n";
     return 1;
   }
 

@@ -50,10 +50,10 @@ class TCPTransport : public Transport {
   ~TCPTransport();
   TransportType GetType() { return kTcp; }
   boost::int16_t GetID() { return id_; }
-  void SetID(boost::int16_t id) { id_ = id; }
+  void SetID(const boost::int16_t id) { id_ = id; }
   int Start(const boost::uint16_t &port);
   int StartLocal(const boost::uint16_t &port);
-  int ConnectToSend(const std::string &remote_ip, const uint16_t
+  int ConnectToSend(const std::string &remote_ip, const boost::uint16_t
       &remote_port, const std::string &local_ip,
       const boost::uint16_t &local_port, const std::string &rendezvous_ip,
       const boost::uint16_t &rendezvous_port, const bool &keep_connection,

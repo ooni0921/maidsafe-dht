@@ -465,7 +465,7 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
 
       verifierFilter = new CryptoPP::SignatureVerificationFilter(verifier);
       verifierFilter->Put(*signature, verifier.SignatureLength());
-      CryptoPP::StringSource(input_data, true, verifierFilter);
+      CryptoPP::StringSource ssource(input_data, true, verifierFilter);
       result = verifierFilter->GetLastResult();
       delete signature;
       return result;
@@ -478,7 +478,7 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
 
       verifierFilter = new CryptoPP::SignatureVerificationFilter(verifier);
       verifierFilter->Put(*signature, verifier.SignatureLength());
-      CryptoPP::FileSource(input_data.c_str(), true, verifierFilter);
+      CryptoPP::FileSource fsource(input_data.c_str(), true, verifierFilter);
       result = verifierFilter->GetLastResult();
       delete signature;
       return result;

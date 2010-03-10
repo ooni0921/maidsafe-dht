@@ -87,6 +87,7 @@ class TestKnodes : public testing::Test {
   virtual ~TestKnodes() {}
  protected:
   void SetUp() {
+    transports_.clear();
     test_dir_ = std::string("TestKnodes") + boost::lexical_cast<std::string>(
         base::random_32bit_uinteger());
     try {

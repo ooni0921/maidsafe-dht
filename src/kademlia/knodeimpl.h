@@ -413,7 +413,7 @@ class KNodeImpl {
   std::string private_key_, public_key_;
   // for UPnP
   upnp::UpnpIgdClient upnp_;
-  boost::uint32_t upnp_mapped_port_;
+  boost::uint16_t upnp_mapped_port_;
   //
   base::SignatureValidator *signature_validator_;
 };

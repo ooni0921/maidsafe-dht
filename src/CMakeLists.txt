@@ -137,7 +137,10 @@ IF (NOT GTEST_FOUND)
   MESSAGE(ERROR " GTest library not found.")
   MESSAGE(ERROR " If installed run cmake ../.. -DGTEST_ROOT=\"<The root directory of gtest install prefix>\"")
   MESSAGE(FATAL_ERROR " You can download it at http://code.google.com/p/googletest\n")
-ELSE (NOT GTEST_FOUND)
+ELSEIF (NOT GTEST_LIBRARY_DEBUG AND MSVC)
+  MESSAGE(ERROR " GTest Debug library not found.  It is needed to compile in Debug mode")
+  MESSAGE(ERROR " Should be in the same directory as release library.")
+ELSE (NOT GTEST_FOUND AND MSVC)
    MESSAGE("GTest library found.")
    IF (APPLE)
      FOREACH(LIB ${GTEST_LIBRARIES})
@@ -149,6 +152,9 @@ ELSE (NOT GTEST_FOUND)
    ENDIF (APPLE)
    SET(LIBS_INCLUDE_DIRS ${LIBS_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
 ENDIF (NOT GTEST_FOUND)
+IF (MSVC)
+  MESSAGE("-- Found GTest DEBUG: ${GTEST_LIBRARY_DEBUG}")
+ENDIF (MSVC)
 
 ###################################################################################################
 # Protocol Buffers library search                                                                 #
@@ -202,7 +208,11 @@ ENDFUNCTION(SET_PROTOFILEVAR_CONTENT)
 UNSET(PROTOBUF_LIBRARY CACHE)
 UNSET(PROTOBUF_INCLUDE_DIR CACHE)
 UNSET(PROTOBUF_PROTOC_EXECUTABLE CACHE)
+UNSET(PROTOBUF_LIBRARY_DEBUG CACHE)
 
+IF (MSVC)
+  SET(CMAKE_LIBRARY_PATH_BK  ${CMAKE_LIBRARY_PATH})
+ENDIF (MSVC)
 SET(CMAKE_PROGRAM_PATH ${CMAKE_PROGRAM_PATH} ${PROTOC_EXE_PATH})
 SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${PROTOBUF_INCLUDE_PATH})
 SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${PROTOBUF_LIB_PATH})
@@ -217,6 +227,21 @@ ELSEIF (NOT PROTOBUF_PROTOC_EXECUTABLE)
   MESSAGE(ERROR_MESSAGE " If it is already installed, run cmake../.. -DPROTOC_EXE_PATH=\"<Path to protoc compiler>\"")
   MESSAGE(FATAL_ERROR " You can download it at http://code.google.com/apis/protocolbuffers\n")
 ENDIF (NOT PROTOBUF_FOUND)
+
+IF (MSVC)
+  UNSET(PROTOBUF_LIBRARY_DEBUG CACHE)
+  SET(CMAKE_LIBRARY_PATH  ${CMAKE_LIBRARY_PATH_BK})
+  FIND_LIBRARY(PROTOBUF_LIBRARY_DEBUG NAMES libprotobuf
+               HINTS "${PROTOBUF_DEBUG_LIB_PATH}")
+  IF (NOT PROTOBUF_LIBRARY_DEBUG)
+    MESSAGE(ERROR " Protobuf Debug library not found.  It is needed to compile in Debug mode")
+    MESSAGE(ERROR " If install run cmake ../.. -DPROTOBUF_DEBUG_LIB_PATH=\"<Path to lib>\"")
+    SET(PROTOBUF_LIBRARY_DEBUG "")
+  ELSE (NOT PROTOBUF_LIBRARY_DEBUG)
+    MESSAGE("-- Found PROTOBUF DEBUG: ${PROTOBUF_LIBRARY_DEBUG}")
+  ENDIF (NOT PROTOBUF_LIBRARY_DEBUG)
+ENDIF (MSVC)
+
 
 EXECUTE_PROCESS(COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} "--version"
                 OUTPUT_VARIABLE TMP_CURRENT_PROTOC_VERSION)
@@ -289,7 +314,7 @@ IF(UNIX)
   ENDFOREACH()
 ELSEIF(WIN32)
   IF(MSVC)
-    SET(SYS_LIB WSock32.lib IPHlpApi.lib)
+    SET(SYS_LIB odbc32.lib odbccp32.lib WSock32.lib IPHlpApi.lib)
   ELSE(MSVC)
     SET(SYS_LIB advapi32 kernel32 ws2_32 iphlpapi mswsock)
   ENDIF(MSVC)
@@ -306,22 +331,21 @@ ELSEIF(WIN32)
   ENDFOREACH()
 ENDIF(UNIX)
 
-SET(SYS_LIB ${SYS_LIB} ${Boost_LIBRARIES} ${GLOG_LIB} ${PROTOBUF_LIBRARY} )
+IF (NOT MSVC)
+  SET(SYS_LIB ${SYS_LIB} ${Boost_LIBRARIES} ${GLOG_LIB} ${PROTOBUF_LIBRARY} )
+ENDIF (NOT MSVC)
 INCLUDE_DIRECTORIES(${MAIDSAFE_SOURCE_DIR})
 LIST(REMOVE_DUPLICATES LIBS_INCLUDE_DIRS)
 INCLUDE_DIRECTORIES(AFTER SYSTEM ${LIBS_INCLUDE_DIRS})
 MESSAGE("================================================================================")
 
 
-# Adding definitions that will be used in all directories
-IF(WIN32)
-  ADD_DEFINITIONS(-D__WIN32__ -DWIN32 -D_WIN32)
-  IF (MSVC)
-    ADD_DEFINITIONS(-D_CONSOLE)
-  ELSE (MSVC)
-    ADD_DEFINITIONS(-D__MINGW__)
-  ENDIF(MSVC)
-ENDIF(WIN32)
+IF (MSVC)
+  SET(CMAKE_CXX_FLAGS "")
+  SET(CMAKE_CXX_FLAGS_INIT "")
+  SET(CMAKE_CXX_FLAGS_RELEASE "")
+  SET(CMAKE_CXX_FLAGS_DEBUG "")
+ENDIF (MSVC)
 
 
 ###################################################################################################
@@ -421,8 +445,10 @@ ADD_EXECUTABLE(kaddemostatic ${T_DEMO_DIR} ${MAIDSAFE_H} )
 
 ADD_LIBRARY(maidsafe SHARED  ${DHT_SOURCE_FILES})
 ADD_LIBRARY(maidsafe_static STATIC  ${DHT_SOURCE_FILES})
-#Rename maidsafe_static as maidsafe on way out !
-SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES OUTPUT_NAME maidsafe)
+#Rename maidsafe_static as maidsafe on way out NOT in MSVC names clash of static and import lib
+IF (NOT MSVC)
+  SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES OUTPUT_NAME maidsafe)
+ENDIF (NOT MSVC)
 ###################################################################################################
 # Builds                                                                                          #
 ###################################################################################################
@@ -457,59 +483,111 @@ ELSE (NOT MSVC)
   SET_TARGET_PROPERTIES(udt_static PROPERTIES IMPORTED_LOCATION bin/libudt.lib)
   SET_TARGET_PROPERTIES(udt PROPERTIES  IMPORTED_LOCATION bin/libudt.dll)
 ENDIF (NOT MSVC)
+IF (NOT MSVC)
+  TARGET_LINK_LIBRARIES(TESTbase maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTtransport maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTknode maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB} )
+  TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
+  IF (WIN32)
+    TARGET_LINK_LIBRARIES(maidsafe "-Wl,--enable-auto-import" udt cryptopp ${SYS_LIB})
+    TARGET_LINK_LIBRARIES(kaddemo "-Wl,--enable-auto-import" maidsafe udt cryptopp ${SYS_LIB})
+  ELSE (WIN32)
+    TARGET_LINK_LIBRARIES(kaddemo maidsafe udt cryptopp ${SYS_LIB})
+  ENDIF (WIN32)
+  TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static udt_static cryptopp_static ${SYS_LIB})
+ELSE (NOT MSVC)
+ENDIF (NOT MSVC)
 
-TARGET_LINK_LIBRARIES(TESTbase maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTtransport maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTknode maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB} )
-TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-IF (WIN32 AND NOT MSVC)
-  TARGET_LINK_LIBRARIES(maidsafe "-Wl,--enable-auto-import" udt cryptopp ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(kaddemo "-Wl,--enable-auto-import" maidsafe udt cryptopp ${SYS_LIB})
-ELSEIF (APPLE)
-  TARGET_LINK_LIBRARIES(maidsafe udt cryptopp ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(kaddemo maidsafe udt cryptopp ${SYS_LIB})
-ELSE (WIN32 AND NOT MSVC)
-  TARGET_LINK_LIBRARIES(kaddemo maidsafe udt cryptopp ${SYS_LIB})
-ENDIF (WIN32 AND NOT MSVC)
-TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static udt_static cryptopp_static ${SYS_LIB})
-###################################################################################################
-# Compiler definitions only for targets that are not defined in their own
-# directory (cryptopp and udt)
-###################################################################################################
+
 IF (CMAKE_BUILD_TYPE MATCHES "Debug")
   ADD_DEFINITIONS(-DDEBUG)
 ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
 
-# Stephan: I have moved preprocessor defines for MSVC here to have
-#          them with a little more explanation
-#          you may consider doing the same for other targets such as MingW
+IF(WIN32)
+  ADD_DEFINITIONS(-DWIN32 -D_WIN32 -DWIN32 -D__WINDOWS__ -D__WIN32__)
+ENDIF(WIN32)
+
 IF(MSVC)
+  ADD_DEFINITIONS(-D__MSVC__)
+  
   # these are apparently necessary for MSVC to work
   ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
   ADD_DEFINITIONS(-D_WIN32_WINNT=0x501)
 
-  # This disables bogus warnings of the MS compiler trying to be witty.
-  # It annoys and hides real issues, so better keep it
-  ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-
-  # This is important! Those switches are necessary for boot to work, and yet
-  # they break ABI compatibility for C++ libs at least in Debug mode.
-  # In most 3rd party libs they should be set as well, but if you add one,
-  # remember this. SET THOSE VALUES EVERYWHERE YOU CAN!
-  ADD_DEFINITIONS(-D_SECURE_SCL=0)
-  ADD_DEFINITIONS(-D_HAS_ITERATOR_DEBUGGING=0)
-
   # prevents std::min() and std::max() to be overwritten
   ADD_DEFINITIONS(-DNOMINMAX)
-
-  # please document us
-  ADD_DEFINITIONS(-D__MSVC__)
-  ADD_DEFINITIONS(-D__WIN32__)
+ 
   ADD_DEFINITIONS(-D_CONSOLE)
   ADD_DEFINITIONS(-D_UNICODE)
+  ADD_DEFINITIONS(-DUNICODE)
+  
+  # prevents from automatic linking of boost libraries
+  ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
+  
+  SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /D \"NDEBUG\" /EHsc /MD /Gy /W3 /Zi")
+  SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D \"_DEBUG\" /EHsc /MDd  /c /ZI /TP")
+  # prevents declaring __declspec for API functions
+  SET_TARGET_PROPERTIES(maidsafe_static TESTbase TESTkademlia TESTknode TESTnatpmp TESTrpcprotocol TESTtransport TESTupnp kaddemostatic
+    PROPERTIES COMPILE_FLAGS "/D \"UDT_STATIC\"")
+  STRING(REGEX REPLACE "/STACK:10000000" ""
+         CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+  SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /LTCG")
+  
+  SET(DEBUG_LIBS ${PROTOBUF_LIBRARY_DEBUG} ${GTEST_LIBRARY_DEBUG} ${Boost_DATE_TIME_LIBRARY_DEBUG}
+      ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG} ${Boost_PROGRAM_OPTIONS_LIBRARY_DEBUG}
+      ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG})
+  SET(RELEASE_LIBS ${PROTOBUF_LIBRARY} ${GTEST_LIBRARY} ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE}
+      ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE} ${Boost_SYSTEM_LIBRARY_RELEASE}
+      ${Boost_REGEX_LIBRARY_RELEASE})
+  
+  TARGET_LINK_LIBRARIES(TESTbase maidsafe_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTknode maidsafe_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTtransport maidsafe_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static udt_static cryptopp_static ${SYS_LIB})
+  
+  FOREACH (DLIB ${DEBUG_LIBS})
+    TARGET_LINK_LIBRARIES(TESTbase debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTkademlia debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTknode debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTnatpmp debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTrpcprotocol debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTtransport debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTupnp debug ${DLIB})
+    IF (NOT (DLIB EQUAL ${GTEST_LIBRARY_DEBUG}))
+      TARGET_LINK_LIBRARIES(kaddemostatic debug ${DLIB})
+    ENDIF (NOT (DLIB EQUAL ${GTEST_LIBRARY_DEBUG}))
+  ENDFOREACH (DLIB ${DEBUG_LIBS})
+  FOREACH (RLIB ${RELEASE_LIBS})
+    TARGET_LINK_LIBRARIES(TESTbase optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTkademlia optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTknode optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTnatpmp optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTrpcprotocol optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTtransport optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTupnp optimized ${RLIB})
+    IF (NOT (RLIB EQUAL ${GTEST_LIBRARY}))
+      TARGET_LINK_LIBRARIES(kaddemostatic optimized ${RLIB})
+    ENDIF (NOT (RLIB EQUAL ${GTEST_LIBRARY}))
+  ENDFOREACH (RLIB ${RELEASE_LIBS})
+      
+
+  TARGET_LINK_LIBRARIES(kaddemo maidsafe udt cryptopp ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(kaddemo debug
+      ${PROTOBUF_LIBRARY_DEBUG} ${Boost_DAT_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG}
+      ${Boost_THREAD_LIBRARY_DEBUG} ${Boost_PROGRAM_OPTIONS_LIBRARY_DEBUG} ${Boost_SYSTEM_LIBRARY_DEBUG}
+      ${Boost_REGEX_LIBRARY_DEBUG})
+  TARGET_LINK_LIBRARIES(kaddemo optimized
+      ${PROTOBUF_LIBRARY} ${Boost_DAT_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE}
+      ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE} ${Boost_SYSTEM_LIBRARY_RELEASE}
+      ${Boost_REGEX_LIBRARY_RELEASE}) 
+  
 ENDIF(MSVC)
 
 ####APPLE##############################
@@ -541,6 +619,7 @@ ELSEIF (UNIX AND NOT APPLE)
   SET(SILENT_BUILD "-w -fPIC -DNDEBUG -O3 -march=native -mtune=native -pipe")
 #######WINDOWS##############
 ELSEIF (WIN32 AND NOT MSVC)
+  ADD_DEFINITIONS(-D__MINGW__)
   ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
   ADD_DEFINITIONS(-D_GLIBCXX_USE_WCHAR_T)
   ADD_DEFINITIONS(-DUNICODE)

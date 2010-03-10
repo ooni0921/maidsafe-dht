@@ -104,13 +104,6 @@ TEST_F(UpnpTest, BEH_UPNP_PortMappingTest) {
   } else {
     printf("Sorry, no port mappings via UPnP possible.\n");
   }
-
-  /* printf("\nPress Enter to continue...\n\n");
-  char c[2];
-  fgets(c, sizeof c, stdin); */
-
   ASSERT_TRUE(upnp.DeletePortMapping(start_port + num_total_mappings - 1,
                                      upnp::kTcp));
-
-  // boost::this_thread::sleep(boost::posix_time::seconds(1));
 }

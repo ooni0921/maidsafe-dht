@@ -145,6 +145,9 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
       "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
   ASSERT_EQ(result, ct.Hash("abc", result, crypto::STRING_FILE, true));
   ASSERT_TRUE(boost::filesystem::exists(result));
+  if (!resfile.good()) {
+    resfile.clear();
+  }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
   res = "";
   resfile >> res;
@@ -156,6 +159,9 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
 
   ASSERT_EQ(result, ct.Hash(input1, result, crypto::FILE_FILE, true));
   ASSERT_TRUE(boost::filesystem::exists(result));
+  if (!resfile.good()) {
+    resfile.clear();
+  }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
   res = "";
   resfile >> res;
@@ -177,6 +183,9 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
             "84983e441c3bd26ebaae4aa1f95129e5e54670f1");
   ASSERT_EQ(result, ct.Hash("abc", result, crypto::STRING_FILE, true));
   ASSERT_TRUE(boost::filesystem::exists(result));
+  if (!resfile.good()) {
+    resfile.clear();
+  }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
   res = "";
   resfile >> res;
@@ -185,6 +194,9 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
   boost::filesystem::remove(result);
   ASSERT_EQ(result, ct.Hash(input1, result, crypto::FILE_FILE, true));
   ASSERT_TRUE(boost::filesystem::exists(result));
+  if (!resfile.good()) {
+    resfile.clear();
+  }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
   res = "";
   resfile >> res;
@@ -205,6 +217,9 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
       "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1");
   ASSERT_EQ(result, ct.Hash("abc", result, crypto::STRING_FILE, true));
   ASSERT_TRUE(boost::filesystem::exists(result));
+  if (!resfile.good()) {
+    resfile.clear();
+  }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
   res = "";
   resfile >> res;
@@ -214,6 +229,9 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
   boost::filesystem::remove(result);
   ASSERT_EQ(result, ct.Hash(input1, result, crypto::FILE_FILE, true));
   ASSERT_TRUE(boost::filesystem::exists(result));
+  if (!resfile.good()) {
+    resfile.clear();
+  }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
   res = "";
   resfile >> res;
@@ -238,6 +256,9 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
             "fcc7c71a557e2db966c3e9fa91746039");
   ASSERT_EQ(result, ct.Hash("abc", result, crypto::STRING_FILE, true));
   ASSERT_TRUE(boost::filesystem::exists(result));
+  if (!resfile.good()) {
+    resfile.clear();
+  }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
   res = "";
   resfile >> res;
@@ -247,6 +268,9 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
   boost::filesystem::remove(result);
   ASSERT_EQ(result, ct.Hash(input1, result, crypto::FILE_FILE, true));
   ASSERT_TRUE(boost::filesystem::exists(result));
+  if (!resfile.good()) {
+    resfile.clear();
+  }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
   res = "";
   resfile >> res;
@@ -393,6 +417,9 @@ TEST(CryptoTest, BEH_BASE_AsymEncrypt) {
             ct.AsymDecrypt(result2, result3,
                            rsakp.private_key(), crypto::FILE_FILE));
   std::string str_from_file;
+  if (!result_file.good()) {
+    result_file.clear();
+  }
   result_file.open(result3.c_str(), std::ios::in |std::ios::binary);
   result_file >> str_from_file;
   result_file.close();
@@ -401,6 +428,9 @@ TEST(CryptoTest, BEH_BASE_AsymEncrypt) {
             ct.AsymDecrypt(ciphertext, result4,
                            rsakp.private_key(), crypto::STRING_FILE));
   str_from_file = "";
+  if (!result_file.good()) {
+    result_file.clear();
+  }
   result_file.open(result3.c_str(), std::ios::in |std::ios::binary);
   result_file >> str_from_file;
   result_file.close();

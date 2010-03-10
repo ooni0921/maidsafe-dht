@@ -8,17 +8,21 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
+#ifndef __MSVC__
+  #include <unistd.h>
+#endif
 #include <sys/types.h>
 #ifdef WIN32
-#include <stdint.h>
+#ifndef __MSVC__
+  #include <stdint.h>
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <io.h>
 /* Hack */
 #define UNIX_PATH_LEN   108
 struct sockaddr_un {
-  uint16_t sun_family;
+  unsigned short sun_family;
   char     sun_path[UNIX_PATH_LEN];
 };
 #else
@@ -37,7 +41,7 @@ getDevicesFromMiniSSDPD(const char * devtype, const char * socketpath)
 	struct UPNPDev * tmp;
 	struct UPNPDev * devlist = NULL;
 	unsigned char buffer[2048];
-	ssize_t n;
+	size_t n;
 	unsigned char * p;
 	unsigned char * url;
 	unsigned int i;
