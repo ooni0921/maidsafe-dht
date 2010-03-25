@@ -155,7 +155,7 @@ class KadServicesTest: public testing::Test {
       for (int j = 0; j < static_cast<int>(contacts_i.size()); ++j)
         all_contacts.push_back(contacts_i[j]);
     }
-    if (static_cast<int>(all_contacts.size()) < count+1) {
+    if (all_contacts.size() < static_cast<size_t>(count + 1)) {
       *ctcs = all_contacts;
       return;
     }

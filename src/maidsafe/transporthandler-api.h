@@ -65,13 +65,13 @@ class TransportHandler {
   * Unregister a transport
   *  @param id The id of the transport to unregister
   */
-  void Remove(const boost::int16_t id);
+  void Remove(const boost::int16_t &id);
 
   /** Retrieve a Transport pointer
   * @param id The id of the transport to retrieve
   * @return Transport pointer or NULL
   */
-  Transport* Get(const boost::int16_t id);
+  Transport* Get(const boost::int16_t &id);
 
   /** Start a transport.
   *  @param port - The port the transport has been given
@@ -85,7 +85,7 @@ class TransportHandler {
   *  @see - Remove
   *  @param id - The assigned id of the transport
   */
-  void Stop(const boost::int16_t id);
+  void Stop(const boost::int16_t &id);
 
   /** Stops all registered transports.
   */
@@ -100,8 +100,7 @@ class TransportHandler {
   *  @return list of all transport ids where the transport type matches type
   *  t in FIFO order
   */
-  std::list<boost::int16_t> GetTransportIDByType(
-      Transport::TransportType t);
+  std::list<boost::int16_t> GetTransportIDByType(Transport::TransportType t);
 
   /** Declares whether the Transport corrosponding to t is already registered
   *  @param t - pointer to transport to be checked
@@ -112,8 +111,8 @@ class TransportHandler {
   bool IsAddrUsable(const std::string &local_ip,
                     const std::string &remote_ip,
                     const boost::uint16_t &remote_port,
-                    const boost::int16_t id);
-  bool IsPortAvailable(const boost::uint16_t &port, const boost::int16_t id);
+                    const boost::int16_t &id);
+  bool IsPortAvailable(const boost::uint16_t &port, const boost::int16_t &id);
   bool RegisterOnMessage(boost::function<void(const std::string&,
                                               const boost::uint32_t&,
                                               const boost::int16_t&,
@@ -137,37 +136,37 @@ class TransportHandler {
                             const boost::uint16_t &rendezvous_port,
                             const bool &keep_connection,
                             boost::uint32_t *conn_id,
-                            const boost::int16_t id);
+                            const boost::int16_t &id);
   int Send(const rpcprotocol::RpcMessage &data,
            const boost::uint32_t &conn_id,
            const bool &new_skt,
-           const boost::int16_t id);
+           const boost::int16_t &id);
   int Send(const std::string &data,
            const boost::uint32_t &conn_id,
            const bool &new_skt,
-           const boost::int16_t id);
-  int StartLocal(const boost::uint16_t &port, const boost::int16_t id);
+           const boost::int16_t &id);
+  int StartLocal(const boost::uint16_t &port, const boost::int16_t &id);
   void CloseConnection(const boost::uint32_t &connection_id,
-                       const boost::int16_t id);
-  bool is_stopped(const boost::int16_t id);
-  struct sockaddr& peer_address(const boost::int16_t id);
+                       const boost::int16_t &id);
+  bool is_stopped(const boost::int16_t &id);
+  struct sockaddr& peer_address(const boost::int16_t &id);
   bool GetPeerAddr(const boost::uint32_t &conn_id,
                    struct sockaddr *addr,
-                   const boost::int16_t id);
+                   const boost::int16_t &id);
   bool ConnectionExists(const boost::uint32_t &connection_id,
-                        const boost::int16_t id);
+                        const boost::int16_t &id);
   bool HasReceivedData(const boost::uint32_t &connection_id,
                        boost::int64_t *size,
-                       const boost::int16_t id);
-  boost::uint16_t listening_port(const boost::int16_t id);
+                       const boost::int16_t &id);
+  boost::uint16_t listening_port(const boost::int16_t &id);
   void StartPingRendezvous(const bool &directly_connected,
                            const std::string &my_rendezvous_ip,
                            const boost::uint16_t &my_rendezvous_port,
-                           const boost::int16_t id);
+                           const boost::int16_t &id);
   void StopPingRendezvous();
   bool CanConnect(const std::string &ip,
                   const boost::uint16_t &port,
-                  const boost::int16_t id);
+                  const boost::int16_t &id);
   void OnRPCMessage(const rpcprotocol::RpcMessage &request,
                     const boost::uint32_t &connection_id,
                     const boost::int16_t &trans_id,

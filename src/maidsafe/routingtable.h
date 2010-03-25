@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <shlobj.h>
 #endif
 #include <functional>
+#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -142,6 +143,8 @@ class PDRoutingTableHandler {
       PDRoutingTableTuple *tuple);
   int GetClosestRtt(const float &rtt, const std::set<std::string> &exclude_ids,
       PDRoutingTableTuple *tuple);
+  int GetClosestContacts(const std::string &target_key,
+      const boost::uint32_t &count, std::list<PDRoutingTableTuple> *tuples);
   int AddTuple(base::PDRoutingTableTuple tuple);
   int DeleteTupleByKadId(const std::string &kademlia_id);
   int UpdateHostIp(const std::string &kademlia_id,
@@ -164,8 +167,11 @@ class PDRoutingTableHandler {
       const std::string &host_ip, const int &new_contact_local);
   int UpdateLocalToUnknown(const std::string &ip, const boost::uint16_t &port);
  private:
-//  PDRoutingTableHandler(const PDRoutingTableHandler&);
+  PDRoutingTableHandler(const PDRoutingTableHandler&);
   PDRoutingTableHandler &operator=(const PDRoutingTableHandler &);
+  bool KadCloser(const PDRoutingTableTuple &pdrtt1,
+                 const PDRoutingTableTuple &pdrtt2,
+                 const std::string &target_key) const;
   routingtable routingtable_;
   boost::mutex mutex_;
 };
@@ -183,7 +189,6 @@ class PDRoutingTable {
       pdroutingtablehdls_;
 };
 
-// typedef Singleton<PDRoutingTableHandler> PDRoutingTable;
 }  // namespace base
 
 #endif  // MAIDSAFE_ROUTINGTABLE_H_

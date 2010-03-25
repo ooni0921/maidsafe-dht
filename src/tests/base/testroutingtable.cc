@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
+#include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 TEST(PDRoutingTableHandlerTest, BEH_BASE_AddTuple) {
@@ -276,6 +277,116 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_GetClosestRtt) {
   ASSERT_EQ(tuples[4].rank_, rec_tuple.rank_);
   ASSERT_EQ(tuples[4].rtt_, rec_tuple.rtt_);
   ASSERT_EQ(tuples[4].space_, rec_tuple.space_);
+}
+
+TEST(PDRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
+  typedef std::map<kad::BigInt, base::PDRoutingTableTuple> TuplesMap;
+  TuplesMap tuples;
+  std::pair<TuplesMap::iterator, bool> result;
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string target_key = co.Hash(base::RandomString(222), "",
+                                   crypto::STRING_STRING, false);
+  const int kTupleCount(177);
+  base::PDRoutingTableHandler rt_handler;
+  for (int i = 0; i < kTupleCount; ++i) {
+    std::string kad_id = co.Hash(base::RandomString(111), "",
+                                 crypto::STRING_STRING, false);
+    result = tuples.insert(std::pair<kad::BigInt, base::PDRoutingTableTuple>(
+        kad::kademlia_distance(kad_id, target_key),
+        base::PDRoutingTableTuple(kad_id, "192.168.1." + base::itos(i % 256),
+            8000 + (i % 1000), "", 0, "", static_cast<float>(i), 1, 3232)));
+    ASSERT_TRUE(result.second);
+    ASSERT_EQ(0, rt_handler.AddTuple((*result.first).second));
+  }
+
+  std::list<base::PDRoutingTableTuple> returned_tuples;
+  boost::uint32_t requested_count(7);
+  ASSERT_EQ(-1, rt_handler.GetClosestContacts(target_key, requested_count,
+            NULL));
+  ASSERT_EQ(0, rt_handler.GetClosestContacts(target_key, requested_count,
+            &returned_tuples));
+  ASSERT_EQ(requested_count, returned_tuples.size());
+  TuplesMap::iterator tuples_map_itr = tuples.begin();
+  std::list<base::PDRoutingTableTuple>::iterator tuples_itr =
+      returned_tuples.begin();
+  kad::BigInt dist(0), previous_dist(0);
+  while (tuples_itr != returned_tuples.end()) {
+    dist = kad::kademlia_distance((*tuples_itr).kademlia_id_, target_key);
+    ASSERT_EQ((*tuples_map_itr).first, dist);
+    ASSERT_GT(dist, previous_dist);
+    ASSERT_EQ((*tuples_map_itr).second.kademlia_id_,
+              (*tuples_itr).kademlia_id_);
+    ASSERT_EQ((*tuples_map_itr).second.host_ip_, (*tuples_itr).host_ip_);
+    ASSERT_EQ((*tuples_map_itr).second.host_port_, (*tuples_itr).host_port_);
+    ASSERT_EQ((*tuples_map_itr).second.rtt_, (*tuples_itr).rtt_);
+    ++tuples_map_itr;
+    ++tuples_itr;
+    previous_dist = dist;
+  }
+
+  requested_count = kTupleCount;
+  ASSERT_EQ(0, rt_handler.GetClosestContacts(target_key, requested_count,
+            &returned_tuples));
+  ASSERT_EQ(kTupleCount, returned_tuples.size());
+  tuples_map_itr = tuples.begin();
+  tuples_itr = returned_tuples.begin();
+  previous_dist = 0;
+  while (tuples_itr != returned_tuples.end()) {
+    dist = kad::kademlia_distance((*tuples_itr).kademlia_id_, target_key);
+    ASSERT_EQ((*tuples_map_itr).first, dist);
+    ASSERT_GT(dist, previous_dist);
+    ASSERT_EQ((*tuples_map_itr).second.kademlia_id_,
+              (*tuples_itr).kademlia_id_);
+    ASSERT_EQ((*tuples_map_itr).second.host_ip_, (*tuples_itr).host_ip_);
+    ASSERT_EQ((*tuples_map_itr).second.host_port_, (*tuples_itr).host_port_);
+    ASSERT_EQ((*tuples_map_itr).second.rtt_, (*tuples_itr).rtt_);
+    ++tuples_map_itr;
+    ++tuples_itr;
+    previous_dist = dist;
+  }
+
+  requested_count = 2 * kTupleCount;
+  ASSERT_EQ(0, rt_handler.GetClosestContacts(target_key, requested_count,
+            &returned_tuples));
+  ASSERT_EQ(kTupleCount, returned_tuples.size());
+  tuples_map_itr = tuples.begin();
+  tuples_itr = returned_tuples.begin();
+  previous_dist = 0;
+  while (tuples_itr != returned_tuples.end()) {
+    dist = kad::kademlia_distance((*tuples_itr).kademlia_id_, target_key);
+    ASSERT_EQ((*tuples_map_itr).first, dist);
+    ASSERT_GT(dist, previous_dist);
+    ASSERT_EQ((*tuples_map_itr).second.kademlia_id_,
+              (*tuples_itr).kademlia_id_);
+    ASSERT_EQ((*tuples_map_itr).second.host_ip_, (*tuples_itr).host_ip_);
+    ASSERT_EQ((*tuples_map_itr).second.host_port_, (*tuples_itr).host_port_);
+    ASSERT_EQ((*tuples_map_itr).second.rtt_, (*tuples_itr).rtt_);
+    ++tuples_map_itr;
+    ++tuples_itr;
+    previous_dist = dist;
+  }
+
+  requested_count = 0;
+  ASSERT_EQ(0, rt_handler.GetClosestContacts(target_key, requested_count,
+            &returned_tuples));
+  ASSERT_EQ(kTupleCount, returned_tuples.size());
+  tuples_map_itr = tuples.begin();
+  tuples_itr = returned_tuples.begin();
+  previous_dist = 0;
+  while (tuples_itr != returned_tuples.end()) {
+    dist = kad::kademlia_distance((*tuples_itr).kademlia_id_, target_key);
+    ASSERT_EQ((*tuples_map_itr).first, dist);
+    ASSERT_GT(dist, previous_dist);
+    ASSERT_EQ((*tuples_map_itr).second.kademlia_id_,
+              (*tuples_itr).kademlia_id_);
+    ASSERT_EQ((*tuples_map_itr).second.host_ip_, (*tuples_itr).host_ip_);
+    ASSERT_EQ((*tuples_map_itr).second.host_port_, (*tuples_itr).host_port_);
+    ASSERT_EQ((*tuples_map_itr).second.rtt_, (*tuples_itr).rtt_);
+    ++tuples_map_itr;
+    ++tuples_itr;
+    previous_dist = dist;
+  }
 }
 
 TEST(PDRoutingTableTest, BEH_BASE_MultipleHandlers) {

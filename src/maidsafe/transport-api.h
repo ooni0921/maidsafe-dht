@@ -54,7 +54,7 @@ class Transport {
   enum TransportType { kUdt, kTcp, kOther };
   virtual TransportType GetType() = 0;
   virtual boost::int16_t GetID() = 0;
-  virtual void SetID(const boost::int16_t id) = 0;
+  virtual void SetID(const boost::int16_t &id) = 0;
   virtual int ConnectToSend(const std::string &remote_ip, const boost::uint16_t
       &remote_port, const std::string &local_ip, const boost::uint16_t
       &local_port, const std::string &rendezvous_ip, const boost::uint16_t
@@ -64,24 +64,24 @@ class Transport {
       &conn_id, const bool &new_skt) = 0;
   virtual int Send(const std::string &data, const boost::uint32_t &conn_id,
       const bool &new_skt) = 0;
-  virtual int Start(const boost::uint16_t &port) = 0;  // PV
+  virtual int Start(const boost::uint16_t &port) = 0;
   virtual int StartLocal(const boost::uint16_t &port) = 0;
   virtual bool RegisterOnRPCMessage(
       boost::function<void(const rpcprotocol::RpcMessage&,
                            const boost::uint32_t&,
                            const boost::int16_t&,
-                           const float &)> on_rpcmessage) = 0;  // PV
+                           const float &)> on_rpcmessage) = 0;
   virtual bool RegisterOnMessage(
       boost::function<void(const std::string&,
                            const boost::uint32_t&,
                            const boost::int16_t&,
-                           const float &)> on_message) = 0;  // PV
+                           const float &)> on_message) = 0;
   virtual bool RegisterOnSend(boost::function<void(const boost::uint32_t&,
-      const bool&)> on_send) = 0;  // PV
-  virtual bool RegisterOnServerDown(boost::function < void(const bool&,  // PV
+      const bool&)> on_send) = 0;
+  virtual bool RegisterOnServerDown(boost::function < void(const bool&,
         const std::string&, const boost::uint16_t&) > on_server_down) = 0;
   virtual void CloseConnection(const boost::uint32_t &connection_id) = 0;
-  virtual void Stop() = 0;  // PV
+  virtual void Stop() = 0;
   virtual bool is_stopped() const = 0;
   virtual struct sockaddr& peer_address() = 0;
   virtual bool GetPeerAddr(const boost::uint32_t &conn_id, struct sockaddr
@@ -97,8 +97,8 @@ class Transport {
   virtual bool CanConnect(const std::string &ip,
       const boost::uint16_t &port) = 0;
   virtual bool IsAddrUsable(const std::string &local_ip,
-      const std::string &remote_ip, const boost::uint16_t &remote_port) = 0;  // PV
-  virtual bool IsPortAvailable(const boost::uint16_t &port) = 0;  // PV
+      const std::string &remote_ip, const boost::uint16_t &remote_port) = 0;
+  virtual bool IsPortAvailable(const boost::uint16_t &port) = 0;
 };
 }  // namespace transport
 

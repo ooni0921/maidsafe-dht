@@ -1283,7 +1283,7 @@ void KNodeImpl::GetRandomContacts(const boost::uint16_t &count,
         all_contacts.push_back(contacts_i[j]);
     }
   }
-  if (static_cast<boost::uint16_t>(all_contacts.size()) < count + 1) {
+  if (all_contacts.size() < static_cast<size_t>(count + 1)) {
     *contacts = all_contacts;
     return;
   }
@@ -1385,7 +1385,7 @@ connect_to_node KNodeImpl::CheckContactLocalAddress(const std::string &id,
     return REMOTE;
   int result = (*base::PDRoutingTable::getInstance())[
       boost::lexical_cast<std::string>(host_port_)]->ContactLocal(id);
-  connect_to_node conn_type;
+  connect_to_node conn_type(UNKNOWN);
   std::string ext_ip_dec;
   switch (result) {
     case LOCAL: conn_type = LOCAL;
@@ -1963,7 +1963,7 @@ void KNodeImpl::SearchIteration_CancelActiveProbe(Contact sender,
   activeprobes_mutex_.lock();
   for (it = data->active_probes.begin(); it != data->active_probes.end();
       ++it) {
-    if (sender == *it && data->active_probes.size() > 0) {
+    if (sender == *it && !data->active_probes.empty()) {
       data->active_probes.erase(it);
       break;
     }
@@ -1973,7 +1973,7 @@ void KNodeImpl::SearchIteration_CancelActiveProbe(Contact sender,
       ++it1) {
     if (sender.node_id() == data->key)
       data->wait_for_key = false;
-    if (sender == *it1 && data->current_alpha.size() > 0) {
+    if (sender == *it1 && !data->current_alpha.empty()) {
       data->current_alpha.erase(it1);
       break;
     }

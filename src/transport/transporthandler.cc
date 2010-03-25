@@ -82,11 +82,11 @@ int TransportHandler::Register(transport::Transport *t, boost::int16_t *id) {
   return 0;
 }
 
-void TransportHandler::Remove(const boost::int16_t id) {
+void TransportHandler::Remove(const boost::int16_t &id) {
   transports_.erase(id);
 }
 
-Transport* TransportHandler::Get(const boost::int16_t id) {
+Transport* TransportHandler::Get(const boost::int16_t &id) {
   return transports_.find(id)->second;
 }
 
@@ -108,7 +108,7 @@ int TransportHandler::Start(const boost::uint16_t &port,
   return (*it).second->Start(port);
 }
 
-void TransportHandler::Stop(const boost::int16_t id) {
+void TransportHandler::Stop(const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
@@ -157,7 +157,7 @@ bool TransportHandler::IsRegistered(transport::Transport *t) {
 bool TransportHandler::IsAddrUsable(const std::string &local_ip,
                                     const std::string &remote_ip,
                                     const boost::uint16_t &remote_port,
-                                    const boost::int16_t id) {
+                                    const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
@@ -170,7 +170,7 @@ bool TransportHandler::IsAddrUsable(const std::string &local_ip,
 }
 
 bool TransportHandler::IsPortAvailable(const boost::uint16_t &port,
-                                       const boost::int16_t id) {
+                                       const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
@@ -235,7 +235,7 @@ int TransportHandler::ConnectToSend(const std::string &remote_ip,
                                     const boost::uint16_t &rendezvous_port,
                                     const bool &keep_connection,
                                     boost::uint32_t *conn_id,
-                                    const boost::int16_t id) {
+                                    const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
@@ -251,7 +251,7 @@ int TransportHandler::ConnectToSend(const std::string &remote_ip,
 int TransportHandler::Send(const rpcprotocol::RpcMessage &data,
                            const boost::uint32_t &conn_id,
                            const bool &new_skt,
-                           const boost::int16_t id) {
+                           const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
@@ -266,7 +266,7 @@ int TransportHandler::Send(const rpcprotocol::RpcMessage &data,
 int TransportHandler::Send(const std::string &data,
                            const boost::uint32_t &conn_id,
                            const bool &new_skt,
-                           const boost::int16_t id) {
+                           const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end())
@@ -276,7 +276,7 @@ int TransportHandler::Send(const std::string &data,
 }
 
 int TransportHandler::StartLocal(const boost::uint16_t &port,
-                                 const boost::int16_t id) {
+                                 const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
@@ -290,7 +290,7 @@ int TransportHandler::StartLocal(const boost::uint16_t &port,
 }
 
 void TransportHandler::CloseConnection(const boost::uint32_t &connection_id,
-                                       const boost::int16_t id) {
+                                       const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
@@ -302,7 +302,7 @@ void TransportHandler::CloseConnection(const boost::uint32_t &connection_id,
   (*it).second->CloseConnection(connection_id);
 }
 
-bool TransportHandler::is_stopped(const boost::int16_t id) {
+bool TransportHandler::is_stopped(const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end())
@@ -311,11 +311,11 @@ bool TransportHandler::is_stopped(const boost::int16_t id) {
   return (*it).second->is_stopped();
 }
 
-struct sockaddr& TransportHandler::peer_address(const boost::int16_t id) {
+struct sockaddr& TransportHandler::peer_address(const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end()) {
-    struct sockaddr *addr;
+    struct sockaddr *addr = NULL;
     DLOG(ERROR) << "peer_address: Couldn't find Transport matching ID: " << id
       << "\n";
     return *addr;
@@ -326,7 +326,7 @@ struct sockaddr& TransportHandler::peer_address(const boost::int16_t id) {
 
 bool TransportHandler::GetPeerAddr(const boost::uint32_t &conn_id,
                                    struct sockaddr *addr,
-                                   const boost::int16_t id) {
+                                   const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end())
@@ -336,7 +336,7 @@ bool TransportHandler::GetPeerAddr(const boost::uint32_t &conn_id,
 }
 
 bool TransportHandler::ConnectionExists(const boost::uint32_t &connection_id,
-                                        const boost::int16_t id) {
+                                        const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end())
@@ -347,7 +347,7 @@ bool TransportHandler::ConnectionExists(const boost::uint32_t &connection_id,
 
 bool TransportHandler::HasReceivedData(const boost::uint32_t &connection_id,
                                         boost::int64_t *size,
-                                        const boost::int16_t id) {
+                                        const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end())
@@ -357,7 +357,7 @@ bool TransportHandler::HasReceivedData(const boost::uint32_t &connection_id,
 }
 
 
-boost::uint16_t TransportHandler::listening_port(const boost::int16_t id) {
+boost::uint16_t TransportHandler::listening_port(const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end())
@@ -370,7 +370,7 @@ void TransportHandler::StartPingRendezvous(
     const bool &directly_connected,
     const std::string &my_rendezvous_ip,
     const boost::uint16_t &my_rendezvous_port,
-    const boost::int16_t id) {
+    const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end())
@@ -388,7 +388,7 @@ void TransportHandler::StopPingRendezvous() {
 
 bool TransportHandler::CanConnect(const std::string &ip,
                                   const boost::uint16_t &port,
-                                  const boost::int16_t id) {
+                                  const boost::int16_t &id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(id);
   if (it == transports_.end())

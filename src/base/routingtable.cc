@@ -27,6 +27,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/routingtable.h"
 #include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
+#include "kademlia/kadutils.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace base {
@@ -84,6 +86,34 @@ int PDRoutingTableHandler::GetClosestRtt(const float &rtt,
   if (distance_ideal < 0.0)
   // couldn't find a tuple with rtt close to ideal_rtt
     return 1;
+  return 0;
+}
+
+bool PDRoutingTableHandler::KadCloser(const PDRoutingTableTuple &pdrtt1,
+                                      const PDRoutingTableTuple &pdrtt2,
+                                      const std::string &target_key) const {
+  return kad::kademlia_distance(pdrtt1.kademlia_id_, target_key) <
+      kad::kademlia_distance(pdrtt2.kademlia_id_, target_key);
+}
+
+int PDRoutingTableHandler::GetClosestContacts(const std::string &target_key,
+      const boost::uint32_t &count, std::list<PDRoutingTableTuple> *tuples) {
+  if (target_key.size() != kad::kKeySizeBytes || tuples == NULL)
+    return -1;
+  boost::mutex::scoped_lock guard(mutex_);
+  std::vector< boost::reference_wrapper<const PDRoutingTableTuple> > temp;
+  BOOST_FOREACH(const PDRoutingTableTuple &pdrtt, routingtable_)temp.push_back(
+      boost::cref(pdrtt));
+  std::sort(temp.begin(), temp.end(),
+      boost::bind(&PDRoutingTableHandler::KadCloser, this, _1, _2, target_key));
+  if (count == 0 || count > routingtable_.size()) {
+    tuples->assign(temp.begin(), temp.end());
+  } else {
+    std::vector< boost::reference_wrapper<const PDRoutingTableTuple> >::iterator
+        itr = temp.begin();
+    itr += count;
+    tuples->assign(temp.begin(), itr);
+  }
   return 0;
 }
 

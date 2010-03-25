@@ -305,7 +305,7 @@ class NatDetectionTest: public testing::Test {
       for (size_t j = 0; j < contacts_i.size(); ++j)
         all_contacts.push_back(contacts_i[j]);
     }
-    if (static_cast<boost::uint16_t>(all_contacts.size()) < count + 1) {
+    if (all_contacts.size() < static_cast<size_t>(count + 1)) {
       *ctcs = all_contacts;
       return;
     }

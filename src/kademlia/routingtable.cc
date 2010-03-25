@@ -369,7 +369,7 @@ int RoutingTable::ForceKAcceptNewPeer(const Contact &new_contact) {
 
 Contact RoutingTable::GetLastSeenContact(const boost::uint16_t &kbucket_index) {
   Contact last_seen;
-  if (kbucket_index > static_cast<int>(k_buckets_.size()) - 1)
+  if (static_cast<size_t>(kbucket_index + 1) > k_buckets_.size())
     return last_seen;
   return k_buckets_[kbucket_index]->LastSeenContact();
 }

@@ -42,7 +42,7 @@ boost::int16_t TransportUDT::GetID() {
   return pimpl_->GetID();
 }
 
-void TransportUDT::SetID(const boost::int16_t id) {
+void TransportUDT::SetID(const boost::int16_t &id) {
   pimpl_->SetID(id);
 }
 

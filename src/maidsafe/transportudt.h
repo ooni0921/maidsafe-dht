@@ -45,7 +45,7 @@ class TransportUDT:public Transport {
   enum DataType { kString, kFile };
   Transport::TransportType GetType();
   boost::int16_t GetID();
-  void SetID(const boost::int16_t id);
+  void SetID(const boost::int16_t &id);
   static void CleanUp();
   int ConnectToSend(const std::string &remote_ip,
                    const boost::uint16_t &remote_port,
