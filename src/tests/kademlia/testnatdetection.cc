@@ -634,6 +634,7 @@ TEST_F(NatDetectionTest, BEH_KAD_FullBootstrap) {
   request.set_newcomer_local_port(contactA_.local_port());
   request.set_newcomer_ext_ip(contactA_.host_ip());
   request.set_newcomer_ext_port(contactA_.host_port());
+  request.set_node_type(VAULT);
 
   // Check for normal id
   request.set_newcomer_id(contactA_.node_id());

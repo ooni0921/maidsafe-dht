@@ -444,7 +444,7 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
     return;
   }
   // Checking if it is a client to return its external ip/port
-  if (request->newcomer_id() == client_node_id()) {
+  if (static_cast<node_type>(request->node_type()) == CLIENT) {
     response->set_bootstrap_id(node_info_.node_id());
     response->set_newcomer_ext_ip(request->newcomer_ext_ip());
     response->set_newcomer_ext_port(request->newcomer_ext_port());

@@ -281,7 +281,8 @@ class KNodeImpl {
                                  const std::string &host_ip);
   ContactInfo contact_info() const;
   inline std::string node_id() const {
-    return (type_ == CLIENT) ? fake_client_node_id_ : node_id_;
+    return (type_ == CLIENT || type_ == CLIENT_PORT_MAPPED)
+        ? fake_client_node_id_ : node_id_;
   }
   boost::uint32_t KeyLastRefreshTime(const std::string &key,
       const std::string &value);
@@ -310,6 +311,9 @@ class KNodeImpl {
     signature_validator_ = validator;
     if (premote_service_ != 0)
       premote_service_->set_signature_validator(signature_validator_);
+  }
+  inline nat_type host_nat_type() {
+    return host_nat_type_;
   }
  private:
   KNodeImpl &operator=(const KNodeImpl&);
@@ -412,6 +416,7 @@ class KNodeImpl {
   boost::shared_ptr<boost::thread> addcontacts_routine_;
   boost::condition_variable add_ctc_cond_;
   std::string private_key_, public_key_;
+  nat_type host_nat_type_;
   // for UPnP
   upnp::UpnpIgdClient upnp_;
   boost::uint16_t upnp_mapped_port_;

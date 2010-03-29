@@ -151,12 +151,13 @@ void KadRpcs::Downlist(const std::vector<std::string> downlist,
 void KadRpcs::Bootstrap(const std::string &local_id,
     const std::string &local_ip, const boost::uint16_t &local_port,
     const std::string &remote_ip, const boost::uint16_t &remote_port,
-    BootstrapResponse *resp, rpcprotocol::Controller *ctler,
-    google::protobuf::Closure *cb) {
+    const node_type &type, BootstrapResponse *resp,
+    rpcprotocol::Controller *ctler, google::protobuf::Closure *cb) {
   BootstrapRequest args;
   args.set_newcomer_id(local_id);
   args.set_newcomer_local_ip(local_ip);
   args.set_newcomer_local_port(local_port);
+  args.set_node_type(type);
   ctler->set_timeout(20);
   rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
       ctler->trans_id(), remote_ip, remote_port, "", 0, "", 0);

@@ -146,7 +146,7 @@ class TransportUDTImpl {
       const boost::uint32_t &conn_id, const bool &new_skt, const bool &is_rpc);
   void SendHandle();
   int Connect(UDTSOCKET *skt, const std::string &peer_address,
-      const boost::uint16_t &peer_port, bool short_timeout);
+      const boost::uint16_t &peer_port);
   void PingHandle();
   void AcceptConnHandler();
   void ReceiveHandler();

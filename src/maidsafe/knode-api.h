@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 15
+#if MAIDSAFE_DHT_VERSION < 16
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -412,6 +412,12 @@ class KNode {
   void SetAlternativeStore(base::AlternativeStore* alternative_store);
   base::AlternativeStore *alternative_store();
   void set_signature_validator(base::SignatureValidator *validator);
+  /**
+  * Returns the type of nat which the node is behind.  If used when the node
+  * is not joined it will return NONE
+  * @return type of nat
+  */
+  nat_type host_nat_type();
  private:
   boost::shared_ptr<KNodeImpl> pimpl_;
 };

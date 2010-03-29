@@ -71,8 +71,9 @@ message BootstrapRequest {
   required bytes newcomer_id = 1;
   required bytes newcomer_local_ip = 2;
   required int32 newcomer_local_port = 3;
-  optional bytes newcomer_ext_ip = 4;
-  optional int32 newcomer_ext_port = 5;
+  required int32 node_type = 4;
+  optional bytes newcomer_ext_ip = 5;
+  optional int32 newcomer_ext_port = 6;
 };
 
 message BootstrapResponse {

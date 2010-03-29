@@ -593,8 +593,7 @@ void TransportUDTImpl::SendHandle() {
 
 int TransportUDTImpl::Connect(UDTSOCKET *skt,
                           const std::string &peer_address,
-                          const boost::uint16_t &peer_port,
-                          bool) {
+                          const boost::uint16_t &peer_port) {
   if (stop_)
     return -1;
   bool blocking = false;
@@ -654,7 +653,7 @@ void TransportUDTImpl::HandleRendezvousMsgs(const HolePunchingMsg &message) {
       Send(ser_msg, kString, conn_id, true, false);
   } else if (message.type() == FORWARD_MSG) {
     UDTSOCKET skt;
-    if (Connect(&skt, message.ip(), message.port(), true) == 0) {
+    if (Connect(&skt, message.ip(), message.port()) == 0) {
       UDT::close(skt);
     }
   }
@@ -696,7 +695,7 @@ void TransportUDTImpl::PingHandle() {
     }
     UDTSOCKET skt;
 
-    if (Connect(&skt, my_rendezvous_ip_, my_rendezvous_port_, false) == 0) {
+    if (Connect(&skt, my_rendezvous_ip_, my_rendezvous_port_) == 0) {
       UDT::close(skt);
       bool dead_rendezvous_server = false;
       // it is not dead, no nead to return the ip and port
@@ -708,7 +707,7 @@ void TransportUDTImpl::PingHandle() {
       bool alive = false;
       for (int i = 0; i < 2 && !alive; i++) {
         boost::this_thread::sleep(boost::posix_time::seconds(2));
-        if (Connect(&skt, my_rendezvous_ip_, my_rendezvous_port_, false) == 0) {
+        if (Connect(&skt, my_rendezvous_ip_, my_rendezvous_port_) == 0) {
           UDT::close(skt);
           alive = true;
         }
@@ -744,7 +743,7 @@ bool TransportUDTImpl::CanConnect(const std::string &ip,
   else
     dec_lip = ip;
   bool result = false;
-  if (Connect(&skt, dec_lip, port, false) == 0)
+  if (Connect(&skt, dec_lip, port) == 0)
     result = true;
   UDT::close(skt);
   return result;
@@ -930,7 +929,7 @@ int TransportUDTImpl::ConnectToSend(const std::string &remote_ip,
     bool remote(local_ip == "" || local_port == 0);
     // the node is believed to be local
     if (!remote) {
-      int conn_result = Connect(&skt, local_ip, local_port, false);
+      int conn_result = Connect(&skt, local_ip, local_port);
       if (conn_result != 0) {
         DLOG(ERROR) << "(" << listening_port_ << ") Transport::ConnectToSend "
             << "failed to connect to local port " << local_port <<
@@ -942,7 +941,7 @@ int TransportUDTImpl::ConnectToSend(const std::string &remote_ip,
       }
     }
     if (remote) {
-      int conn_result = Connect(&skt, remote_ip, remote_port, false);
+      int conn_result = Connect(&skt, remote_ip, remote_port);
       if (conn_result != 0) {
         DLOG(ERROR) << "(" << listening_port_ << ") Transport::ConnectToSend "
             << "failed to connect to remote port " << remote_port << std::endl;
@@ -952,7 +951,7 @@ int TransportUDTImpl::ConnectToSend(const std::string &remote_ip,
     }
   } else {
     UDTSOCKET rend_skt;
-    int conn_result = Connect(&rend_skt, rendezvous_ip, rendezvous_port, false);
+    int conn_result = Connect(&rend_skt, rendezvous_ip, rendezvous_port);
     if (conn_result != 0) {
       DLOG(ERROR) << "(" << listening_port_ << ") Transport::ConnectToSend " <<
           "failed to connect to rendezvouz port " << rendezvous_port <<
@@ -986,7 +985,7 @@ int TransportUDTImpl::ConnectToSend(const std::string &remote_ip,
     int retries = 4;
     bool connected = false;
     for (int i = 0; i < retries && !connected; i++) {
-      conn_result = Connect(&skt, remote_ip, remote_port, false);
+      conn_result = Connect(&skt, remote_ip, remote_port);
       if (conn_result == 0)
         connected = true;
     }

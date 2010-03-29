@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 15
+#if MAIDSAFE_DHT_VERSION < 16
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -83,12 +83,12 @@ class Controller : public google::protobuf::RpcController {
   /**
   * Sets the id of the rpc request
   * @param id Idenditifier of the rpc request/respons
-  */ 
+  */
   void set_req_id(const boost::uint32_t &id);
   /**
   * Returns the timeout for the rpc request.
   * @return the timeout time in milliseconds.
-  */ 
+  */
   boost::uint64_t timeout() const;
   /**
   * @return The rtt in milliseconds
@@ -96,7 +96,7 @@ class Controller : public google::protobuf::RpcController {
   float rtt() const;
   boost::int16_t trans_id() const;
   /**
-  * @return the identifier of the rpc request/response 
+  * @return the identifier of the rpc request/response
   */
   boost::uint32_t req_id() const;
  private:

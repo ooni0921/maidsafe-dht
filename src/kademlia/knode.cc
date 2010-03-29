@@ -245,6 +245,10 @@ void KNode::DeleteValue(const std::string &key, const SignedValue &value,
   pimpl_->DeleteValue(key, value, request, cb);
 }
 
+nat_type KNode::host_nat_type() {
+  return pimpl_->host_nat_type();
+}
+
 void InsertKadContact(const std::string &key,
                       const kad::Contact &new_contact,
                       std::vector<kad::Contact> *contacts) {

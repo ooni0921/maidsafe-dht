@@ -86,7 +86,7 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 #include "maidsafe/routingtable.h"
 #include "maidsafe/utils.h"
 
-#define MAIDSAFE_DHT_VERSION 15
+#define MAIDSAFE_DHT_VERSION 16
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *
@@ -147,7 +147,21 @@ const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffff"
 
 // KADEMLIA ENUMERATIONS, DATA TYPE DEFINITIONS, AND FORWARD DECLARATIONS
 enum KBucketExitCode { SUCCEED, FULL, FAIL };
-enum node_type { CLIENT, VAULT };
+
+// DIR_CONN - node is directly connected to the internet, ip is an external ip
+//            or port has been manually mapped or port mapped with UPnP
+// RESTRICTED - node is behind a port or address restricted NAT, has to be
+//              contacted with its rendezvous server
+// NONE - node is behind a symmetric NAT and can not be contacted without it
+//        making the first contact and keeping the connection open
+enum nat_type { DIR_CONN, RESTRICTED, NONE };
+
+// CLIENT - does not map external ip and port, is not stored in other  nodes
+//          routing table
+// CLIENT_PORT_MAPPED - maps external ip and port, is not stored in other nodes
+//                      routing table
+// VAULT - maps external ip and port, complete functionality of a kademlia node
+enum node_type { CLIENT, CLIENT_PORT_MAPPED, VAULT };
 enum connect_to_node { LOCAL, REMOTE, UNKNOWN };
 enum remote_find_method { FIND_NODE, FIND_VALUE, BOOTSTRAP };
 class KNodeImpl;

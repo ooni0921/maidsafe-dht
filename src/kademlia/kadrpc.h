@@ -75,8 +75,9 @@ class KadRpcs {
       google::protobuf::Closure *cb);
   void Bootstrap(const std::string &local_id, const std::string &local_ip,
       const boost::uint16_t &local_port, const std::string &remote_ip,
-      const boost::uint16_t &remote_port, BootstrapResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
+      const boost::uint16_t &remote_port, const node_type &type,
+      BootstrapResponse *resp, rpcprotocol::Controller *ctler,
+      google::protobuf::Closure *cb);
   void Delete(const std::string &key, const SignedValue &value,
       const SignedRequest &sig_req, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,

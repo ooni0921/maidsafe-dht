@@ -143,8 +143,9 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
   refresh_routine_started_(false), kad_config_path_(""), local_host_ip_(""),
   local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
   use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
-  add_ctc_cond_(), private_key_(private_key), public_key_(public_key), upnp_(),
-  upnp_mapped_port_(0), signature_validator_(NULL) {}
+  add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
+  host_nat_type_(NONE), upnp_(), upnp_mapped_port_(0),
+  signature_validator_(NULL) {}
 
 KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
   transport::TransportHandler *ptrans_handler,
@@ -166,7 +167,8 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
   local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
   use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
   add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
-  upnp_(), upnp_mapped_port_(0), signature_validator_(NULL) {}
+  host_nat_type_(NONE), upnp_(), upnp_mapped_port_(0),
+  signature_validator_(NULL) {}
 
 KNodeImpl::~KNodeImpl() {
   if (is_joined_) {
@@ -211,10 +213,10 @@ void KNodeImpl::Bootstrap(const std::string &bootstrap_ip,
       &KNodeImpl::Bootstrap_Callback, resp, data);
   if (dir_connected) {
     kadrpcs_.Bootstrap(client_node_id(), host_ip_, host_port_, bootstrap_ip,
-        bootstrap_port, resp, data.rpc_ctrler, done);
+        bootstrap_port, type_, resp, data.rpc_ctrler, done);
   } else {
     kadrpcs_.Bootstrap(node_id(), host_ip_, host_port_, bootstrap_ip,
-        bootstrap_port, resp, data.rpc_ctrler, done);
+        bootstrap_port, type_, resp, data.rpc_ctrler, done);
   }
 }
 
@@ -239,6 +241,8 @@ void KNodeImpl::Join_Bootstrapping_Iteration_Client(
         bootstrap_node.host_port(), trans_id_);
     kadrpcs_.set_info(contact_info());
     args->is_callbacked = true;
+    if (type_ != CLIENT)
+      host_nat_type_ = DIR_CONN;
     StartSearchIteration(node_id_, BOOTSTRAP, args->cb);
     // start a schedule to delete expired key/value pairs only once
     if (!refresh_routine_started_) {
@@ -290,16 +294,19 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
           ":" << host_port_ << std::endl;
       rv_ip_ = "";
       rv_port_ = 0;
+      host_nat_type_ = DIR_CONN;
     } else if (result_msg.nat_type() == 1) {
       // Direct connection
       DLOG(INFO) << "Node is behind NAT of type 1\n";
       rv_ip_ = "";
       rv_port_ = 0;
+      host_nat_type_ = DIR_CONN;
     } else if (result_msg.nat_type() == 2) {
       // need rendezvous server
       DLOG(INFO) << "Node is behind NAT of type 2 (needs rendezvous server)\n";
       rv_ip_ = bootstrap_node.host_ip();
       rv_port_ = bootstrap_node.host_port();
+      host_nat_type_ = RESTRICTED;
     } else if (result_msg.nat_type() == 3) {
       // behind symmetric router or no connection
       DLOG(INFO) << "Node is behind NAT of type 3\n";
@@ -307,6 +314,11 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
       if (upnp_mapped_port_ != 0) {
         host_port_ = upnp_mapped_port_;
         // It is now directly connected
+        rv_ip_ = "";
+        rv_port_ = 0;
+      } else if (type_ == CLIENT_PORT_MAPPED) {
+        host_port_ = local_host_port_;
+        host_ip_ = local_host_ip_;
         rv_ip_ = "";
         rv_port_ = 0;
       } else {
@@ -349,9 +361,10 @@ void KNodeImpl::Join_Bootstrapping(base::callback_func_type cb,
       std::vector<Contact> &cached_nodes, const bool &got_external_address) {
   if (cached_nodes.empty()) {
     base::GeneralResponse local_result;
-    if (type_ != CLIENT) {
+    if (type_ == VAULT) {
       local_result.set_result(kRpcResultSuccess);
       is_joined_ = true;
+      host_nat_type_ = DIR_CONN;
       premote_service_->set_node_joined(true);
       premote_service_->set_node_info(contact_info());
       // since it is a 1 network node, so it has no rendezvous server to ping
@@ -468,7 +481,7 @@ void KNodeImpl::Join(const std::string &node_id,
   else
     node_id_ = dec_id;
 // TODO(Fraser#5#): 2009-10-13 - Replace check above with safer test
-  if (type_ == CLIENT) {
+  if (type_ == CLIENT || type_ == CLIENT_PORT_MAPPED) {
     fake_client_node_id_ = client_node_id();
   }
   bool got_external_address = false;
@@ -515,7 +528,7 @@ void KNodeImpl::Join(const std::string &node_id,
   else
     node_id_ = dec_id;
 // TODO(Fraser#5#): 2009-10-13 - Replace check above with safer test
-  if (type_ == CLIENT) {
+  if (type_ == CLIENT || type_ == CLIENT_PORT_MAPPED) {
     // Client nodes can not start a network on their own
     local_result.set_result(kRpcResultFailure);
     local_result.SerializeToString(&local_result_str);
@@ -554,6 +567,7 @@ void KNodeImpl::Join(const std::string &node_id,
   prouting_table_.reset(new RoutingTable(node_id_, K_));
 
   is_joined_ = true;
+  host_nat_type_ = DIR_CONN;
   premote_service_->set_node_joined(true);
   premote_service_->set_node_info(contact_info());
   // since it is a 1 network node, so it has no rendezvous server to ping
@@ -602,6 +616,7 @@ void KNodeImpl::Leave() {
       (*base::PDRoutingTable::getInstance())[base::itos(host_port_)]->Clear();
     }
     stopping_ = false;
+    host_nat_type_ = NONE;
   }
 }
 
