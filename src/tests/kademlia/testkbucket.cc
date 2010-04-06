@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
 #include "kademlia/kbucket.h"
+#include "maidsafe/kadid.h"
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 
@@ -45,21 +46,19 @@ class TestKbucket : public testing::Test {
 };
 
 TEST_F(TestKbucket, BEH_KAD_IsInRange) {
-  BigInt min_value(0);
+  KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
-  hex_max_val = "0x" + hex_max_val;
-  BigInt max_value(hex_max_val);
+  KadId max_value(hex_max_val, true);
   KBucket kbucket1(min_value, max_value);
   std::string id = cry_obj.Hash("15641654616", "", crypto::STRING_STRING,
       false);
   ASSERT_TRUE(kbucket1.KeyInRange(id));
   hex_max_val = "";
-  for (boost::int16_t i = 0; i < kKeySizeBytes; ++i)
+  for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "a";
-  hex_max_val = "0x" + hex_max_val;
-  BigInt max_value1(hex_max_val);
+  KadId max_value1(hex_max_val, true);
   KBucket kbucket2(min_value, max_value1);
   std::string enc_id;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
@@ -68,12 +67,11 @@ TEST_F(TestKbucket, BEH_KAD_IsInRange) {
 }
 
 TEST_F(TestKbucket, BEH_KAD_AddAndGetContact) {
-  BigInt min_value(0);
+  KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
-  hex_max_val = "0x" + hex_max_val;
-  BigInt max_value(hex_max_val);
+  KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
   std::string id[K];
   std::string ip("127.0.0.1");
@@ -110,12 +108,11 @@ TEST_F(TestKbucket, BEH_KAD_AddAndGetContact) {
 }
 
 TEST_F(TestKbucket, BEH_KAD_GetContacts) {
-  BigInt min_value(0);
+  KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
-  hex_max_val = "0x" + hex_max_val;
-  BigInt max_value(hex_max_val);
+  KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
   std::string id[kad::K - 1];
   std::string ip("127.0.0.1");
@@ -165,12 +162,11 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
 }
 
 TEST_F(TestKbucket, BEH_KAD_DeleteContact) {
-  BigInt min_value(0);
+  KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
-  hex_max_val = "0x" + hex_max_val;
-  BigInt max_value(hex_max_val);
+  KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
   std::string id[kad::K - 1];
   std::string ip("127.0.0.1");
@@ -202,12 +198,11 @@ TEST_F(TestKbucket, BEH_KAD_DeleteContact) {
 }
 
 TEST_F(TestKbucket, BEH_KAD_SetLastAccessed) {
-  BigInt min_value(0);
+  KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
-  hex_max_val = "0x" + hex_max_val;
-  BigInt max_value(hex_max_val);
+  KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
   boost::uint32_t time_accessed = base::get_epoch_time();
   kbucket.set_last_accessed(time_accessed);
@@ -215,12 +210,11 @@ TEST_F(TestKbucket, BEH_KAD_SetLastAccessed) {
 }
 
 TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
-  BigInt min_value(0);
+  KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
-  hex_max_val = "0x" + hex_max_val;
-  BigInt max_value(hex_max_val);
+  KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
   std::string id[K];
   std::string ip = "127.0.0.1";
@@ -248,12 +242,11 @@ TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
 }
 
 TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
-  BigInt min_value(0);
+  KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
-  hex_max_val = "0x" + hex_max_val;
-  BigInt max_value(hex_max_val);
+  KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
   std::string id[kad::K - 1], ip("127.0.0.1");
   boost::int16_t port[kad::K - 1];
@@ -317,12 +310,11 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
 }
 
 TEST_F(TestKbucket, BEH_KAD_GetOldestContact) {
-  BigInt min_value(0);
+  KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     hex_max_val += "f";
-  hex_max_val = "0x" + hex_max_val;
-  BigInt max_value(hex_max_val);
+  KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
   std::string id[kad::K - 1], ip("127.0.0.1");
   boost::int16_t port[kad::K - 1];

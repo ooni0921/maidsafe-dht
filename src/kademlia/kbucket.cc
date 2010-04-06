@@ -30,19 +30,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 
-KBucket::KBucket(const BigInt &range_min, const BigInt &range_max,
-    const boost::uint16_t &K) : last_accessed_(0), contacts_(),
-      range_min_(range_min), range_max_(range_max), K_(K) {}
+KBucket::KBucket(const KadId &min, const KadId &max,
+      const boost::uint16_t &kb_K) : last_accessed_(0), contacts_(),
+      range_min_(min), range_max_(max), K_(kb_K) {
+}
 
 KBucket::~KBucket() {
   contacts_.clear();
 }
 
 bool KBucket::KeyInRange(const std::string &key) {
-  std::string key_enc = base::EncodeToHex(key);
-  key_enc = "0x" + key_enc;
-  BigInt key_val(key_enc);
-  return static_cast<bool>((range_min_ <= key_val) && (key_val < range_max_));
+  KadId id(key, false);
+  return static_cast<bool>((range_min_ <= id) && (id <= range_max_));
 }
 
 size_t KBucket::Size() const { return contacts_.size(); }
@@ -54,11 +53,7 @@ void KBucket::set_last_accessed(const boost::uint32_t &time_accessed) {
 }
 
 KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
-  std::string contact_info;
-  Contact new_contact_local;
-  new_contact_local = new_contact;
-  if (!new_contact_local.SerialiseToString(&contact_info))
-    return FAIL;
+  Contact new_contact_local(new_contact);
   int position = -1;
   int i = 0;
   // Check if the contact is already in the kbucket to remove it from
@@ -142,9 +137,9 @@ void KBucket::GetContacts(const boost::uint16_t &count,
     }
 }
 
-BigInt KBucket::range_min() const { return range_min_; }
+KadId KBucket::range_min() const { return range_min_; }
 
-BigInt KBucket::range_max() const { return range_max_; }
+KadId KBucket::range_max() const { return range_max_; }
 
 Contact KBucket::LastSeenContact() {
   if (contacts_.empty()) {

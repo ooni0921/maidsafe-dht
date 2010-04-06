@@ -27,86 +27,30 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include "kademlia/kadutils.h"
+#include "maidsafe/kadid.h"
 #include "maidsafe/maidsafe-dht.h"
 
-bool InRange(const std::string &key, const kad::BigInt &min_range,
-    const kad::BigInt &max_range) {
-  std::string key_enc = base::EncodeToHex(key);
-  key_enc = "0x" + key_enc;
-  kad::BigInt key_val(key_enc);
-  return static_cast<bool>((min_range <= key_val && key_val <= max_range));
+bool InRange(const std::string &key, const kad::KadId &min_range,
+    const kad::KadId &max_range) {
+  kad::KadId key_id(key, false);
+  return static_cast<bool>((min_range <= key_id && key_id <= max_range));
 }
 
 TEST(KadRandomId, BEH_KAD_InRange) {
-  kad::BigInt min_range(2);
-  kad::BigInt max_range(2);
-  min_range.pow2(510);
-  max_range.pow2(512);
+  kad::KadId min_range(510), max_range(kad::MAX_ID);
   std::string id = kad::random_kademlia_id(min_range, max_range);
-  std::string enc_id = base::EncodeToHex(id);
-  enc_id = "0x" + enc_id;
-  kad::BigInt id_val(enc_id);
-  ASSERT_GE(id_val, min_range);
-  ASSERT_GE(max_range, id_val);
   ASSERT_TRUE(InRange(id, min_range, max_range));
 }
 
 TEST(KadRandomId, BEH_KAD_KadEnvInRange) {
-  kad::BigInt min_range(0);
-  kad::BigInt max_range(2);
-  max_range.pow2(kad::kKeySizeBytes*8);
-  max_range--;
-  for (int i = 0; i < 7; i++) {
-    kad::BigInt x(2);
-    x.pow2(i);
-    kad::BigInt y(2);
-    y.pow2(i+1);
-    std::string id = kad::random_kademlia_id(max_range/y, max_range/x);
-    std::string enc_id = base::EncodeToHex(id);
-    enc_id = "0x" + enc_id;
-    kad::BigInt id_val(enc_id);
-    ASSERT_GE(id_val, max_range/y);
-    ASSERT_GE(max_range/x, id_val);
-    ASSERT_TRUE(InRange(id, max_range/y, max_range/x));
-  }
-  kad::BigInt x(2);
-  x.pow2(7);
-  std::string id = kad::random_kademlia_id(min_range, max_range/x);
-  std::string enc_id = base::EncodeToHex(id);
-  enc_id = "0x" + enc_id;
-  kad::BigInt id_val(enc_id);
-  ASSERT_GE(id_val, min_range);
-  ASSERT_GE(max_range, id_val);
+  kad::KadId min_range, max_range(kad::MAX_ID);
   for (int i = 1; i < 512; i++) {
-    kad::BigInt x(2);
-    x.pow2(i);
+    kad::KadId x(1);
     std::string id = kad::random_kademlia_id(min_range, x);
-    std::string enc_id = base::EncodeToHex(id);
-    enc_id = "0x" + enc_id;
-    kad::BigInt id_val(enc_id);
-    if (enc_id == "0x00")
-      id_val = 0;
-    ASSERT_GE(id_val, min_range);
-    ASSERT_GE(max_range, id_val);
+    kad::KadId id_val(id, false);
+    ASSERT_TRUE(id_val >= min_range);
+    ASSERT_TRUE(max_range >= id_val);
   }
-}
-
-TEST(KadDistance, BEH_KAD_DistanceTest) {
-  kad::BigInt x(0);
-  kad::BigInt y(2);
-  y.pow2(512);
-  y--;
-  std::string id1 = kad::random_kademlia_id(x, y);
-  std::string id2 = kad::random_kademlia_id(x, y);
-  while (id1 == id2)
-    id2 = kad::random_kademlia_id(x, y);
-  ASSERT_NE(id1, id2);
-  kad::BigInt res = kad::kademlia_distance(id1, id1);
-  kad::BigInt zero(0);
-  ASSERT_EQ(zero, res);
-  ASSERT_LT(zero, kad::kademlia_distance(id1, id2));
-  ASSERT_EQ(kad::kademlia_distance(id1, id2),
-    kad::kademlia_distance(id2, id1));
 }
 
 TEST(ClientNodeId, BEH_KAD_ClientCreateId) {
@@ -117,19 +61,12 @@ TEST(ClientNodeId, BEH_KAD_ClientCreateId) {
   std::string enc_id = base::EncodeToHex(id);
   for (int i = 0; i < kad::kKeySizeBytes*2; i++)
     ASSERT_EQ(enc_id[i], '0');
-  kad::BigInt exp_value(0);
-  enc_id = "0x"+enc_id;
-  kad::BigInt id_value(enc_id);
-  kad::BigInt res = id_value-exp_value;
-  ASSERT_EQ(exp_value, res);
 }
 
 TEST(VaultNodeId, FUNC_KAD_VaultCreateId) {
   std::string id;
-  kad::BigInt min_range(0);
-  kad::BigInt max_range(2);
-  max_range.pow2(kad::kKeySizeBytes*8);
-  max_range--;
+  kad::KadId min_range;
+  kad::KadId max_range(kad::MAX_ID);
   for (int i = 0; i < 50; i++) {
     id = kad::vault_random_id();
     ASSERT_TRUE(InRange(id, min_range, max_range));

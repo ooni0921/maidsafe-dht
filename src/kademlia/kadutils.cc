@@ -24,56 +24,24 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
-#include <boost/random.hpp>
-#include <ctime>
-
 #include "kademlia/kadutils.h"
+#include "maidsafe/kadid.h"
 
 namespace kad {
-BigInt StrToBigInt(const std::string &key) {
-  std::string enc_key = base::EncodeToHex(key);
-  enc_key = "0x" + enc_key;
-  BigInt value(enc_key);
-  return value;
-}
 
-BigInt kademlia_distance(const std::string &key_one,
-    const std::string &key_two) {
-  BigInt value_one = StrToBigInt(key_one);
-  BigInt value_two = StrToBigInt(key_two);
-  return value_one ^ value_two;
-}
-
-std::string random_kademlia_id(const BigInt &min_range,
-    const BigInt &max_range) {
-  boost::mt19937 gen;
-  gen.seed(static_cast<unsigned int>(base::random_32bit_uinteger()\
-    ^static_cast<unsigned int>(std::time(0))));
-  boost::mp_math::uniform_mp_int<> big_random(0, max_range - min_range);
-  BigInt rand_num = big_random(gen);
-  rand_num = rand_num % (max_range - min_range) + min_range;
-  if (rand_num >= max_range)
-    rand_num = max_range - 1;
-  if (rand_num < min_range)
-    rand_num = min_range;
-  std::string temp = rand_num.to_string<std::string>(std::ios_base::hex);
-  if (temp.size() < 2 * kKeySizeBytes) {
-    temp = std::string(2 * kKeySizeBytes - temp.size(), '0') + temp;
-  }
-  return base::DecodeFromHex(temp);
+std::string random_kademlia_id(const KadId &min_range,
+    const KadId &max_range) {
+  KadId id(min_range, max_range);
+  return id.ToStringDecoded();
 }
 
 std::string client_node_id() {
-  std::string id(kKeySizeBytes, '\0');
-  return id;
+  KadId id;
+  return id.ToStringDecoded();
 }
 
 std::string vault_random_id() {
-  BigInt min_range(0);
-  BigInt max_range(2);
-  max_range.pow2(kKeySizeBytes*8);
-  max_range--;
-  return random_kademlia_id(min_range, max_range);
+  KadId id(0, ID_BITS_SIZE);
+  return id.ToStringDecoded();
 }
 }  // namespace kad

@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include "kademlia/kadutils.h"
+#include "maidsafe/kadid.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace base {
@@ -92,8 +93,9 @@ int PDRoutingTableHandler::GetClosestRtt(const float &rtt,
 bool PDRoutingTableHandler::KadCloser(const PDRoutingTableTuple &pdrtt1,
                                       const PDRoutingTableTuple &pdrtt2,
                                       const std::string &target_key) const {
-  return kad::kademlia_distance(pdrtt1.kademlia_id_, target_key) <
-      kad::kademlia_distance(pdrtt2.kademlia_id_, target_key);
+  kad::KadId id1(pdrtt1.kademlia_id_, false), id2(pdrtt2.kademlia_id_, false),
+      target_id(target_key, false);
+  return kad::KadId::CloserToTarget(id1, id2, target_id);
 }
 
 int PDRoutingTableHandler::GetClosestContacts(const std::string &target_key,

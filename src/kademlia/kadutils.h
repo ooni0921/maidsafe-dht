@@ -28,23 +28,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef KADEMLIA_KADUTILS_H_
 #define KADEMLIA_KADUTILS_H_
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1200)
-# pragma once
-#endif
-
 #include <string>
-#include "boost/mp_math/mp_int.hpp"  // NB - This is NOT an accepted boost lib.
-#include "maidsafe/maidsafe-dht_config.h"
 
 namespace kad {
-typedef boost::mp_math::mp_int<> BigInt;
+class KadId;
 
-BigInt StrToBigInt(const std::string &key);
-// kademlia distance the input of the kademlia keys must not be encoded
-BigInt kademlia_distance(const std::string &key_one,
-                         const std::string &key_two);
-std::string random_kademlia_id(const BigInt &min_range,
-                               const BigInt &max_range);
+std::string random_kademlia_id(const KadId &min_range,
+                               const KadId &max_range);
 std::string client_node_id();
 std::string vault_random_id();
 }  // namespace kad

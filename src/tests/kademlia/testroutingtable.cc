@@ -33,20 +33,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 
-bool TestInRange(const std::string &key, const kad::BigInt &min_range,
-    const kad::BigInt &max_range) {
-  std::string key_enc = base::EncodeToHex(key);
-  key_enc = "0x"+key_enc;
-  kad::BigInt key_val(key_enc);
-  if (min_range > key_val) {
+bool TestInRange(const std::string &key, const kad::KadId &min_range,
+    const kad::KadId &max_range) {
+  kad::KadId key_id(key, false);
+  if (min_range > key_id) {
     LOG(INFO) << "under min range" << std::endl;
-    LOG(INFO) << "val " << key_val << std::endl;
+    LOG(INFO) << "val " << key_id.ToStringEncoded() << std::endl;
   }
-  if (key_val > max_range) {
+  if (key_id > max_range) {
     LOG(INFO) << "above max range" << std::endl;
-    LOG(INFO) << "val " << key_val << std::endl;
+    LOG(INFO) << "val " << key_id.ToStringEncoded() << std::endl;
   }
-  return static_cast<bool>(min_range <= key_val && key_val <= max_range);
+  return static_cast<bool>(min_range <= key_id && key_id <= max_range);
 }
 
 
@@ -102,7 +100,7 @@ TEST_F(TestRoutingTable, BEH_KAD_AddContact) {
     "4f81c8f289dd080e1f929c029810cf1ffdc82cdfd4331238f0e6a940862f1c";
   ids[15] = "a27b24b72c37e7862613b29e86502dae6f863170eb1621a04a06f909588348427b"
     "2c3bc623d7ef1bf59bd3efa010c69b19a1d8732c8512ff8510ea46176ad383";
-  for (boost::uint16_t i = 0; i < 16 && i < kad::K; i++) {
+  for (boost::uint16_t i = 0; i < 16 && i < kad::K; ++i) {
     std::string id = base::DecodeFromHex(ids[i]);
     kad::Contact contact(id, ip, port + i, ip, port + i);
     ASSERT_EQ(0, routingtable.AddContact(contact));
@@ -136,7 +134,7 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Contact) {
   kad::Contact contact(contact_id, ip, port, ip, port);
   ASSERT_EQ(0, routingtable.AddContact(contact));
 
-  for (int i = 0; i < kad::kFailedRpc; i++) {
+  for (int i = 0; i < kad::kFailedRpc; ++i) {
     routingtable.RemoveContact(contact_id, false);
     kad::Contact rec_contact;
     ASSERT_TRUE(routingtable.GetContact(contact_id, &rec_contact));
@@ -170,20 +168,24 @@ TEST_F(TestRoutingTable, BEH_KAD_SplitKBucket) {
   boost::uint32_t id[kad::K+1];
   kad::Contact contacts[kad::K+1];
   id[0] = base::random_32bit_uinteger() %5000 +1;
-  for (boost::uint16_t i = 0; i < kad::K+1; i++)
+  for (boost::uint16_t i = 0; i < kad::K+1; ++i)
     id[i] = id[0] + i;
   std::string contact_id;
   std::string ip("127.0.0.1");
   boost::uint16_t port = 8880;
-  for (boost::uint16_t i = 0; i < kad::K+1; i++) {
+  ASSERT_EQ(size_t(1), routingtable.KbucketSize());
+  ASSERT_EQ(size_t(0), routingtable.Size());
+  for (boost::uint16_t i = 0; i < kad::K+1; ++i) {
     contact_id = cry_obj.Hash(boost::lexical_cast<std::string>(id[i]), "",
         crypto::STRING_STRING, false);
-    port++;
+    ++port;
     kad::Contact contact(contact_id, ip, port, ip, port);
     contacts[i] = contact;
     ASSERT_EQ(0, routingtable.AddContact(contact));
   }
-  for (boost::uint16_t i = 0; i < kad::K+1; i++) {
+  ASSERT_EQ(size_t(2), routingtable.KbucketSize());
+  ASSERT_EQ(kad::K+1, routingtable.Size());
+  for (boost::uint16_t i = 0; i < kad::K+1; ++i) {
     contact_id = cry_obj.Hash(boost::lexical_cast<std::string>(id[i]), "",
         crypto::STRING_STRING, false);
     kad::Contact rec_contact;
@@ -194,35 +196,35 @@ TEST_F(TestRoutingTable, BEH_KAD_SplitKBucket) {
 
 TEST_F(TestRoutingTable, BEH_KAD_NoSplitKBucket) {
   std::string enc_holder_id;
-  for (boost::uint16_t i = 0; i < kad::kKeySizeBytes*2; i++)
+  for (boost::uint16_t i = 0; i < kad::kKeySizeBytes*2; ++i)
     enc_holder_id += "1";
   std::string holder_id = base::DecodeFromHex(enc_holder_id);
   kad::RoutingTable routingtable(holder_id);
   std::string contacts_id[kad::K+1];
   kad::Contact contacts[kad::K+1];
-  for (boost::uint16_t i = 0; i < kad::K+1; i++) {
-    for (boost::uint16_t j = 0; j < kad::kKeySizeBytes*2; j++)
+  for (boost::uint16_t i = 0; i < kad::K+1; ++i) {
+    for (boost::uint16_t j = 0; j < kad::kKeySizeBytes*2; ++j)
       contacts_id[i] += "d";
   }
-  for (boost::uint16_t i = 0; i < kad::K+1; i++) {
+  for (boost::uint16_t i = 0; i < kad::K+1; ++i) {
     std::string rep;
-    for (boost::uint16_t j = 0; j < i; j++)
+    for (boost::uint16_t j = 0; j < i; ++j)
       rep+="f";
     contacts_id[i].replace(0, i, rep);
   }
   std::string contact_id;
   std::string ip("127.0.0.1");
   boost::uint16_t port = 8880;
-  for (boost::uint16_t i = 0; i < kad::K; i++) {
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
     contact_id = base::DecodeFromHex(contacts_id[i]);
-    port++;
+    ++port;
     kad::Contact contact(contact_id, ip, port, ip, port);
     contacts[i] = contact;
     ASSERT_EQ(0, routingtable.AddContact(contact));
   }
 
   contact_id = base::DecodeFromHex(contacts_id[kad::K]);
-  port++;
+  ++port;
   kad::Contact contact1(contact_id, ip, port, ip, port);
   ASSERT_LT(0, routingtable.AddContact(contact1));
   kad::Contact rec_contact;
@@ -231,28 +233,21 @@ TEST_F(TestRoutingTable, BEH_KAD_NoSplitKBucket) {
 
 TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
   std::string holder_id;
-  kad::BigInt min_range(0), max_range(2);
-  max_range.pow2(kad::kKeySizeBytes*8);
-  max_range--;
-  kad::BigInt max_range1(2);
-  max_range1.pow2((kad::kKeySizeBytes*8)-1);
-  max_range1--;
-  kad::BigInt max_range2(2);
-  max_range2.pow2((kad::kKeySizeBytes*8)-2);
-  max_range2--;
-  kad::BigInt max_range3(2);
-  max_range3.pow2((kad::kKeySizeBytes*8)-3);
-  max_range3--;
+  kad::KadId min_range, max_range(kad::MAX_ID);
+  kad::KadId max_range1 = kad::KadId::MaxIdUpToPower(kad::ID_BITS_SIZE - 1);
+  kad::KadId max_range2 = kad::KadId::MaxIdUpToPower(kad::ID_BITS_SIZE - 2);
+  kad::KadId max_range3 = kad::KadId::MaxIdUpToPower(kad::ID_BITS_SIZE - 3);
+  kad::KadId max_range4 = kad::KadId::MaxIdUpToPower(kad::ID_BITS_SIZE - 4);
   holder_id = kad::random_kademlia_id(min_range, max_range3);
   kad::RoutingTable routingtable(holder_id);
   ASSERT_TRUE(max_range > max_range1);
 
   std::vector<std::string> ids;
-  for (boost::uint16_t i = 0; i < kad::K; i++) {
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
     std::string id = kad::random_kademlia_id(max_range1, max_range);
     while (!TestInRange(id, max_range1, max_range))
       id = kad::random_kademlia_id(max_range1, max_range);
-    for (size_t j = 0; j < ids.size(); j++) {
+    for (size_t j = 0; j < ids.size(); ++j) {
       while (ids[j] == id || !TestInRange(id, max_range1, max_range)) {
         id = kad::random_kademlia_id(max_range1, max_range);
       }
@@ -261,63 +256,73 @@ TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
   }
   boost::uint16_t port = 8880;
   std::string ip("127.0.0.1");
-  for (size_t i = 0; i < ids.size();i++) {
+  for (size_t i = 0; i < ids.size();++i) {
     kad::Contact contact(ids[i], ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(contact));
-    port++;
+    ++port;
   }
   ids.clear();
 
-  for (boost::uint16_t i = 0; i < kad::K; i++) {
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
     std::string id = kad::random_kademlia_id(max_range2, max_range1);
     while (!TestInRange(id, max_range2, max_range1))
       id = kad::random_kademlia_id(max_range2, max_range1);
-    for (size_t j = 0; j < ids.size(); j++) {
+    for (size_t j = 0; j < ids.size(); ++j) {
       while (ids[j] == id || !TestInRange(id, max_range2, max_range1)) {
         id = kad::random_kademlia_id(max_range2, max_range1);
       }
     }
     ids.push_back(id);
   }
-  for (size_t i = 0; i < ids.size(); i++) {
+  for (size_t i = 0; i < ids.size(); ++i) {
     kad::Contact contact(ids[i], ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(contact));
-    port++;
+    ++port;
   }
   ids.clear();
-  for (boost::uint16_t i = 0; i < kad::K; i++) {
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
     std::string id = kad::random_kademlia_id(max_range3, max_range2);
     while (!TestInRange(id, max_range3, max_range2))
       id = kad::random_kademlia_id(max_range3, max_range2);
-    for (size_t j = 0; j < ids.size(); j++) {
+    for (size_t j = 0; j < ids.size(); ++j) {
       while (ids[j] == id || !TestInRange(id, max_range3, max_range2)) {
         id = kad::random_kademlia_id(max_range3, max_range2);
       }
     }
     ids.push_back(id);
   }
-  for (size_t i = 0; i < ids.size();i++) {
+  for (size_t i = 0; i < ids.size();++i) {
     kad::Contact contact(ids[i], ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(contact));
-    port++;
+    ++port;
   }
   ids.clear();
-
-  for (boost::uint16_t i = 0; i < kad::K + 1; i++) {
-    std::string id = kad::random_kademlia_id(min_range, max_range3);
-    while (!TestInRange(id, min_range, max_range3))
-      id = kad::random_kademlia_id(min_range, max_range3);
-    for (size_t j = 0; j < ids.size(); j++) {
-      while (ids[j] == id || !TestInRange(id, min_range, max_range3)) {
-        id = kad::random_kademlia_id(min_range, max_range3);
+  for (boost::uint16_t i = 0; i < kad::K/2; ++i) {
+    std::string id = kad::random_kademlia_id(max_range4, max_range3);
+    while (!TestInRange(id, max_range4, max_range3))
+      id = kad::random_kademlia_id(max_range4, max_range3);
+    for (size_t j = 0; j < ids.size(); ++j) {
+      while (ids[j] == id || !TestInRange(id, max_range4, max_range3)) {
+        id = kad::random_kademlia_id(max_range4, max_range3);
       }
     }
     ids.push_back(id);
   }
-  for (int i = 0; i < static_cast<int>(ids.size()); i++) {
+  for (boost::uint16_t i = 0; i < (kad::K/2) + 1; ++i) {
+    std::string id = kad::random_kademlia_id(min_range, max_range4);
+    while (!TestInRange(id, min_range, max_range4))
+      id = kad::random_kademlia_id(min_range, max_range4);
+    for (size_t j = 0; j < ids.size(); ++j) {
+      while (ids[j] == id || !TestInRange(id, min_range, max_range4)) {
+        id = kad::random_kademlia_id(min_range, max_range4);
+      }
+    }
+    ids.push_back(id);
+  }
+  for (int i = 0; i < static_cast<int>(ids.size()); ++i) {
     kad::Contact contact(ids[i], ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(contact));
-    port++;
+    ++port;
   }
 
   std::vector<std::string> refresh_ids;
@@ -342,29 +347,21 @@ TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
 }
 
 TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
-  std::string holder_id;
-  kad::BigInt min_range(0), max_range(2);
-  max_range.pow2(kad::kKeySizeBytes*8);
-  max_range--;
-  kad::BigInt max_range1(2);
-  max_range1.pow2((kad::kKeySizeBytes*8)-1);
-  max_range1--;
-  kad::BigInt max_range2(2);
-  max_range2.pow2((kad::kKeySizeBytes*8)-2);
-  max_range2--;
-  kad::BigInt max_range3(2);
-  max_range3.pow2((kad::kKeySizeBytes*8)-3);
-  max_range3--;
-  holder_id = kad::random_kademlia_id(min_range, max_range2);
-  kad::RoutingTable routingtable(holder_id);
+  kad::KadId holder_id;
+  kad::KadId min_range, max_range(kad::MAX_ID);
+  kad::KadId max_range1 = kad::KadId::MaxIdUpToPower((kad::kKeySizeBytes*8)-1);
+  kad::KadId max_range2 = kad::KadId::MaxIdUpToPower((kad::kKeySizeBytes*8)-2);
+  kad::KadId max_range3 = kad::KadId::MaxIdUpToPower((kad::kKeySizeBytes*8)-3);
+  holder_id = min_range ^ max_range2;
+  kad::RoutingTable routingtable(holder_id.ToStringDecoded());
   ASSERT_TRUE(max_range > max_range1);
 
   std::vector<std::string> ids;
-  for (boost::uint16_t i = 0; i < kad::K; i++) {
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
     std::string id = kad::random_kademlia_id(max_range1, max_range);
     while (!TestInRange(id, max_range1, max_range))
       id = kad::random_kademlia_id(max_range1, max_range);
-    for (size_t j = 0; j < ids.size(); j++) {
+    for (size_t j = 0; j < ids.size(); ++j) {
       while (ids[j] == id || !TestInRange(id, max_range1, max_range)) {
         id = kad::random_kademlia_id(max_range1, max_range);
       }
@@ -373,28 +370,28 @@ TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
   }
   boost::uint16_t port = 8880;
   std::string ip("127.0.0.1");
-  for (size_t i = 0; i < ids.size();i++) {
+  for (size_t i = 0; i < ids.size();++i) {
     kad::Contact contact(ids[i], ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(contact));
-    port++;
+    ++port;
   }
   ids.clear();
 
-  for (boost::uint16_t i = 0; i < kad::K; i++) {
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
     std::string id = kad::random_kademlia_id(max_range2, max_range1);
     while (!TestInRange(id, max_range2, max_range1))
       id = kad::random_kademlia_id(max_range2, max_range1);
-    for (size_t j = 0; j < ids.size(); j++) {
+    for (size_t j = 0; j < ids.size(); ++j) {
       while (ids[j] == id || !TestInRange(id, max_range2, max_range1)) {
         id = kad::random_kademlia_id(max_range2, max_range1);
       }
     }
     ids.push_back(id);
   }
-  for (size_t i = 0; i < ids.size(); i++) {
+  for (size_t i = 0; i < ids.size(); ++i) {
     kad::Contact contact(ids[i], ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(contact));
-    port++;
+    ++port;
   }
   ids.clear();
 
@@ -402,7 +399,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetCloseContacts) {
   std::string search_id = kad::random_kademlia_id(max_range1, max_range);
   routingtable.FindCloseNodes(search_id, kad::K-1, &close_nodes, ex_contacts);
   ASSERT_EQ(kad::K-1, close_nodes.size());
-  for (boost::uint16_t i = 0; i < kad::K-1; i++)
+  for (boost::uint16_t i = 0; i < kad::K-1; ++i)
     ASSERT_TRUE(TestInRange(close_nodes[i].node_id(), max_range1, max_range));
 }
 
@@ -446,7 +443,7 @@ TEST_F(TestRoutingTable, BEH_KAD_ClearRoutingTable) {
     "4f81c8f289dd080e1f929c029810cf1ffdc82cdfd4331238f0e6a940862f1c";
   ids[15] = "a27b24b72c37e7862613b29e86502dae6f863170eb1621a04a06f909588348427b"
     "2c3bc623d7ef1bf59bd3efa010c69b19a1d8732c8512ff8510ea46176ad383";
-  for (boost::uint16_t i = 0; i < 16 && i < kad::K; i++) {
+  for (boost::uint16_t i = 0; i < 16 && i < kad::K; ++i) {
     std::string id = base::DecodeFromHex(ids[i]);
     kad::Contact contact(id, ip, port + i, ip, port + i);
     ASSERT_EQ(0, routingtable.AddContact(contact));
@@ -460,55 +457,52 @@ TEST_F(TestRoutingTable, BEH_KAD_ClearRoutingTable) {
 }
 
 TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
-  std::string holder_id;
-  kad::BigInt range1(0), range2(2);
-  range2.pow2((kad::kKeySizeBytes*8)-3);
-  range2--;
-  kad::BigInt range3(2);
-  range3.pow2((kad::kKeySizeBytes*8)-2);
-  range3--;
-  kad::BigInt range4(2);
-  range4.pow2((kad::kKeySizeBytes*8)-1);
-  range4--;
-  kad::BigInt range5(2);
-  range5.pow2((kad::kKeySizeBytes*8));
-  range5--;
+  kad::KadId range1;
+  kad::KadId range2 = kad::KadId::MaxIdUpToPower((kad::kKeySizeBytes*8)-3);
+  kad::KadId range3 = kad::KadId::MaxIdUpToPower((kad::kKeySizeBytes*8)-2);
+  kad::KadId range4 = kad::KadId::MaxIdUpToPower((kad::kKeySizeBytes*8)-1);
+  kad::KadId range5(kad::MAX_ID);
   ASSERT_TRUE(range5 > range4);
   ASSERT_TRUE(range4 > range3);
   ASSERT_TRUE(range3 > range2);
   ASSERT_TRUE(range2 > range1);
-  holder_id = kad::random_kademlia_id(range1, range1 + 10);
-  kad::RoutingTable routingtable(holder_id);
+  std::string strmax_holder_id(kad::bitToByteCount(kad::ID_BITS_SIZE) * 2, '0');
+  strmax_holder_id[(kad::bitToByteCount(kad::ID_BITS_SIZE) * 2)-1] = 'a';
+  kad::KadId max_holder_id(strmax_holder_id, true);
+  kad::KadId holder_id(range1, max_holder_id);
+  kad::RoutingTable routingtable(holder_id.ToStringDecoded());
   boost::uint64_t now = base::get_epoch_milliseconds();
   // fill the first bucket
   std::string ip("127.0.0.1");
   boost::uint16_t port = 8888;
-  for (boost::uint16_t i = 0; i < kad::K - 1; i++) {
-    port++;
+  for (boost::uint16_t i = 0; i < kad::K - 1; ++i) {
+    ++port;
     std::string id = kad::random_kademlia_id(range1, range2);
     kad::Contact new_contact(id, ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(new_contact));
   }
   ASSERT_EQ(kad::K - 1, routingtable.Size());
   // fill the second bucket
-  for (boost::uint16_t i = 0; i < kad::K - 1; i++) {
-    port++;
-    std::string id = kad::random_kademlia_id(range4 + 2, range5 - 1);
+  for (boost::uint16_t i = 0; i < kad::K - 1; ++i) {
+    ++port;
+    std::string id = kad::random_kademlia_id(range4, range5);
     kad::Contact new_contact(id, ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(new_contact));
   }
   ASSERT_EQ(2*kad::K-2, routingtable.Size());
   // make the second bucket full with a furthest peer
-  port++;
-  std::string id = kad::random_kademlia_id(range5 - 1, range5);
+  ++port;
+  std::string id = range5.ToStringDecoded();
+  --id[id.size()-1];
   kad::Contact furthest_contact(id, ip, port, ip, port);
   furthest_contact.set_last_seen(now);  // make sure this peer has the highest
                                         // score
   ASSERT_EQ(0, routingtable.AddContact(furthest_contact));
   ASSERT_EQ(2*kad::K-1, routingtable.Size());
   // Force K will take effect when the new peer is among the K cloeset peers
-  id = kad::random_kademlia_id(range4+1, range4+2);
-  port++;
+  kad::KadId range4id((kad::kKeySizeBytes*8)-1);
+  id = range4id.ToStringDecoded();
+  ++port;
   kad::Contact new_contact(id, ip, port, ip, port);
   ASSERT_EQ(0, routingtable.AddContact(new_contact));
   ASSERT_EQ(2*kad::K-1, routingtable.Size());
@@ -523,24 +517,26 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
   ASSERT_EQ(2, routingtable.AddContact(furthest_contact));
   ASSERT_EQ(2*kad::K-1, routingtable.Size());
   // make the routingtable split further, there will be 4 buckets
-  for (boost::uint16_t i = 0; i < kad::K - 1; i++) {
-    port++;
-    std::string id = kad::random_kademlia_id(range3+2, range4-1);
+  for (boost::uint16_t i = 0; i < kad::K - 1; ++i) {
+    ++port;
+    std::string id = kad::random_kademlia_id(range3, range4);
     kad::Contact new_contact(id, ip, port, ip, port);
     ASSERT_EQ(0, routingtable.AddContact(new_contact));
   }
   ASSERT_EQ(3*kad::K - 2, routingtable.Size());
   // make the brother bucket of the peer full with a furthest peer
-  port++;
-  id = kad::random_kademlia_id(range4-1, range4);
+  ++port;
+  id = range4.ToStringDecoded();
+  --id[id.size()-1];
   kad::Contact furthest_contact2(id, ip, port, ip, port);
   furthest_contact2.set_last_seen(now);  // make sure this peer has the highest
                                         // score
   ASSERT_EQ(0, routingtable.AddContact(furthest_contact2));
   ASSERT_EQ(3*kad::K - 1, routingtable.Size());
   // Force K will take effect when the new peer is among the K cloeset peers
-  id = kad::random_kademlia_id(range3 + 1, range3 + 2);
-  port++;
+  kad::KadId range3id((kad::kKeySizeBytes*8)-2);
+  id = range3id.ToStringDecoded();
+  ++port;
   kad::Contact new_contact2(id, ip, port, ip, port);
   ASSERT_EQ(0, routingtable.AddContact(new_contact2));
   ASSERT_EQ(3*kad::K-1, routingtable.Size());
@@ -558,33 +554,33 @@ TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
 
 TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
   std::string enc_holder_id("7");
-  for (boost::uint16_t i = 1; i < kad::kKeySizeBytes*2; i++)
+  for (boost::uint16_t i = 1; i < kad::kKeySizeBytes*2; ++i)
     enc_holder_id += "1";
   std::string holder_id = base::DecodeFromHex(enc_holder_id);
   kad::RoutingTable routingtable(holder_id);
   std::string contacts_id_first[(kad::K/2)+1];
   std::string contacts_id_second[kad::K/2];
   kad::Contact contacts[kad::K+1];
-  for (boost::uint16_t i = 0; i < (kad::K/2)+1; i++) {
-    for (boost::uint16_t j = 0; j < kad::kKeySizeBytes*2; j++)
+  for (boost::uint16_t i = 0; i < (kad::K/2)+1; ++i) {
+    for (boost::uint16_t j = 0; j < kad::kKeySizeBytes*2; ++j)
       contacts_id_first[i] += "d";
     if (i < (kad::K/2)) {
-      for (boost::uint16_t j = 0; j < kad::kKeySizeBytes*2; j++)
+      for (boost::uint16_t j = 0; j < kad::kKeySizeBytes*2; ++j)
         contacts_id_second[i] += "d";
     }
   }
-  for (boost::uint16_t i = 0; i < (kad::K/2)+1; i++) {
+  for (boost::uint16_t i = 0; i < (kad::K/2)+1; ++i) {
     std::string rep;
     boost::uint16_t n =  i + 1;
-    for (boost::uint16_t j = 0; j < n; j++)
+    for (boost::uint16_t j = 0; j < n; ++j)
       rep+="f";
     contacts_id_first[i].replace(0, i, rep);
     contacts_id_first[i].replace(0, 1, "6");
   }
-  for (boost::uint16_t i = 0; i < kad::K/2; i++) {
+  for (boost::uint16_t i = 0; i < kad::K/2; ++i) {
     std::string rep;
     boost::uint16_t n =  i + 1;
-    for (boost::uint16_t j = 0; j < n; j++)
+    for (boost::uint16_t j = 0; j < n; ++j)
       rep+="f";
     contacts_id_second[i].replace(0, i+1, rep);
     contacts_id_second[i].replace(0, 1, "8");
@@ -595,9 +591,9 @@ TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
   std::string contact_id;
   std::string ip("127.0.0.1");
   boost::uint16_t port = 8880;
-  for (boost::uint16_t i = 0; i < (kad::K/2)+1; i++) {
+  for (boost::uint16_t i = 0; i < (kad::K/2)+1; ++i) {
     contact_id = base::DecodeFromHex(contacts_id_first[i]);
-    port++;
+    ++port;
     kad::Contact contact(contact_id, ip, port, ip, port);
     contacts[i] = contact;
     ASSERT_EQ(0, routingtable.AddContact(contact));
@@ -606,9 +602,9 @@ TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
   kad::Contact last_first(contact_id, ip, 8880+1, ip, 8880+1);
   result = routingtable.GetLastSeenContact(0);
   ASSERT_TRUE(last_first == result);
-  for (boost::uint16_t i = 0; i < kad::K/2; i++) {
+  for (boost::uint16_t i = 0; i < kad::K/2; ++i) {
     contact_id = base::DecodeFromHex(contacts_id_second[i]);
-    port++;
+    ++port;
     kad::Contact contact(contact_id, ip, port, ip, port);
     contacts[i] = contact;
     ASSERT_EQ(0, routingtable.AddContact(contact));
@@ -628,7 +624,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
 
 TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
   std::string holder_id_enc("7"), holder_id("");
-  for (boost::uint16_t i = 1; i < kad::kKeySizeBytes*2; i++)
+  for (boost::uint16_t i = 1; i < kad::kKeySizeBytes*2; ++i)
     holder_id_enc += "1";
   std::vector<kad::Contact> ids1(kad::K/2);
   std::vector<kad::Contact> ids2(kad::K-2);
@@ -636,7 +632,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
   kad::RoutingTable routingtable(holder_id);
   std::string ip = "127.0.0.1";
   boost::uint16_t port = 8000;
-  for (boost::uint16_t i = 0; i < kad::K/2; i++) {
+  for (boost::uint16_t i = 0; i < kad::K/2; ++i) {
     std::string id(kad::kKeySizeBytes*2, '6'), rep(i, 'a'), dec_id("");
     id.replace(1, i, rep);
     dec_id = base::DecodeFromHex(id);
@@ -645,7 +641,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
     ++port;
     ASSERT_EQ(0, routingtable.AddContact(ids1[i]));
   }
-  for (boost::uint16_t i = 0; i < kad::K-2; i++) {
+  for (boost::uint16_t i = 0; i < kad::K-2; ++i) {
     std::string id(kad::kKeySizeBytes*2, 'f'), rep(kad::K-1-i, '0'), dec_id("");
     id.replace(1, kad::K-1-i, rep);
     dec_id = base::DecodeFromHex(id);
@@ -663,8 +659,8 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
   ASSERT_EQ(kad::K, cts.size());
 
   // Check for no repeated values
-  for (size_t i = 0; i < cts.size(); i++) {
-    for (size_t j = i+1; j < cts.size(); j++)
+  for (size_t i = 0; i < cts.size(); ++i) {
+    for (size_t j = i+1; j < cts.size(); ++j)
       if (cts[i] == cts[j]) {
         printf("Same contact in indices %i and %i\n", i, j);
         FAIL();
@@ -672,9 +668,9 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
   }
 
   // Getting nodes that are not in cts
-  for (boost::uint16_t i = 0; i < kad::K/2; i++) {
+  for (boost::uint16_t i = 0; i < kad::K/2; ++i) {
     bool in_cts = false;
-    for (size_t j = 0; j < cts.size() && !in_cts; j++) {
+    for (size_t j = 0; j < cts.size() && !in_cts; ++j) {
       if (cts[j] == ids1[i])
         in_cts = true;
     }
@@ -682,9 +678,9 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
       ex.push_back(ids1[i]);
   }
   ASSERT_FALSE(ex.empty());
-  for (boost::uint16_t i = 0; i < kad::K-2; i++) {
+  for (boost::uint16_t i = 0; i < kad::K-2; ++i) {
     bool in_cts = false;
-    for (size_t j = 0; j < cts.size() && !in_cts; j++) {
+    for (size_t j = 0; j < cts.size() && !in_cts; ++j) {
       if (cts[j] == ids2[i])
         in_cts = true;
     }
@@ -693,11 +689,81 @@ TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
   }
   ASSERT_FALSE(ex.empty());
   // Checking distances
-  for (size_t i = 0; i < cts.size(); i++) {
-    kad::BigInt cts_to_id = kad::kademlia_distance(dec_id1, cts[i].node_id());
-    for (size_t j = 0; j < ex.size(); j++) {
-      kad::BigInt ex_to_id = kad::kademlia_distance(dec_id1, ex[j].node_id());
+  kad::KadId kadid1(dec_id1, false);
+  for (size_t i = 0; i < cts.size(); ++i) {
+    kad::KadId ctcid(cts[i].node_id(), false);
+    kad::KadId cts_to_id = kadid1 ^ ctcid;
+    for (size_t j = 0; j < ex.size(); ++j) {
+      kad::KadId exid(ex[j].node_id(), false);
+      kad::KadId ex_to_id = kadid1 ^ exid;
        ASSERT_TRUE(cts_to_id < ex_to_id);
     }
   }
+}
+
+TEST_F(TestRoutingTable, BEH_KAD_TwoKBucketsSplit) {
+  std::string enc_holder_id;
+  for (boost::uint16_t i = 0; i < kad::kKeySizeBytes*2; ++i)
+    enc_holder_id += "e";
+  std::string holder_id = base::DecodeFromHex(enc_holder_id);
+  kad::RoutingTable routingtable(holder_id);
+  std::string contacts_id[kad::K+1];
+  kad::Contact contacts[kad::K+1];
+  for (boost::uint16_t i = 0; i < kad::K+1; ++i) {
+    for (boost::uint16_t j = 0; j < kad::kKeySizeBytes*2; ++j)
+      contacts_id[i] += "d";
+  }
+  for (boost::uint16_t i = 0; i < kad::K+1; ++i) {
+    std::string rep;
+    for (boost::uint16_t j = 0; j < i; ++j)
+      rep+="f";
+    contacts_id[i].replace(0, i, rep);
+  }
+  std::string contact_id;
+  std::string ip("127.0.0.1");
+  boost::uint16_t port = 8880;
+  for (boost::uint16_t i = 0; i < kad::K+1; ++i) {
+    contact_id = base::DecodeFromHex(contacts_id[i]);
+    ++port;
+    kad::Contact contact(contact_id, ip, port, ip, port);
+    contacts[i] = contact;
+    ASSERT_EQ(0, routingtable.AddContact(contact));
+  }
+  ASSERT_EQ(size_t(4), routingtable.KbucketSize());
+  ASSERT_EQ(kad::K+1, routingtable.Size());
+
+  ++port;
+  std::string id;
+  for (boost::uint16_t j = 0; j < kad::kKeySizeBytes*2; ++j)
+    id += "e";
+  contact_id.clear();
+  contact_id = base::DecodeFromHex(id);
+  kad::Contact ctc1(contact_id, ip, port, ip, port);
+  ASSERT_EQ(0, routingtable.AddContact(ctc1));
+  ASSERT_EQ(size_t(5), routingtable.KbucketSize());
+  ASSERT_EQ(kad::K+2, routingtable.Size());
+
+  id.clear();
+  for (boost::uint16_t j = 0; j < kad::kKeySizeBytes*2; ++j)
+    id += "2";
+  ++port;
+  contact_id.clear();
+  contact_id = base::DecodeFromHex(id);
+  kad::Contact ctc2(contact_id, ip, port, ip, port);
+  ASSERT_EQ(0, routingtable.AddContact(ctc2));
+
+  ASSERT_EQ(size_t(5), routingtable.KbucketSize());
+  ASSERT_EQ(kad::K+3, routingtable.Size());
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
+    contact_id.clear();
+    contact_id = base::DecodeFromHex(contacts_id[i]);
+    kad::Contact rec_contact;
+    ASSERT_TRUE(routingtable.GetContact(contact_id, &rec_contact));
+    ASSERT_TRUE(contacts[i] == rec_contact);
+  }
+  kad::Contact rec_ctc;
+  ASSERT_TRUE(routingtable.GetContact(ctc1.node_id(), &rec_ctc));
+  ASSERT_TRUE(ctc1 == rec_ctc);
+  ASSERT_TRUE(routingtable.GetContact(ctc2.node_id(), &rec_ctc));
+  ASSERT_TRUE(ctc2 == rec_ctc);
 }

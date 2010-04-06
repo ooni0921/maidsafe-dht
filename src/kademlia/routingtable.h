@@ -36,16 +36,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 
 #include "kademlia/kadutils.h"
+#include "maidsafe/kadid.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace kad {
+
 class KBucket;
-class Contact;
 
 class RoutingTable {
  public:
   explicit RoutingTable(const std::string &holder_id,
-    const boost::uint16_t &K = kad::K);
+    const boost::uint16_t &rt_K = kad::K);
   ~RoutingTable();
   // Add the given contact to the correct k-bucket; if it already
   // exists, its status will be updated
@@ -98,7 +99,7 @@ class RoutingTable {
   std::vector< boost::shared_ptr<KBucket> > k_buckets_;
   // Mapping of each k-bucket's maximum address to its index in the vector of
   // k-buckets
-  std::map<BigInt, boost::uint16_t> bucket_upper_address_;
+  std::map<KadId, boost::uint16_t> bucket_upper_address_;
   // Holder's node ID
   std::string holder_id_;
   // Index of k-bucket covering address space which incorporates holder's own
@@ -108,7 +109,7 @@ class RoutingTable {
   // for the ForceK function.
   boost::uint16_t bucket_of_holder_, brother_bucket_of_holder_;
   // Upper limit of address space.
-  BigInt address_space_upper_address_;
+  KadId address_space_upper_address_;
   boost::uint16_t K_;
 };
 }  // namespace kad

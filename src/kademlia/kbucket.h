@@ -32,19 +32,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <string>
 #include "kademlia/kadutils.h"
+#include "maidsafe/kadid.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 
 namespace kad {
 
-class Contact;
-
 class KBucket {
  public:
-  // The lower and upper boundary for the range in the 160-bit ID
+  // The lower and upper boundary for the range in the 512-bit ID
   // space covered by this k-bucket
-  KBucket(const BigInt &range_min, const BigInt &range_max,
-      const boost::uint16_t &K = kad::K);
+  KBucket(const KadId &min, const KadId &max,
+      const boost::uint16_t &kb_K = kad::K);
   ~KBucket();
   // add a new contact to the k-bucket
   KBucketExitCode AddContact(const Contact &new_contact);
@@ -68,14 +67,13 @@ class KBucket {
   Contact LastSeenContact();
   boost::uint32_t last_accessed() const;
   void set_last_accessed(const boost::uint32_t &time_accessed);
-  BigInt range_min() const;
-  BigInt range_max() const;
+  KadId range_min() const;
+  KadId range_max() const;
 
  private:
   boost::uint32_t last_accessed_;
   std::list<Contact> contacts_;
-  BigInt range_min_;
-  BigInt range_max_;
+  KadId range_min_, range_max_;
   boost::uint16_t K_;
 };
 }  // namespace kad

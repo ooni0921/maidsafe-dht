@@ -47,6 +47,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/config.h"
 #include "maidsafe/online.h"
 #include "maidsafe/validationinterface.h"
+#include "maidsafe/kadid.h"
 
 namespace fs = boost::filesystem;
 
@@ -66,11 +67,10 @@ bool CompareContact(const ContactAndTargetKey &first,
     return true;
   else if (second.contact.node_id() == "")
     return false;
-  if (kademlia_distance(first.contact.node_id(), first.target_key) <
-      kademlia_distance(second.contact.node_id(), second.target_key))
-    return true;
-  else
-    return false;
+  KadId id1(first.contact.node_id(), false),
+        id2(second.contact.node_id(), false),
+        target_id(first.target_key, false);
+  return KadId::CloserToTarget(id1, id2, target_id);
 }
 
 // sort the contact list according the distance to the target key
@@ -914,9 +914,12 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
           stored_local = true;
         } else {
           Contact furthest_contact = closest_nodes[closest_nodes.size()-1];
-          if (kademlia_distance(node_id_, key) < (kademlia_distance(
-              furthest_contact.node_id(), key)))
+          KadId nodeid(node_id_, false),
+                ctcid(furthest_contact.node_id(), false),
+                keyid(key, false);
+          if (KadId::CloserToTarget(nodeid, ctcid, keyid)) {
             stored_local = true;
+          }
         }
         if (stored_local) {
           bool local_result;

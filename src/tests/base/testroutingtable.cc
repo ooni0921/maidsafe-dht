@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
 #include "kademlia/kadutils.h"
+#include "maidsafe/kadid.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 TEST(PDRoutingTableHandlerTest, BEH_BASE_AddTuple) {
@@ -280,20 +281,23 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_GetClosestRtt) {
 }
 
 TEST(PDRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
-  typedef std::map<kad::BigInt, base::PDRoutingTableTuple> TuplesMap;
+  typedef std::map<kad::KadId, base::PDRoutingTableTuple> TuplesMap;
   TuplesMap tuples;
   std::pair<TuplesMap::iterator, bool> result;
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string target_key = co.Hash(base::RandomString(222), "",
                                    crypto::STRING_STRING, false);
+  kad::KadId target_id(target_key, false);
   const int kTupleCount(177);
   base::PDRoutingTableHandler rt_handler;
   for (int i = 0; i < kTupleCount; ++i) {
     std::string kad_id = co.Hash(base::RandomString(111), "",
                                  crypto::STRING_STRING, false);
-    result = tuples.insert(std::pair<kad::BigInt, base::PDRoutingTableTuple>(
-        kad::kademlia_distance(kad_id, target_key),
+    kad::KadId id(kad_id, false);
+    kad::KadId dist = id ^ target_id;
+    result = tuples.insert(std::pair<kad::KadId, base::PDRoutingTableTuple>(
+        dist,
         base::PDRoutingTableTuple(kad_id, "192.168.1." + base::itos(i % 256),
             8000 + (i % 1000), "", 0, "", static_cast<float>(i), 1, 3232)));
     ASSERT_TRUE(result.second);
@@ -310,11 +314,12 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
   TuplesMap::iterator tuples_map_itr = tuples.begin();
   std::list<base::PDRoutingTableTuple>::iterator tuples_itr =
       returned_tuples.begin();
-  kad::BigInt dist(0), previous_dist(0);
+  kad::KadId dist, previous_dist;
   while (tuples_itr != returned_tuples.end()) {
-    dist = kad::kademlia_distance((*tuples_itr).kademlia_id_, target_key);
-    ASSERT_EQ((*tuples_map_itr).first, dist);
-    ASSERT_GT(dist, previous_dist);
+    kad::KadId id((*tuples_itr).kademlia_id_, false);
+    dist = id ^ target_id;
+    ASSERT_TRUE((*tuples_map_itr).first == dist);
+    ASSERT_TRUE(dist > previous_dist);
     ASSERT_EQ((*tuples_map_itr).second.kademlia_id_,
               (*tuples_itr).kademlia_id_);
     ASSERT_EQ((*tuples_map_itr).second.host_ip_, (*tuples_itr).host_ip_);
@@ -331,11 +336,13 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
   ASSERT_EQ(kTupleCount, returned_tuples.size());
   tuples_map_itr = tuples.begin();
   tuples_itr = returned_tuples.begin();
-  previous_dist = 0;
+  kad::KadId zero_id;
+  previous_dist = zero_id;
   while (tuples_itr != returned_tuples.end()) {
-    dist = kad::kademlia_distance((*tuples_itr).kademlia_id_, target_key);
-    ASSERT_EQ((*tuples_map_itr).first, dist);
-    ASSERT_GT(dist, previous_dist);
+    kad::KadId id((*tuples_itr).kademlia_id_, false);
+    dist = id ^ target_id;
+    ASSERT_TRUE((*tuples_map_itr).first == dist);
+    ASSERT_TRUE(dist > previous_dist);
     ASSERT_EQ((*tuples_map_itr).second.kademlia_id_,
               (*tuples_itr).kademlia_id_);
     ASSERT_EQ((*tuples_map_itr).second.host_ip_, (*tuples_itr).host_ip_);
@@ -352,11 +359,12 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
   ASSERT_EQ(kTupleCount, returned_tuples.size());
   tuples_map_itr = tuples.begin();
   tuples_itr = returned_tuples.begin();
-  previous_dist = 0;
+  previous_dist = zero_id;
   while (tuples_itr != returned_tuples.end()) {
-    dist = kad::kademlia_distance((*tuples_itr).kademlia_id_, target_key);
-    ASSERT_EQ((*tuples_map_itr).first, dist);
-    ASSERT_GT(dist, previous_dist);
+    kad::KadId id((*tuples_itr).kademlia_id_, false);
+    dist = id ^ target_id;
+    ASSERT_TRUE((*tuples_map_itr).first == dist);
+    ASSERT_TRUE(dist > previous_dist);
     ASSERT_EQ((*tuples_map_itr).second.kademlia_id_,
               (*tuples_itr).kademlia_id_);
     ASSERT_EQ((*tuples_map_itr).second.host_ip_, (*tuples_itr).host_ip_);
@@ -373,11 +381,12 @@ TEST(PDRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
   ASSERT_EQ(kTupleCount, returned_tuples.size());
   tuples_map_itr = tuples.begin();
   tuples_itr = returned_tuples.begin();
-  previous_dist = 0;
+  previous_dist = zero_id;
   while (tuples_itr != returned_tuples.end()) {
-    dist = kad::kademlia_distance((*tuples_itr).kademlia_id_, target_key);
-    ASSERT_EQ((*tuples_map_itr).first, dist);
-    ASSERT_GT(dist, previous_dist);
+    kad::KadId id((*tuples_itr).kademlia_id_, false);
+    dist = id ^ target_id;
+    ASSERT_TRUE((*tuples_map_itr).first == dist);
+    ASSERT_TRUE(dist > previous_dist);
     ASSERT_EQ((*tuples_map_itr).second.kademlia_id_,
               (*tuples_itr).kademlia_id_);
     ASSERT_EQ((*tuples_map_itr).second.host_ip_, (*tuples_itr).host_ip_);

@@ -270,15 +270,15 @@ class Env: public testing::Environment {
     catch(const std::exception &e) {
       LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
     }
-    transport::TransportUDT::CleanUp();
     knodes_.clear();
     channel_managers_.clear();
-    // trans_handlers_.clear();
+    trans_handlers_.clear();
     trans_ids_.clear();
     dbs_.clear();
     node_ids_.clear();
     ports_.clear();
     printf("TestKNode, TearDown Finished\n");
+    transport::TransportUDT::CleanUp();
   }
 };
 
@@ -958,11 +958,12 @@ TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   cb_.Reset();
   // finding the closest node to the dead node
   boost::int16_t closest_node(0);
-  kad::BigInt smallest_distance = kad::kademlia_distance(r_node_id,
-    knodes_[holders[0]]->node_id());
+  kad::KadId r_id(r_node_id, false),
+      holder_id(knodes_[holders[0]]->node_id(), false);
+  kad::KadId smallest_distance = r_id ^ holder_id;
   for (size_t i = 1; i < holders.size(); i++) {
-    kad::BigInt distance = kad::kademlia_distance(r_node_id,
-      knodes_[holders[i]]->node_id());
+    kad::KadId h_id(knodes_[holders[i]]->node_id(), false);
+    kad::KadId distance = r_id ^ h_id;
     if (smallest_distance > distance) {
       smallest_distance = distance;
       closest_node = i;
