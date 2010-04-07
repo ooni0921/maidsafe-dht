@@ -138,7 +138,7 @@ void printf_info(kad::ContactInfo info) {
 int main(int argc, char **argv) {
   try {
     std::string logpath, kadconfigpath, bs_ip, bs_id, ext_ip, configfile,
-        bs_local_ip;
+        bs_local_ip, thisnodekconfigpath;
     boost::uint16_t bs_port(0), bs_local_port(0), port(0), ext_port(0);
     boost::uint32_t refresh_time(0);
     bool first_node = false;
@@ -170,6 +170,9 @@ int main(int argc, char **argv) {
       ("noconsole", po::bool_switch(),
         "Do not have access to kademlia functions (store/load/ping) "
         "after node startup.")
+      ("nodeinfopath", po::value(&thisnodekconfigpath),
+        "Writes to this path a kadconfig file (with name .kadconfig) with this"
+        " node's information.")
       ("refresh_time,r", po::value(&refresh_time),
           "Time in minutes to refresh values and kbuckets.");
     po::variables_map vm;
@@ -297,7 +300,8 @@ int main(int argc, char **argv) {
     if (!first_node && vm.count("bs_id")) {
       if (!write_to_kadconfig(kadconfigpath, vm["bs_id"].as<std::string>(),
           vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>(),
-          vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>())) {
+          vm["bs_local_ip"].as<std::string>(),
+          vm["bs_local_port"].as<boost::uint16_t>())) {
         printf("unable to write kadconfig file to %s\n", kadconfigpath.c_str());
         trans_handler.Stop(trans_id);
         chmanager.Stop();
@@ -324,6 +328,28 @@ int main(int argc, char **argv) {
     }
     // Printing Node Info
     printf_info(node.contact_info());
+
+    // Creating a kadconfig file with this node's info
+    if (vm.count("nodeinfopath")) {
+      std::string thiskconfig = vm["nodeinfopath"].as<std::string>();
+      boost::filesystem::path thisconfig(thiskconfig);
+      if (!boost::filesystem::exists(thisconfig)) {
+        try {
+          boost::filesystem::create_directories(thisconfig);
+          thisconfig /= ".kadconfig";
+          std::string enc_id = base::EncodeToHex(node.node_id());
+          write_to_kadconfig(thisconfig.string(), enc_id, node.host_ip(),
+              node.host_port(), node.local_host_ip(), node.local_host_port());
+        }
+        catch(const std::exception &e) {
+        }
+      } else {
+        thisconfig /= ".kadconfig";
+        std::string enc_id = base::EncodeToHex(node.node_id());
+        write_to_kadconfig(thisconfig.string(), enc_id, node.host_ip(),
+            node.host_port(), node.local_host_ip(), node.local_host_port());
+      }
+    }
 
     if (!vm["noconsole"].as<bool>()) {
       kaddemo::Commands cmds(&node, kad::K);
