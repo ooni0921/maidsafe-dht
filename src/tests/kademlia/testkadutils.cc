@@ -82,20 +82,21 @@ TEST(KadUtilsTest, BEH_KAD_InsertKadContact) {
   // Copy the vector.
   std::vector<kad::Contact> contacts_before(contacts);
   std::string key(64, 'b');
+  kad::KadId kad_key(key, false);
   kad::Contact new_contact(std::string(64, 'a'), "IP", 10000);
-  kad::InsertKadContact(key, new_contact, &contacts);
+  kad::InsertKadContact(kad_key, new_contact, &contacts);
   ASSERT_EQ(size_t(11), contacts.size());
   // Check contacts have been re-ordered correctly.
-  ASSERT_EQ(contacts.at(0).node_id(), new_contact.node_id());
-  ASSERT_EQ(contacts.at(1).node_id(), contacts_before.at(7).node_id());
-  ASSERT_EQ(contacts.at(2).node_id(), contacts_before.at(6).node_id());
-  ASSERT_EQ(contacts.at(3).node_id(), contacts_before.at(9).node_id());
-  ASSERT_EQ(contacts.at(4).node_id(), contacts_before.at(8).node_id());
-  ASSERT_EQ(contacts.at(5).node_id(), contacts_before.at(3).node_id());
-  ASSERT_EQ(contacts.at(6).node_id(), contacts_before.at(2).node_id());
-  ASSERT_EQ(contacts.at(7).node_id(), contacts_before.at(5).node_id());
-  ASSERT_EQ(contacts.at(8).node_id(), contacts_before.at(4).node_id());
-  ASSERT_EQ(contacts.at(9).node_id(), contacts_before.at(1).node_id());
-  ASSERT_EQ(contacts.at(10).node_id(), contacts_before.at(0).node_id());
+  ASSERT_TRUE(contacts.at(0).node_id() == new_contact.node_id());
+  ASSERT_TRUE(contacts.at(1).node_id() == contacts_before.at(7).node_id());
+  ASSERT_TRUE(contacts.at(2).node_id() == contacts_before.at(6).node_id());
+  ASSERT_TRUE(contacts.at(3).node_id() == contacts_before.at(9).node_id());
+  ASSERT_TRUE(contacts.at(4).node_id() == contacts_before.at(8).node_id());
+  ASSERT_TRUE(contacts.at(5).node_id() == contacts_before.at(3).node_id());
+  ASSERT_TRUE(contacts.at(6).node_id() == contacts_before.at(2).node_id());
+  ASSERT_TRUE(contacts.at(7).node_id() == contacts_before.at(5).node_id());
+  ASSERT_TRUE(contacts.at(8).node_id() == contacts_before.at(4).node_id());
+  ASSERT_TRUE(contacts.at(9).node_id() == contacts_before.at(1).node_id());
+  ASSERT_TRUE(contacts.at(10).node_id() == contacts_before.at(0).node_id());
 }
 

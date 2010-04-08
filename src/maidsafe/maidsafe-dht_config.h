@@ -85,8 +85,9 @@ int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
 #include "maidsafe/crypto.h"
 #include "maidsafe/routingtable.h"
 #include "maidsafe/utils.h"
+#include "maidsafe/kadid.h"
 
-#define MAIDSAFE_DHT_VERSION 16
+#define MAIDSAFE_DHT_VERSION 17
 
 /*******************************************************************************
  * KADEMLIA LAYER                                                              *
@@ -180,6 +181,17 @@ class Contact {
   Contact(const std::string &node_id, const std::string &host_ip,
       const boost::uint16_t &host_port, const std::string &local_ip,
       const boost::uint16_t &local_port);
+
+  Contact(const KadId &node_id, const std::string &host_ip,
+      const boost::uint16_t &host_port, const std::string &local_ip,
+      const boost::uint16_t &local_port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port);
+  Contact(const KadId &node_id, const std::string &host_ip,
+      const boost::uint16_t &host_port);
+  Contact(const KadId &node_id, const std::string &host_ip,
+      const boost::uint16_t &host_port, const std::string &local_ip,
+      const boost::uint16_t &local_port);
+
   explicit Contact(const ContactInfo &contact_info);
   Contact();
   Contact(const Contact&rhs);
@@ -191,7 +203,7 @@ class Contact {
   Contact& operator=(const Contact &other);
   bool SerialiseToString(std::string *ser_output);
   bool ParseFromString(const std::string &data);
-  inline const std::string& node_id() const { return node_id_; }
+  inline const KadId& node_id() const { return node_id_; }
   inline const std::string& host_ip() const { return host_ip_; }
   inline boost::uint16_t host_port() const { return host_port_; }
   inline boost::uint16_t failed_rpc() const { return failed_rpc_; }
@@ -206,7 +218,7 @@ class Contact {
   inline const std::string& local_ip() const { return local_ip_; }
   inline boost::uint16_t local_port() const { return local_port_; }
  private:
-  std::string node_id_;
+  KadId node_id_;
   std::string host_ip_;
   boost::uint16_t host_port_;
   boost::uint16_t failed_rpc_;

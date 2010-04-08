@@ -98,7 +98,7 @@ class TestKnodes : public testing::Test {
       LOG(ERROR) << "filesystem exception: " << e.what() << std::endl;
     }
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; ++i) {
       boost::int16_t id;
       msg_handlers_.push_back(new MessageHandler);
       trans_handlers_.push_back(new transport::TransportHandler);
@@ -128,7 +128,7 @@ class TestKnodes : public testing::Test {
     transport::TransportUDT * trans_temp =
       static_cast<transport::TransportUDT*>(trans_handlers_[0]->Get(0));
     trans_temp->CleanUp();
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; ++i) {
       trans_handlers_[i]->Stop(transports_[i]);
       ch_managers_[i]->Stop();
       delete trans_handlers_[i]->Get(transports_[i]);
@@ -162,12 +162,13 @@ class TestKnodes : public testing::Test {
 TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   std::string kconfig_file = datastore_dir_[0] + "/.kadconfig";
   std::string id("7");
-  for (int i = 1; i < kKeySizeBytes*2; i++)
+  for (int i = 1; i < kKeySizeBytes*2; ++i)
     id += "1";
   GeneralKadCallback cb;
   boost::asio::ip::address local_ip;
   ASSERT_TRUE(base::get_local_address(&local_ip));
-  nodes_[0].Join(id, kconfig_file,
+  kad::KadId kadid(id, true);
+  nodes_[0].Join(kadid, kconfig_file,
     local_ip.to_string(), trans_handlers_[0]->listening_port(transports_[0]),
     boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
@@ -178,46 +179,47 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   // Adding Contacts until kbucket splits and filling kbuckets
   std::vector<std::string> bucket2ids(K+1), bucket1ids(3);
   for (int i = 0; i < K+1; i++) {
-    for (int j = 0; j < kKeySizeBytes*2; j++)
+    for (int j = 0; j < kKeySizeBytes*2; ++j)
       bucket2ids[i] += "f";
     std::string rep;
     int k;
-    for (k = 0; k < i; k++)
+    for (k = 0; k < i; ++k)
       rep += "0";
     bucket2ids[i].replace(1, k, rep);
   }
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < kKeySizeBytes*2; j++)
       bucket1ids[i] += "7";
     std::string rep;
     int k;
-    for (k = 0; k < i; k++)
+    for (k = 0; k < i; ++k)
       rep += "2";
     bucket1ids[i].replace(1, k, rep);
   }
   int port = 7000;
   Contact last_seen;
   std::string ip = "127.0.0.1";
-  for (int i = 1 ; i < K-2; i++) {
+  for (int i = 1 ; i < K-2; ++i) {
+    kad::KadId id(bucket2ids[i], true);
+    Contact contact(id, ip, port, ip, port);
+    ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
+    if (i == 1)
+      last_seen = contact;
+    ++port;
+  }
+  for (int i = 0; i < 3; ++i) {
+    kad::KadId id(bucket1ids[i], true);
+    Contact contact(id, ip, port, ip, port);
+    ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
+    ++port;
+  }
+  for (int i = K-2; i < K+1; ++i) {
     std::string id = base::DecodeFromHex(bucket2ids[i]);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
-    if (i == 1) last_seen = contact;
-    port++;
+    ++port;
   }
-  for (int i = 0; i < 3; i++) {
-    std::string id = base::DecodeFromHex(bucket1ids[i]);
-    Contact contact(id, ip, port, ip, port);
-    ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
-    port++;
-  }
-  for (int i = K-2; i < K+1; i++) {
-    std::string id = base::DecodeFromHex(bucket2ids[i]);
-    Contact contact(id, ip, port, ip, port);
-    ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
-    port++;
-  }
-  port++;
+  ++port;
   id = base::DecodeFromHex(bucket2ids[0]);
   Contact contact(id, ip, port, ip, port);
   ASSERT_EQ(2, nodes_[0].AddContact(contact, 0.0, false));
@@ -246,14 +248,15 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   std::string kconfig_file = datastore_dir_[0] + "/.kadconfig";
   std::string kconfig_file1 = datastore_dir_[1] + "/.kadconfig";
   std::string id("7"), id2("9");
-  for (int i = 1; i < kKeySizeBytes*2; i++) {
+  for (int i = 1; i < kKeySizeBytes*2; ++i) {
     id += "1";
     id2 += "2";
   }
   GeneralKadCallback cb;
   boost::asio::ip::address local_ip;
   ASSERT_TRUE(base::get_local_address(&local_ip));
-  nodes_[0].Join(id, kconfig_file,
+  kad::KadId kid(id, true), kid2(id2, true);
+  nodes_[0].Join(kid, kconfig_file,
     local_ip.to_string(), trans_handlers_[0]->listening_port(transports_[0]),
     boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
@@ -264,8 +267,7 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   // routing table
   base::KadConfig kad_config1;
   base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-  std::string hex_id = base::EncodeToHex(nodes_[0].node_id());
-  kad_contact->set_node_id(hex_id);
+  kad_contact->set_node_id(nodes_[0].node_id().ToStringEncoded());
   kad_contact->set_ip(nodes_[0].host_ip());
   kad_contact->set_port(nodes_[0].host_port());
   kad_contact->set_local_ip(nodes_[0].local_host_ip());
@@ -275,7 +277,7 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   EXPECT_TRUE(kad_config1.SerializeToOstream(&output1));
   output1.close();
 
-  nodes_[1].Join(id2, kconfig_file1,
+  nodes_[1].Join(kid2, kconfig_file1,
     boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
   ASSERT_EQ(kRpcResultSuccess, cb.result());
@@ -286,48 +288,47 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
 
   // Adding Contacts until kbucket splits and filling kbuckets
   std::vector<std::string> bucket2ids(K), bucket1ids(3);
-  for (int i = 0; i < K; i++) {
-    for (int j = 0; j < kKeySizeBytes*2; j++)
+  for (int i = 0; i < K; ++i) {
+    for (int j = 0; j < kKeySizeBytes*2; ++j)
       bucket2ids[i] += "f";
     std::string rep;
     int k;
-    for (k = 0; k < i; k++)
+    for (k = 0; k < i; ++k)
       rep += "0";
     bucket2ids[i].replace(1, k, rep);
   }
   for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < kKeySizeBytes*2; j++)
+    for (int j = 0; j < kKeySizeBytes*2; ++j)
       bucket1ids[i] += "7";
     std::string rep;
     int k;
-    for (k = 0; k < i; k++)
+    for (k = 0; k < i; ++k)
       rep += "2";
     bucket1ids[i].replace(1, k, rep);
   }
   int port = 7000;
 
   std::string ip = "127.0.0.1";
-  for (int i = 1 ; i < K-3; i++) {
-    std::string id = base::DecodeFromHex(bucket2ids[i]);
+  for (int i = 1 ; i < K-3; ++i) {
+    kad::KadId id(bucket2ids[i], true);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
-    port++;
+    ++port;
   }
-  for (int i = 0; i < 3; i++) {
-    std::string id = base::DecodeFromHex(bucket1ids[i]);
+  for (int i = 0; i < 3; ++i) {
+    kad::KadId id(bucket1ids[i], true);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
-    port++;
+    ++port;
   }
-  for (int i = K-3; i < K; i++) {
-    std::string id = base::DecodeFromHex(bucket2ids[i]);
+  for (int i = K-3; i < K; ++i) {
+    kad::KadId id(bucket2ids[i], true);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
-    port++;
+    ++port;
   }
-  port++;
-  id = base::DecodeFromHex(bucket2ids[0]);
-  Contact contact(id, ip, port, ip, port);
+  ++port;
+  Contact contact(kad::KadId(bucket2ids[0], true), ip, port, ip, port);
   ASSERT_EQ(2, nodes_[0].AddContact(contact, 0.0, false));
 
   Contact rec_contact;
@@ -348,8 +349,9 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   // Getting info from base routing table to check rtt
   base::PDRoutingTableTuple tuple;
   ASSERT_EQ(0, (*base::PDRoutingTable::getInstance())[base::itos(
-      nodes_[0].host_port())]->GetTupleInfo(nodes_[1].node_id(), &tuple));
-  ASSERT_EQ(nodes_[1].node_id(), tuple.kademlia_id_);
+      nodes_[0].host_port())]->GetTupleInfo(
+          nodes_[1].node_id().ToStringDecoded(), &tuple));
+  ASSERT_EQ(nodes_[1].node_id().ToStringDecoded(), tuple.kademlia_id_);
   ASSERT_EQ(nodes_[1].host_ip(), tuple.host_ip_);
   ASSERT_EQ(nodes_[1].host_port(), tuple.host_port_);
   ASSERT_EQ(nodes_[1].rv_ip(), tuple.rendezvous_ip_);

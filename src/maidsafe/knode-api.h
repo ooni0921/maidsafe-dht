@@ -40,8 +40,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 #include "maidsafe/maidsafe-dht_config.h"
+#include "maidsafe/kadid.h"
 
-#if MAIDSAFE_DHT_VERSION < 16
+#if MAIDSAFE_DHT_VERSION < 17
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -128,7 +129,7 @@ class KNode {
   * stored.
   * @param cb callback function where result of the operation is notified
   */
-  void Join(const std::string &node_id, const std::string &kad_config_file,
+  void Join(const KadId &node_id, const std::string &kad_config_file,
       base::callback_func_type cb);
   /**
   * Join the network using a random id. This is a non-blocking operation.
@@ -147,7 +148,7 @@ class KNode {
   * @param external_port external port of the node
   * @param cb callback function where result of the operation is notified
   */
-  void Join(const std::string &node_id, const std::string &kad_config_file,
+  void Join(const KadId &node_id, const std::string &kad_config_file,
       const std::string &external_ip, const boost::uint16_t &external_port,
       base::callback_func_type cb);
   /**
@@ -178,7 +179,7 @@ class KNode {
   * infinite time to live
   * @param cb callback function where result of the operation is notified
   */
-  void StoreValue(const std::string &key, const SignedValue &value,
+  void StoreValue(const KadId &key, const SignedValue &value,
       const SignedRequest &sreq, const boost::int32_t &ttl,
       base::callback_func_type cb);
   /**
@@ -191,7 +192,7 @@ class KNode {
   * infinite time to live
   * @param cb callback function where result of the operation is notified
   */
-  void StoreValue(const std::string &key, const std::string &value,
+  void StoreValue(const KadId &key, const std::string &value,
       const boost::int32_t &ttl, base::callback_func_type cb);
   /**
   * Delete a Value of the network, only in networks with nodes that have public
@@ -204,7 +205,7 @@ class KNode {
   * value is deleted
   * @param cb callback function where result of the operation is notified
   */
-  void DeleteValue(const std::string &key, const SignedValue &value,
+  void DeleteValue(const KadId &key, const SignedValue &value,
       const SignedRequest &request, base::callback_func_type cb);
   /**
   * Find a value in the network.  If several values are stored under the same
@@ -218,7 +219,7 @@ class KNode {
   * checkec
   * @param cb callback function where result of the operation is notified
   */
-  void FindValue(const std::string &key, const bool &check_alt_store,
+  void FindValue(const KadId &key, const bool &check_alt_store,
       base::callback_func_type cb);
   /**
   * Find the contact details of a node in the network with its id.
@@ -227,14 +228,14 @@ class KNode {
   * @param local false if the we want to find the node in the network and true
   * if we try to find it in the node's routing table
   */
-  void FindNode(const std::string &node_id, base::callback_func_type cb,
+  void FindNode(const KadId &node_id, base::callback_func_type cb,
       const bool &local);
   /**
   * Find the k closest nodes to an id in the network.
   * @param node_id id of the node, must be a hexadecimal string not encoded
   * @param cb callback function where result of the operation is notified
   */
-  void FindCloseNodes(const std::string &node_id, base::callback_func_type cb);
+  void FindCloseNodes(const KadId &node_id, base::callback_func_type cb);
   /**
   * Find the k closest nodes to a key in the node's routing table.
   * @param key must be a hexadecimal string not encoded
@@ -243,8 +244,7 @@ class KNode {
   * @param exclude_contacts nodes vector of nodes that must be excluded from the
   * result
   */
-  void FindKClosestNodes(const std::string &key,
-      std::vector<Contact> *close_nodes,
+  void FindKClosestNodes(const KadId &key, std::vector<Contact> *close_nodes,
       const std::vector<Contact> &exclude_contacts);
   /**
   * Ping the node with id node_id.  First the node is found in the network, and
@@ -252,7 +252,7 @@ class KNode {
   * @param node_id id of the node, must be a hexadecimal string not encoded
   * @param cb callback function where result of the operation is notified
   */
-  void Ping(const std::string &node_id, base::callback_func_type cb);
+  void Ping(const KadId &node_id, base::callback_func_type cb);
   /**
   * Ping a node.
   * @param remote contact info of the node to be pinged
@@ -271,7 +271,7 @@ class KNode {
   * Remove a node from the routing table.
   * @param node_id id of the node, must be a hexadecimal string not encoded
   */
-  void RemoveContact(const std::string &node_id);
+  void RemoveContact(const KadId &node_id);
   /**
   * Get a node from the routing table.
   * @param id id of the node, must be a hexadecimal string not encoded
@@ -279,7 +279,7 @@ class KNode {
   * node is returned
   * @return True if node is found, false otherwise
   */
-  bool GetContact(const std::string &id, Contact *contact);
+  bool GetContact(const KadId &id, Contact *contact);
   /**
   * Find a value in the local data store of the node.
   * @param key key used to find the value, must be a hexadecimal string not
@@ -288,7 +288,7 @@ class KNode {
     if found, are retured
   * @return True if value is found, false otherwise
   */
-  bool FindValueLocal(const std::string &key, std::vector<std::string> *values);
+  bool FindValueLocal(const KadId &key, std::vector<std::string> *values);
   /**
   * Store a value in the local data store of the node.
   * @param key key under which the value is stored, must be a hexadecimal string
@@ -298,7 +298,7 @@ class KNode {
   * infinite time to live
   * @return True if value is found, false otherwise
   */
-  bool StoreValueLocal(const std::string &key, const std::string &value,
+  bool StoreValueLocal(const KadId &key, const std::string &value,
       const boost::int32_t &ttl);
   /**
   * Refhresh a value in the local data store of the node.  If the value was
@@ -311,7 +311,7 @@ class KNode {
   * infinite time to live
   * @return True if value is found, false otherwise
   */
-  bool RefreshValueLocal(const std::string &key, const std::string &value,
+  bool RefreshValueLocal(const KadId &key, const std::string &value,
       const boost::int32_t &ttl);
   /**
   * Get n random nodes from the routing table.
@@ -342,7 +342,7 @@ class KNode {
   * @return If the node can be contacted through its local endpoint (LOCAL) or
   * not (REMOTE)
   */
-  connect_to_node CheckContactLocalAddress(const std::string &id,
+  connect_to_node CheckContactLocalAddress(const KadId &id,
       const std::string &ip, const boost::uint16_t &port,
       const std::string &ext_ip);
   /**
@@ -351,10 +351,10 @@ class KNode {
   * @param node_id id of the node, must be a hexadecimal string not encoded
   * @param host_ip ip of the node
   */
-  void UpdatePDRTContactToRemote(const std::string &node_id,
+  void UpdatePDRTContactToRemote(const KadId &node_id,
       const std::string &host_ip);
   ContactInfo contact_info() const;
-  std::string node_id() const;
+  KadId node_id() const;
   std::string host_ip() const;
   boost::uint16_t host_port() const;
   std::string local_host_ip() const;
@@ -376,7 +376,7 @@ class KNode {
   * @return time in seconds from epoch time when the key/value pair was
   * refreshed.  It key value is not found, then 0 is returned.
   */
-  boost::uint32_t KeyLastRefreshTime(const std::string &key,
+  boost::uint32_t KeyLastRefreshTime(const KadId &key,
       const std::string &value);
   /**
   * Get the time when a key/value pair stored in the node is going to expire
@@ -387,7 +387,7 @@ class KNode {
   * expire.  It key value is not found, then 0 is returned.  If -1 is returned,
   * then the value doesn't expire
   */
-  boost::uint32_t KeyExpireTime(const std::string &key,
+  boost::uint32_t KeyExpireTime(const KadId &key,
       const std::string &value);
   /**
   * Checks if the node has public and private RSA keys.
@@ -402,7 +402,7 @@ class KNode {
   * @return time to live in seconds of the key/value. It key value is not found,
   * then 0 is returned.  If -1 is returned, then the value doesn't expire
   */
-  boost::int32_t KeyValueTTL(const std::string &key,
+  boost::int32_t KeyValueTTL(const KadId &key,
       const std::string &value) const;
   /**
   * If this is set to a non-NULL value, then the AlternativeStore will be used
@@ -422,7 +422,7 @@ class KNode {
   boost::shared_ptr<KNodeImpl> pimpl_;
 };
 
-void InsertKadContact(const std::string &key, const kad::Contact &new_contact,
+void InsertKadContact(const KadId &key, const kad::Contact &new_contact,
     std::vector<kad::Contact> *contacts);
 
 }  // namespace kad

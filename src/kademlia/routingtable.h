@@ -45,29 +45,28 @@ class KBucket;
 
 class RoutingTable {
  public:
-  explicit RoutingTable(const std::string &holder_id,
-    const boost::uint16_t &rt_K = kad::K);
+  RoutingTable(const KadId &holder_id, const boost::uint16_t &rt_K = kad::K);
   ~RoutingTable();
   // Add the given contact to the correct k-bucket; if it already
   // exists, its status will be updated
   int AddContact(const Contact &new_contact);
   // Returns true and the contact if it is stored in one Kbucket
   // otherwise it returns false
-  bool GetContact(const std::string &node_id, Contact *contact);
+  bool GetContact(const KadId &node_id, Contact *contact);
   // Remove the contact with the specified node ID from the routing table
-  void RemoveContact(const std::string &node_id, const bool &force);
+  void RemoveContact(const KadId &node_id, const bool &force);
   // Update the "last accessed" timestamp of the k-bucket which covers
   // the range containing the specified key in the key/ID space
-  void TouchKBucket(const std::string &node_id);
+  void TouchKBucket(const KadId &node_id);
   // Finds a number of known nodes closest to the node/value with the
   // specified key.
-  void FindCloseNodes(const std::string &key, int count,
+  void FindCloseNodes(const KadId &key, int count,
       std::vector<Contact> *close_nodes,
       const std::vector<Contact> &exclude_contacts);
   // Finds all k-buckets that need refreshing, starting at the k-bucket with
   // the specified index, and returns IDs to be searched for in order to
   // refresh those k-buckets
-  void GetRefreshList(std::vector<std::string> *ids,
+  void GetRefreshList(std::vector<KadId> *ids,
       const boost::uint16_t &start_kbucket, const bool &force);
   // Get all contacts of a specified k_bucket
   bool GetContacts(const boost::uint16_t &index, std::vector<Contact>
@@ -77,7 +76,7 @@ class RoutingTable {
   void Clear();
   // Calculate the index of the k-bucket which is responsible for the specified
   // key (or ID)
-  boost::uint16_t KBucketIndex(const std::string &key);
+  boost::uint16_t KBucketIndex(const KadId &key);
   Contact GetLastSeenContact(const boost::uint16_t &kbucket_index);
 
  private:
@@ -85,11 +84,10 @@ class RoutingTable {
 // key (or ID)
 //  int KBucketIndex(const std::string &key);
   // Return vector of k-bucket indices sorted from closest to key to furthest
-  std::vector<boost::uint16_t> SortBucketsByDistance(const std::string &key);
+  std::vector<boost::uint16_t> SortBucketsByDistance(const KadId &key);
   // Takes a vector of contacts arranged in arbitrary order and sorts them from
   // closest to key to furthest.  Returns 0 on success.
-  int SortContactsByDistance(const std::string &key,
-                             std::vector<Contact> *contacts);
+  int SortContactsByDistance(const KadId &key, std::vector<Contact> *contacts);
   // Bisect the k-bucket in the specified index into two new ones
   void SplitKbucket(const boost::uint16_t &index);
   // Forces the brother k-bucket of the holder to accept a new contact which
@@ -101,7 +99,7 @@ class RoutingTable {
   // k-buckets
   std::map<KadId, boost::uint16_t> bucket_upper_address_;
   // Holder's node ID
-  std::string holder_id_;
+  KadId holder_id_;
   // Index of k-bucket covering address space which incorporates holder's own
   // node ID.  NB - holder's ID is never actually added to any of its k-buckets.
   // Index of the only k-bucket covering same amount of address space as

@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 class KNode;
+class KadId;
 }
 
 namespace kaddemo {
@@ -44,12 +45,12 @@ class Commands {
   Commands(kad::KNode *node, const boost::uint16_t &K);
   void Run();
  private:
-  void FindValueCallback(const std::string &result, const std::string &key,
+  void FindValueCallback(const std::string &result, const kad::KadId &key,
      const bool &write_to_file, const std::string &path);
-  void StoreCallback(const std::string &result, const std::string &key,
+  void StoreCallback(const std::string &result, const kad::KadId &key,
       const boost::int32_t &ttl);
-  void PingCallback(const std::string &result, const std::string &id);
-  void FindNodeCallback(const std::string &result, const std::string &id);
+  void PingCallback(const std::string &result, const kad::KadId &id);
+  void FindNodeCallback(const std::string &result, const kad::KadId &id);
   void ProcessCommand(const std::string &cmdline, bool *wait_for_cb);
   void PrintUsage();
   bool ReadFile(const std::string &path, std::string *content);

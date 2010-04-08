@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kademlia/kadrpc.h"
 #include "maidsafe/channel-api.h"
 #include "maidsafe/transporthandler-api.h"
+#include "maidsafe/kadid.h"
 
 namespace kad {
 
@@ -42,7 +43,7 @@ void KadRpcs::set_info(const ContactInfo &info) {
   info_ = info;
 }
 
-void KadRpcs::FindNode(const std::string &key, const std::string &ip,
+void KadRpcs::FindNode(const KadId &key, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, FindResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb) {
@@ -52,7 +53,7 @@ void KadRpcs::FindNode(const std::string &key, const std::string &ip,
     args.set_is_boostrap(true);  // Set flag
     ctler->set_timeout(kRpcBootstrapTimeout);  // Longer timeout
   }
-  args.set_key(key);
+  args.set_key(key.ToStringDecoded());
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
@@ -61,12 +62,12 @@ void KadRpcs::FindNode(const std::string &key, const std::string &ip,
   service.FindNode(ctler, &args, resp, cb);
 }
 
-void KadRpcs::FindValue(const std::string &key, const std::string &ip,
+void KadRpcs::FindValue(const KadId &key, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, FindResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb) {
   FindRequest args;
-  args.set_key(key);
+  args.set_key(key.ToStringDecoded());
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
@@ -90,14 +91,14 @@ void KadRpcs::Ping(const std::string &ip, const boost::uint16_t &port,
   service.Ping(ctler, &args, resp, cb);
 }
 
-void KadRpcs::Store(const std::string &key, const SignedValue &value,
+void KadRpcs::Store(const KadId &key, const SignedValue &value,
       const SignedRequest &sig_req, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, StoreResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb,
       const boost::int32_t &ttl, const bool &publish) {
   StoreRequest args;
-  args.set_key(key);
+  args.set_key(key.ToStringDecoded());
   SignedValue *svalue = args.mutable_sig_value();
   *svalue = value;
   args.set_ttl(ttl);
@@ -112,14 +113,14 @@ void KadRpcs::Store(const std::string &key, const SignedValue &value,
   service.Store(ctler, &args, resp, cb);
 }
 
-void KadRpcs::Store(const std::string &key, const std::string &value,
+void KadRpcs::Store(const KadId &key, const std::string &value,
       const std::string &ip, const boost::uint16_t &port,
       const std::string &rv_ip, const boost::uint16_t &rv_port,
       StoreResponse *resp, rpcprotocol::Controller *ctler,
       google::protobuf::Closure *cb, const boost::int32_t &ttl,
       const bool &publish) {
   StoreRequest args;
-  args.set_key(key);
+  args.set_key(key.ToStringDecoded());
   args.set_value(value);
   args.set_ttl(ttl);
   args.set_publish(publish);
@@ -148,13 +149,13 @@ void KadRpcs::Downlist(const std::vector<std::string> downlist,
   service.Downlist(ctler, &args, resp, cb);
 }
 
-void KadRpcs::Bootstrap(const std::string &local_id,
+void KadRpcs::Bootstrap(const KadId &local_id,
     const std::string &local_ip, const boost::uint16_t &local_port,
     const std::string &remote_ip, const boost::uint16_t &remote_port,
     const node_type &type, BootstrapResponse *resp,
     rpcprotocol::Controller *ctler, google::protobuf::Closure *cb) {
   BootstrapRequest args;
-  args.set_newcomer_id(local_id);
+  args.set_newcomer_id(local_id.ToStringDecoded());
   args.set_newcomer_local_ip(local_ip);
   args.set_newcomer_local_port(local_port);
   args.set_node_type(type);
@@ -165,13 +166,13 @@ void KadRpcs::Bootstrap(const std::string &local_id,
   service.Bootstrap(ctler, &args, resp, cb);
 }
 
-void KadRpcs::Delete(const std::string &key, const SignedValue &value,
+void KadRpcs::Delete(const KadId &key, const SignedValue &value,
       const SignedRequest &sig_req, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, DeleteResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb) {
   DeleteRequest args;
-  args.set_key(key);
+  args.set_key(key.ToStringDecoded());
   SignedValue *svalue = args.mutable_value();
   *svalue = value;
   SignedRequest *sreq = args.mutable_signed_request();

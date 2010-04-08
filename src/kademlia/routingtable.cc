@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 
-RoutingTable::RoutingTable(const std::string &holder_id,
+RoutingTable::RoutingTable(const KadId &holder_id,
       const boost::uint16_t &rt_K)
       : k_buckets_(), bucket_upper_address_(), holder_id_(holder_id),
         bucket_of_holder_(0), brother_bucket_of_holder_(-1),
@@ -49,18 +49,16 @@ RoutingTable::~RoutingTable() {
   bucket_upper_address_.clear();
 }
 
-boost::uint16_t RoutingTable::KBucketIndex(const std::string &key) {
-  KadId idKey(key, false);
-  if (idKey > address_space_upper_address_)
+boost::uint16_t RoutingTable::KBucketIndex(const KadId &key) {
+  if (key > address_space_upper_address_)
     return -1;
   std::map<KadId, boost::uint16_t>::iterator lower_bound_iter =
-      bucket_upper_address_.lower_bound(idKey);
+      bucket_upper_address_.lower_bound(key);
   return (*lower_bound_iter).second;
 }
 
 std::vector<boost::uint16_t> RoutingTable::SortBucketsByDistance(
-    const std::string &key) {
-  KadId idKey(key, false);
+    const KadId &key) {
   std::map<KadId, boost::uint16_t> distance;
   // For a given k-bucket, all contacts are either all closer to or all further
   // from a given key than every other contact outwith that k-bucket.  Hence we
@@ -68,7 +66,7 @@ std::vector<boost::uint16_t> RoutingTable::SortBucketsByDistance(
   for (std::map<KadId, boost::uint16_t>::iterator iter =
     bucket_upper_address_.begin();
        iter != bucket_upper_address_.end(); ++iter)
-    distance.insert(std::pair<KadId, boost::uint16_t>(((*iter).first ^ idKey),
+    distance.insert(std::pair<KadId, boost::uint16_t>(((*iter).first ^ key),
         (*iter).second));
   std::vector<boost::uint16_t> indices;
   for (std::map<KadId, boost::uint16_t>::iterator dist_iter = distance.begin();
@@ -79,14 +77,13 @@ std::vector<boost::uint16_t> RoutingTable::SortBucketsByDistance(
 
 // TODO(Team): optimise method.  A map is not neaded, sort the vector using
 // std::sort
-int RoutingTable::SortContactsByDistance(const std::string &key,
+int RoutingTable::SortContactsByDistance(const KadId &key,
       std::vector<Contact> *contacts) {
   boost::uint32_t number_of_contacts = contacts->size();
-  KadId keyid(key, false);
   std::map<KadId, Contact> distance;
   for (boost::uint32_t i = 0; i < contacts->size(); ++i) {
-    KadId ctcid(contacts->at(i).node_id(), false);
-    distance.insert(std::pair<KadId, Contact> (ctcid ^ keyid, contacts->at(i)));
+    distance.insert(std::pair<KadId, Contact> (contacts->at(i).node_id() ^ key,
+        contacts->at(i)));
   }
   contacts->clear();
   for (std::map<KadId, Contact>::const_iterator dist_iter = distance.begin();
@@ -95,7 +92,7 @@ int RoutingTable::SortContactsByDistance(const std::string &key,
   return contacts->size() == number_of_contacts ? 0 : -1;
 }
 
-bool RoutingTable::GetContact(const std::string &node_id, Contact *contact) {
+bool RoutingTable::GetContact(const KadId &node_id, Contact *contact) {
   int index = KBucketIndex(node_id);
   if (index < 0)
     return false;
@@ -104,15 +101,14 @@ bool RoutingTable::GetContact(const std::string &node_id, Contact *contact) {
   return true;
 }
 
-void RoutingTable::TouchKBucket(const std::string &node_id) {
+void RoutingTable::TouchKBucket(const KadId &node_id) {
   int index = KBucketIndex(node_id);
   if (index < 0)
     return;
   k_buckets_[index]->set_last_accessed(base::get_epoch_time());
 }
 
-void RoutingTable::RemoveContact(const std::string &node_id,
-  const bool &force) {
+void RoutingTable::RemoveContact(const KadId &node_id, const bool &force) {
   int index = KBucketIndex(node_id);
   if (index < 0)
     return;
@@ -188,7 +184,7 @@ int RoutingTable::AddContact(const Contact &new_contact) {
   }
 }
 
-void RoutingTable::FindCloseNodes(const std::string &key, int count,
+void RoutingTable::FindCloseNodes(const KadId &key, int count,
       std::vector<Contact> *close_nodes,
       const std::vector<Contact> &exclude_contacts) {
   int index = KBucketIndex(key);
@@ -216,13 +212,13 @@ void RoutingTable::FindCloseNodes(const std::string &key, int count,
   }
 }
 
-void RoutingTable::GetRefreshList(std::vector<std::string> *ids,
+void RoutingTable::GetRefreshList(std::vector<KadId> *ids,
   const boost::uint16_t &start_kbucket, const bool &force) {
   boost::uint32_t curr_time = base::get_epoch_time();
   for (size_t i = start_kbucket; i < k_buckets_.size(); i++)
     if (force || curr_time-k_buckets_[i]->last_accessed() > kRefreshTime) {
-      KadId id(k_buckets_[i]->range_min(), k_buckets_[i]->range_max());
-      ids->push_back(id.ToStringDecoded());
+      ids->push_back(KadId(k_buckets_[i]->range_min(),
+          k_buckets_[i]->range_max()));
     }
 }
 
@@ -266,17 +262,18 @@ struct ForceKEntry {
 
 struct ContactWithTargetPeer {
   Contact contact;
-  std::string holder_id;
+  KadId holder_id;
 };
 
 bool compare_distance(const ContactWithTargetPeer &first,
     const ContactWithTargetPeer &second) {
-  if (first.contact.node_id() == "") return true;
-  if (second.contact.node_id() == "") return false;
-  KadId id1(first.contact.node_id(), false),
-        id2(second.contact.node_id(), false),
-        target_id(first.holder_id, false);
-  return KadId::CloserToTarget(id1, id2, target_id);
+  KadId id;
+  if (first.contact.node_id() == id)
+    return true;
+  if (second.contact.node_id() == id)
+    return false;
+  return KadId::CloserToTarget(first.contact.node_id(),
+      second.contact.node_id(), first.holder_id);
 }
 
 bool compare_time(const ContactWithTargetPeer &first,
@@ -346,10 +343,8 @@ int RoutingTable::ForceKAcceptNewPeer(const Contact &new_contact) {
   advance(it, v-1);
   if (it == candidates_for_l.end())
     return 1;
-  KadId newctc_id(new_contact.node_id(), false),
-        ctc_id(it->contact.node_id(), false),
-        hldr_id(holder_id_, false);
-  if (KadId::CloserToTarget(ctc_id, newctc_id, hldr_id)) {
+  if (KadId::CloserToTarget(it->contact.node_id(), new_contact.node_id(),
+      holder_id_)) {
     // new peer isn't among the k closest neighbours
     return 1;
   }

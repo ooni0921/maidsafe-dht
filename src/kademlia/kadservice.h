@@ -42,15 +42,16 @@ class SignatureValidator;
 namespace kad {
 class DataStore;
 class Contact;
+class KadId;
 
 typedef boost::function< int(Contact, const float&, const bool&) >  // NOLINT
     add_contact_function;
 typedef boost::function< void(const boost::uint16_t&, const
     std::vector<Contact>&, std::vector<Contact>*) >
     get_random_contacts_function;
-typedef boost::function< bool(const std::string&, Contact*) >  // NOLINT
+typedef boost::function< bool(const  KadId&, Contact*) >  // NOLINT
     get_contact_function;
-typedef boost::function< void(const std::string&, std::vector<Contact>*,
+typedef boost::function< void(const KadId&, std::vector<Contact>*,
     const std::vector<Contact>&) > get_closestK_function;
 typedef boost::function< void(const Contact&, base::callback_func_type) >
     ping_function;

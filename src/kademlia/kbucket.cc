@@ -39,9 +39,8 @@ KBucket::~KBucket() {
   contacts_.clear();
 }
 
-bool KBucket::KeyInRange(const std::string &key) {
-  KadId id(key, false);
-  return static_cast<bool>((range_min_ <= id) && (id <= range_max_));
+bool KBucket::KeyInRange(const KadId &key) {
+  return static_cast<bool>((range_min_ <= key) && (key <= range_max_));
 }
 
 size_t KBucket::Size() const { return contacts_.size(); }
@@ -78,13 +77,12 @@ KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
   return SUCCEED;
 }
 
-void KBucket::RemoveContact(const std::string &node_id, const bool &force) {
+void KBucket::RemoveContact(const KadId &node_id, const bool &force) {
   int position = -1;
   int i = 0;
   for (std::list<Contact>::const_iterator it = contacts_.begin();
     it != contacts_.end(); it++) {
-    Contact current_element = *it;
-    if (current_element.node_id() == node_id) {
+    if (it->node_id() == node_id) {
       position = i;
     }
     i++;
@@ -104,13 +102,12 @@ void KBucket::RemoveContact(const std::string &node_id, const bool &force) {
   }
 }
 
-bool KBucket::GetContact(const std::string &node_id, Contact *contact) {
+bool KBucket::GetContact(const KadId &node_id, Contact *contact) {
   bool result = false;
   for (std::list<Contact>::const_iterator it = contacts_.begin();
     it != contacts_.end() && !result; it++) {
-    Contact current_element = *it;
-    if (current_element.node_id() == node_id) {
-      *contact = current_element;
+    if (it->node_id() == node_id) {
+      *contact = (*it);
       result = true;
     }
   }
@@ -125,14 +122,14 @@ void KBucket::GetContacts(const boost::uint16_t &count,
     for (std::list<Contact>::const_iterator it = contacts_.begin();
       it != contacts_.end() && i < count; it++) {
       insert = true;
-      Contact current_element = *it;
-      for (size_t j = 0; j < exclude_contacts.size() && insert; j++) {
-        if (current_element.node_id() == exclude_contacts[j].node_id())
+      for (std::vector<Contact>::const_iterator it1 = exclude_contacts.begin();
+           it1 != exclude_contacts.end() && insert; ++it1) {
+        if (it->node_id() == it1->node_id())
           insert = false;
       }
       if (insert) {
-        contacts->push_back(current_element);
-        i++;
+        contacts->push_back((*it));
+        ++i;
       }
     }
 }

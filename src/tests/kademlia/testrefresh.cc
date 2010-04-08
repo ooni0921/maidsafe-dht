@@ -97,8 +97,7 @@ class TestRefresh : public testing::Test {
       std::string kconfig_file1 = datadirs_[i] + "/.kadconfig";
       base::KadConfig kad_config1;
       base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-      std::string hex_id = base::EncodeToHex(nodes_[0]->node_id());
-      kad_contact->set_node_id(hex_id);
+      kad_contact->set_node_id(nodes_[0]->node_id().ToStringEncoded());
       kad_contact->set_ip(nodes_[0]->host_ip());
       kad_contact->set_port(nodes_[0]->host_port());
       kad_contact->set_local_ip(nodes_[0]->local_host_ip());
@@ -155,7 +154,7 @@ TEST_F(TestRefresh, FUNC_KAD_RefreshValue) {
   // Storing a Value
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string key = co.Hash("key", "", crypto::STRING_STRING, false);
+  kad::KadId key(co.Hash("key", "", crypto::STRING_STRING, false), false);
   std::string value = base::RandomString(1024*5);
   StoreValueCallback store_cb;
   nodes_[4]->StoreValue(key, value, 24*3600, boost::bind(
@@ -195,7 +194,7 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
   // Storing a Value
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string key = co.Hash("key", "", crypto::STRING_STRING, false);
+  kad::KadId key(co.Hash("key", "", crypto::STRING_STRING, false), false);
   std::string value = base::RandomString(1024*5);
   StoreValueCallback store_cb;
   nodes_[4]->StoreValue(key, value, 24*3600, boost::bind(
@@ -236,8 +235,7 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
   std::string kconfig_file1 = local_dir + "/.kadconfig";
   base::KadConfig kad_config1;
   base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-  std::string hex_id = base::EncodeToHex(nodes_[0]->node_id());
-  kad_contact->set_node_id(hex_id);
+  kad_contact->set_node_id(nodes_[0]->node_id().ToStringEncoded());
   kad_contact->set_ip(nodes_[0]->host_ip());
   kad_contact->set_port(nodes_[0]->host_port());
   kad_contact->set_local_ip(nodes_[0]->local_host_ip());
@@ -330,8 +328,7 @@ class TestRefreshSignedValues : public testing::Test {
       std::string kconfig_file1 = datadirs_[i] + "/.kadconfig";
       base::KadConfig kad_config1;
       base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-      std::string hex_id = base::EncodeToHex(nodes_[0]->node_id());
-      kad_contact->set_node_id(hex_id);
+      kad_contact->set_node_id(nodes_[0]->node_id().ToStringEncoded());
       kad_contact->set_ip(nodes_[0]->host_ip());
       kad_contact->set_port(nodes_[0]->host_port());
       kad_contact->set_local_ip(nodes_[0]->local_host_ip());
@@ -391,7 +388,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
   // Storing a Value
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string key = co.Hash("key", "", crypto::STRING_STRING, false);
+  kad::KadId key(co.Hash("key", "", crypto::STRING_STRING, false), false);
   std::string value = base::RandomString(1024*5);
   StoreValueCallback store_cb;
   crypto::RsaKeyPair keys;
@@ -400,15 +397,15 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
   signed_public_key = co.AsymSign(keys.public_key(), "", keys.private_key(),
       crypto::STRING_STRING);
   signed_request = co.AsymSign(co.Hash(keys.public_key()+signed_public_key+
-      key, "", crypto::STRING_STRING, true), "", keys.private_key(),
-      crypto::STRING_STRING);
+      key.ToStringDecoded(), "", crypto::STRING_STRING, true), "",
+      keys.private_key(), crypto::STRING_STRING);
   kad::SignedValue sig_value;
   sig_value.set_value(value);
   sig_value.set_value_signature(co.AsymSign(value, "", keys.private_key(),
       crypto::STRING_STRING));
   std::string ser_sig_value = sig_value.SerializeAsString();
   kad::SignedRequest req;
-  req.set_signer_id(nodes_[4]->node_id());
+  req.set_signer_id(nodes_[4]->node_id().ToStringDecoded());
   req.set_public_key(keys.public_key());
   req.set_signed_public_key(signed_public_key);
   req.set_signed_request(signed_request);
@@ -452,7 +449,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   // Storing a Value
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string key = co.Hash("key", "", crypto::STRING_STRING, false);
+  kad::KadId key(co.Hash("key", "", crypto::STRING_STRING, false), false);
   std::string value = base::RandomString(1024*5);
   StoreValueCallback store_cb;
   crypto::RsaKeyPair keys;
@@ -462,7 +459,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   std::string signed_public_key, signed_request;
   signed_public_key = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
   signed_request = co.AsymSign(co.Hash(pub_key+signed_public_key+
-      key, "", crypto::STRING_STRING, true), "", priv_key,
+      key.ToStringDecoded(), "", crypto::STRING_STRING, true), "", priv_key,
       crypto::STRING_STRING);
   kad::SignedValue sig_value;
   sig_value.set_value(value);
@@ -471,7 +468,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   std::string ser_sig_value = sig_value.SerializeAsString();
   keys.GenerateKeys(4096);
   kad::SignedRequest req;
-  req.set_signer_id(nodes_[4]->node_id());
+  req.set_signer_id(nodes_[4]->node_id().ToStringDecoded());
   req.set_public_key(pub_key);
   req.set_signed_public_key(signed_public_key);
   req.set_signed_request(signed_request);
@@ -515,8 +512,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   std::string kconfig_file1 = local_dir + "/.kadconfig";
   base::KadConfig kad_config1;
   base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-  std::string hex_id = base::EncodeToHex(nodes_[0]->node_id());
-  kad_contact->set_node_id(hex_id);
+  kad_contact->set_node_id(nodes_[0]->node_id().ToStringEncoded());
   kad_contact->set_ip(nodes_[0]->host_ip());
   kad_contact->set_port(nodes_[0]->host_port());
   kad_contact->set_local_ip(nodes_[0]->local_host_ip());
@@ -558,7 +554,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_InformOfDeletedValue) {
   // Storing a Value
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string key = co.Hash("key", "", crypto::STRING_STRING, false);
+  kad::KadId key(co.Hash("key", "", crypto::STRING_STRING, false), false);
   std::string value = base::RandomString(1024*5);
   StoreValueCallback store_cb;
   crypto::RsaKeyPair keys;
@@ -568,7 +564,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_InformOfDeletedValue) {
   std::string signed_public_key, signed_request;
   signed_public_key = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
   signed_request = co.AsymSign(co.Hash(pub_key+signed_public_key+
-      key, "", crypto::STRING_STRING, true), "", priv_key,
+      key.ToStringDecoded(), "", crypto::STRING_STRING, true), "", priv_key,
       crypto::STRING_STRING);
   kad::SignedValue sig_value;
   sig_value.set_value(value);
@@ -577,7 +573,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_InformOfDeletedValue) {
   std::string ser_sig_value = sig_value.SerializeAsString();
   keys.GenerateKeys(4096);
   kad::SignedRequest req;
-  req.set_signer_id(nodes_[4]->node_id());
+  req.set_signer_id(nodes_[4]->node_id().ToStringDecoded());
   req.set_public_key(pub_key);
   req.set_signed_public_key(signed_public_key);
   req.set_signed_request(signed_request);
@@ -604,8 +600,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_InformOfDeletedValue) {
   std::string kconfig_file1 = local_dir + "/.kadconfig";
   base::KadConfig kad_config1;
   base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-  std::string hex_id = base::EncodeToHex(nodes_[0]->node_id());
-  kad_contact->set_node_id(hex_id);
+  kad_contact->set_node_id(nodes_[0]->node_id().ToStringEncoded());
   kad_contact->set_ip(nodes_[0]->host_ip());
   kad_contact->set_port(nodes_[0]->host_port());
   kad_contact->set_local_ip(nodes_[0]->local_host_ip());

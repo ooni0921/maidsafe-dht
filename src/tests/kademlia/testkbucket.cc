@@ -52,7 +52,7 @@ TEST_F(TestKbucket, BEH_KAD_IsInRange) {
     hex_max_val += "f";
   KadId max_value(hex_max_val, true);
   KBucket kbucket1(min_value, max_value);
-  std::string id = cry_obj.Hash("15641654616", "", crypto::STRING_STRING,
+  KadId id(cry_obj.Hash("15641654616", "", crypto::STRING_STRING, false),
       false);
   ASSERT_TRUE(kbucket1.KeyInRange(id));
   hex_max_val = "";
@@ -63,7 +63,7 @@ TEST_F(TestKbucket, BEH_KAD_IsInRange) {
   std::string enc_id;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
     enc_id += "b";
-  ASSERT_FALSE(kbucket2.KeyInRange(base::DecodeFromHex(enc_id)));
+  ASSERT_FALSE(kbucket2.KeyInRange(KadId(enc_id, true)));
 }
 
 TEST_F(TestKbucket, BEH_KAD_AddAndGetContact) {
@@ -73,20 +73,19 @@ TEST_F(TestKbucket, BEH_KAD_AddAndGetContact) {
     hex_max_val += "f";
   KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
-  std::string id[K];
+  KadId id[K];
   std::string ip("127.0.0.1");
   boost::int16_t port = 8880;
   for (boost::int16_t i = 0; i < K; ++i) {
     ASSERT_EQ(i, kbucket.Size());
-    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
-        crypto::STRING_STRING, false);
+    id[i] = KadId(cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false), false);
     ++port;
     Contact contact(id[i], ip, port, ip, port);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
   }
   ++port;
-  std::string id1;
-  id1 = cry_obj.Hash("125486", "", crypto::STRING_STRING, false);
+  KadId id1(cry_obj.Hash("125486", "", crypto::STRING_STRING, false), false);
   ASSERT_EQ(K, kbucket.Size());
   Contact contact1(id1, ip, port, ip, port);
   ASSERT_EQ(FULL, kbucket.AddContact(contact1));
@@ -97,14 +96,14 @@ TEST_F(TestKbucket, BEH_KAD_AddAndGetContact) {
     Contact contact(id[i], ip, port, ip, port);
     Contact contact_rec;
     ASSERT_TRUE(kbucket.GetContact(id[i], &contact_rec));
-    ASSERT_EQ(contact.node_id(), contact_rec.node_id());
+    ASSERT_TRUE(contact.node_id() == contact_rec.node_id());
     ASSERT_EQ(contact.host_ip(), contact_rec.host_ip());
     ASSERT_EQ(contact.host_port(), contact_rec.host_port());
     ASSERT_EQ(contact.local_ip(), contact_rec.local_ip());
     ASSERT_EQ(contact.local_port(), contact_rec.local_port());
   }
   Contact contact_rec;
-  ASSERT_FALSE(kbucket.GetContact("no id", &contact_rec));
+  ASSERT_FALSE(kbucket.GetContact(KadId(), &contact_rec));
 }
 
 TEST_F(TestKbucket, BEH_KAD_GetContacts) {
@@ -114,12 +113,12 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
     hex_max_val += "f";
   KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
-  std::string id[kad::K - 1];
+  KadId id[kad::K - 1];
   std::string ip("127.0.0.1");
   boost::int16_t port[kad::K - 1];
   for (boost::int16_t i = 0; i < kad::K - 1; ++i) {
-    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
-        crypto::STRING_STRING, false);
+    id[i] = KadId(cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false), false);
     port[i] = 8880 + i;
     Contact contact(id[i], ip, port[i], ip, port[i]);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
@@ -168,12 +167,12 @@ TEST_F(TestKbucket, BEH_KAD_DeleteContact) {
     hex_max_val += "f";
   KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
-  std::string id[kad::K - 1];
+  KadId id[kad::K - 1];
   std::string ip("127.0.0.1");
   boost::int16_t port = 8880;
   for (boost::int16_t i = 0; i < kad::K - 1; ++i) {
-    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
-        crypto::STRING_STRING, false);
+    id[i] = KadId(cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false), false);
     ++port;
     Contact contact(id[i], ip, port, ip, port);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
@@ -216,12 +215,12 @@ TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
     hex_max_val += "f";
   KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
-  std::string id[K];
+  KadId id[K];
   std::string ip = "127.0.0.1";
   boost::int16_t port[K];
   for (boost::int16_t i = 0; i < K; ++i) {
-    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
-        crypto::STRING_STRING, false);
+    id[i] = KadId(cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false), false);
     port[i] = 8880 + i;
     Contact contact(id[i], ip, port[i], ip, port[i]);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
@@ -248,11 +247,12 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
     hex_max_val += "f";
   KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
-  std::string id[kad::K - 1], ip("127.0.0.1");
+  KadId id[kad::K - 1];
+  std::string ip("127.0.0.1");
   boost::int16_t port[kad::K - 1];
   for (boost::int16_t i = 0; i < kad::K - 1; ++i) {
-    id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
-        crypto::STRING_STRING, false);
+    id[i] = KadId(cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
+        crypto::STRING_STRING, false), false);
     port[i] = 8880 + i;
     Contact contact(id[i], ip, port[i], ip, port[i]);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
@@ -303,8 +303,8 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   ASSERT_EQ(currsize, kbucket.Size());
   Contact contact4;
   kbucket.GetContacts(1, ex_contacts, &contacts);
-  ASSERT_TRUE(kbucket.GetContact(cry_obj.Hash("newid",
-      "", crypto::STRING_STRING, false), &contact4));
+  ASSERT_TRUE(kbucket.GetContact(KadId(cry_obj.Hash("newid",
+      "", crypto::STRING_STRING, false), false), &contact4));
   ASSERT_TRUE(contact4 == contacts[0]) <<
       "the contact readded was not placed at the begging of the list";
 }

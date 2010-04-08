@@ -48,19 +48,19 @@ class KBucket {
   // add a new contact to the k-bucket
   KBucketExitCode AddContact(const Contact &new_contact);
   // return an existing contact pointer with the specified node_id
-  bool GetContact(const std::string &node_id, Contact *contact);
+  bool GetContact(const KadId &node_id, Contact *contact);
   // Returns a list containing up to the first count number of contacts
   // excluding the list of contacts provided.
   void GetContacts(const boost::uint16_t &count,
       const std::vector<Contact> &exclude_contacts,
       std::vector<Contact> *contacts);
   // remove the existing contact with the specified node_id
-  void RemoveContact(const std::string &node_id, const bool &force);
+  void RemoveContact(const KadId &node_id, const bool &force);
   // Tests whether the specified key (i.e. node ID) is in the range
   // of the 160-bit ID space covered by this k-bucket (in otherwords, it
   // returns whether or not the specified key should be placed in this
   // k-bucket)
-  bool KeyInRange(const std::string &key);
+  bool KeyInRange(const KadId &key);
   // return the number of contacts in this k-bucket
   size_t Size() const;
   // returns last seen contact of the kbucket (end of the list)

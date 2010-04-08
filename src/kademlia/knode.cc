@@ -53,7 +53,7 @@ void KNode::SetTransID(boost::int16_t t) {
   pimpl_->SetTransID(t);
 }
 
-void KNode::Join(const std::string &node_id, const std::string &kad_config_file,
+void KNode::Join(const KadId &node_id, const std::string &kad_config_file,
       base::callback_func_type cb) {
   pimpl_->Join(node_id, kad_config_file, cb);
 }
@@ -63,7 +63,7 @@ void KNode::Join(const std::string &kad_config_file,
   pimpl_->Join(kad_config_file, cb);
 }
 
-void KNode::Join(const std::string &node_id, const std::string &kad_config_file,
+void KNode::Join(const KadId &node_id, const std::string &kad_config_file,
       const std::string &external_ip, const boost::uint16_t &external_port,
       base::callback_func_type cb) {
   pimpl_->Join(node_id, kad_config_file, external_ip, external_port, cb);
@@ -79,40 +79,40 @@ void KNode::Leave() {
   pimpl_->Leave();
 }
 
-void KNode::StoreValue(const std::string &key, const SignedValue &value,
+void KNode::StoreValue(const KadId &key, const SignedValue &value,
     const SignedRequest &sreq, const boost::int32_t &ttl,
     base::callback_func_type cb) {
   pimpl_->StoreValue(key, value, sreq, ttl, cb);
 }
 
-void KNode::StoreValue(const std::string &key, const std::string &value,
+void KNode::StoreValue(const KadId &key, const std::string &value,
     const boost::int32_t &ttl, base::callback_func_type cb) {
   pimpl_->StoreValue(key, value, ttl, cb);
 }
 
-void KNode::FindValue(const std::string &key, const bool &check_alt_store,
+void KNode::FindValue(const KadId &key, const bool &check_alt_store,
       base::callback_func_type cb) {
   pimpl_->FindValue(key, check_alt_store, cb);
 }
 
-void KNode::FindNode(const std::string &node_id,
+void KNode::FindNode(const KadId &node_id,
                      base::callback_func_type cb,
                      const bool &local) {
   pimpl_->FindNode(node_id, cb, local);
 }
 
-void KNode::FindCloseNodes(const std::string &node_id,
+void KNode::FindCloseNodes(const KadId &node_id,
                            base::callback_func_type cb) {
   pimpl_->FindCloseNodes(node_id, cb);
 }
 
-void KNode::FindKClosestNodes(const std::string &key,
+void KNode::FindKClosestNodes(const KadId &key,
                               std::vector<Contact> *close_nodes,
                               const std::vector<Contact> &exclude_contacts) {
   pimpl_->FindKClosestNodes(key, close_nodes, exclude_contacts);
 }
 
-void KNode::Ping(const std::string &node_id, base::callback_func_type cb) {
+void KNode::Ping(const KadId &node_id, base::callback_func_type cb) {
   pimpl_->Ping(node_id, cb);
 }
 
@@ -125,25 +125,25 @@ int KNode::AddContact(Contact new_contact, const float & rtt,
   return pimpl_->AddContact(new_contact, rtt, only_db);
 }
 
-void KNode::RemoveContact(const std::string &node_id) {
+void KNode::RemoveContact(const KadId &node_id) {
   pimpl_->RemoveContact(node_id);
 }
 
-bool KNode::GetContact(const std::string &id, Contact *contact) {
+bool KNode::GetContact(const KadId &id, Contact *contact) {
   return pimpl_->GetContact(id, contact);
 }
 
-bool KNode::FindValueLocal(const std::string &key,
+bool KNode::FindValueLocal(const KadId &key,
                            std::vector<std::string> *values) {
   return pimpl_->FindValueLocal(key, values);
 }
 
-bool KNode::StoreValueLocal(const std::string &key,
+bool KNode::StoreValueLocal(const KadId &key,
       const std::string &value, const boost::int32_t &ttl) {
   return pimpl_->StoreValueLocal(key, value, ttl);
 }
 
-bool KNode::RefreshValueLocal(const std::string &key,
+bool KNode::RefreshValueLocal(const KadId &key,
       const std::string &value, const boost::int32_t &ttl) {
   return pimpl_->RefreshValueLocal(key, value, ttl);
 }
@@ -158,14 +158,14 @@ void KNode::HandleDeadRendezvousServer(const bool &dead_server) {
   pimpl_->HandleDeadRendezvousServer(dead_server);
 }
 
-connect_to_node KNode::CheckContactLocalAddress(const std::string &id,
+connect_to_node KNode::CheckContactLocalAddress(const KadId &id,
                                                 const std::string &ip,
                                                 const boost::uint16_t &port,
                                                 const std::string &ext_ip) {
   return pimpl_->CheckContactLocalAddress(id, ip, port, ext_ip);
 }
 
-void KNode::UpdatePDRTContactToRemote(const std::string &node_id,
+void KNode::UpdatePDRTContactToRemote(const KadId &node_id,
                                       const std::string &host_ip) {
   pimpl_->UpdatePDRTContactToRemote(node_id, host_ip);
 }
@@ -174,7 +174,7 @@ ContactInfo KNode::contact_info() const {
   return pimpl_->contact_info();
 }
 
-std::string KNode::node_id() const {
+KadId KNode::node_id() const {
   return pimpl_->node_id();
 }
 
@@ -210,11 +210,11 @@ KadRpcs* KNode::kadrpcs() {
   return pimpl_->kadrpcs();
 }
 
-boost::uint32_t KNode::KeyLastRefreshTime(const std::string &key,
+boost::uint32_t KNode::KeyLastRefreshTime(const KadId &key,
       const std::string &value) {
   return pimpl_->KeyLastRefreshTime(key, value);
 }
-boost::uint32_t KNode::KeyExpireTime(const std::string &key,
+boost::uint32_t KNode::KeyExpireTime(const KadId &key,
       const std::string &value) {
   return pimpl_->KeyExpireTime(key, value);
 }
@@ -223,7 +223,7 @@ bool KNode::HasRSAKeys() {
   return pimpl_->HasRSAKeys();
 }
 
-boost::int32_t KNode::KeyValueTTL(const std::string &key,
+boost::int32_t KNode::KeyValueTTL(const KadId &key,
       const std::string &value) const {
   return pimpl_->KeyValueTTL(key, value);
 }
@@ -240,7 +240,7 @@ void KNode::set_signature_validator(base::SignatureValidator *validator) {
   pimpl_->set_signature_validator(validator);
 }
 
-void KNode::DeleteValue(const std::string &key, const SignedValue &value,
+void KNode::DeleteValue(const KadId &key, const SignedValue &value,
       const SignedRequest &request, base::callback_func_type cb) {
   pimpl_->DeleteValue(key, value, request, cb);
 }
@@ -249,7 +249,7 @@ nat_type KNode::host_nat_type() {
   return pimpl_->host_nat_type();
 }
 
-void InsertKadContact(const std::string &key,
+void InsertKadContact(const KadId &key,
                       const kad::Contact &new_contact,
                       std::vector<kad::Contact> *contacts) {
   std::list<kad::Contact> contact_list(contacts->begin(), contacts->end());

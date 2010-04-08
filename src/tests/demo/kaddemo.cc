@@ -337,16 +337,16 @@ int main(int argc, char **argv) {
         try {
           boost::filesystem::create_directories(thisconfig);
           thisconfig /= ".kadconfig";
-          std::string enc_id = base::EncodeToHex(node.node_id());
-          write_to_kadconfig(thisconfig.string(), enc_id, node.host_ip(),
+          write_to_kadconfig(thisconfig.string(),
+              node.node_id().ToStringEncoded(), node.host_ip(),
               node.host_port(), node.local_host_ip(), node.local_host_port());
         }
         catch(const std::exception &e) {
         }
       } else {
         thisconfig /= ".kadconfig";
-        std::string enc_id = base::EncodeToHex(node.node_id());
-        write_to_kadconfig(thisconfig.string(), enc_id, node.host_ip(),
+        write_to_kadconfig(thisconfig.string(),
+            node.node_id().ToStringEncoded(), node.host_ip(),
             node.host_port(), node.local_host_ip(), node.local_host_port());
       }
     }

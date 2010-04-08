@@ -40,15 +40,18 @@ namespace kad {
 // different RPCs have different timeouts, normally it is 5 seconds
 const boost::uint32_t kRpcPingTimeout = 3;  // 3 secs
 const boost::uint32_t kRpcBootstrapTimeout = 7;  // 7secs
+
+class KadId;
+
 class KadRpcs {
  public:
   KadRpcs(rpcprotocol::ChannelManager *channel_manager,
       transport::TransportHandler *ptrans_handler);
-  void FindNode(const std::string &key, const std::string &ip,
+  void FindNode(const KadId &key, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, FindResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
-  void FindValue(const std::string &key, const std::string &ip,
+  void FindValue(const KadId &key, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, FindResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
@@ -56,13 +59,13 @@ class KadRpcs {
       const std::string &rv_ip, const boost::uint16_t &rv_port,
       PingResponse *resp, rpcprotocol::Controller *ctler,
       google::protobuf::Closure *cb);
-  void Store(const std::string &key, const SignedValue &value,
+  void Store(const KadId &key, const SignedValue &value,
       const SignedRequest &sig_req, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, StoreResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *cb,
       const boost::int32_t &ttl, const bool &publish);
-  void Store(const std::string &key, const std::string &value,
+  void Store(const KadId &key, const std::string &value,
       const std::string &ip, const boost::uint16_t &port,
       const std::string &rv_ip, const boost::uint16_t &rv_port,
       StoreResponse *resp, rpcprotocol::Controller *ctler,
@@ -73,12 +76,12 @@ class KadRpcs {
       const std::string &rv_ip, const boost::uint16_t &rv_port,
       DownlistResponse *resp, rpcprotocol::Controller *ctler,
       google::protobuf::Closure *cb);
-  void Bootstrap(const std::string &local_id, const std::string &local_ip,
+  void Bootstrap(const KadId &local_id, const std::string &local_ip,
       const boost::uint16_t &local_port, const std::string &remote_ip,
       const boost::uint16_t &remote_port, const node_type &type,
       BootstrapResponse *resp, rpcprotocol::Controller *ctler,
       google::protobuf::Closure *cb);
-  void Delete(const std::string &key, const SignedValue &value,
+  void Delete(const KadId &key, const SignedValue &value,
       const SignedRequest &sig_req, const std::string &ip,
       const boost::uint16_t &port, const std::string &rv_ip,
       const boost::uint16_t &rv_port, DeleteResponse *resp,

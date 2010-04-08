@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/channel-api.h"
 #include "protobuf/signed_kadvalue.pb.h"
 #include "maidsafe/validationinterface.h"
+#include "maidsafe/kadid.h"
 
 namespace kad {
 
@@ -174,26 +175,31 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
     response->set_result(kRpcResultFailure);
   } else if (GetSender(request->sender_info(), &sender)) {
     std::vector<Contact> closest_contacts, exclude_contacts;
-    std::string key(request->key());
-    exclude_contacts.push_back(sender);
-    get_closestK_contacts_(key, &closest_contacts, exclude_contacts);
-    bool found_node(false);
-    for (unsigned int i = 0; i < closest_contacts.size(); ++i) {
-      std::string contact_str;
-      closest_contacts[i].SerialiseToString(&contact_str);
-      response->add_closest_nodes(contact_str);
-      if (key == closest_contacts[i].node_id())
-        found_node = true;
-    }
-    if (!found_node) {
-      Contact key_node;
-      if (get_contact_(key, &key_node)) {
-        std::string str_key_contact;
-        key_node.SerialiseToString(&str_key_contact);
-        response->add_closest_nodes(str_key_contact);
+    try {
+      KadId key(request->key(), false);
+      exclude_contacts.push_back(sender);
+      get_closestK_contacts_(key, &closest_contacts, exclude_contacts);
+      bool found_node(false);
+      for (unsigned int i = 0; i < closest_contacts.size(); ++i) {
+        std::string contact_str;
+        closest_contacts[i].SerialiseToString(&contact_str);
+        response->add_closest_nodes(contact_str);
+        if (key == closest_contacts[i].node_id())
+          found_node = true;
       }
+      if (!found_node) {
+        Contact key_node;
+        if (get_contact_(key, &key_node)) {
+          std::string str_key_contact;
+          key_node.SerialiseToString(&str_key_contact);
+          response->add_closest_nodes(str_key_contact);
+        }
+      }
+      response->set_result(kRpcResultSuccess);
     }
-    response->set_result(kRpcResultSuccess);
+    catch(const KadIdException&) {
+      response->set_result(kRpcResultFailure);
+    }
     rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
         (controller);
     if (ctrl != NULL) {
@@ -392,7 +398,7 @@ void KadService::NatDetection(google::protobuf::RpcController *controller,
       Contact node_a;
       if (node_a.ParseFromString(request->newcomer()) &&
           node_b.ParseFromString(request->bootstrap_node()) &&
-          node_a.node_id() != client_node_id()) {
+          node_a.node_id().ToStringDecoded() != client_node_id()) {
         NatDetectionPingResponse *resp = new NatDetectionPingResponse;
         struct NatDetectionPingData data =
           {request->sender_id(), response, done, NULL};
