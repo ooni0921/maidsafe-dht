@@ -32,12 +32,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <list>
+#include <boost/asio.hpp>
+#include <boost/shared_ptr.hpp>
+#include <map>
 #include "gtest/gtest_prod.h"
 
 namespace base {
 
 typedef boost::function<void()> calllater_func;
+typedef std::map< boost::uint32_t,
+    boost::shared_ptr<boost::asio::deadline_timer> > timers_map;
+typedef std::pair< boost::uint32_t,
+    boost::shared_ptr<boost::asio::deadline_timer> > timer_pair;
 
 struct CallLaterMap {
   CallLaterMap() : time_to_execute(0), cb(), calllater_id(0) {}
@@ -50,11 +56,10 @@ class CallLaterTimer {
  public:
   CallLaterTimer();
   ~CallLaterTimer();
-  // execute the expired calls
-  void TryExecute();
   inline bool IsStarted() { return is_started_; }
   int CancelAll();
   bool CancelOne(const boost::uint32_t &calllater_id);
+  size_t list_size();
   // Delay msecs milliseconds to call the function specified by cb
   int AddCallLater(const boost::uint64_t &msecs, calllater_func cb);
   friend class CallLaterTest;
@@ -68,15 +73,18 @@ class CallLaterTimer {
   FRIEND_TEST(CallLaterTest, BEH_BASE_AddPtrCallLater);
   FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyPtrCallLater);
   FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyAgainPtrCallLater);
+  void ExecuteFunc(calllater_func cb, boost::uint32_t id,
+      const boost::system::error_code &ec);
   CallLaterTimer(const CallLaterTimer&);
   CallLaterTimer& operator=(const CallLaterTimer&);
-  size_t list_size();
-  boost::mutex mutex_;
-  boost::uint32_t calllater_id_;
+  boost::mutex timers_mutex_;
   bool is_started_;
-  boost::shared_ptr<boost::thread> blocking_routine_;
-  std::list<CallLaterMap> calllaters_;
-  boost::condition_variable cond_;
+  boost::shared_ptr<boost::thread> worker_;
+  timers_map timers_;
+  boost::asio::io_service io_;
+  boost::asio::strand strand_;
+  boost::asio::deadline_timer timer_;
+  boost::uint32_t calllater_id_;
 };
 
 }  // namespace base
