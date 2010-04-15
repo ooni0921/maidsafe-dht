@@ -171,7 +171,7 @@ class KNode {
   /**
   * Store a value of the form (data; signed data) in the network.  Used if the
   * network is formed by nodes that have private and public key.
-  * @param key key to store the value, must be a hexadecimal string not encoded
+  * @param key a kad::KadId object that is the key to store the value
   * @param value value to be stored
   * @param sreq request to store the value, it is validated before the value is
   * stored
@@ -185,8 +185,7 @@ class KNode {
   /**
   * Store a value (a simple string) in the network.  Used if the
   * network is formed by nodes that do not have private and public key.
-  * @param key key under which the value is stored, must be a hexadecimal string
-  * not encoded
+  * @param key a kad::KadId object that is the key to store the value
   * @param value value to be stored
   * @param ttl time to live of the value in seconds, if ttl = -1, then it has
   * infinite time to live
@@ -198,8 +197,7 @@ class KNode {
   * Delete a Value of the network, only in networks with nodes that have public
   * and private keys a value, that is of the form data; signed data, can be
   * deleted.  Only the one who signed the value can delete it.
-  * @param key key under which the value is stored, must be a hexadecimal
-  * string not encoded
+  * @param key kad::KadId object that is the key under which the value is stored
   * @param value value to be deleted
   * @param request request to delete the value, it is validated before the
   * value is deleted
@@ -214,7 +212,7 @@ class KNode {
   * AlternativeStore, rather than returning this value, it returns its own
   * contact details.  If check_alt_store is true, this node checks its own
   * AlternativeStore also.
-  * @param key key to store the value, must be a hexadecimal string not encoded
+  * @param key kad::KadId object that is the key under which the value is stored
   * @param check_alt_store indicate if the node's alternative store must be
   * checkec
   * @param cb callback function where result of the operation is notified
@@ -223,7 +221,7 @@ class KNode {
       base::callback_func_type cb);
   /**
   * Find the contact details of a node in the network with its id.
-  * @param node_id id of the node, must be a hexadecimal string not encoded
+  * @param node_id id of the node. It is a kad::KadId object
   * @param cb callback function where result of the operation is notified
   * @param local false if the we want to find the node in the network and true
   * if we try to find it in the node's routing table
@@ -232,13 +230,13 @@ class KNode {
       const bool &local);
   /**
   * Find the k closest nodes to an id in the network.
-  * @param node_id id of the node, must be a hexadecimal string not encoded
+  * @param node_id id to which the nodes closest to it are returned
   * @param cb callback function where result of the operation is notified
   */
   void FindCloseNodes(const KadId &node_id, base::callback_func_type cb);
   /**
   * Find the k closest nodes to a key in the node's routing table.
-  * @param key must be a hexadecimal string not encoded
+  * @param key id to which the nodes closest to it are returned
   * @param close_nodes reference to a vector of Contact where the nodes found
   * are returned
   * @param exclude_contacts nodes vector of nodes that must be excluded from the
@@ -249,7 +247,7 @@ class KNode {
   /**
   * Ping the node with id node_id.  First the node is found in the network, and
   * then the node is pinged
-  * @param node_id id of the node, must be a hexadecimal string not encoded
+  * @param node_id id of the node
   * @param cb callback function where result of the operation is notified
   */
   void Ping(const KadId &node_id, base::callback_func_type cb);
@@ -269,12 +267,12 @@ class KNode {
       const bool &only_db);
   /**
   * Remove a node from the routing table.
-  * @param node_id id of the node, must be a hexadecimal string not encoded
+  * @param node_id id of the node
   */
   void RemoveContact(const KadId &node_id);
   /**
   * Get a node from the routing table.
-  * @param id id of the node, must be a hexadecimal string not encoded
+  * @param id id of the node
   * @param contact referece to a Contact object where the contact info of the
   * node is returned
   * @return True if node is found, false otherwise
@@ -282,8 +280,7 @@ class KNode {
   bool GetContact(const KadId &id, Contact *contact);
   /**
   * Find a value in the local data store of the node.
-  * @param key key used to find the value, must be a hexadecimal string not
-  * encoded
+  * @param key key used to find the value
   * @param values vector of references where the values stored under key,
     if found, are retured
   * @return True if value is found, false otherwise
@@ -291,8 +288,7 @@ class KNode {
   bool FindValueLocal(const KadId &key, std::vector<std::string> *values);
   /**
   * Store a value in the local data store of the node.
-  * @param key key under which the value is stored, must be a hexadecimal string
-  * not encoded
+  * @param key key under which the value is stored
   * @param value value to be stored
   * @param ttl Time to live of the value in seconds, if ttl = -1, then it has
   * infinite time to live
@@ -304,8 +300,7 @@ class KNode {
   * Refhresh a value in the local data store of the node.  If the value was
   * already stored, the time to live is not changed, only the refresh time
   * is updated.
-  * @param key key under which the value is stored, must be a hexadecimal string
-  * not encoded
+  * @param key key under which the value is stored
   * @param value value to be stored
   * @param ttl Time to live of the value in seconds, if ttl = -1, then it has
   * infinite time to live
@@ -348,7 +343,7 @@ class KNode {
   /**
   * Updates the database routing table in the entry for the node id passed to be
   * to be contacted only via the remote endpoint.
-  * @param node_id id of the node, must be a hexadecimal string not encoded
+  * @param node_id id of the node
   * @param host_ip ip of the node
   */
   void UpdatePDRTContactToRemote(const KadId &node_id,
@@ -370,8 +365,7 @@ class KNode {
   /**
   * Get the time of the last time a key/value pair stored in the node was
   * refreshed
-  * @param key key under which the value is stored, must be a hexadecimal string
-  * not encoded
+  * @param key key under which the value is stored
   * @param value value stored
   * @return time in seconds from epoch time when the key/value pair was
   * refreshed.  It key value is not found, then 0 is returned.
@@ -380,8 +374,7 @@ class KNode {
       const std::string &value);
   /**
   * Get the time when a key/value pair stored in the node is going to expire
-  * @param key key under which the value is stored, must be a hexadecimal string
-  * not encoded
+  * @param key key under which the value is stored
   * @param value value stored
   * @return time in seconds from epoch time when the key/value pair is going to
   * expire.  It key value is not found, then 0 is returned.  If -1 is returned,
@@ -396,8 +389,7 @@ class KNode {
   bool HasRSAKeys();
   /**
   * Get the time to live of a key/value pair stored in the node
-  * @param key key under which the value is stored, must be a hexadecimal string
-  * not encoded
+  * @param key key under which the value is stored
   * @param value value stored
   * @return time to live in seconds of the key/value. It key value is not found,
   * then 0 is returned.  If -1 is returned, then the value doesn't expire
