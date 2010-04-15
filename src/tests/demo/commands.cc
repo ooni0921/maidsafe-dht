@@ -248,7 +248,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       try {
         key = kad::KadId(std::string(args[0]), true);
       }
-      catch (const kad::KadIdException&) {
+      catch(const kad::KadIdException&) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
             false), false);
       }
@@ -270,7 +270,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       try {
         key = kad::KadId(std::string(args[0]), true);
       }
-      catch (const kad::KadIdException&) {
+      catch(const kad::KadIdException&) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
             false), false);
       }
@@ -291,7 +291,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       try {
         key = kad::KadId(std::string(args[0]), true);
       }
-      catch (const kad::KadIdException&) {
+      catch(const kad::KadIdException&) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
             false), false);
       }
@@ -308,7 +308,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       try {
         key = kad::KadId(std::string(args[0]), true);
       }
-      catch (const kad::KadIdException&) {
+      catch(const kad::KadIdException&) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
             false), false);
       }
@@ -328,7 +328,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
             key), false);
         *wait_for_cb = true;
       }
-      catch (const kad::KadIdException&) {
+      catch(const kad::KadIdException&) {
          printf("Invalid Node id\n");
          *wait_for_cb = false;
       }
@@ -344,7 +344,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
             key));
         *wait_for_cb = true;
       }
-      catch (const kad::KadIdException&) {
+      catch(const kad::KadIdException&) {
         printf("Invalid Node id\n");
         *wait_for_cb = false;
       }
@@ -379,8 +379,8 @@ void Commands::Store50Values(const std::string &prefix) {
   std::string value;
   for (boost::uint16_t i = 0; i < 50; ++i) {
     arrived = false;
-    kad::KadId key(cryobj_.Hash(prefix + boost::lexical_cast<std::string>(i), "",
-        crypto::STRING_STRING, false), false);
+    kad::KadId key(cryobj_.Hash(prefix + boost::lexical_cast<std::string>(i),
+        "", crypto::STRING_STRING, false), false);
     value.clear();
     for (boost::uint16_t j = 0; j < 1024*100; ++j) {
       value += prefix + boost::lexical_cast<std::string>(i);

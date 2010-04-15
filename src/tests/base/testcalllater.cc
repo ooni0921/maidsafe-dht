@@ -92,38 +92,6 @@ TEST_F(CallLaterTest, BEH_BASE_AddCallLater) {
   ASSERT_EQ(0, clt_.list_size()) << "List not empty";
 }
 
-TEST_F(CallLaterTest, BEH_BASE_AddDestroyCallLater) {
-  // Create object on stack, set up call later, then before called, destroy
-  // object.
-  ASSERT_TRUE(clt_.IsStarted());
-  clt_.CancelAll();
-  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
-  {
-    Lynyrd sweethome;
-    clt_.AddCallLater(20, boost::bind(&Lynyrd::Skynyrd, &sweethome));
-  }
-  boost::this_thread::sleep(boost::posix_time::milliseconds(250));
-  ASSERT_EQ(0, clt_.CancelAll()) <<
-      "Some calls were cancelled, list not empty";
-  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
-}
-
-TEST_F(CallLaterTest, BEH_BASE_AddDestroyAgainCallLater) {
-  // As above, except call a method which itself calls a method of the destroyed
-  // object.
-  ASSERT_TRUE(clt_.IsStarted());
-  clt_.CancelAll();
-  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
-  {
-    Lynyrd sweethome;
-    clt_.AddCallLater(20, boost::bind(&Lynyrd::Alabama, &sweethome));
-  }
-  boost::this_thread::sleep(boost::posix_time::milliseconds(250));
-  ASSERT_EQ(0, clt_.CancelAll()) <<
-      "Some calls were cancelled, list not empty";
-  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
-}
-
 TEST_F(CallLaterTest, BEH_BASE_AddManyCallLaters) {
   // Set up 100 calls fairly closely spaced
   ASSERT_TRUE(clt_.IsStarted());
@@ -213,43 +181,6 @@ TEST_F(CallLaterTest, BEH_BASE_AddPtrCallLater) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(250));
   ASSERT_EQ(0, clt_.CancelAll()) <<
       "Some calls were cancelled, list not empty";
-  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
-}
-
-TEST_F(CallLaterTest, BEH_BASE_AddDestroyPtrCallLater) {
-  // Create object on heap, set up call later, then before called, destroy
-  // object.
-  ASSERT_TRUE(clt_.IsStarted());
-  clt_.CancelAll();
-  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
-  {
-    boost::scoped_ptr<Lynyrd> sweethome(new Lynyrd());
-    clt_.AddCallLater(20, boost::bind(&Lynyrd::Skynyrd, sweethome.get()));
-  }
-  boost::this_thread::sleep(boost::posix_time::milliseconds(250));
-  ASSERT_EQ(0, clt_.CancelAll()) <<
-      "Some calls were not cancelled, list not empty";
-  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
-}
-
-TEST_F(CallLaterTest, BEH_BASE_AddDestroyAgainPtrCallLater) {
-  // As above, except call a method which itself calls a method of the destroyed
-  // object.
-  ASSERT_TRUE(clt_.IsStarted());
-  clt_.CancelAll();
-  ASSERT_EQ(0, clt_.list_size()) << "List not empty";
-  {
-    boost::scoped_ptr<Lynyrd> sweethome(new Lynyrd());
-    clt_.AddCallLater(20, boost::bind(&Lynyrd::Alabama, sweethome.get()));
-  }
-  boost::this_thread::sleep(boost::posix_time::milliseconds(250));
-  Lynyrd sweethome1;
-  clt_.AddCallLater(50, boost::bind(&Lynyrd::Skynyrd, &sweethome1));
-  EXPECT_EQ(0, sweethome1.count());
-  boost::this_thread::sleep(boost::posix_time::milliseconds(250));
-  EXPECT_EQ(1, sweethome1.count());
-  ASSERT_EQ(0, clt_.CancelAll()) <<
-      "Some calls were not cancelled, list not empty";
   ASSERT_EQ(0, clt_.list_size()) << "List not empty";
 }
 

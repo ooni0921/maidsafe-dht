@@ -141,7 +141,7 @@ void NatPmpClientImpl::DoSendMappingRequest(boost::uint16_t protocol,
     Protocol::MappingRequest r;
 
     r.buffer[0] = 0;
-    r.buffer[1] = protocol;
+    r.buffer[1] = static_cast<char>(protocol);
     r.buffer[2] = 0;
     r.buffer[3] = 0;
 

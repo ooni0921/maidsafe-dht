@@ -1314,7 +1314,8 @@ TEST_F(KNodeTest, FUNC_KAD_InvReqDeleteValue) {
   // Deleting Value
   std::string pub_key1, priv_key1, sig_pub_key1, sig_req1;
   create_rsakeys(&pub_key1, &priv_key1);
-  create_req(pub_key1, priv_key1, key.ToStringDecoded(), &sig_pub_key1, &sig_req1);
+  create_req(pub_key1, priv_key1, key.ToStringDecoded(), &sig_pub_key1,
+      &sig_req1);
   req.Clear();
   req.set_signer_id(knodes_[7]->node_id().ToStringDecoded());
   req.set_public_key(pub_key1);

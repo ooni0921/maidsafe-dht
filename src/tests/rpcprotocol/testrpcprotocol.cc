@@ -28,6 +28,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include <google/protobuf/descriptor.h>
+#include <algorithm>
 #include "maidsafe/config.h"
 #include "base/calllatertimer.h"
 #include "maidsafe/maidsafe-dht.h"
@@ -95,16 +96,11 @@ class MirrorTestService : public tests::MirrorTest {
               tests::StringMirrorResponse *response,
               google::protobuf::Closure *done) {
     if (request->IsInitialized()) {
-      std::string message(request->message());
-      std::string inverted(request->message());
-      boost::int32_t index(0);
       LOG(INFO) << "Before reversing the string" << std::endl;
-      for (boost::int32_t n = message.length() -1; n > -1 ; n--) {
-        inverted[index] = message[n];
-        index++;
-      }
+      std::string message(request->message());
+      std::reverse(message.begin(), message.end());
+      response->set_mirrored_string(message);
       LOG(INFO) << "Done reversing the string" << std::endl;
-      response->set_mirrored_string(inverted);
     }
     rpcprotocol::Controller *ctrler =
         static_cast<rpcprotocol::Controller*>(controller);

@@ -25,8 +25,8 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef KADEMLIA_KADID_H_
-#define KADEMLIA_KADID_H_
+#ifndef MAIDSAFE_KADID_H_
+#define MAIDSAFE_KADID_H_
 
 #include <boost/cstdint.hpp>
 #include <string>
@@ -187,4 +187,4 @@ class KadId {
 };
 
 }  // namespace kad
-#endif  // KADEMLIA_KADID_H_
+#endif  // MAIDSAFE_KADID_H_

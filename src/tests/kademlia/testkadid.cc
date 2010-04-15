@@ -395,7 +395,7 @@ TEST(TestKadId, BEH_KAD_DefaultCtr) {
   ASSERT_EQ(bin_id, kadid.ToStringBinary());
 }
 
-TEST(TestKadId, BEH_KAD_OperatorEq) {
+TEST(TestKadId, BEH_KAD_OperatorEql) {
   kad::KadId kadid1(kad::RANDOM_ID), kadid2;
   kadid2 = kadid1;
   ASSERT_TRUE(kadid1 == kadid2);
@@ -469,7 +469,7 @@ TEST(TestKadId, BEH_KAD_SplitRange) {
   EXPECT_EQ(exp_max, max6.ToStringBinary());
 }
 
-TEST(TestKadId, BEH_KAD_CtrBetweenIds) {
+TEST(TestKadId, BEH_KAD_CtrBetweenIdsOK) {
   kad::KadId id1(kad::RANDOM_ID), id2(kad::RANDOM_ID);
   if (id1 < id2) {
     kad::KadId id(id1, id2);

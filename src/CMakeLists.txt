@@ -1,97 +1,141 @@
+#==============================================================================#
+#                                                                              #
+#  Copyright (c) 2010 maidsafe.net limited                                     #
+#  All rights reserved.                                                        #
+#                                                                              #
+#  Redistribution and use in source and binary forms, with or without          #
+#  modification, are permitted provided that the following conditions are met: #
+#                                                                              #
+#      * Redistributions of source code must retain the above copyright        #
+#        notice, this list of conditions and the following disclaimer.         #
+#      * Redistributions in binary form must reproduce the above copyright     #
+#        notice, this list of conditions and the following disclaimer in the   #
+#        documentation and/or other materials provided with the distribution.  #
+#      * Neither the name of the maidsafe.net limited nor the names of its     #
+#        contributors may be used to endorse or promote products derived from  #
+#        this software without specific prior written permission.              #
+#                                                                              #
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" #
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE   #
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE  #
+#  ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE  #
+#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR         #
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF        #
+#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS    #
+#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN     #
+#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)     #
+#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE  #
+#  POSSIBILITY OF SUCH DAMAGE.                                                 #
+#                                                                              #
+#==============================================================================#
+#                                                                              #
+#  Written by maidsafe.net team                                                #
+#                                                                              #
+#  Significant contribution made by Stephan Menzel                             #
+#                                                                              #
+#==============================================================================#
+
+
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
-PROJECT(MAIDSAFE)
+PROJECT(maidsafe_dht)
 MESSAGE("================================================================================\n")
 SET(CMAKE_CACHEFILE "${CMAKE_CACHEFILE_DIR}/CMakeCache.txt")
-IF (WIN32)
+IF(WIN32)
   STRING(REPLACE "/" "\\" CMAKE_CACHEFILE ${CMAKE_CACHEFILE})
-ENDIF (WIN32)
+ENDIF()
 SET(ERROR_MESSAGE "No generator previously specified.  Run:\n")
-IF (UNIX)
+IF(UNIX)
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}\trm ${CMAKE_CACHEFILE}\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\tcmake ../.. -G\"CodeBlocks - Unix Makefiles\"\n\n")
-ELSE (UNIX)
+ELSE()
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}\tdel ${CMAKE_CACHEFILE}\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\tcmake ../.. -G\"CodeBlocks - MinGW Makefiles\"\n\n")
-ENDIF (UNIX)
+ENDIF()
 SET(ERROR_MESSAGE "${ERROR_MESSAGE}To see a full list of generators, run:\n\tcmake ../.. --help\n")
 SET(CMAKE_GEN ${CMAKE_GENERATOR} CACHE INTERNAL "" FORCE)
-IF (NOT ${CMAKE_C_COMPILER_WORKS})
+IF(NOT ${CMAKE_C_COMPILER_WORKS})
   MESSAGE(FATAL_ERROR ${ERROR_MESSAGE})
-ENDIF (NOT ${CMAKE_C_COMPILER_WORKS})
+ENDIF()
 
-IF (NOT CMAKE_BUILD_TYPE)
+IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE "Release" CACHE INTERNAL "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-ENDIF (NOT CMAKE_BUILD_TYPE)
-IF (NOT MAIDSAFE_TEST_TYPE)
-  SET(MAIDSAFE_TEST_TYPE "BEH" CACHE INTERNAL "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
-ENDIF (NOT MAIDSAFE_TEST_TYPE)
+ENDIF()
 
-IF (UNIX)
+IF(NOT MAIDSAFE_TEST_TYPE)
+  SET(MAIDSAFE_TEST_TYPE "BEH" CACHE INTERNAL "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
+ENDIF()
+
+IF(UNIX)
   EXECUTE_PROCESS(COMMAND date +%a%d%m%y OUTPUT_VARIABLE pddate OUTPUT_STRIP_TRAILING_WHITESPACE)
-ELSE (UNIX)
+ELSE()
   EXECUTE_PROCESS(COMMAND CMD /C DATE /T OUTPUT_VARIABLE pddate OUTPUT_STRIP_TRAILING_WHITESPACE)
   STRING(REPLACE "/" "" pddate ${pddate})
   STRING(SUBSTRING ${pddate} 0 4 pddateddmm)
   STRING(SUBSTRING ${pddate} 6 2 pddateyy)
   SET(pddate ${pddateddmm}${pddateyy})
-ENDIF (UNIX)
+ENDIF()
 
-IF (APPLE)
-  SET (CMAKE_OSX_SYSROOT "/")
-ENDIF (APPLE)
+IF(APPLE)
+  SET(CMAKE_OSX_SYSROOT "/")
+ENDIF()
 
-#SET(CMAKE_REQUIRED_INCLUDES ${INCLUDE_DIR})
-
-IF (CMAKE_BUILD_TYPE MATCHES "Release")
+IF(CMAKE_BUILD_TYPE MATCHES "Release")
   MESSAGE("Building a package which is OK to release.")
   MESSAGE("------------------------------------------")
-ELSE (CMAKE_BUILD_TYPE MATCHES "Release")
+ELSE()
   MESSAGE("Building a package which is NOT OK to release.")
   MESSAGE("----------------------------------------------")
   SET(pddate "DEVELOPER_${pddate}")
-ENDIF (CMAKE_BUILD_TYPE MATCHES "Release")
+ENDIF()
 
 # setup a single target path for libraries and executables -
 # this avoids copying all the dlls and exes together
 UNSET(LIBRARY_OUTPUT_PATH CACHE)
 UNSET(EXECUTABLE_OUTPUT_PATH CACHE)
-IF (MSVC)
-  IF (CMAKE_CL_64)
-    SET(LIBRARY_OUTPUT_PATH ${MAIDSAFE_BINARY_DIR}/bin/x64 CACHE PATH "Library target dir (x64).")
-    SET(EXECUTABLE_OUTPUT_PATH ${MAIDSAFE_BINARY_DIR}/bin/x64 CACHE PATH "Executable target dir (x64).")
-  ELSE (CMAKE_CL_64)
-    SET(LIBRARY_OUTPUT_PATH ${MAIDSAFE_BINARY_DIR}/bin/win32 CACHE PATH "Library target dir (win32).")
-    SET(EXECUTABLE_OUTPUT_PATH ${MAIDSAFE_BINARY_DIR}/bin/win32 CACHE PATH "Executable target dir (win32).")
-  ENDIF(CMAKE_CL_64)
-ELSE (MSVC)
-  SET (EXECUTABLE_OUTPUT_PATH ${MAIDSAFE_BINARY_DIR}/bin CACHE PATH "Executable target dir .")
-  SET (LIBRARY_OUTPUT_PATH ${MAIDSAFE_BINARY_DIR}/bin CACHE PATH "Executable target dir .")
-ENDIF (MSVC)
+IF(MSVC)
+  IF(CMAKE_CL_64)
+    SET(LIBRARY_OUTPUT_PATH ${maidsafe_dht_BINARY_DIR}/bin/x64 CACHE PATH "Library target dir (x64).")
+    SET(EXECUTABLE_OUTPUT_PATH ${maidsafe_dht_BINARY_DIR}/bin/x64 CACHE PATH "Executable target dir (x64).")
+  ELSE()
+    SET(LIBRARY_OUTPUT_PATH ${maidsafe_dht_BINARY_DIR}/bin/win32 CACHE PATH "Library target dir (win32).")
+    SET(EXECUTABLE_OUTPUT_PATH ${maidsafe_dht_BINARY_DIR}/bin/win32 CACHE PATH "Executable target dir (win32).")
+  ENDIF()
+ELSE()
+  SET(EXECUTABLE_OUTPUT_PATH ${maidsafe_dht_BINARY_DIR}/bin CACHE PATH "Executable target dir.")
+  SET(LIBRARY_OUTPUT_PATH ${maidsafe_dht_BINARY_DIR}/bin CACHE PATH "Executable target dir.")
+ENDIF()
+
+SET(CMAKE_DEBUG_POSTFIX _d)
+SET(CMAKE_RELWITHDEBINFO_POSTFIX _rwdi)
+SET(CMAKE_MINSIZEREL_POSTFIX _msr)
+
+###################################################################################################
+# Set default directories to be searched for included files and libs                              #
+###################################################################################################
+IF(DEFINED ADD_LIBRARY_DIR)
+  IF(DEFAULT_LIBRARY_DIR)
+    LIST(REMOVE_DUPLICATES DEFAULT_LIBRARY_DIR)
+  ENDIF()
+  SET(DEFAULT_LIBRARY_DIR ${DEFAULT_LIBRARY_DIR} ${ADD_LIBRARY_DIR} CACHE INTERNAL "Path to libraries directories" FORCE)
+ENDIF()
+
+IF(MSVC)
+  SET(CMAKE_INCLUDE_PATH "c:\\msvc\\include")
+  SET(CMAKE_LIBRARY_PATH "c:\\msvc\\lib" ${DEFAULT_LIBRARY_DIR})
+ELSEIF(WIN32)
+  SET(CMAKE_INCLUDE_PATH "c:\\usr\\include")
+  SET(CMAKE_LIBRARY_PATH "c:\\usr\\lib" ${DEFAULT_LIBRARY_DIR})
+ELSE()
+  SET(CMAKE_INCLUDE_PATH "/usr/include")
+  SET(CMAKE_LIBRARY_PATH "/usr/lib" ${DEFAULT_LIBRARY_DIR})
+ENDIF()
 
 ###################################################################################################
 # Boost libraries search                                                                          #
 ###################################################################################################
-MESSAGE(STATUS "Check for boost libraries")
-SET(Boost_USE_MULTITHREAD ON)
-SET(Boost_ADDITIONAL_VERSIONS "1.41.0")
-SET(Boost_FIND_REQUIRED "1.41.0")
-SET(Boost_USE_STATIC_LIBS ON)
-SET(BOOST_LIB_DIAGNOSTIC OFF)
-#ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK)
-
-IF (NOT MSVC)
-  SET(OpenSSL_INCLUDE_DIR "/usr/include")
-ENDIF (NOT MSVC)
-
-FIND_PACKAGE(Boost COMPONENTS date_time filesystem thread program_options system regex)
-IF (NOT Boost_FOUND)
-  MESSAGE(ERROR "If installed run cmake ../.. -DBoost_ROOT=\"<The root directory of Boost install prefix>\"")
-  MESSAGE(FATAL_ERROR "No proper boost libraries found. Halting.")
-ELSE (NOT Boost_FOUND)
-  MESSAGE(STATUS "Found Boost " ${Boost_LIB_VERSION})
-ENDIF (NOT Boost_FOUND)
-
-SET(LIBS_INCLUDE_DIRS ${LIBS_INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
+SET(REQUIRED_BOOST_COMPONENTS date_time filesystem program_options regex system thread)
+INCLUDE(${maidsafe_dht_SOURCE_DIR}/build/maidsafe_FindBoost.cmake)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
 
 ###################################################################################################
@@ -99,7 +143,7 @@ SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
 # Windows with MinGW                                                                              #
 ###################################################################################################
 INCLUDE(CheckIncludeFileCXX)
-IF (UNIX)
+IF(UNIX)
   UNSET(GLOG_LIB CACHE)
   UNSET(GLOG_INCLUDE CACHE)
   SET(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} "${GLOG_ROOT}/include")
@@ -107,180 +151,53 @@ IF (UNIX)
                PATHS "${GLOG_ROOT}/lib"
                DOC "Path to glog library${DOC_LIB_DIR}")
   CHECK_INCLUDE_FILE_CXX(glog/logging.h GLOG_INCLUDE)
-  IF (GLOG_LIB AND GLOG_INCLUDE)
+  IF(GLOG_LIB AND GLOG_INCLUDE)
     SET(HAVE_GLOG GLOG_LIB)
     MESSAGE("Using GLOG")
-    IF (GLOG_ROOT)
-      SET(LIBS_INCLUDE_DIRS ${LIBS_INCLUDE_DIRS} "${GLOG_ROOT}/include")
-      SET(LIBS_DIR ${LIB_DIRS} "${GLOG_ROOT}/lib")
-    ENDIF (GLOG_ROOT)
-  ELSE (GLOG_LIB AND GLOG_INCLUDE)
+    IF(GLOG_ROOT)
+      SET(INCLUDE_DIRS ${INCLUDE_DIRS} "${GLOG_ROOT}/include")
+      SET(LIBS_DIRS ${LIBS_DIRS} "${GLOG_ROOT}/lib")
+    ENDIF()
+  ELSE()
     SET(GLOG_LIB "")
     MESSAGE("Not using GLOG")
-    MESSAGE("If installed run cmake ../.. -DGLOG_ROOT=\"<The root directory of glog install prefix>\"")
+    MESSAGE("If installed run cmake ../.. -DGLOG_ROOT=<The root directory of glog install prefix>")
     MESSAGE(" You can download it at http://code.google.com/p/google-glog\n")
-  ENDIF (GLOG_LIB AND GLOG_INCLUDE)
-ENDIF (UNIX)
+  ENDIF()
+ENDIF()
 
-CONFIGURE_FILE(${MAIDSAFE_SOURCE_DIR}/config.h.in ${MAIDSAFE_SOURCE_DIR}/maidsafe/config.h)
+CONFIGURE_FILE(${maidsafe_dht_SOURCE_DIR}/config.h.in ${maidsafe_dht_SOURCE_DIR}/maidsafe/config.h)
 
 ###################################################################################################
 # Google Test library search                                                                      #
 ###################################################################################################
-UNSET(GTEST_LIBRARY CACHE)
-UNSET(GTEST_MAIN_LIBRARY CACHE)
-UNSET(GTEST_INCLUDE_DIR CACHE)
-UNSET(GTEST_INCLUDE CACHE)
+INCLUDE(${maidsafe_dht_SOURCE_DIR}/build/maidsafe_FindGtest.cmake)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gtest_INCLUDE_DIR})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR} ${Gtest_LIBRARY_DIR_DEBUG})
 
-FIND_PACKAGE(GTest)
-IF (NOT GTEST_FOUND)
-  MESSAGE(ERROR " GTest library not found.")
-  MESSAGE(ERROR " If installed run cmake ../.. -DGTEST_ROOT=\"<The root directory of gtest install prefix>\"")
-  MESSAGE(FATAL_ERROR " You can download it at http://code.google.com/p/googletest\n")
-ELSEIF (NOT GTEST_LIBRARY_DEBUG AND MSVC)
-  MESSAGE(ERROR " GTest Debug library not found.  It is needed to compile in Debug mode")
-  MESSAGE(ERROR " Should be in the same directory as release library.")
-ELSE (NOT GTEST_FOUND AND MSVC)
-   MESSAGE("GTest library found.")
-   IF (APPLE)
-     FOREACH(LIB ${GTEST_LIBRARIES})
-       GET_FILENAME_COMPONENT(LIB_PATH ${LIB} PATH)
-       BREAK()
-     ENDFOREACH(LIB ${GTEST_LIBRARIES})
-     SET(GTEST_LIBRARIES "gtest")
-     SET(LIBS_DIRS ${LIBS_DIRS} ${LIB_PATH})
-   ENDIF (APPLE)
-   SET(LIBS_INCLUDE_DIRS ${LIBS_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
-ENDIF (NOT GTEST_FOUND)
-IF (MSVC)
-  MESSAGE("-- Found GTest DEBUG: ${GTEST_LIBRARY_DEBUG}")
-ENDIF (MSVC)
+
+#  IF(APPLE)
+#    FOREACH(LIB ${Gtest_LIBRARIES})
+#      GET_FILENAME_COMPONENT(LIB_PATH ${LIB} PATH)
+#      SET(LIBS_DIRS ${LIBS_DIRS} ${LIB_PATH})
+#    ENDFOREACH()
+#    SET(Gtest_LIBRARIES "gtest")
+#  ENDIF()
+
 
 ###################################################################################################
 # Protocol Buffers library search                                                                 #
 ###################################################################################################
-#Function to generate CC and header files derived from proto files
-FUNCTION(GENERATE_PROTOBUF_FILES SRCS HDRS)
-  IF (NOT ARGN)
-    MESSAGE(SEND_ERROR "Error: PROTOBUF_GENERATE_CPP() called without any proto files")
-    RETURN()
-  ENDIF (NOT ARGN)
-
-  FOREACH(FIL ${ARGN})
-    GET_FILENAME_COMPONENT(ABS_FIL ${FIL} NAME)
-    GET_FILENAME_COMPONENT(FIL_WE ${FIL} NAME_WE)
-    GET_FILENAME_COMPONENT(FILES_PATH ${FIL} PATH)
-    SET(FILES_PATH "${MAIDSAFE_SOURCE_DIR}/${FILES_PATH}")
-
-    LIST(APPEND ${SRCS} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.cc")
-    LIST(APPEND ${HDRS} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.h")
-
-    MESSAGE("Running C++ protocol buffer compiler on ${FIL}")
-    EXECUTE_PROCESS(WORKING_DIRECTORY ${FILES_PATH}
-                    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-                      "--cpp_out=."
-                      "${ABS_FIL}")
-  ENDFOREACH()
-
-  SET_SOURCE_FILES_PROPERTIES(${${SRCS}} ${${HDRS}} PROPERTIES GENERATED TRUE)
-  SET(${SRCS} ${${SRCS}} PARENT_SCOPE)
-  SET(${HDRS} ${${HDRS}} PARENT_SCOPE)
-ENDFUNCTION(GENERATE_PROTOBUF_FILES SRCS HDRS)
-
-FUNCTION(COMPARE_VAR_VS_FILE  DIFF)
-  FILE(STRINGS ${ARGV2} TMP_CONTENT)
-  SET(CONTENT ${TMP_CONTENT} CACHE STRING "")
-  IF (NOT "${CONTENT}" STREQUAL "${${ARGV1}}")
-    SET(${ARGV1} ${TMP_CONTENT} CACHE STRING "Google proto file - Contents for${ARGV2}" FORCE)
-    SET(${DIFF} "FALSE" PARENT_SCOPE)
-  ELSE (NOT "${CONTENT}" STREQUAL "${${ARGV1}}")
-    SET(${DIFF} "TRUE" PARENT_SCOPE)
-  ENDIF (NOT "${CONTENT}" STREQUAL "${${ARGV1}}")
-  UNSET(CONTENT CACHE)
-ENDFUNCTION(COMPARE_VAR_VS_FILE  DIFF)
-
-FUNCTION(SET_PROTOFILEVAR_CONTENT)
-  FILE(STRINGS ${ARGV1} TMP_CONTENT)
-  SET(${ARGV0} ${TMP_CONTENT} CACHE STRING "Google proto file - Contents for${ARGV2}" FORCE)
-  UNSET(TMP_CONTENT CACHE)
-ENDFUNCTION(SET_PROTOFILEVAR_CONTENT)
-
-UNSET(PROTOBUF_LIBRARY CACHE)
-UNSET(PROTOBUF_INCLUDE_DIR CACHE)
-UNSET(PROTOBUF_PROTOC_EXECUTABLE CACHE)
-UNSET(PROTOBUF_LIBRARY_DEBUG CACHE)
-
-IF (MSVC)
-  SET(CMAKE_LIBRARY_PATH_BK  ${CMAKE_LIBRARY_PATH})
-ENDIF (MSVC)
-SET(CMAKE_PROGRAM_PATH ${CMAKE_PROGRAM_PATH} ${PROTOC_EXE_PATH})
-SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${PROTOBUF_INCLUDE_PATH})
-SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${PROTOBUF_LIB_PATH})
-
-FIND_PACKAGE(Protobuf REQUIRED)
-IF (NOT PROTOBUF_FOUND)
-  MESSAGE(ERROR_MESSAGE " Did not find Google Protobuf Library.")
-  MESSAGE(ERROR_MESSAGE "If it is already installed, run cmake../.. -DPROTOBUF_INCLUDE_PATH=\"<Path to root of header files>\" -DPROTOBUF_LIB_PATH=\"<Path where libraries are installed>\"")
-  MESSAGE(FATAL_ERROR " You can download it at http://code.google.com/apis/protocolbuffers\n")
-ELSEIF (NOT PROTOBUF_PROTOC_EXECUTABLE)
-  MESSAGE(ERROR_MESSAGE " Did not find Google Protobuf protoc compiler")
-  MESSAGE(ERROR_MESSAGE " If it is already installed, run cmake../.. -DPROTOC_EXE_PATH=\"<Path to protoc compiler>\"")
-  MESSAGE(FATAL_ERROR " You can download it at http://code.google.com/apis/protocolbuffers\n")
-ENDIF (NOT PROTOBUF_FOUND)
-
-IF (MSVC)
-  UNSET(PROTOBUF_LIBRARY_DEBUG CACHE)
-  SET(CMAKE_LIBRARY_PATH  ${CMAKE_LIBRARY_PATH_BK})
-  FIND_LIBRARY(PROTOBUF_LIBRARY_DEBUG NAMES libprotobuf
-               HINTS "${PROTOBUF_DEBUG_LIB_PATH}")
-  IF (NOT PROTOBUF_LIBRARY_DEBUG)
-    MESSAGE(ERROR " Protobuf Debug library not found.  It is needed to compile in Debug mode")
-    MESSAGE(ERROR " If install run cmake ../.. -DPROTOBUF_DEBUG_LIB_PATH=\"<Path to lib>\"")
-    SET(PROTOBUF_LIBRARY_DEBUG "")
-  ELSE (NOT PROTOBUF_LIBRARY_DEBUG)
-    MESSAGE("-- Found PROTOBUF DEBUG: ${PROTOBUF_LIBRARY_DEBUG}")
-  ENDIF (NOT PROTOBUF_LIBRARY_DEBUG)
-ENDIF (MSVC)
-
-
-EXECUTE_PROCESS(COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} "--version"
-                OUTPUT_VARIABLE TMP_CURRENT_PROTOC_VERSION)
-
-STRING(STRIP ${TMP_CURRENT_PROTOC_VERSION} CURRENT_PROTOC_VERSION)
-
-MESSAGE("Google Protobuf Library found. ${CURRENT_PROTOC_VERSION}")
-
-FILE(GLOB PROTO_FILES RELATIVE ${MAIDSAFE_SOURCE_DIR} "protobuf/*.proto")
-FILE(GLOB TEST_PROTO_FILES RELATIVE ${MAIDSAFE_SOURCE_DIR} "tests/rpcprotocol/*.proto")
+FILE(GLOB PROTO_FILES RELATIVE ${maidsafe_dht_SOURCE_DIR} "protobuf/*.proto")
+FILE(GLOB TEST_PROTO_FILES RELATIVE ${maidsafe_dht_SOURCE_DIR} "tests/rpcprotocol/*.proto")
 SET(PROTO_FILES ${PROTO_FILES} ${TEST_PROTO_FILES})
+INCLUDE(${maidsafe_dht_SOURCE_DIR}/build/maidsafe_FindProtobuf.cmake)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Protobuf_INCLUDE_DIR})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Protobuf_LIBRARY_DIR} ${Protobuf_LIBRARY_DIR_DEBUG})
 
-IF (PROTOC_VERSION STREQUAL CURRENT_PROTOC_VERSION)
-  FOREACH(FNAME ${PROTO_FILES})
-    GET_FILENAME_COMPONENT(FIL_WE ${FNAME} NAME_WE)
-    COMPARE_VAR_VS_FILE(CONTENTS_DIFF ${FIL_WE} ${FNAME})
-    IF (NOT CONTENTS_DIFF)
-      GENERATE_PROTOBUF_FILES(PROTO_SRCS PROTO_HDRS ${FNAME})
-    ELSE (NOT CONTENTS_DIFF)
-      MESSAGE("proto file ${FNAME} hasn't changed. ${FIL_WE}.pb.cc and ${FIL_WE}.pb.h files are not regenerated")
-    ENDIF (NOT CONTENTS_DIFF)
-  ENDFOREACH(FNAME ${PROTO_FILES})
-ELSE (PROTOC_VERSION STREQUAL CURRENT_PROTOC_VERSION)
-  GENERATE_PROTOBUF_FILES(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
-  FOREACH(FNAME ${PROTO_FILES})
-    GET_FILENAME_COMPONENT(FIL_WE ${FNAME} NAME_WE)
-    SET_PROTOFILEVAR_CONTENT(${FIL_WE} ${FNAME})
-  ENDFOREACH(FNAME ${PROTO_FILES})
-  SET(PROTOC_VERSION ${CURRENT_PROTOC_VERSION}
-      CACHE STRING "Google Protocol Buffers - Current version"
-      FORCE)
-ENDIF (PROTOC_VERSION STREQUAL CURRENT_PROTOC_VERSION)
-
-SET(LIBS_INCLUDE_DIRS ${LIBS_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${PROTOBUF_LIB_PATH})
-IF (APPLE)
-  SET(PROTOBUF_LIBRARY protobuf)
-ENDIF (APPLE)
-
+#  IF(APPLE)
+#    SET(Protobuf_LIBRARY protobuf)
+#  ENDIF()
 
 ###################################################################################################
 # Python library search                                                                           #
@@ -291,9 +208,9 @@ INCLUDE(FindPythonLibs)
 FIND_PACKAGE(PythonInterp)
 IF(PYTHONINTERP_FOUND)
   MESSAGE("-- Found python executable: style checking enabled.")
-ELSE(PYTHONINTERP_FOUND)
+ELSE()
   MESSAGE("-- Didn't find python executable: style checking disabled.")
-ENDIF(PYTHONINTERP_FOUND)
+ENDIF()
 
 ###################################################################################################
 # All other libraries search                                                                      #
@@ -304,49 +221,59 @@ IF(UNIX)
     SET(SYS_LIB rt c m ${SYS_LIB})
   ENDIF()
   FOREACH(library ${SYS_LIB})
-    FIND_LIBRARY(CURRENT_LIB ${library})# ${LIB_DIR})
+    FIND_LIBRARY(CURRENT_LIB ${library})
     IF(CURRENT_LIB)
       MESSAGE("-- Found library ${CURRENT_LIB}")
-    ELSE(CURRENT_LIB)
+    ELSE()
       MESSAGE(FATAL_ERROR "\nCouldn't find library ${library}")
-    ENDIF(CURRENT_LIB)
+    ENDIF()
     UNSET(CURRENT_LIB CACHE)
   ENDFOREACH()
 ELSEIF(WIN32)
   IF(MSVC)
-    SET(SYS_LIB odbc32.lib odbccp32.lib WSock32.lib IPHlpApi.lib)
-  ELSE(MSVC)
+    SET(SYS_LIB ws2_32.lib odbc32.lib odbccp32.lib WSock32.lib IPHlpApi.lib)
+  ELSE()
     SET(SYS_LIB advapi32 kernel32 ws2_32 iphlpapi mswsock)
-  ENDIF(MSVC)
+  ENDIF()
   FOREACH(library ${SYS_LIB})
-    FIND_LIBRARY(CURRENT_LIB ${library})# c:/usr/lib)
+    FIND_LIBRARY(CURRENT_LIB ${library})
     IF(CURRENT_LIB)
       MESSAGE("-- Found library ${CURRENT_LIB}")
-    ELSE(CURRENT_LIB)
-      IF(NOT MSVC)
-        MESSAGE(FATAL_ERROR "\nCouldn't find library ${library}")
-      ENDIF(NOT MSVC)
-    ENDIF(CURRENT_LIB)
+      GET_FILENAME_COMPONENT(CURRENT_LIBRARY_DIR ${CURRENT_LIB} PATH)
+      SET(LIBS_DIRS ${LIBS_DIRS} ${CURRENT_LIBRARY_DIR})
+    ELSE()
+      SET(ERROR_MESSAGE "\nCould not find library ${library}.  Run\n")
+      SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DADD_LIBRARY_DIR=<Path to ${library} directory>")
+      MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
+    ENDIF()
     UNSET(CURRENT_LIB CACHE)
   ENDFOREACH()
-ENDIF(UNIX)
+ENDIF()
 
-IF (NOT MSVC)
-  SET(SYS_LIB ${SYS_LIB} ${Boost_LIBRARIES} ${GLOG_LIB} ${PROTOBUF_LIBRARY} )
-ENDIF (NOT MSVC)
-INCLUDE_DIRECTORIES(${MAIDSAFE_SOURCE_DIR})
-LIST(REMOVE_DUPLICATES LIBS_INCLUDE_DIRS)
-INCLUDE_DIRECTORIES(AFTER SYSTEM ${LIBS_INCLUDE_DIRS})
+IF(MSVC)
+  SET(SYS_LIB ${SYS_LIB} ${GLOG_LIB})
+ELSE()
+  SET(SYS_LIB ${SYS_LIB} ${GLOG_LIB} ${Protobuf_LIBRARY})
+ENDIF()
+
+SET(LIBS_DIRS ${LIBS_DIRS} ${LIBRARY_OUTPUT_PATH})
+LIST(REMOVE_DUPLICATES LIBS_DIRS)
+IF(MSVC)
+  LINK_DIRECTORIES(${LIBS_DIRS})
+ENDIF()
+
+INCLUDE_DIRECTORIES(${maidsafe_dht_SOURCE_DIR})
+LIST(REMOVE_DUPLICATES INCLUDE_DIRS)
+INCLUDE_DIRECTORIES(AFTER SYSTEM ${INCLUDE_DIRS})
+
 MESSAGE("================================================================================")
 
-
-IF (MSVC)
+IF(MSVC)
   SET(CMAKE_CXX_FLAGS "")
   SET(CMAKE_CXX_FLAGS_INIT "")
   SET(CMAKE_CXX_FLAGS_RELEASE "")
   SET(CMAKE_CXX_FLAGS_DEBUG "")
-ENDIF (MSVC)
-
+ENDIF()
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
@@ -368,8 +295,8 @@ LIST(APPEND M_NATPMP_DIR ${M_NATPMP_C} ${M_NATPMP_H})
 FILE(GLOB M_UPNP_C "upnp/*.c*")
 FILE(GLOB M_UPNP_H "upnp/*.h*")
 LIST(APPEND M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})
-LIST(REMOVE_ITEM M_UPNP_DIR "${MAIDSAFE_SOURCE_DIR}/upnp/upnpclientimpl.cc")
-LIST(REMOVE_ITEM M_UPNP_DIR "${MAIDSAFE_SOURCE_DIR}/upnp/upnpclientimpl.h")
+LIST(REMOVE_ITEM M_UPNP_DIR "${maidsafe_dht_SOURCE_DIR}/upnp/upnpclientimpl.cc")
+LIST(REMOVE_ITEM M_UPNP_DIR "${maidsafe_dht_SOURCE_DIR}/upnp/upnpclientimpl.h")
 FILE(GLOB M_PROTOBUF_C "protobuf/*.c*")
 FILE(GLOB M_PROTOBUF_H "protobuf/*.h*")
 LIST(APPEND M_PROTOBUF_DIR ${M_PROTOBUF_C} ${M_PROTOBUF_H})
@@ -394,7 +321,7 @@ LIST(APPEND T_BASE_DIR ${T_BASE_C} ${T_BASE_H})
 FILE(GLOB T_KADEMLIA_C "tests/kademlia/*.c*")
 FILE(GLOB T_KADEMLIA_H "tests/kademlia/*.h*")
 LIST(APPEND T_KADEMLIA_DIR ${T_KADEMLIA_C} ${T_KADEMLIA_H})
-LIST(REMOVE_ITEM T_KADEMLIA_DIR "${MAIDSAFE_SOURCE_DIR}/tests/kademlia/testknode.cc")
+LIST(REMOVE_ITEM T_KADEMLIA_DIR "${maidsafe_dht_SOURCE_DIR}/tests/kademlia/testknode.cc")
 FILE(GLOB T_TRANSPORT_C "tests/transport/*.c*")
 FILE(GLOB T_TRANSPORT_H "tests/transport/*.h*")
 LIST(APPEND T_TRANSPORT_DIR ${T_TRANSPORT_C} ${T_TRANSPORT_H})
@@ -409,8 +336,8 @@ LIST(APPEND T_RPCPROTO_DIR ${T_RPCPROTO_C} ${T_RPCPROTO_H})
 FILE(GLOB STYLE_RPCPROTO_C "tests/rpcprotocol/*.c*")
 FILE(GLOB STYLE_RPCPROTO_H "tests/rpcprotocol/*.h*")
 LIST(APPEND STYLE_RPCPROTO_DIR ${STYLE_RPCPROTO_C} ${STYLE_RPCPROTO_H})
-LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${MAIDSAFE_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.h")
-LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${MAIDSAFE_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.cc")
+LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${maidsafe_dht_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.h")
+LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${maidsafe_dht_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.cc")
 FILE(GLOB T_NATPMP_C "tests/nat-pmp/*.c*")
 FILE(GLOB T_NATPMP_H "tests/nat-pmp/*.h*")
 LIST(APPEND T_NATPMP_DIR ${T_NATPMP_C} ${T_NATPMP_H})
@@ -426,135 +353,165 @@ FILE(GLOB T_DEMO_H "tests/demo/*.h*")
 LIST(APPEND T_DEMO_DIR ${T_DEMO_C} ${T_DEMO_H})
 LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${M_NATPMP_DIR} ${MAIDSAFE_DIR})
 ###################################################################################################
-# traverse subdirs for imported 3rd party libs                                                    #
+# Traverse subdirs for imported 3rd party libs                                                    #
 ###################################################################################################
 ADD_SUBDIRECTORY(udt)
 ADD_SUBDIRECTORY(cryptopp)
+
 ###################################################################################################
-# All Platforms:  Add Test Exes and Create all maidsafe-dht libs                                  #
+# All Platforms:  Add Test Exes and Create all maidsafe_dht libs                                  #
 ###################################################################################################
 ADD_EXECUTABLE(TESTbase ${T_MAIN} ${T_BASE_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTknode "tests/kademlia/testknode.cc" ${MAIDSAFE_H})
-ADD_EXECUTABLE(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR}  ${MAIDSAFE_H})
-ADD_EXECUTABLE(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR}  ${MAIDSAFE_H})
-ADD_EXECUTABLE(TESTnatpmp ${T_MAIN} ${T_NATPMP_DIR}  ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTnatpmp ${T_MAIN} ${T_NATPMP_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTupnp ${T_MAIN} ${T_UPNP_DIR} ${MAIDSAFE_H})
-ADD_EXECUTABLE(kaddemo ${T_DEMO_DIR} ${MAIDSAFE_H} )
-ADD_EXECUTABLE(kaddemostatic ${T_DEMO_DIR} ${MAIDSAFE_H} )
+# Need to use __declspec(dllimport) in all API header files before linking to SHARED library target
+#ADD_EXECUTABLE(kaddemo ${T_DEMO_DIR} ${MAIDSAFE_H})
+ADD_EXECUTABLE(kaddemo_static ${T_DEMO_DIR} ${MAIDSAFE_H})
 
-ADD_LIBRARY(maidsafe SHARED  ${DHT_SOURCE_FILES})
-ADD_LIBRARY(maidsafe_static STATIC  ${DHT_SOURCE_FILES})
-#Rename maidsafe_static as maidsafe on way out NOT in MSVC names clash of static and import lib
-IF (NOT MSVC)
-  SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES OUTPUT_NAME maidsafe)
-ENDIF (NOT MSVC)
+# Force renaming of exes to match standard CMake library renaming policy
+SET_TARGET_PROPERTIES(TESTbase PROPERTIES
+                        DEBUG_OUTPUT_NAME TESTbase${CMAKE_DEBUG_POSTFIX}
+                        RELWITHDEBINFO_OUTPUT_NAME TESTbase${CMAKE_RELWITHDEBINFO_POSTFIX}
+                        MINSIZEREL_OUTPUT_NAME TESTbase${CMAKE_MINSIZEREL_POSTFIX})
+SET_TARGET_PROPERTIES(TESTkademlia PROPERTIES
+                        DEBUG_OUTPUT_NAME TESTkademlia${CMAKE_DEBUG_POSTFIX}
+                        RELWITHDEBINFO_OUTPUT_NAME TESTkademlia${CMAKE_RELWITHDEBINFO_POSTFIX}
+                        MINSIZEREL_OUTPUT_NAME TESTkademlia${CMAKE_MINSIZEREL_POSTFIX})
+SET_TARGET_PROPERTIES(TESTknode PROPERTIES
+                        DEBUG_OUTPUT_NAME TESTknode${CMAKE_DEBUG_POSTFIX}
+                        RELWITHDEBINFO_OUTPUT_NAME TESTknode${CMAKE_RELWITHDEBINFO_POSTFIX}
+                        MINSIZEREL_OUTPUT_NAME TESTknode${CMAKE_MINSIZEREL_POSTFIX})
+SET_TARGET_PROPERTIES(TESTtransport PROPERTIES
+                        DEBUG_OUTPUT_NAME TESTtransport${CMAKE_DEBUG_POSTFIX}
+                        RELWITHDEBINFO_OUTPUT_NAME TESTtransport${CMAKE_RELWITHDEBINFO_POSTFIX}
+                        MINSIZEREL_OUTPUT_NAME TESTtransport${CMAKE_MINSIZEREL_POSTFIX})
+SET_TARGET_PROPERTIES(TESTrpcprotocol PROPERTIES
+                        DEBUG_OUTPUT_NAME TESTrpcprotocol${CMAKE_DEBUG_POSTFIX}
+                        RELWITHDEBINFO_OUTPUT_NAME TESTrpcprotocol${CMAKE_RELWITHDEBINFO_POSTFIX}
+                        MINSIZEREL_OUTPUT_NAME TESTrpcprotocol${CMAKE_MINSIZEREL_POSTFIX})
+SET_TARGET_PROPERTIES(TESTnatpmp PROPERTIES
+                        DEBUG_OUTPUT_NAME TESTnatpmp${CMAKE_DEBUG_POSTFIX}
+                        RELWITHDEBINFO_OUTPUT_NAME TESTnatpmp${CMAKE_RELWITHDEBINFO_POSTFIX}
+                        MINSIZEREL_OUTPUT_NAME TESTnatpmp${CMAKE_MINSIZEREL_POSTFIX})
+SET_TARGET_PROPERTIES(TESTupnp PROPERTIES
+                        DEBUG_OUTPUT_NAME TESTupnp${CMAKE_DEBUG_POSTFIX}
+                        RELWITHDEBINFO_OUTPUT_NAME TESTupnp${CMAKE_RELWITHDEBINFO_POSTFIX}
+                        MINSIZEREL_OUTPUT_NAME TESTupnp${CMAKE_MINSIZEREL_POSTFIX})
+SET_TARGET_PROPERTIES(kaddemo_static PROPERTIES
+                        DEBUG_OUTPUT_NAME kaddemo_static${CMAKE_DEBUG_POSTFIX}
+                        RELWITHDEBINFO_OUTPUT_NAME kaddemo_static${CMAKE_RELWITHDEBINFO_POSTFIX}
+                        MINSIZEREL_OUTPUT_NAME kaddemo_static${CMAKE_MINSIZEREL_POSTFIX})
+
+# Need to use __declspec(dllexport) in all API header files before adding SHARED library target
+#ADD_LIBRARY(maidsafe_dht SHARED ${DHT_SOURCE_FILES})
+ADD_LIBRARY(maidsafe_dht_static STATIC ${DHT_SOURCE_FILES})
+
+#Rename maidsafe_dht_static as maidsafe_dht on way out NOT in MSVC names clash of static and import lib
+#IF(NOT MSVC)
+  SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES OUTPUT_NAME maidsafe_dht)
+#ENDIF()
+
 ###################################################################################################
 # Builds                                                                                          #
 ###################################################################################################
-IF (MSVC)
-  SET(EXTENS .lib)
-ELSE (MSVC)
-  SET(EXTENS .a)
-ENDIF(MSVC)
-SET(LINK_DIRECTORIES ${LIBRARY_OUTPUT_PATH} ${LIBS_DIRS})
-
-SET(BUILD_SHARED_LIBS OFF)
 ADD_DEFINITIONS(-DSTATICLIB)
-#Ensure we pick up corret libs and not some older installed on
-IF (NOT MSVC)
-  IF (NOT WIN32)
-    SET_TARGET_PROPERTIES(maidsafe PROPERTIES IMPORTED_LOCATION bin/libmaidsafe.so)
-    SET_TARGET_PROPERTIES(cryptopp PROPERTIES IMPORTED_LOCATION bin/libcryptopp.so)
-    SET_TARGET_PROPERTIES(udt PROPERTIES IMPORTED_LOCATION bin/libudt.so)
-  ELSE (WIN32)
-    SET_TARGET_PROPERTIES(maidsafe PROPERTIES IMPORTED_LOCATION bin/libmaidsafe.dll)
-    SET_TARGET_PROPERTIES(cryptopp PROPERTIES IMPORTED_LOCATION bin/libcryptopp.dll)
-    SET_TARGET_PROPERTIES(udt PROPERTIES IMPORTED_LOCATION bin/libudt.dll)
-  ENDIF (NOT WIN32)
-  SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES IMPORTED_LOCATION bin/libmaidsafe.a)
+#Ensure we pick up correct libs and not some older installed one
+IF(MSVC)
+#  SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES IMPORTED_LOCATION bin/libmaidsafe_dht.lib)
+#  SET_TARGET_PROPERTIES(maidsafe_dht PROPERTIES IMPORTED_LOCATION bin/libmaidsafe_dht.dll)
+#  SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES IMPORTED_LOCATION bin/libcryptopp.lib)
+#  SET_TARGET_PROPERTIES(cryptopp PROPERTIES IMPORTED_LOCATION bin/libcryptopp.dll)
+#  SET_TARGET_PROPERTIES(udt_static PROPERTIES IMPORTED_LOCATION bin/libudt.lib)
+#  SET_TARGET_PROPERTIES(udt PROPERTIES  IMPORTED_LOCATION bin/libudt.dll)
+ELSE()
+  IF(WIN32)
+#    SET_TARGET_PROPERTIES(maidsafe_dht PROPERTIES IMPORTED_LOCATION bin/libmaidsafe_dht.dll)
+#    SET_TARGET_PROPERTIES(cryptopp PROPERTIES IMPORTED_LOCATION bin/libcryptopp.dll)
+#    SET_TARGET_PROPERTIES(udt PROPERTIES IMPORTED_LOCATION bin/libudt.dll)
+  ELSE()
+#    SET_TARGET_PROPERTIES(maidsafe_dht PROPERTIES IMPORTED_LOCATION bin/libmaidsafe_dht.so)
+#    SET_TARGET_PROPERTIES(cryptopp PROPERTIES IMPORTED_LOCATION bin/libcryptopp.so)
+#    SET_TARGET_PROPERTIES(udt PROPERTIES IMPORTED_LOCATION bin/libudt.so)
+  ENDIF()
+  SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES IMPORTED_LOCATION bin/libmaidsafe_dht.a)
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES IMPORTED_LOCATION bin/libcryptopp.a)
   SET_TARGET_PROPERTIES(udt_static PROPERTIES IMPORTED_LOCATION bin/libudt.a)
-ELSE (NOT MSVC)
-  SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES IMPORTED_LOCATION bin/libmaidsafe.lib)
-  SET_TARGET_PROPERTIES(maidsafe PROPERTIES IMPORTED_LOCATION bin/libmaidsafe.dll)
-  SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES IMPORTED_LOCATION bin/libcryptopp.lib)
-  SET_TARGET_PROPERTIES(cryptopp PROPERTIES IMPORTED_LOCATION bin/libcryptopp.dll)
-  SET_TARGET_PROPERTIES(udt_static PROPERTIES IMPORTED_LOCATION bin/libudt.lib)
-  SET_TARGET_PROPERTIES(udt PROPERTIES  IMPORTED_LOCATION bin/libudt.dll)
-ENDIF (NOT MSVC)
-IF (NOT MSVC)
-  TARGET_LINK_LIBRARIES(TESTbase maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTtransport maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTknode maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB} )
-  TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static udt_static cryptopp_static ${GTEST_LIBRARIES} ${SYS_LIB})
-  IF (WIN32)
-    TARGET_LINK_LIBRARIES(maidsafe "-Wl,--enable-auto-import" udt cryptopp ${SYS_LIB})
-    TARGET_LINK_LIBRARIES(kaddemo "-Wl,--enable-auto-import" maidsafe udt cryptopp ${SYS_LIB})
-  ELSEIF (APPLE)
-    TARGET_LINK_LIBRARIES(maidsafe udt cryptopp ${SYS_LIB})
-    TARGET_LINK_LIBRARIES(kaddemo maidsafe udt cryptopp ${SYS_LIB})
-  ELSE (WIN32)
-    TARGET_LINK_LIBRARIES(kaddemo maidsafe udt cryptopp ${SYS_LIB})
-  ENDIF (WIN32)
-  TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static udt_static cryptopp_static ${SYS_LIB})
-ELSE (NOT MSVC)
-ENDIF (NOT MSVC)
+ENDIF()
 
+IF(NOT MSVC)
+  SET(SYS_LIB ${SYS_LIB} ${Boost_LIBRARIES})
+  TARGET_LINK_LIBRARIES(TESTbase maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTtransport maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTknode maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARIES} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTupnp maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARIES} ${SYS_LIB})
+#  IF(WIN32)
+#    TARGET_LINK_LIBRARIES(maidsafe_dht "-Wl,--enable-auto-import" udt cryptopp ${SYS_LIB})
+#    TARGET_LINK_LIBRARIES(kaddemo "-Wl,--enable-auto-import" maidsafe_dht udt cryptopp)
+#  ELSEIF(APPLE)
+#    TARGET_LINK_LIBRARIES(maidsafe_dht udt cryptopp ${SYS_LIB})
+#    TARGET_LINK_LIBRARIES(kaddemo maidsafe_dht udt cryptopp ${SYS_LIB})
+#  ELSE()
+#    TARGET_LINK_LIBRARIES(kaddemo maidsafe_dht udt cryptopp ${SYS_LIB})
+#  ENDIF()
+  TARGET_LINK_LIBRARIES(kaddemo_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+ENDIF()
 
-IF (CMAKE_BUILD_TYPE MATCHES "Debug")
+IF(CMAKE_BUILD_TYPE MATCHES "Debug")
   ADD_DEFINITIONS(-DDEBUG)
-ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
+ENDIF()
 
 IF(WIN32)
-  ADD_DEFINITIONS(-DWIN32 -D_WIN32 -DWIN32 -D__WINDOWS__ -D__WIN32__)
-ENDIF(WIN32)
+  ADD_DEFINITIONS(-DWIN32 -D_WIN32 -D__WINDOWS__ -D__WIN32__)
+ENDIF()
 
 IF(MSVC)
-  ADD_DEFINITIONS(-D__MSVC__)
-  
-  # these are apparently necessary for MSVC to work
-  ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
-  ADD_DEFINITIONS(-D_WIN32_WINNT=0x501)
+  ADD_DEFINITIONS(-D__MSVC__ -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x501)
+  ADD_DEFINITIONS(-D_CONSOLE -D_UNICODE -DUNICODE -D_BIND_TO_CURRENT_VCLIBS_VERSION=1)
 
   # prevents std::min() and std::max() to be overwritten
   ADD_DEFINITIONS(-DNOMINMAX)
- 
-  ADD_DEFINITIONS(-D_CONSOLE)
-  ADD_DEFINITIONS(-D_UNICODE)
-  ADD_DEFINITIONS(-DUNICODE)
-  
+
   # prevents from automatic linking of boost libraries
   ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
+
+  # warning 4503 disabled due to excessive generation through use of Boost multi_index
+  SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /D \"NDEBUG\" /EHsc /MD /Gy /W3 /Zi /wd4503")
+  SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D \"_DEBUG\" /EHsc /MDd  /c /ZI /TP /wd4503")
   
-  SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /D \"NDEBUG\" /EHsc /MD /Gy /W3 /Zi")
-  SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D \"_DEBUG\" /EHsc /MDd  /c /ZI /TP")
-  # prevents declaring __declspec for API functions
-  SET_TARGET_PROPERTIES(maidsafe_static TESTbase TESTkademlia TESTknode TESTnatpmp TESTrpcprotocol TESTtransport TESTupnp kaddemostatic
-    PROPERTIES COMPILE_FLAGS "/D \"UDT_STATIC\"")
-  STRING(REGEX REPLACE "/STACK:10000000" ""
-         CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-  SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /LTCG")
-  
-  SET(DEBUG_LIBS ${PROTOBUF_LIBRARY_DEBUG} ${GTEST_LIBRARY_DEBUG} ${Boost_DATE_TIME_LIBRARY_DEBUG}
-      ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG} ${Boost_PROGRAM_OPTIONS_LIBRARY_DEBUG}
-      ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG})
-  SET(RELEASE_LIBS ${PROTOBUF_LIBRARY} ${GTEST_LIBRARY} ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-      ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE} ${Boost_SYSTEM_LIBRARY_RELEASE}
-      ${Boost_REGEX_LIBRARY_RELEASE})
-  
-  TARGET_LINK_LIBRARIES(TESTbase maidsafe_static udt_static cryptopp_static ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_static udt_static cryptopp_static ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTknode maidsafe_static udt_static cryptopp_static ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_static udt_static cryptopp_static ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe_static udt_static cryptopp_static ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTtransport maidsafe_static udt_static cryptopp_static ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTupnp maidsafe_static udt_static cryptopp_static ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(kaddemostatic maidsafe_static udt_static cryptopp_static ${SYS_LIB})
-  
+  # CMake defaults stack size to 10MB.  Set this to windows default of 1MB
+  STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+  STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+
+  # defining UDT_STATIC prevents declaring __declspec for UDT API functions
+  SET_TARGET_PROPERTIES(maidsafe_dht_static TESTbase TESTkademlia TESTknode TESTnatpmp TESTrpcprotocol TESTtransport TESTupnp kaddemo_static PROPERTIES
+      COMPILE_FLAGS "-DUDT_STATIC"
+      LINK_FLAGS "/STACK:1048576"
+      LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG")
+
+  SET(DEBUG_LIBS ${Protobuf_LIBRARY_DEBUG} ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
+      ${Boost_PROGRAM_OPTIONS_LIBRARY_DEBUG} ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG})
+  SET(RELEASE_LIBS ${Protobuf_LIBRARY} ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE}
+      ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE} ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE})
+
+  TARGET_LINK_LIBRARIES(TESTbase maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTknode maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTrpcprotocol maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTtransport maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTupnp maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(kaddemo_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+
+#  TARGET_LINK_LIBRARIES(maidsafe_dht udt_static cryptopp_static iphlpapi.lib)
+#  TARGET_LINK_LIBRARIES(kaddemo maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+
   FOREACH (DLIB ${DEBUG_LIBS})
     TARGET_LINK_LIBRARIES(TESTbase debug ${DLIB})
     TARGET_LINK_LIBRARIES(TESTkademlia debug ${DLIB})
@@ -563,11 +520,21 @@ IF(MSVC)
     TARGET_LINK_LIBRARIES(TESTrpcprotocol debug ${DLIB})
     TARGET_LINK_LIBRARIES(TESTtransport debug ${DLIB})
     TARGET_LINK_LIBRARIES(TESTupnp debug ${DLIB})
-    IF (NOT (DLIB EQUAL ${GTEST_LIBRARY_DEBUG}))
-      TARGET_LINK_LIBRARIES(kaddemostatic debug ${DLIB})
-    ENDIF (NOT (DLIB EQUAL ${GTEST_LIBRARY_DEBUG}))
-  ENDFOREACH (DLIB ${DEBUG_LIBS})
-  FOREACH (RLIB ${RELEASE_LIBS})
+    TARGET_LINK_LIBRARIES(kaddemo_static debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(maidsafe_dht debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(kaddemo debug ${DLIB})
+  ENDFOREACH()
+  FOREACH (DLIB ${Gtest_LIBRARIES_DEBUG})
+    TARGET_LINK_LIBRARIES(TESTbase debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTkademlia debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTknode debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTnatpmp debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTrpcprotocol debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTtransport debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTupnp debug ${DLIB})
+  ENDFOREACH()
+
+  FOREACH(RLIB ${RELEASE_LIBS})
     TARGET_LINK_LIBRARIES(TESTbase optimized ${RLIB})
     TARGET_LINK_LIBRARIES(TESTkademlia optimized ${RLIB})
     TARGET_LINK_LIBRARIES(TESTknode optimized ${RLIB})
@@ -575,78 +542,71 @@ IF(MSVC)
     TARGET_LINK_LIBRARIES(TESTrpcprotocol optimized ${RLIB})
     TARGET_LINK_LIBRARIES(TESTtransport optimized ${RLIB})
     TARGET_LINK_LIBRARIES(TESTupnp optimized ${RLIB})
-    IF (NOT (RLIB EQUAL ${GTEST_LIBRARY}))
-      TARGET_LINK_LIBRARIES(kaddemostatic optimized ${RLIB})
-    ENDIF (NOT (RLIB EQUAL ${GTEST_LIBRARY}))
-  ENDFOREACH (RLIB ${RELEASE_LIBS})
-      
-
-  TARGET_LINK_LIBRARIES(kaddemo maidsafe udt cryptopp ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(kaddemo debug
-      ${PROTOBUF_LIBRARY_DEBUG} ${Boost_DAT_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG}
-      ${Boost_THREAD_LIBRARY_DEBUG} ${Boost_PROGRAM_OPTIONS_LIBRARY_DEBUG} ${Boost_SYSTEM_LIBRARY_DEBUG}
-      ${Boost_REGEX_LIBRARY_DEBUG})
-  TARGET_LINK_LIBRARIES(kaddemo optimized
-      ${PROTOBUF_LIBRARY} ${Boost_DAT_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-      ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE} ${Boost_SYSTEM_LIBRARY_RELEASE}
-      ${Boost_REGEX_LIBRARY_RELEASE}) 
-  
-ENDIF(MSVC)
+    TARGET_LINK_LIBRARIES(kaddemo_static optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(maidsafe_dht optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(kaddemo optimized ${RLIB})
+  ENDFOREACH()
+  FOREACH(RLIB ${Gtest_LIBRARIES})
+    TARGET_LINK_LIBRARIES(TESTbase optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTkademlia optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTknode optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTnatpmp optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTrpcprotocol optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTtransport optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTupnp optimized ${RLIB})
+  ENDFOREACH()
+ENDIF()
 
 ####APPLE##############################
-IF (APPLE)
+IF(APPLE)
   SET(CMAKE_AR "/usr/bin/libtool")
   SET(CMAKE_CXX_CREATE_STATIC_LIBRARY "<CMAKE_AR> -static -o <TARGET> <LINK_FLAGS> <OBJECTS>" "<CMAKE_RANLIB> <TARGET>")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_DARWIN_C_SOURCE")
   ADD_DEFINITIONS(-DMAIDSAFE_APPLE -DBSD)
   SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS} -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -D_FORTIFY_SOURCE=2 -D__FreeBSD__=10 -D_FILE_OFFSET_BITS=64")
-  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized")
+  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized -O")
   SET(MAIDSAFE_DHT_CXX_FLAGS "-w")
   IF(CMAKE_BUILD_TYPE MATCHES "Debug")
-    SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
-  ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
+    SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
+  ENDIF()
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}" CACHE INTERNAL "" FORCE)
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -lgcov" CACHE INTERNAL "" FORCE)
   SET(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} -lgcov" CACHE INTERNAL "" FORCE)
 ######LINUX################################
-ELSEIF (UNIX AND NOT APPLE)
+ELSEIF(UNIX AND NOT APPLE)
   ADD_DEFINITIONS(-DMAIDSAFE_LINUX)
   SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fPIC -Wl,-z,relro -Wformat  -Wno-system-headers  -Wformat-security -Wall -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -fpredictive-commoning -Wextra -Wfloat-equal -Wlong-long -Wredundant-decls -Wstrict-overflow=5 -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
   SET(MAIDSAFE_DHT_CXX_FLAGS_DEBUG "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG}")
-  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE}  -Wuninitialized")
+  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${MAIDSAFE_DHT_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE}  -Wuninitialized -O")
   IF(CMAKE_BUILD_TYPE MATCHES "Debug")
-    SET_TARGET_PROPERTIES(maidsafe_static PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
-  ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
+    SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
+  ENDIF()
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -lgcov" CACHE INTERNAL "" FORCE)
   SET(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} -lgcov" CACHE INTERNAL "" FORCE)
   SET(SILENT_BUILD "-w -fPIC -DNDEBUG -O3 -march=native -mtune=native -pipe")
 #######WINDOWS##############
-ELSEIF (WIN32 AND NOT MSVC)
-  ADD_DEFINITIONS(-D__MINGW__)
-  ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
-  ADD_DEFINITIONS(-D_GLIBCXX_USE_WCHAR_T)
-  ADD_DEFINITIONS(-DUNICODE)
-  ADD_DEFINITIONS(-D_UNICODE)
-  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized")
+ELSEIF(WIN32 AND NOT MSVC)
+  ADD_DEFINITIONS(-D__MINGW__ -DWIN32_LEAN_AND_MEAN -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE)
+  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized -O")
   SET(MAIDSAFE_DHT_CXX_FLAGS "-Wall -finline-functions -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wunused-function -Wunused-parameter -Wunused-label -Wunused-value -Wunused-variable -Wwrite-strings -Wno-deprecated -Woverloaded-virtual -D_WIN32_WINNT=0x0501 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__  -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501")
   IF(CMAKE_BUILD_TYPE MATCHES "Debug")
     SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp PROPERTIES LINK_FLAGS "-lgcov -pg -fprofile-arcs -ftest-coverage")
-  ENDIF(CMAKE_BUILD_TYPE MATCHES "Debug")
+  ENDIF()
 
-  SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo kaddemostatic  PROPERTIES LINK_FLAGS "-mthreads " )
+  SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo_static  PROPERTIES LINK_FLAGS "-mthreads " )
   SET(SILENT_BUILD  "-w -finline-functions -O3 -DNDEBUG -D_WIN32_WINNT=0x0501 -D_WIN32")
-ENDIF (APPLE)
+ENDIF()
 
-IF (NOT MSVC)
+IF(NOT MSVC)
   SET(CMAKE_CXX_FLAGS "")
   SET(CMAKE_CXX_FLAGS_RELEASE "")
   SET(CMAKE_CXX_FLAGS_DEBUG "")
-  IF (CMAKE_BUILD_TYPE MATCHES "Release")
+  IF(CMAKE_BUILD_TYPE MATCHES "Release")
     SET(MAIDSAFE_DHT_CXX_FLAGS "${MAIDSAFE_DHT_CXX_FLAGS} ${MAIDSAFE_DHT_CXX_FLAGS_RELEASE}")
-  ELSE(CMAKE_BUILD_TYPE MATCHES "Release")
+  ELSE()
     SET(MAIDSAFE_DHT_CXX_FLAGS "${MAIDSAFE_DHT_CXX_FLAGS} ${MAIDSAFE_DHT_CXX_FLAGS_DEBUG}")
-  ENDIF(CMAKE_BUILD_TYPE MATCHES "Release")
+  ENDIF()
   SET_SOURCE_FILES_PROPERTIES(${DHT_SOURCE_FILES} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
   SET_SOURCE_FILES_PROPERTIES(${T_BASE_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
   SET_SOURCE_FILES_PROPERTIES(${T_TRANSPORT_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
@@ -661,7 +621,7 @@ IF (NOT MSVC)
   SET_SOURCE_FILES_PROPERTIES(${M_PROTOBUF_DIR}  PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
   SET_SOURCE_FILES_PROPERTIES("${M_UPNP_DIR}" PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
   SET_SOURCE_FILES_PROPERTIES(${M_LIBUPNP_DIR} PROPERTIES COMPILE_FLAGS "${CMAKE_C_FLAGS}")
-ENDIF (NOT MSVC)
+ENDIF()
 
 ###################################################################################################
 # Tests                                                                                           #
@@ -672,82 +632,96 @@ SET(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 50000)
 SET(CTEST_CONTINUOUS_DURATION 600)
 SET(CTEST_CONTINUOUS_MINIMUM_INTERVAL 10)
 SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY true)
-IF (PYTHONINTERP_FOUND)
-  IF (UNIX)
-    ADD_TEST(STYLE_CHECK_KAD ${MAIDSAFE_SOURCE_DIR}/cpplint.py ${STYLE_KADEMLIA} ${T_KADEMLIA_DIR} ${T_FUNC_KADEMLIA_DIR})
+IF(PYTHONINTERP_FOUND)
+  IF(UNIX)
+    ADD_TEST(STYLE_CHECK_KAD ${maidsafe_dht_SOURCE_DIR}/cpplint.py ${STYLE_KADEMLIA} ${T_KADEMLIA_DIR} ${T_FUNC_KADEMLIA_DIR})
     SET_PROPERTY(TEST STYLE_CHECK_KAD PROPERTY LABELS Functional Kademlia CodingStyle)
-    ADD_TEST(STYLE_CHECK_BASE ${MAIDSAFE_SOURCE_DIR}/cpplint.py ${M_BASE_DIR} ${T_BASE_DIR})
+    ADD_TEST(STYLE_CHECK_BASE ${maidsafe_dht_SOURCE_DIR}/cpplint.py ${M_BASE_DIR} ${T_BASE_DIR})
     SET_PROPERTY(TEST STYLE_CHECK_BASE PROPERTY LABELS Functional Base CodingStyle)
-    ADD_TEST(STYLE_CHECK_RPC ${MAIDSAFE_SOURCE_DIR}/cpplint.py ${M_RPCPROTO_DIR} ${STYLE_RPCPROTO_DIR})
+    ADD_TEST(STYLE_CHECK_RPC ${maidsafe_dht_SOURCE_DIR}/cpplint.py ${M_RPCPROTO_DIR} ${STYLE_RPCPROTO_DIR})
     SET_PROPERTY(TEST STYLE_CHECK_RPC PROPERTY LABELS Functional RpcProtocol CodingStyle)
-  ELSE (UNIX)
+  ELSE()
     ADD_TEST(STYLE_CHECK finderrorsall.bat)
     SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
-  ENDIF (UNIX)
-ENDIF (PYTHONINTERP_FOUND)
+  ENDIF()
+ENDIF()
 SET(FOUNDALLTESTS true)
-IF (UNIX)
-  SET(TEST_EXECUTABLES TESTupnp TESTnatpmp TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol)
-ELSE (UNIX)
-  SET(TEST_EXECUTABLES TESTupnp.exe TESTnatpmp.exe TESTbase.exe TESTknode.exe TESTkademlia.exe TESTtransport.exe TESTrpcprotocol.exe)
-ENDIF (UNIX)
+IF(CMAKE_BUILD_TYPE MATCHES "Debug")
+  SET(TEST_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+ELSEIF(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
+  SET(TEST_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
+ELSEIF(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
+  SET(TEST_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})
+ENDIF()
+
+SET(TEST_EXES TESTupnp TESTnatpmp TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol)
+FOREACH(TEST_EXE ${TEST_EXES})
+  IF(MSVC)
+    SET(TEST_EXECUTABLES ${TEST_EXECUTABLES} ${CMAKE_BUILD_TYPE}/${TEST_EXE}${TEST_POSTFIX}.exe)
+  ELSEIF(WIN32)
+    SET(TEST_EXECUTABLES ${TEST_EXECUTABLES} ${TEST_EXE}${TEST_POSTFIX}.exe)
+  ELSE()
+    SET(TEST_EXECUTABLES ${TEST_EXECUTABLES} ${TEST_EXE}${TEST_POSTFIX})
+  ENDIF()
+ENDFOREACH()
+
 FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
-  IF (NOT EXISTS ${EXECUTABLE_OUTPUT_PATH}/${TEST_EXECUTABLE})
-    IF (FOUNDALLTESTS)
+  IF(NOT EXISTS ${EXECUTABLE_OUTPUT_PATH}/${TEST_EXECUTABLE})
+    IF(FOUNDALLTESTS)
       SET(FOUNDALLTESTS false)
       MESSAGE("")
       MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
       MESSAGE("")
-    ENDIF (FOUNDALLTESTS)
+    ENDIF()
     MESSAGE(WARNING "Cannot find ${EXECUTABLE_OUTPUT_PATH}/${TEST_EXECUTABLE}")
-  ELSE (NOT EXISTS ${EXECUTABLE_OUTPUT_PATH}/${TEST_EXECUTABLE})
+  ELSE()
     EXECUTE_PROCESS(COMMAND ${EXECUTABLE_OUTPUT_PATH}/${TEST_EXECUTABLE} --gtest_list_tests OUTPUT_VARIABLE maid_tests)
     STRING(REPLACE "\n" ";" maid_tests "${maid_tests}")
     STRING(REPLACE " " "" maid_tests "${maid_tests}")
-    IF (NOT WIN32)
+    IF(NOT WIN32)
       STRING(REPLACE " " ";" TEST_EXECUTABLE "${TEST_EXECUTABLE}")
-    ENDIF (NOT WIN32)
+    ENDIF()
     FOREACH(tst ${maid_tests})
-      IF (NOT "${tst}" MATCHES [_])
+      IF(NOT "${tst}" MATCHES [_])
         STRING(REGEX REPLACE "Test" "" label_name ${tst})
         STRING(REPLACE "." "" label_name ${label_name})
-      ENDIF (NOT "${tst}" MATCHES [_])
-      IF (NOT "${tst}" MATCHES "(profiling).+" AND NOT "${tst}" MATCHES "Mergemismatchforsummaries+")
-        IF (NOT "${tst}" MATCHES "(\\.$)")
-          IF ("${tst}" MATCHES "(${MAIDSAFE_TEST_TYPE}).+")
+      ENDIF()
+      IF(NOT "${tst}" MATCHES "(profiling).+" AND NOT "${tst}" MATCHES "Mergemismatchforsummaries+")
+        IF(NOT "${tst}" MATCHES "(\\.$)")
+          IF("${tst}" MATCHES "(${MAIDSAFE_TEST_TYPE}).+")
             SET(all_tests ${all_tests} ${tst})
             ADD_TEST(${tst} ${EXECUTABLE_OUTPUT_PATH}/${TEST_EXECUTABLE} --gtest_filter=*${tst}*)
-            IF ("${tst}" MATCHES "^FUNC_" OR "${tst}" MATCHES "^DISABLED_FUNC_")
-              SET_PROPERTY(TEST ${tst} PROPERTY LABELS Functional ${label_name})
+            IF("${tst}" MATCHES "^FUNC_" OR "${tst}" MATCHES "^DISABLED_FUNC_")
+              SET_PROPERTY(TEST ${tst} PROPERTY LABELS Functional ${label_name} ${CMAKE_BUILD_TYPE})
               SET_PROPERTY(TEST ${tst} PROPERTY TIMEOUT 600)
-            ELSEIF ("${tst}" MATCHES "^BEH_" OR "${tst}" MATCHES "^DISABLED_BEH_")
-              SET_PROPERTY(TEST ${tst} PROPERTY LABELS Behavioural ${label_name})
+            ELSEIF("${tst}" MATCHES "^BEH_" OR "${tst}" MATCHES "^DISABLED_BEH_")
+              SET_PROPERTY(TEST ${tst} PROPERTY LABELS Behavioural ${label_name} ${CMAKE_BUILD_TYPE})
               SET_PROPERTY(TEST ${tst} PROPERTY TIMEOUT 60)
-            ELSE ("${tst}" MATCHES "^BEH_" OR "${tst}" MATCHES "^DISABLED_BEH_")
+            ELSE()
               MESSAGE("")
               MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
               MESSAGE("")
               MESSAGE(AUTHOR_WARNING "${tst} should be named \"BEH_...\" or \"FUNC_...\" (with an optional \"DISABLED_\" prepended).")
               MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            ENDIF ("${tst}" MATCHES "^FUNC_" OR "${tst}" MATCHES "^DISABLED_FUNC_")
+            ENDIF()
             EXECUTE_PROCESS(COMMAND ${EXECUTABLE_OUTPUT_PATH}/${TEST_EXECUTABLE} --gtest_list_tests --gtest_filter=*${tst}* OUTPUT_VARIABLE repeateds)
             STRING(REGEX MATCHALL "\n" repeats ${repeateds})
             LIST(LENGTH repeats count)
-            IF (count GREATER 2)
+            IF(count GREATER 2)
               SET(repeated_tests ${repeated_tests} ${tst})
-            ENDIF (count GREATER 2)
-          ENDIF ("${tst}" MATCHES "(${MAIDSAFE_TEST_TYPE}).+")
-        ENDIF (NOT "${tst}" MATCHES "(\\.$)")
-      ENDIF (NOT "${tst}" MATCHES "(profiling).+" AND NOT "${tst}" MATCHES "Mergemismatchforsummaries+")
+            ENDIF()
+          ENDIF()
+        ENDIF()
+      ENDIF()
     ENDFOREACH()
-  ENDIF (NOT EXISTS ${EXECUTABLE_OUTPUT_PATH}/${TEST_EXECUTABLE})
+  ENDIF()
 ENDFOREACH()
-IF (NOT FOUNDALLTESTS)
+IF(NOT FOUNDALLTESTS)
   MESSAGE("Run cmake again after make to pick up tests.\n")
   MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-ENDIF (NOT FOUNDALLTESTS)
+ENDIF()
 
-IF (NOT CMAKE_SUPPRESS_DEVELOPER_WARNINGS AND DEFINED repeated_tests)
+IF(NOT CMAKE_SUPPRESS_DEVELOPER_WARNINGS AND DEFINED repeated_tests)
   SET(WARNING_MESSAGE "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
   FOREACH(var ${repeated_tests})
     SET(WARNING_MESSAGE "${WARNING_MESSAGE}\nRepeated test name - ${var}")
@@ -755,18 +729,22 @@ IF (NOT CMAKE_SUPPRESS_DEVELOPER_WARNINGS AND DEFINED repeated_tests)
   SET(WARNING_MESSAGE "${WARNING_MESSAGE}\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
   MESSAGE(AUTHOR_WARNING ${WARNING_MESSAGE})
   MESSAGE("================================================================================")
-ENDIF (NOT CMAKE_SUPPRESS_DEVELOPER_WARNINGS AND DEFINED repeated_tests)
+ENDIF()
 
 SET(DART_TESTING_TIMEOUT 2400 CACHE INTERNAL "Maximum time allowed before CTest will kill the test.")
-IF (UNIX)
+IF(UNIX)
   SET(MEMORYCHECK_COMMAND "/usr/bin/valgrind --show-reachable=no")
-ENDIF (UNIX)
+ENDIF()
 
-IF (NOT INSTALL_PREFIX)
+IF(NOT INSTALL_PREFIX)
   SET(CMAKE_INSTALL_PREFIX "/usr")
-ELSE (NOT INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX})
-ENDIF (NOT INSTALL_PREFIX)
+ELSE()
+  IF(WIN32)
+    STRING(REPLACE "\\" "/" INSTALL_PREFIX ${INSTALL_PREFIX})
+  ENDIF()
+  SET(CMAKE_INSTALL_PREFIX "${INSTALL_PREFIX}")
+ENDIF()
+
 ###################################################################################################
 MESSAGE("")
 MESSAGE("Package version is set to \"${pddate}\"")
@@ -787,50 +765,53 @@ MESSAGE("=======================================================================
 MESSAGE("")
 MESSAGE("Install prefix is set to ${CMAKE_INSTALL_PREFIX}")
 MESSAGE("")
-MESSAGE("    To alter this (e.g. to /usr/local),   cmake ../..-DINSTALL_PREFIX=\"/usr/local\"")
+MESSAGE("    To alter this (e.g. to /usr/local),  cmake ../.. -DINSTALL_PREFIX=/usr/local")
 MESSAGE("================================================================================")
 MESSAGE("")
 
 SET(PROTOBUF_INSTALL_FILES protobuf/signed_kadvalue.pb.h protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h protobuf/general_messages.pb.h)
 
-IF (MSVC)
-  INSTALL (TARGETS maidsafe maidsafe_static
-           RUNTIME DESTINATION bin
-           LIBRARY DESTINATION bin
-           ARCHIVE DESTINATION lib
+IF(MSVC)
+  INSTALL(TARGETS maidsafe_dht_static # maidsafe_dht
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION bin
+            ARCHIVE DESTINATION lib
           )
-ELSE (MSVC)
-  INSTALL (TARGETS maidsafe maidsafe_static
-           RUNTIME DESTINATION bin
-           LIBRARY DESTINATION lib
-           ARCHIVE DESTINATION lib
+ELSE()
+  INSTALL(TARGETS maidsafe_dht_static # maidsafe_dht
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib
           )
-ENDIF (MSVC)
-INSTALL (FILES ${MAIDSAFE_H} ${PROTOBUF_INSTALL_FILES}
-         DESTINATION include/maidsafe
-        )
+ENDIF()
 
-SET(CPACK_PACKAGE_VERSION_PATCH ${pddate})
-SET(CPACK_PACKAGE_VERSION "0.1.${pddate}")
-SET(CPACK_PACKAGE_VERSION_MAJOR "0")
-SET(CPACK_PACKAGE_VERSION_MINOR "1")
-SET(CPACK_PACKAGE_NAME "maidsafe")
-SET(CPACK_PACKAGE_CONTACT "info@maidsafe.net")
-SET(CPACK_PACKAGE_VENDOR "Maidsafe.net")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Perpetual Data - Client and Vault applications")
-SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Maidsafe")
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${MAIDSAFE_SOURCE_DIR}/../docs/description.txt")
-SET(CPACK_RESOURCE_FILE_LICENSE "${MAIDSAFE_SOURCE_DIR}/../docs/LICENSE.txt")
-SET(CPACK_RESOURCE_FILE_README "${MAIDSAFE_SOURCE_DIR}/../docs/readme.txt")
-SET(CPACK_RESOURCE_FILE_WELCOME "${MAIDSAFE_SOURCE_DIR}/../docs/welcome.txt")
+INSTALL(FILES ${MAIDSAFE_H} ${PROTOBUF_INSTALL_FILES} DESTINATION include/maidsafe)
 
-MESSAGE("Install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
-MESSAGE("================================================================================")
+IF(CMAKE_BUILD_TYPE MATCHES Release)
+  SET(CPACK_PACKAGE_VERSION_PATCH ${pddate})
+  SET(CPACK_PACKAGE_VERSION "0.1.${pddate}")
+  SET(CPACK_PACKAGE_VERSION_MAJOR "0")
+  SET(CPACK_PACKAGE_VERSION_MINOR "1")
+  SET(CPACK_PACKAGE_NAME "maidsafe_dht")
+  SET(CPACK_PACKAGE_CONTACT "info@maidsafe.net")
+  SET(CPACK_PACKAGE_VENDOR "maidsafe.net")
+  SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Perpetual Data - Client and Vault applications")
+  SET(CPACK_PACKAGE_INSTALL_DIRECTORY "maidsafe")
+  SET(CPACK_PACKAGE_DESCRIPTION_FILE "${maidsafe_dht_SOURCE_DIR}/../docs/description.txt")
+  SET(CPACK_RESOURCE_FILE_LICENSE "${maidsafe_dht_SOURCE_DIR}/../docs/LICENSE.txt")
+  SET(CPACK_RESOURCE_FILE_README "${maidsafe_dht_SOURCE_DIR}/../docs/readme.txt")
+  SET(CPACK_RESOURCE_FILE_WELCOME "${maidsafe_dht_SOURCE_DIR}/../docs/welcome.txt")
 
-IF (UNIX)
-  SET(CPACK_SET_DESTDIR on)
-  SET(CPACK_GENERATOR DEB;RPM;TGZ)
-ELSE (UNIX)
-  SET(CPACK_GENERATOR ZIP)
-ENDIF (UNIX)
-INCLUDE(CPack)
+  MESSAGE("Install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
+  MESSAGE("================================================================================")
+
+  IF(UNIX)
+    SET(CPACK_SET_DESTDIR on)
+    SET(CPACK_GENERATOR DEB;RPM;TGZ)
+  ELSE()
+    SET(CPACK_GENERATOR ZIP)
+  ENDIF()
+  INCLUDE(CPack)
+ELSE()
+  FILE(REMOVE ${maidsafe_dht_BINARY_DIR}/CPackConfig.cmake ${maidsafe_dht_BINARY_DIR}/CPackSourceConfig.cmake)
+ENDIF()
