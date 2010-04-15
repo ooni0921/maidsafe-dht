@@ -722,14 +722,17 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoad100Values) {
   printf("\nLoad:  ");
   for (boost::int16_t p = 0; p < count; ++p) {
     wait_result(&cbs[p]);
-    ASSERT_EQ(kad::kRpcResultSuccess, cbs[p].result());
+    EXPECT_EQ(kad::kRpcResultSuccess, cbs[p].result()) <<
+      "Failed to store " << kad::kMinSuccessfulPecentageStore <<
+      "% of K copies of the " << p << "th value";
   }
   for (boost::int16_t p = 0; p < count; ++p) {
     FindCallback cb_1;
     knodes_[7]->FindValue(keys[p], false,
                           boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
     wait_result(&cb_1);
-    ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
+    ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result())
+        << "No copies of the " << p <<"th value where stored.";
     ASSERT_EQ(1, cb_1.signed_values().size());
     ASSERT_EQ(values[p].value(), cb_1.signed_values()[0].value());
     if (!(p % 5))
