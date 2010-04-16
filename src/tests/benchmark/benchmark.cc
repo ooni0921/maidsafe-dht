@@ -1,4 +1,4 @@
-/* Copyright (c) 2009 maidsafe.net limited
+/* Copyright (c) 2010 maidsafe.net limited
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>  //  NOLINT
 #include "maidsafe/config.h"
 #include "maidsafe/maidsafe-dht.h"
-#include "tests/demo/commands.h"
+#include "tests/benchmark/operations.h"
 #include "protobuf/contact_info.pb.h"
 #include "protobuf/general_messages.pb.h"
 #include "maidsafe/transport-api.h"
@@ -123,25 +123,12 @@ bool write_to_kadconfig(const std::string &path, const std::string &node_id,
   return boost::filesystem::exists(path);
 }
 
-volatile int ctrlc_pressed = 0;
-
-void ctrlc_handler(int b) {
-  b = 1;
-  ctrlc_pressed = b;
-}
-
-void printf_info(kad::ContactInfo info) {
-  kad::Contact ctc(info);
-  printf("Node info: %s", ctc.ToString().c_str());
-}
-
 int main(int argc, char **argv) {
   try {
-    std::string logpath, kadconfigpath, bs_ip, bs_id, ext_ip, configfile,
+    std::string logpath, kadconfigpath, bs_ip, bs_id, configfile,
         bs_local_ip, thisnodekconfigpath, idpath;
-    boost::uint16_t bs_port(0), bs_local_port(0), port(0), ext_port(0);
-    boost::uint32_t refresh_time(0);
-    bool first_node = false;
+    boost::uint16_t bs_port(0), bs_local_port(0), port(0);
+    int iterations(5), max_nodes(5);
     po::options_description desc("Options");
     desc.add_options()
       ("help,h", "Print options information and exit.")
@@ -151,7 +138,6 @@ int main(int argc, char **argv) {
         po::value(&kadconfigpath)->default_value(kadconfigpath),
         "Complete pathname of kadconfig file. Default is KNode<port>/."
         "kadconfig")
-      ("client,c", po::bool_switch(), "Start the node as a client node.")
       ("port,p", po::value(&port)->default_value(port),
         "Local port to start node.  Default is 0, that starts in random port.")
       ("bs_ip", po::value(&bs_ip), "Bootstrap node ip.")
@@ -161,22 +147,13 @@ int main(int argc, char **argv) {
       ("bs_id", po::value(&bs_id), "Bootstrap node id.")
       ("upnp", po::bool_switch(), "Use UPnP for Nat Traversal.")
       ("port_fw", po::bool_switch(), "Manually port forwarded local port.")
-      ("externalip", po::value(&ext_ip),
-        "Node's external ip. "
-        "Use only when it is the first node in the network.")
-      ("externalport", po::value(&ext_port),
-          "Node's external port. "
-          "Use only when it is the first node in the network.")
-      ("noconsole", po::bool_switch(),
-        "Do not have access to Kademlia functions (store/load/ping) "
-        "after node startup.")
-      ("nodeinfopath", po::value(&thisnodekconfigpath),
-        "Writes to this path a kadconfig file (with name .kadconfig) with this"
-        " node's information.")
-      ("append_id", po::value(&idpath),
-        "Appends to the text file at this path the node's ID in a new line.")
-      ("refresh_time,r", po::value(&refresh_time),
-          "Time in minutes to refresh values and kbuckets.");
+      ("id_list", po::value(&idpath),
+        "List of nodes' IDs in the network, for lookup operations.")
+      ("iterations,i", po::value(&iterations)->default_value(iterations),
+        "Number of repetitions per Kad operation.")
+      ("max_nodes", po::value(&max_nodes)->default_value(max_nodes),
+        "Maximum number of nodes taken from id_list for Kad operations.");
+      // TODO options: disable benchmarks, delay, sizes
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     if (vm.count("help")) {
@@ -191,23 +168,9 @@ int main(int argc, char **argv) {
     option_dependency(vm, "bs_id", "bs_local_port");
     option_dependency(vm, "bs_local_ip", "bs_id");
     option_dependency(vm, "bs_local_port", "bs_id");
-    option_dependency(vm, "externalip", "externalport");
-    option_dependency(vm, "externalport", "externalip");
-    option_dependency(vm, "externalport", "port");
+    option_dependency(vm, "max_nodes", "id_list");
     conflicting_options(vm, "upnp", "port_fw");
-    conflicting_options(vm, "client", "noconsole");
-    conflicting_options(vm, "bs_id", "externalip");
     conflicting_options(vm, "verbose", "logfilepath");
-
-    if (vm.count("externalip"))
-      first_node = true;
-
-    if (vm.count("refresh_time")) {
-      refresh_time = vm["refresh_time"].as<boost::uint32_t>();
-      refresh_time = refresh_time * 60;
-    } else {
-      refresh_time = kad::kRefreshTime;
-    }
 
     // checking if path of kadconfigfile exists
     if (vm.count("kadconfigfile")) {
@@ -216,18 +179,16 @@ int main(int argc, char **argv) {
       if (!boost::filesystem::exists(kadconfig.parent_path())) {
         try {
           boost::filesystem::create_directories(kadconfig.parent_path());
-          if (!first_node)
-            if (!vm.count("bs_id")) {
-              printf("No bootstrapping info.\n");
-              return 1;
-            }
+          if (!vm.count("bs_id")) {
+            printf("No bootstrapping info.\n");
+            return 1;
+          }
         }
         catch(const std::exception &) {
-          if (!first_node)
-            if (!vm.count("bs_id")) {
-              printf("No bootstrapping info.\n");
-              return 1;
-            }
+          if (!vm.count("bs_id")) {
+            printf("No bootstrapping info.\n");
+            return 1;
+          }
         }
       } else {
         if (kadconfig_empty(kadconfigpath) && !vm.count("bs_id")) {
@@ -236,11 +197,10 @@ int main(int argc, char **argv) {
         }
       }
     } else {
-      if (!first_node)
-        if (!vm.count("bs_id")) {
-          printf("No bootstrapping info.\n");
-          return 1;
-        }
+      if (!vm.count("bs_id")) {
+        printf("No bootstrapping info.\n");
+        return 1;
+      }
     }
 
     // setting log
@@ -273,13 +233,9 @@ int main(int argc, char **argv) {
     trans_handler.Register(new transport::TransportUDT, &trans_id);
     rpcprotocol::ChannelManager chmanager(&trans_handler);
     kad::node_type type;
-    if (vm["client"].as<bool>())
-      type = kad::CLIENT;
-    else
-      type = kad::VAULT;
-    kad::KNode node(&chmanager, &trans_handler, type, kad::K,
-      kad::kAlpha, kad::kBeta, refresh_time, "", "", vm["port_fw"].as<bool>(),
-      vm["upnp"].as<bool>());
+    kad::KNode node(&chmanager, &trans_handler, kad::CLIENT, kad::K,
+      kad::kAlpha, kad::kBeta, kad::kRefreshTime, "", "",
+      vm["port_fw"].as<bool>(), vm["upnp"].as<bool>());
     node.SetTransID(trans_id);
     if (!chmanager.RegisterNotifiersToTransport() ||
         !trans_handler.RegisterOnServerDown(boost::bind(
@@ -298,28 +254,9 @@ int main(int argc, char **argv) {
       kadconfigpath += "/.kadconfig";
     }
 
-    // if not the first vault, write to kadconfig file bootstrapping info
-    // if provided in options
-    if (!first_node && vm.count("bs_id")) {
-      if (!write_to_kadconfig(kadconfigpath, vm["bs_id"].as<std::string>(),
-          vm["bs_ip"].as<std::string>(), vm["bs_port"].as<boost::uint16_t>(),
-          vm["bs_local_ip"].as<std::string>(),
-          vm["bs_local_port"].as<boost::uint16_t>())) {
-        printf("Unable to write kadconfig file to %s\n", kadconfigpath.c_str());
-        trans_handler.Stop(trans_id);
-        chmanager.Stop();
-        return 1;
-      }
-    }
-
     // Joining the node to the network
     JoinCallback cb;
-    if (first_node)
-      node.Join(kadconfigpath, vm["externalip"].as<std::string>(),
-          vm["externalport"].as<boost::uint16_t>(), boost::bind(
-          &JoinCallback::Callback, &cb, _1));
-    else
-      node.Join(kadconfigpath, boost::bind(&JoinCallback::Callback, &cb, _1));
+    node.Join(kadconfigpath, boost::bind(&JoinCallback::Callback, &cb, _1));
     while (!cb.result_arrived())
       boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     // Checking result of callback
@@ -329,55 +266,50 @@ int main(int argc, char **argv) {
       chmanager.Stop();
       return 1;
     }
-    // Printing Node Info
-    printf_info(node.contact_info());
 
-    // append ID to text file
-    if (vm.count("append_id")) {
+    // get node IDs from text file
+    std::vector<kad::KadId> nodes;
+    if (vm.count("id_list")) {
       try {
-        boost::filesystem::ofstream of(vm["append_id"].as<std::string>(),
-                                       std::ios::out | std::ios::app);
-        of << node.node_id().ToStringEncoded() << "\n";
-        of.close();
+        boost::filesystem::ifstream idf(vm["id_list"].as<std::string>(),
+                                        std::ios::in);
+        while (!idf.eof()) {
+          char line[150];
+          idf.getline(line, sizeof(line));
+          try {
+            kad::KadId id(line, true);
+            nodes.push_back(id);
+          }
+          catch (const std::exception &) {
+          }
+        }
+        idf.close();
       }
-      catch(const std::exception &) {
+      catch (const std::exception &) {
       }
     }
 
-    // Creating a kadconfig file with this node's info
-    if (vm.count("nodeinfopath")) {
-      std::string thiskconfig = vm["nodeinfopath"].as<std::string>();
-      boost::filesystem::path thisconfig(thiskconfig);
-      if (!boost::filesystem::exists(thisconfig)) {
-        try {
-          boost::filesystem::create_directories(thisconfig);
-          thisconfig /= ".kadconfig";
-          write_to_kadconfig(thisconfig.string(),
-              node.node_id().ToStringEncoded(), node.host_ip(),
-              node.host_port(), node.local_host_ip(), node.local_host_port());
-        }
-        catch(const std::exception &e) {
-        }
-      } else {
-        thisconfig /= ".kadconfig";
-        write_to_kadconfig(thisconfig.string(),
-            node.node_id().ToStringEncoded(), node.host_ip(),
-            node.host_port(), node.local_host_ip(), node.local_host_port());
-      }
-    }
+    size_t nodes_count = nodes.size();
+    if (nodes_count > max_nodes && max_nodes > 0)
+      nodes.resize(max_nodes);
 
-    if (!vm["noconsole"].as<bool>()) {
-      kaddemo::Commands cmds(&node, kad::K);
-      cmds.Run();
+    printf("Read %d node IDs from list, running tests on %d of them.\n",
+           nodes_count, nodes.size());
+
+    benchmark::Operations ops(&node);
+
+    printf("\n[ Testing FindNode and Ping ]\n");
+    ops.TestFindAndPing(nodes, iterations);
+
+    if (nodes_count >= kad::K * kad::kMinSuccessfulPecentageStore) {
+      printf("\n[ Testing StoreValue and FindValue (unsigned) ]\n");
+      ops.TestStoreAndFind(nodes, iterations, false);
+      printf("\n[ Testing StoreValue and FindValue (signed) ]\n");
+      ops.TestStoreAndFind(nodes, iterations, true);
     } else {
-      printf("=====================================\n");
-      printf("Press Ctrl+C to exit\n");
-      printf("=====================================\n\n");
-      signal(SIGINT, ctrlc_handler);
-      while (!ctrlc_pressed) {
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
-      }
+      printf("\n[ Skipping tests of StoreValue and FindValue ]\n");
     }
+
     trans_handler.StopPingRendezvous();
     node.Leave();
     trans_handler.Stop(trans_id);

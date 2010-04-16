@@ -351,6 +351,9 @@ LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "tests/kademlia/testknode.cc")
 FILE(GLOB T_DEMO_C "tests/demo/*.c*")
 FILE(GLOB T_DEMO_H "tests/demo/*.h*")
 LIST(APPEND T_DEMO_DIR ${T_DEMO_C} ${T_DEMO_H})
+FILE(GLOB T_BENCHMARK_C "tests/benchmark/*.c*")
+FILE(GLOB T_BENCHMARK_H "tests/benchmark/*.h*")
+LIST(APPEND T_BENCHMARK_DIR ${T_BENCHMARK_C} ${T_BENCHMARK_H})
 LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${M_NATPMP_DIR} ${MAIDSAFE_DIR})
 ###################################################################################################
 # Traverse subdirs for imported 3rd party libs                                                    #
@@ -371,6 +374,8 @@ ADD_EXECUTABLE(TESTupnp ${T_MAIN} ${T_UPNP_DIR} ${MAIDSAFE_H})
 # Need to use __declspec(dllimport) in all API header files before linking to SHARED library target
 #ADD_EXECUTABLE(kaddemo ${T_DEMO_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(kaddemo_static ${T_DEMO_DIR} ${MAIDSAFE_H})
+#ADD_EXECUTABLE(benchmark ${T_BENCHMARK_DIR} ${MAIDSAFE_H})
+ADD_EXECUTABLE(benchmark_static ${T_BENCHMARK_DIR} ${MAIDSAFE_H})
 
 # Force renaming of exes to match standard CMake library renaming policy
 SET_TARGET_PROPERTIES(TESTbase PROPERTIES
@@ -405,6 +410,10 @@ SET_TARGET_PROPERTIES(kaddemo_static PROPERTIES
                         DEBUG_OUTPUT_NAME kaddemo_static${CMAKE_DEBUG_POSTFIX}
                         RELWITHDEBINFO_OUTPUT_NAME kaddemo_static${CMAKE_RELWITHDEBINFO_POSTFIX}
                         MINSIZEREL_OUTPUT_NAME kaddemo_static${CMAKE_MINSIZEREL_POSTFIX})
+SET_TARGET_PROPERTIES(benchmark_static PROPERTIES
+                        DEBUG_OUTPUT_NAME benchmark_static${CMAKE_DEBUG_POSTFIX}
+                        RELWITHDEBINFO_OUTPUT_NAME benchmark_static${CMAKE_RELWITHDEBINFO_POSTFIX}
+                        MINSIZEREL_OUTPUT_NAME benchmark_static${CMAKE_MINSIZEREL_POSTFIX})
 
 # Need to use __declspec(dllexport) in all API header files before adding SHARED library target
 #ADD_LIBRARY(maidsafe_dht SHARED ${DHT_SOURCE_FILES})
@@ -454,13 +463,17 @@ IF(NOT MSVC)
 #  IF(WIN32)
 #    TARGET_LINK_LIBRARIES(maidsafe_dht "-Wl,--enable-auto-import" udt cryptopp ${SYS_LIB})
 #    TARGET_LINK_LIBRARIES(kaddemo "-Wl,--enable-auto-import" maidsafe_dht udt cryptopp)
+#    TARGET_LINK_LIBRARIES(benchmark "-Wl,--enable-auto-import" maidsafe_dht udt cryptopp)
 #  ELSEIF(APPLE)
 #    TARGET_LINK_LIBRARIES(maidsafe_dht udt cryptopp ${SYS_LIB})
 #    TARGET_LINK_LIBRARIES(kaddemo maidsafe_dht udt cryptopp ${SYS_LIB})
+#    TARGET_LINK_LIBRARIES(benchmark maidsafe_dht udt cryptopp ${SYS_LIB})
 #  ELSE()
 #    TARGET_LINK_LIBRARIES(kaddemo maidsafe_dht udt cryptopp ${SYS_LIB})
+#    TARGET_LINK_LIBRARIES(benchmark maidsafe_dht udt cryptopp ${SYS_LIB})
 #  ENDIF()
-  TARGET_LINK_LIBRARIES(kaddemo_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(kaddemo_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})  
+  TARGET_LINK_LIBRARIES(benchmark_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
 ENDIF()
 
 IF(CMAKE_BUILD_TYPE MATCHES "Debug")
@@ -490,7 +503,7 @@ IF(MSVC)
   STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
 
   # defining UDT_STATIC prevents declaring __declspec for UDT API functions
-  SET_TARGET_PROPERTIES(maidsafe_dht_static TESTbase TESTkademlia TESTknode TESTnatpmp TESTrpcprotocol TESTtransport TESTupnp kaddemo_static PROPERTIES
+  SET_TARGET_PROPERTIES(maidsafe_dht_static TESTbase TESTkademlia TESTknode TESTnatpmp TESTrpcprotocol TESTtransport TESTupnp kaddemo_static benchmark_static PROPERTIES
       COMPILE_FLAGS "-DUDT_STATIC"
       LINK_FLAGS "/STACK:1048576"
       LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG")
@@ -508,9 +521,11 @@ IF(MSVC)
   TARGET_LINK_LIBRARIES(TESTtransport maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
   TARGET_LINK_LIBRARIES(TESTupnp maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
   TARGET_LINK_LIBRARIES(kaddemo_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(benchmark_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
 
 #  TARGET_LINK_LIBRARIES(maidsafe_dht udt_static cryptopp_static iphlpapi.lib)
 #  TARGET_LINK_LIBRARIES(kaddemo maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+#  TARGET_LINK_LIBRARIES(benchmark maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
 
   FOREACH (DLIB ${DEBUG_LIBS})
     TARGET_LINK_LIBRARIES(TESTbase debug ${DLIB})
@@ -521,8 +536,10 @@ IF(MSVC)
     TARGET_LINK_LIBRARIES(TESTtransport debug ${DLIB})
     TARGET_LINK_LIBRARIES(TESTupnp debug ${DLIB})
     TARGET_LINK_LIBRARIES(kaddemo_static debug ${DLIB})
+    TARGET_LINK_LIBRARIES(benchmark_static debug ${DLIB})
 #    TARGET_LINK_LIBRARIES(maidsafe_dht debug ${DLIB})
 #    TARGET_LINK_LIBRARIES(kaddemo debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(benchmark debug ${DLIB})
   ENDFOREACH()
   FOREACH (DLIB ${Gtest_LIBRARIES_DEBUG})
     TARGET_LINK_LIBRARIES(TESTbase debug ${DLIB})
@@ -543,8 +560,10 @@ IF(MSVC)
     TARGET_LINK_LIBRARIES(TESTtransport optimized ${RLIB})
     TARGET_LINK_LIBRARIES(TESTupnp optimized ${RLIB})
     TARGET_LINK_LIBRARIES(kaddemo_static optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(benchmark_static optimized ${RLIB})
 #    TARGET_LINK_LIBRARIES(maidsafe_dht optimized ${RLIB})
 #    TARGET_LINK_LIBRARIES(kaddemo optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(benchmark optimized ${RLIB})
   ENDFOREACH()
   FOREACH(RLIB ${Gtest_LIBRARIES})
     TARGET_LINK_LIBRARIES(TESTbase optimized ${RLIB})
@@ -594,7 +613,7 @@ ELSEIF(WIN32 AND NOT MSVC)
     SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp PROPERTIES LINK_FLAGS "-lgcov -pg -fprofile-arcs -ftest-coverage")
   ENDIF()
 
-  SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo_static  PROPERTIES LINK_FLAGS "-mthreads " )
+  SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo_static benchmark_static PROPERTIES LINK_FLAGS "-mthreads " )
   SET(SILENT_BUILD  "-w -finline-functions -O3 -DNDEBUG -D_WIN32_WINNT=0x0501 -D_WIN32")
 ENDIF()
 
