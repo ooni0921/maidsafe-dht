@@ -484,7 +484,7 @@ IF(MSVC)
   # warning 4503 disabled due to excessive generation through use of Boost multi_index
   SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /D \"NDEBUG\" /EHsc /MD /Gy /W3 /Zi /wd4503")
   SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D \"_DEBUG\" /EHsc /MDd  /c /ZI /TP /wd4503")
-  
+
   # CMake defaults stack size to 10MB.  Set this to windows default of 1MB
   STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
   STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
@@ -769,7 +769,17 @@ MESSAGE("    To alter this (e.g. to /usr/local),  cmake ../.. -DINSTALL_PREFIX=/
 MESSAGE("================================================================================")
 MESSAGE("")
 
+# NB - If the following list of public headers changes, ensure /src/build/Win/extract_includes.bat is changed to reflect this.
 SET(PROTOBUF_INSTALL_FILES protobuf/signed_kadvalue.pb.h protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h protobuf/general_messages.pb.h)
+# Check the script /src/build/Win/extract_includes.bat matches this list
+FILE(STRINGS ${maidsafe_dht_SOURCE_DIR}/build/Win/extract_includes.bat EXTRACT_INCLUDE_BAT)
+STRING(REPLACE "\\" "/" EXTRACT_INCLUDE_BAT "${EXTRACT_INCLUDE_BAT}")
+FOREACH(PROTOBUF_INSTALL_FILE ${PROTOBUF_INSTALL_FILES})
+  STRING(REGEX MATCH ${PROTOBUF_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
+  IF(NOT FOUND)
+    MESSAGE(FATAL_ERROR "\nUpdate ${maidsafe_dht_SOURCE_DIR}/build/Win/extract_includes.bat to include ${PROTOBUF_INSTALL_FILE}\n")
+  ENDIF()
+ENDFOREACH()
 
 IF(MSVC)
   INSTALL(TARGETS maidsafe_dht_static # maidsafe_dht
