@@ -44,9 +44,9 @@
 #    GTEST_LIB_DIR, GTEST_INC_DIR and GTEST_ROOT_DIR                           #
 #                                                                              #
 #  Variables set and cached by this module are:                                #
-#    Gtest_INCLUDE_DIR, Gtest_LIBRARY_DIR, Gtest_LIBRARIES                     #
+#    Gtest_INCLUDE_DIR, Gtest_LIBRARY_DIR, Gtest_LIBRARY                       #
 #                                                                              #
-#  For MSVC, Gtest_LIBRARY_DIR_DEBUG and Gtest_LIBRARIES_DEBUG are also set    #
+#  For MSVC, Gtest_LIBRARY_DIR_DEBUG and Gtest_LIBRARY_DEBUG are also set      #
 #  and cached.                                                                 #
 #                                                                              #
 #==============================================================================#
@@ -55,8 +55,8 @@
 UNSET(Gtest_INCLUDE_DIR CACHE)
 UNSET(Gtest_LIBRARY_DIR CACHE)
 UNSET(Gtest_LIBRARY_DIR_DEBUG CACHE)
-UNSET(Gtest_LIBRARIES CACHE)
-UNSET(Gtest_LIBRARIES_DEBUG CACHE)
+UNSET(Gtest_LIBRARY CACHE)
+UNSET(Gtest_LIBRARY_DEBUG CACHE)
 
 IF(GTEST_LIB_DIR)
   SET(GTEST_LIB_DIR ${GTEST_LIB_DIR} CACHE INTERNAL "Path to GoogleTest libraries directory" FORCE)
@@ -75,71 +75,44 @@ IF(MSVC)
     SET(GTEST_LIBPATH_SUFFIX msvc/gtest-md/Release)
   ENDIF()
 ELSE()
-  SET(GTEST_LIBPATH_SUFFIX lib)
+  SET(GTEST_LIBPATH_SUFFIX lib lib64)
 ENDIF()
 
-FIND_LIBRARY(GTEST_LIBRARY_RELEASE NAMES gtest gtest-md PATHS ${GTEST_LIB_DIR} ${GTEST_ROOT_DIR} PATH_SUFFIXES ${GTEST_LIBPATH_SUFFIX})
-FIND_LIBRARY(GTEST_MAIN_LIBRARY_RELEASE NAMES gtest_main gtest_main-md PATHS ${GTEST_LIB_DIR} ${GTEST_ROOT_DIR} PATH_SUFFIXES ${GTEST_LIBPATH_SUFFIX})
+FIND_LIBRARY(Gtest_LIBRARY NAMES gtest gtest-md PATHS ${GTEST_LIB_DIR} ${GTEST_ROOT_DIR} PATH_SUFFIXES ${GTEST_LIBPATH_SUFFIX})
 IF(MSVC)
   IF(CMAKE_CL_64)
     SET(GTEST_LIBPATH_SUFFIX msvc/x64/Debug)
   ELSE()
     SET(GTEST_LIBPATH_SUFFIX msvc/gtest-md/Debug)
   ENDIF()
-  FIND_LIBRARY(GTEST_LIBRARY_DEBUG NAMES gtestd gtest-mdd PATHS ${GTEST_LIB_DIR} ${GTEST_ROOT_DIR} PATH_SUFFIXES ${GTEST_LIBPATH_SUFFIX})
-  FIND_LIBRARY(GTEST_MAIN_LIBRARY_DEBUG NAMES gtest_maind gtest_main-mdd PATHS ${GTEST_LIB_DIR} ${GTEST_ROOT_DIR} PATH_SUFFIXES ${GTEST_LIBPATH_SUFFIX})
+  FIND_LIBRARY(Gtest_LIBRARY_DEBUG NAMES gtestd gtest-mdd PATHS ${GTEST_LIB_DIR} ${GTEST_ROOT_DIR} PATH_SUFFIXES ${GTEST_LIBPATH_SUFFIX})
 ENDIF()
 
 FIND_PATH(Gtest_INCLUDE_DIR gtest/gtest.h PATHS ${GTEST_INC_DIR} ${GTEST_ROOT_DIR}/include)
 
-GET_FILENAME_COMPONENT(GTEST_LIBRARY_DIR ${GTEST_LIBRARY_RELEASE} PATH)
+GET_FILENAME_COMPONENT(GTEST_LIBRARY_DIR ${Gtest_LIBRARY} PATH)
 SET(Gtest_LIBRARY_DIR ${GTEST_LIBRARY_DIR} CACHE PATH "Path to GoogleTest libraries directory" FORCE)
 IF(MSVC)
-  GET_FILENAME_COMPONENT(GTEST_LIBRARY_DIR_DEBUG ${GTEST_LIBRARY_DEBUG} PATH)
+  GET_FILENAME_COMPONENT(GTEST_LIBRARY_DIR_DEBUG ${Gtest_LIBRARY_DEBUG} PATH)
   SET(Gtest_LIBRARY_DIR_DEBUG ${GTEST_LIBRARY_DIR_DEBUG} CACHE PATH "Path to GoogleTest debug libraries directory" FORCE)
 ENDIF()
 
-IF(NOT GTEST_LIBRARY_RELEASE)
+IF(NOT Gtest_LIBRARY)
   SET(ERROR_MESSAGE "\nCould not find Google Test.  NO GTEST LIBRARY - ")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/googletest\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Google Test is already installed, run:\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DGTEST_LIB_DIR=<Path to gtest lib directory> and/or")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}\ncmake ../.. -DGTEST_ROOT_DIR=<Path to gtest root directory>")
   MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ELSE()
-  SET(Gtest_LIBRARIES ${GTEST_LIBRARY_RELEASE})
-ENDIF()
-
-IF(NOT GTEST_MAIN_LIBRARY_RELEASE)
-  SET(ERROR_MESSAGE "\nCould not find Google Test.  NO GTEST-MAIN LIBRARY - ")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/googletest\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Google Test is already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DGTEST_LIB_DIR=<Path to gtest lib directory> and/or")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\ncmake ../.. -DGTEST_ROOT_DIR=<Path to gtest root directory>")
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ELSE()
-  SET(Gtest_LIBRARIES ${Gtest_LIBRARIES} ${GTEST_MAIN_LIBRARY_RELEASE} CACHE INTERNAL "Path to Google Test library" FORCE)
 ENDIF()
 
 IF(MSVC)
-  IF(NOT GTEST_LIBRARY_DEBUG)
+  IF(NOT Gtest_LIBRARY_DEBUG)
     SET(ERROR_MESSAGE "\nCould not find Google Test.  NO *DEBUG* GTEST LIBRARY - ")
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/googletest\n")
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Google Test is already installed, run:\n")
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DGTEST_ROOT_DIR=<Path to gtest root directory>")
     MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-  ELSE()
-    SET(Gtest_LIBRARIES_DEBUG ${GTEST_LIBRARY_DEBUG})
-  ENDIF()
-
-  IF(NOT GTEST_MAIN_LIBRARY_DEBUG)
-    SET(ERROR_MESSAGE "\nCould not find Google Test.  NO *DEBUG* GTEST-MAIN LIBRARY - ")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/googletest\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Google Test is already installed, run:\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DGTEST_ROOT_DIR=<Path to gtest root directory>")
-    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-  ELSE()
-    SET(Gtest_LIBRARIES_DEBUG ${Gtest_LIBRARIES_DEBUG} ${GTEST_MAIN_LIBRARY_DEBUG} CACHE INTERNAL "Path to Google Test debug library" FORCE)
   ENDIF()
 ENDIF()
 
@@ -152,14 +125,7 @@ IF(NOT Gtest_INCLUDE_DIR)
   MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
 ENDIF()
 
-MESSAGE("-- Found the following Google Test libraries:")
-GET_FILENAME_COMPONENT(GTEST_LIBRARY_NAME ${GTEST_LIBRARY_RELEASE} NAME_WE)
-MESSAGE("--   ${GTEST_LIBRARY_NAME}")
-GET_FILENAME_COMPONENT(GTEST_LIBRARY_NAME ${GTEST_MAIN_LIBRARY_RELEASE} NAME_WE)
-MESSAGE("--   ${GTEST_LIBRARY_NAME}")
+MESSAGE("-- Found Google Test library")
 IF(MSVC)
-  GET_FILENAME_COMPONENT(GTEST_LIBRARY_NAME ${GTEST_LIBRARY_DEBUG} NAME_WE)
-  MESSAGE("--   ${GTEST_LIBRARY_NAME}")
-  GET_FILENAME_COMPONENT(GTEST_LIBRARY_NAME ${GTEST_MAIN_LIBRARY_DEBUG} NAME_WE)
-  MESSAGE("--   ${GTEST_LIBRARY_NAME}")
+  MESSAGE("-- Found Google Test Debug library")
 ENDIF()

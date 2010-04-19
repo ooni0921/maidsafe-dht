@@ -31,15 +31,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/function.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
-#include <string>
 #include <map>
-#include "maidsafe/maidsafe-dht_config.h"
+#include <string>
+#include <vector>
 #include "maidsafe/crypto.h"
+#include "maidsafe/maidsafe-dht_config.h"
 
 namespace kad {
 class KNode;
 class KadId;
-}
+}  // namespace kad
 
 namespace benchmark {
 
@@ -74,7 +75,7 @@ class Stats {
 
 class Operations {
  public:
-  Operations(kad::KNode *node);
+  explicit Operations(kad::KNode *node);
   void TestFindAndPing(const std::vector<kad::KadId> &nodes,
                        const int &iterations);
   void TestStoreAndFind(const std::vector<kad::KadId> &nodes,
@@ -94,6 +95,6 @@ class Operations {
   std::string private_key_, public_key_, public_key_signature_;
 };
 
-}  // namespace
+}  // namespace benchmark
 
-#endif  // TESTS_DEMO_COMMANDS_H_
+#endif  // TESTS_BENCHMARK_OPERATIONS_H_

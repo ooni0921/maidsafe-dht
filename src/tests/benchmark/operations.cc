@@ -93,7 +93,7 @@ void Operations::TestFindAndPing(const std::vector<kad::KadId> &nodes,
       boost::uint64_t t = base::get_epoch_milliseconds();
       node_->FindNode(nodes[i], boost::bind(
           &Operations::FindNodeCallback, this, _1, data), false);
-      while (data->returned_count <= i)
+      while (static_cast<size_t>(data->returned_count) <= i)
         data->condition.wait(lock);
       stats.Add(base::get_epoch_milliseconds() - t);
       kad::Contact ctc;

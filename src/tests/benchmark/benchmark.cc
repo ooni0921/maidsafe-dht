@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
         "Number of repetitions per Kad operation.")
       ("max_nodes", po::value(&max_nodes)->default_value(max_nodes),
         "Maximum number of nodes taken from id_list for Kad operations.");
-      // TODO options: disable benchmarks, delay, sizes
+      // TODO(Team#5#): 2010-04-19 - options: disable benchmarks, delay, sizes
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     if (vm.count("help")) {
@@ -232,7 +232,6 @@ int main(int argc, char **argv) {
     boost::int16_t trans_id;
     trans_handler.Register(new transport::TransportUDT, &trans_id);
     rpcprotocol::ChannelManager chmanager(&trans_handler);
-    kad::node_type type;
     kad::KNode node(&chmanager, &trans_handler, kad::CLIENT, kad::K,
       kad::kAlpha, kad::kBeta, kad::kRefreshTime, "", "",
       vm["port_fw"].as<bool>(), vm["upnp"].as<bool>());
@@ -280,17 +279,17 @@ int main(int argc, char **argv) {
             kad::KadId id(line, true);
             nodes.push_back(id);
           }
-          catch (const std::exception &) {
+          catch(const std::exception &) {
           }
         }
         idf.close();
       }
-      catch (const std::exception &) {
+      catch(const std::exception &) {
       }
     }
 
     size_t nodes_count = nodes.size();
-    if (nodes_count > max_nodes && max_nodes > 0)
+    if (nodes_count > static_cast<size_t>(max_nodes) && max_nodes > 0)
       nodes.resize(max_nodes);
 
     printf("Read %d node IDs from list, running tests on %d of them.\n",
