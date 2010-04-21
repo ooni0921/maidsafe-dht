@@ -71,6 +71,18 @@ boost::uint64_t Controller::timeout() const {
   return controller_pimpl_->timeout();
 }
 
+boost::uint64_t Controller::duration() const {
+  return controller_pimpl_->duration();
+}
+
+void Controller::start_rpc_timer() {
+  controller_pimpl_->start_rpc_timer();
+}
+
+void Controller::stop_rpc_timer() {
+  controller_pimpl_->stop_rpc_timer();
+}
+
 void Controller::set_rtt(const float &rtt) {
   controller_pimpl_->set_rtt(rtt);
 }
@@ -93,6 +105,15 @@ void Controller::set_req_id(const boost::uint32_t &id) {
 
 boost::uint32_t Controller::req_id() const {
   return controller_pimpl_->req_id();
+}
+
+void Controller::set_message_info(const std::string &service,
+                                  const std::string &method) {
+  controller_pimpl_->set_message_info(service, method);
+}
+
+void Controller::message_info(std::string *service, std::string *method) const {
+  controller_pimpl_->message_info(service, method);
 }
 
 Channel::Channel(rpcprotocol::ChannelManager *channelmanager,

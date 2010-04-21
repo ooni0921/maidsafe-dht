@@ -36,14 +36,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace rpcprotocol {
 
-bool ControllerImpl::Failed() const {
-  if (!failure_.empty())
-    return true;
-  return false;
-}
-
 void ControllerImpl::Reset() {
   timeout_ = kRpcTimeout;
+  time_sent_ = 0;
+  time_received_ = 0;
   rtt_ = 0.0;
   failure_.clear();
   req_id_ = 0;
@@ -115,10 +111,12 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     req.callback = done;
     boost::uint32_t conn_id = 0;
     Controller *ctrl = static_cast<Controller*>(controller);
+    ctrl->set_req_id(msg.message_id());
+    ctrl->set_message_info(msg.service(), msg.method());
+    ctrl->start_rpc_timer();
     if (0 == ptrans_handler_->ConnectToSend(remote_ip_, remote_port_, local_ip_,
         local_port_, rv_ip_, rv_port_, true, &conn_id, trans_id_)) {
       req.connection_id = conn_id;
-      ctrl->set_req_id(msg.message_id());
       // Set the RPC request timeout
       if (ctrl->timeout() != 0) {
         req.timeout = ctrl->timeout();
@@ -139,7 +137,6 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
           remote_ip_ << ":" << remote_port_ << " with id " << msg.message_id()
           << std::endl;
       ctrl->set_timeout(1);
-      ctrl->set_req_id(msg.message_id());
       req.timeout = ctrl->timeout();
       req.ctrl = ctrl;
       pmanager_->AddPendingRequest(msg.message_id(), req);

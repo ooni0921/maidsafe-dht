@@ -42,9 +42,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kaddemo {
 
-Commands::Commands(kad::KNode *node, const boost::uint16_t &K)
-      : node_(node), result_arrived_(false), finish_(false),
-        min_succ_stores_(K * kad::kMinSuccessfulPecentageStore), cryobj_() {
+Commands::Commands(kad::KNode *node, rpcprotocol::ChannelManager *chmanager,
+                   const boost::uint16_t &K)
+      : node_(node), chmanager_(chmanager), result_arrived_(false),
+        finish_(false), min_succ_stores_(K * kad::kMinSuccessfulPecentageStore),
+        cryobj_() {
   cryobj_.set_hash_algorithm(crypto::SHA_512);
 }
 
@@ -209,6 +211,7 @@ void Commands::PrintUsage() {
   printf("\tfindvalue key               Find value stored with key.\n");
   printf("\tstore50values prefix        Store 50 key value pairs of for ");
   printf("(prefix[i],prefix[i]*100.\n");
+  printf("\ttimings                     Print statistics for RPC timings.\n");
   printf("\texit                        Stop the node and exit.\n");
   printf("\n\tNOTE -- node_id should be input encoded.\n");
   printf("\t          If key is not a valid 512 hash key (encoded format),\n");
@@ -368,6 +371,9 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       Store50Values(args[0]);
       *wait_for_cb = true;
     }
+  } else if (cmd == "timings") {
+    PrintRpcTimings();
+    *wait_for_cb = false;
   } else {
     printf("Invalid command %s\n", cmd.c_str());
     *wait_for_cb = false;
@@ -412,5 +418,21 @@ void Commands::Store50Callback(const std::string &result,
     printf("Successfully stored key %s\n", key.c_str());
   }
   *arrived = true;
+}
+
+void Commands::PrintRpcTimings() {
+  rpcprotocol::RpcStatsMap rpc_timings(chmanager_->RpcTimings());
+  printf("Calls  RPC Name                                            "
+         "min/avg/max\n");
+  for (rpcprotocol::RpcStatsMap::const_iterator it = rpc_timings.begin();
+       it != rpc_timings.end();
+       ++it) {
+    printf("%5llux %-50s  %.2f/%.2f/%.2f s\n",
+           it->second.Size(),
+           it->first.c_str(),
+           it->second.Min() / 1000.0,
+           it->second.Mean() / 1000.0,
+           it->second.Max() / 1000.0);
+  }
 }
 }

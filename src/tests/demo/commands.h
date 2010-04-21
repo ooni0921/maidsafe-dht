@@ -42,7 +42,8 @@ namespace kaddemo {
 
 class Commands {
  public:
-  Commands(kad::KNode *node, const boost::uint16_t &K);
+  Commands(kad::KNode *node, rpcprotocol::ChannelManager *chmanager,
+           const boost::uint16_t &K);
   void Run();
  private:
   void FindValueCallback(const std::string &result, const kad::KadId &key,
@@ -58,7 +59,9 @@ class Commands {
   void Store50Values(const std::string &prefix);
   void Store50Callback(const std::string &result, const std::string &key,
       bool *arrived);
+  void PrintRpcTimings();
   kad::KNode *node_;
+  rpcprotocol::ChannelManager *chmanager_;
   bool result_arrived_, finish_;
   double min_succ_stores_;
   crypto::Crypto cryobj_;

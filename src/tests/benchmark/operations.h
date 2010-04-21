@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 #include "maidsafe/crypto.h"
+#include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace kad {
@@ -53,26 +54,6 @@ struct CallbackData {
   boost::condition_variable condition;
 };
 
-template <typename T>
-class Stats {
- public:
-  Stats() : values_(), min_(0), max_(0), sum_(0), dirty_(true) {}
-  void Add(const T &value);
-  inline size_t Size() const { return values_.size(); }
-  inline T Min() const { return min_; }
-  inline T Max() const { return max_; }
-  T Sum();
-  inline T Average() { return Sum() / Size(); }
- private:
-  Stats(const Stats&);
-  Stats &operator=(const Stats&);
-  std::vector<T> values_;
-  T min_;
-  T max_;
-  T sum_;
-  bool dirty_;
-};
-
 class Operations {
  public:
   explicit Operations(kad::KNode *node);
@@ -81,6 +62,7 @@ class Operations {
   void TestStoreAndFind(const std::vector<kad::KadId> &nodes,
                         const int &iterations, const bool &sign);
   static kad::KadId GetModId(int iteration);
+  static void PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings);
  private:
   void PingCallback(const std::string &result,
                     boost::shared_ptr<CallbackData> data);

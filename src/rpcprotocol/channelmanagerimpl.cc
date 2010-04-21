@@ -39,9 +39,9 @@ namespace rpcprotocol {
 ChannelManagerImpl::ChannelManagerImpl(transport::TransportHandler
   *ptrans_handler) : ptrans_handler_(ptrans_handler), is_started_(false),
   ptimer_(new base::CallLaterTimer), req_mutex_(), channels_mutex_(),
-  id_mutex_(), pend_timeout_mutex_(), channels_ids_mutex_(),
+  id_mutex_(), pend_timeout_mutex_(), channels_ids_mutex_(), timings_mutex_(),
   current_request_id_(0), current_channel_id_(0), channels_(),
-  pending_req_(), pending_timeout_(), channels_ids_(),
+  pending_req_(), pending_timeout_(), channels_ids_(), rpc_timings_(),
   delete_channels_cond_(), online_status_id_(0) {}
 
 ChannelManagerImpl::~ChannelManagerImpl() {
@@ -239,31 +239,41 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
   } else if (decoded_msg.rpc_type() == RESPONSE) {
     std::map<boost::uint32_t, PendingReq>::iterator it;
     req_mutex_.lock();
-    DLOG(INFO) << ptrans_handler_->listening_port(trans_id) <<
-        " --- response arrived for " << decoded_msg.method() << " -- " <<
-        decoded_msg.message_id() << std::endl;
     it = pending_req_.find(decoded_msg.message_id());
     if (it != pending_req_.end()) {
       if (it->second.args->ParseFromString(decoded_msg.args())) {
-        if (it->second.ctrl != NULL)
+        boost::uint64_t duration(0);
+        std::string service, method;
+        if (it->second.ctrl != NULL) {
+          it->second.ctrl->stop_rpc_timer();
           it->second.ctrl->set_rtt(rtt);
+          it->second.ctrl->message_info(&service, &method);
+          duration = it->second.ctrl->duration();
+          {
+            boost::mutex::scoped_lock lock(timings_mutex_);
+            rpc_timings_[service + "::" + method].Add(duration);
+          }
+        }
         google::protobuf::Closure* done = (*it).second.callback;
         pending_req_.erase(decoded_msg.message_id());
         req_mutex_.unlock();
-        DLOG(INFO) << "MessageArrive: RTT: " << rtt << std::endl;
+        DLOG(INFO) << ptrans_handler_->listening_port(trans_id) <<
+        " --- Response arrived for " << service << "::" << method << " -- " <<
+        decoded_msg.message_id() << " -- RTT: " << rtt << " ms, duration: " <<
+            duration << " ms" << std::endl;
         done->Run();
         ptrans_handler_->CloseConnection(connection_id, trans_id);
       } else {
         req_mutex_.unlock();
         DLOG(INFO) << ptrans_handler_->listening_port(trans_id) <<
-            " --ChannelManager no callback for id " << decoded_msg.message_id()
-             << std::endl;
+            " --- ChannelManager no callback for id " <<
+            decoded_msg.message_id() << std::endl;
       }
     } else {
       req_mutex_.unlock();
       DLOG(INFO) << ptrans_handler_->listening_port(trans_id) <<
-          "ChannelManager no request for id " << decoded_msg.message_id() <<
-          std::endl;
+          " --- ChannelManager no request for id " <<
+          decoded_msg.message_id() << std::endl;
     }
   } else {
     DLOG(ERROR) << ptrans_handler_->listening_port(trans_id) <<
@@ -369,6 +379,16 @@ bool ChannelManagerImpl::RegisterNotifiersToTransport() {
         &ChannelManagerImpl::RequestSent, this, _1, _2));
   }
   return false;
+}
+
+RpcStatsMap ChannelManagerImpl::RpcTimings() {
+  boost::mutex::scoped_lock lock(timings_mutex_);
+  return rpc_timings_;
+}
+
+void ChannelManagerImpl::ClearRpcTimings() {
+  boost::mutex::scoped_lock lock(timings_mutex_);
+  rpc_timings_.clear();
 }
 
 }  // namespace rpcprotocol

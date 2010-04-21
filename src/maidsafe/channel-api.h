@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 18
+#if MAIDSAFE_DHT_VERSION < 19
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -69,29 +69,54 @@ class Controller : public google::protobuf::RpcController {
   bool IsCanceled() const;
   void NotifyOnCancel(google::protobuf::Closure*);
   /**
-  * Sets the timeout for the rpc request.
+  * Sets the timeout for the RPC request.
   * @param id timeout time in seconds.
   */
   void set_timeout(const boost::uint32_t &seconds);
   /**
+  * Returns time between sending and receiving the RPC request/response.
+  * @return time in milliseconds
+  */
+  boost::uint64_t duration() const;
+  /**
+  * Set the time the RPC request was sent.
+  */
+  void start_rpc_timer();
+  /**
+  * Set the time the RPC response was received.
+  */
+  void stop_rpc_timer();
+  /**
   * Sets the RTT of the communication between the client who is requesting
-  * a remote procedure and the server that is executing the procedure
+  * a remote procedure and the server that is executing the procedure.
   * @param rtt RTT in milliseconds
   */
   void set_rtt(const float &rtt);
   void set_trans_id(const boost::int16_t &trans_id);
   /**
-  * Sets the id of the rpc request
-  * @param id Idenditifier of the rpc request/respons
+  * Sets the ID of the RPC request.
+  * @param id Identifier of the rpc request/response
   */
   void set_req_id(const boost::uint32_t &id);
   /**
-  * Returns the timeout for the rpc request.
+  * Set additional information for the processed message.
+  * @param service The name of the service providing the method.
+  * @param method The name of the method being called remotely.
+  */
+  void set_message_info(const std::string &service, const std::string &method);
+  /**
+  * Get information for the processed message, if stored.
+  * @param service The name of the service providing the method.
+  * @param method The name of the method being called remotely.
+  */
+  void message_info(std::string *service, std::string *method) const;
+  /**
+  * Returns the timeout for the RPC request.
   * @return the timeout time in milliseconds.
   */
   boost::uint64_t timeout() const;
   /**
-  * @return The rtt in milliseconds
+  * @return The RTT in milliseconds
   */
   float rtt() const;
   boost::int16_t trans_id() const;

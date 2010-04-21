@@ -98,4 +98,12 @@ void ChannelManager::RemoveChannelId(const boost::uint32_t &id) {
 bool ChannelManager::RegisterNotifiersToTransport() {
   return pimpl_->RegisterNotifiersToTransport();
 }
+
+RpcStatsMap ChannelManager::RpcTimings() {
+  return pimpl_->RpcTimings();
+}
+
+void ChannelManager::ClearRpcTimings() {
+  return pimpl_->ClearRpcTimings();
+}
 }  // namespace rpcprotocol

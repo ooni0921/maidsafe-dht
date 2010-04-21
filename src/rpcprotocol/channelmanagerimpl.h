@@ -43,6 +43,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace rpcprotocol {
 
+typedef std::map<std::string, base::Stats<boost::uint64_t> > RpcStatsMap;
+
 struct PendingReq {
   PendingReq() : args(NULL), callback(NULL), ctrl(NULL), connection_id(0),
     trans_id(0), timeout(0), size_rec(0) {}
@@ -82,6 +84,8 @@ class ChannelManagerImpl {
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
     const boost::uint32_t &req_id, const int &timeout);
   bool RegisterNotifiersToTransport();
+  RpcStatsMap RpcTimings();
+  void ClearRpcTimings();
  private:
   void TimerHandler(const boost::uint32_t &req_id);
   void RequestSent(const boost::uint32_t &connection_id, const bool &success);
@@ -94,7 +98,7 @@ class ChannelManagerImpl {
   bool is_started_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
   boost::mutex req_mutex_, channels_mutex_, id_mutex_, pend_timeout_mutex_,
-      channels_ids_mutex_;
+      channels_ids_mutex_, timings_mutex_;
   boost::uint32_t current_request_id_, current_channel_id_;
   std::map<std::string, Channel*> channels_;
   std::map<boost::uint32_t, PendingReq> pending_req_;
@@ -102,6 +106,7 @@ class ChannelManagerImpl {
   ChannelManagerImpl& operator=(const ChannelManagerImpl&);
   std::map<boost::uint32_t, PendingTimeOut> pending_timeout_;
   std::set<boost::uint32_t> channels_ids_;
+  RpcStatsMap rpc_timings_;
   boost::condition_variable delete_channels_cond_;
   boost::uint16_t online_status_id_;
 };

@@ -42,32 +42,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace benchmark {
 
-template <typename T>
-void Stats<T>::Add(const T &value) {
-  values_.push_back(value);
-  dirty_ = true;
-  if (values_.size() == 1) {
-    min_ = value;
-    max_ = value;
-  } else {
-    if (value < min_)
-      min_ = value;
-    if (value > max_)
-      max_ = value;
-  }
-}
-
-template <typename T>
-T Stats<T>::Sum() {
-  if (dirty_) {
-    sum_ = 0;
-    for (size_t i = 0; i < values_.size(); ++i)
-      sum_ += values_[i];
-    dirty_ = false;
-  }
-  return sum_;
-}
-
 Operations::Operations(kad::KNode *node)
       : node_(node), cryobj_() {
   cryobj_.set_symm_algorithm(crypto::AES_256);
@@ -86,7 +60,7 @@ void Operations::TestFindAndPing(const std::vector<kad::KadId> &nodes,
   {
     printf("Finding %d nodes...\n", nodes.size());
 
-    Stats<boost::uint64_t> stats;
+    base::Stats<boost::uint64_t> stats;
     boost::shared_ptr<CallbackData> data(new CallbackData());
     boost::mutex::scoped_lock lock(data->mutex);
     for (size_t i = 0; i < nodes.size(); ++i) {
@@ -101,19 +75,19 @@ void Operations::TestFindAndPing(const std::vector<kad::KadId> &nodes,
       contacts.push_back(ctc);
     }
 
-    printf("Done: total %.2fs, min/avg/max %.2f/%.2f/%.2fs\n",
+    printf("Done: total %.2f s, min/avg/max %.2f/%.2f/%.2f s\n",
             stats.Sum() / 1000.0,
             stats.Min() / 1000.0,
-            stats.Average() / 1000.0,
+            stats.Mean() / 1000.0,
             stats.Max() / 1000.0);
   }
   if (contacts.size() > 0) {
     printf("Pinging %d contacts, %d iterations...\n",
            contacts.size(), iterations);
 
-    Stats<boost::uint64_t> stats;
+    base::Stats<boost::uint64_t> stats;
     for (size_t i = 0; i < contacts.size(); ++i) {
-      Stats<boost::uint64_t> it_stats;
+      base::Stats<boost::uint64_t> it_stats;
       boost::shared_ptr<CallbackData> data(new CallbackData());
       boost::mutex::scoped_lock lock(data->mutex);
       for (int j = 0; j < iterations; ++j) {
@@ -124,19 +98,19 @@ void Operations::TestFindAndPing(const std::vector<kad::KadId> &nodes,
           data->condition.wait(lock);
         it_stats.Add(base::get_epoch_milliseconds() - t);
       }
-      stats.Add(it_stats.Average());
+      stats.Add(it_stats.Mean());
       printf(" Pinged contact %d, %02d/%02d times "
-             "(total %.2fs, min/avg/max %.2f/%.2f/%.2fs)\n", i + 1,
+             "(total %.2f s, min/avg/max %.2f/%.2f/%.2f s)\n", i + 1,
              data->succeeded_count, data->returned_count,
              it_stats.Sum() / 1000.0,
              it_stats.Min() / 1000.0,
-             it_stats.Average() / 1000.0,
+             it_stats.Mean() / 1000.0,
              it_stats.Max() / 1000.0);
     }
 
-    printf("Done: min/avg/max %.2f/%.2f/%.2fs\n",
+    printf("Done: min/avg/max %.2f/%.2f/%.2f s\n",
             stats.Min() / 1000.0,
-            stats.Average() / 1000.0,
+            stats.Mean() / 1000.0,
             stats.Max() / 1000.0);
   } else {
     printf("No contacts for nodes found.\n");
@@ -169,9 +143,9 @@ void Operations::TestStoreAndFind(const std::vector<kad::KadId> &nodes,
            size.c_str(), nodes.size(), iterations);
 
 
-    Stats<boost::uint64_t> store_stats;
+    base::Stats<boost::uint64_t> store_stats;
     for (size_t i = 0; i < nodes.size(); ++i) {
-      Stats<boost::uint64_t> it_stats;
+      base::Stats<boost::uint64_t> it_stats;
       boost::shared_ptr<CallbackData> data(new CallbackData());
       boost::mutex::scoped_lock lock(data->mutex);
       for (int j = 0; j < iterations; ++j) {
@@ -207,27 +181,27 @@ void Operations::TestStoreAndFind(const std::vector<kad::KadId> &nodes,
           data->condition.wait(lock);
         it_stats.Add(base::get_epoch_milliseconds() - t);
       }
-      store_stats.Add(it_stats.Average());
+      store_stats.Add(it_stats.Mean());
       printf(" Stored close to %d, %02d/%02d times "
-             "(total %.2fs, min/avg/max %.2f/%.2f/%.2fs)\n", i + 1,
+             "(total %.2f s, min/avg/max %.2f/%.2f/%.2f s)\n", i + 1,
              data->succeeded_count, data->returned_count,
              it_stats.Sum() / 1000.0,
              it_stats.Min() / 1000.0,
-             it_stats.Average() / 1000.0,
+             it_stats.Mean() / 1000.0,
              it_stats.Max() / 1000.0);
     }
 
-    printf("Done: min/avg/max %.2f/%.2f/%.2fs\n",
+    printf("Done: min/avg/max %.2f/%.2f/%.2f s\n",
            store_stats.Min() / 1000.0,
-           store_stats.Average() / 1000.0,
+           store_stats.Mean() / 1000.0,
            store_stats.Max() / 1000.0);
 
     printf("Loading %s value from %d closest nodes, %d iterations...\n",
            size.c_str(), nodes.size(), iterations);
 
-    Stats<boost::uint64_t> load_stats;
+    base::Stats<boost::uint64_t> load_stats;
     for (size_t i = 0; i < nodes.size(); ++i) {
-      Stats<boost::uint64_t> it_stats;
+      base::Stats<boost::uint64_t> it_stats;
       boost::shared_ptr<CallbackData> data(new CallbackData());
       boost::mutex::scoped_lock lock(data->mutex);
       for (int j = 0; j < iterations; ++j) {
@@ -240,19 +214,19 @@ void Operations::TestStoreAndFind(const std::vector<kad::KadId> &nodes,
           data->condition.wait(lock);
         it_stats.Add(base::get_epoch_milliseconds() - t);
       }
-      load_stats.Add(it_stats.Average());
+      load_stats.Add(it_stats.Mean());
       printf(" Loaded from %d, %02d/%02d times "
-             "(total %.2fs, min/avg/max %.2f/%.2f/%.2fs)\n", i + 1,
+             "(total %.2f s, min/avg/max %.2f/%.2f/%.2f s)\n", i + 1,
              data->succeeded_count, data->returned_count,
              it_stats.Sum() / 1000.0,
              it_stats.Min() / 1000.0,
-             it_stats.Average() / 1000.0,
+             it_stats.Mean() / 1000.0,
              it_stats.Max() / 1000.0);
     }
 
-    printf("Done: min/avg/max %.2f/%.2f/%.2fs\n",
+    printf("Done: min/avg/max %.2f/%.2f/%.2f s\n",
            load_stats.Min() / 1000.0,
-           load_stats.Average() / 1000.0,
+           load_stats.Mean() / 1000.0,
            load_stats.Max() / 1000.0);
   }
 }
@@ -318,6 +292,21 @@ kad::KadId Operations::GetModId(int iteration) {
     --bits;
   }
   return id ^ kad::KadId(iteration);
+}
+
+void Operations::PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
+  printf("Calls  RPC Name                                            "
+         "min/avg/max\n");
+  for (rpcprotocol::RpcStatsMap::const_iterator it = rpc_timings.begin();
+       it != rpc_timings.end();
+       ++it) {
+    printf("%5llux %-50s  %.2f/%.2f/%.2f s\n",
+           it->second.Size(),
+           it->first.c_str(),
+           it->second.Min() / 1000.0,
+           it->second.Mean() / 1000.0,
+           it->second.Max() / 1000.0);
+  }
 }
 
 }  // namespace benchmark

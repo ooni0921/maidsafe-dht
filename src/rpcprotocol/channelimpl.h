@@ -38,11 +38,11 @@ namespace rpcprotocol {
 
 class ControllerImpl {
  public:
-  ControllerImpl() : timeout_(kRpcTimeout), rtt_(0.0), failure_(""),
-      req_id_(0), trans_id_(0) {}
+  ControllerImpl() : timeout_(kRpcTimeout), time_sent_(0), time_received_(0),
+      rtt_(0.0), failure_(), req_id_(0), trans_id_(0), service_(), method_() {}
   void SetFailed(const std::string &failure) { failure_ = failure; }
   void Reset();
-  bool Failed() const;
+  bool Failed() const { return !failure_.empty(); }
   std::string ErrorText() const { return failure_; }
   void StartCancel() {}
   bool IsCanceled() const { return false; }
@@ -53,6 +53,14 @@ class ControllerImpl {
   }
   // returns timeout in milliseconds
   boost::uint64_t timeout() const { return timeout_; }
+  // returns time between sending and receiving the RPC in milliseconds
+  boost::uint64_t duration() const {
+    return time_sent_ < time_received_ ? time_received_ - time_sent_ : 0;
+  }
+  // set sending time
+  void start_rpc_timer() { time_sent_ = base::get_epoch_milliseconds(); }
+  // set receiving time
+  void stop_rpc_timer() { time_received_ = base::get_epoch_milliseconds(); }
   // rtt in milliseconds
   void set_rtt(const float &rtt) { rtt_ = rtt; }
   float rtt() const { return rtt_; }
@@ -60,12 +68,24 @@ class ControllerImpl {
   boost::int16_t trans_id() const { return trans_id_; }
   void set_req_id(const boost::uint32_t &id) { req_id_ = id; }
   boost::uint32_t req_id() const { return req_id_; }
+  // Set additional information for the processed message.
+  void set_message_info(const std::string &service, const std::string &method) {
+    service_ = service;
+    method_ = method;
+  }
+  // Get information for the processed message, if stored.
+  void message_info(std::string *service, std::string *method) const {
+    *service = service_;
+    *method = method_;
+  }
  private:
   boost::uint64_t timeout_;
+  boost::uint64_t time_sent_, time_received_;
   float rtt_;
   std::string failure_;
   boost::uint32_t req_id_;
   boost::int16_t trans_id_;
+  std::string service_, method_;
 };
 
 class ChannelImpl {

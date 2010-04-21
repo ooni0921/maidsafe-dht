@@ -861,4 +861,17 @@ TEST(RpcControllerTest, BEH_RPC_RpcController) {
   ASSERT_FALSE(controller.Failed());
   ASSERT_TRUE(controller.ErrorText().empty());
   ASSERT_EQ(0, controller.req_id());
+  ASSERT_EQ(0, controller.duration());
+  controller.start_rpc_timer();
+  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  controller.stop_rpc_timer();
+  ASSERT_LE(10, controller.duration());
+  std::string service, method;
+  controller.message_info(&service, &method);
+  ASSERT_TRUE(service.empty());
+  ASSERT_TRUE(method.empty());
+  controller.set_message_info("abc", "xyz");
+  controller.message_info(&service, &method);
+  ASSERT_EQ("abc", service);
+  ASSERT_EQ("xyz", method);
 }

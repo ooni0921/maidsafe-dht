@@ -313,7 +313,8 @@ int main(int argc, char **argv) {
     node.Leave();
     trans_handler.Stop(trans_id);
     chmanager.Stop();
-    printf("\nNode stopped successfully.\n");
+    printf("\nNode stopped successfully.\n\n");
+    benchmark::Operations::PrintRpcTimings(chmanager.RpcTimings());
   }
   catch(const std::exception &e) {
     printf("Error: %s\n", e.what());

@@ -367,7 +367,7 @@ int main(int argc, char **argv) {
     }
 
     if (!vm["noconsole"].as<bool>()) {
-      kaddemo::Commands cmds(&node, kad::K);
+      kaddemo::Commands cmds(&node, &chmanager, kad::K);
       cmds.Run();
     } else {
       printf("=====================================\n");

@@ -49,6 +49,64 @@ class Contact;
 
 namespace base {
 
+/**
+* @class Stats
+* A simple class to determine statistical properties of a data set, computed
+* without storing the values. Data type must be numerical.
+*/
+template <typename T>
+class Stats {
+ public:
+  Stats() : size_(0), min_(0), max_(0), sum_(0) {}
+  /**
+  * Add a datum to the data set.
+  * @param value The data value.
+  */
+  void Add(const T &value) {
+    sum_ += value;
+    ++size_;
+    if (size_ == 1) {
+      min_ = value;
+      max_ = value;
+    } else {
+      if (value < min_)
+        min_ = value;
+      if (value > max_)
+        max_ = value;
+    }
+  }
+  /**
+  * Get the size of the data set.
+  * @return number of elements
+  */
+  boost::uint64_t Size() const { return size_; }
+  /**
+  * Get the smallest value in the set.
+  * @return minimum
+  */
+  T Min() const { return min_; }
+  /**
+  * Get the biggest value in the set.
+  * @return maximum
+  */
+  T Max() const { return max_; }
+  /**
+  * Get the sum of values in the set.
+  * @return sum
+  */
+  T Sum() const { return sum_; }
+  /**
+  * Get the average of values in the set.
+  * @return arithmetic mean
+  */
+  T Mean() const { return size_ > 0 ? sum_ / size_ : 0; }
+ private:
+  boost::uint64_t size_;
+  T min_;
+  T max_;
+  T sum_;
+};
+
 // Remove leading and trailing slashes from path unless path is "/".
 std::string TidyPath(const std::string &original_path_);
 

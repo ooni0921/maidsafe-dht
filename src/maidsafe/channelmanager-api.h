@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 18
+#if MAIDSAFE_DHT_VERSION < 19
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
@@ -48,6 +48,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // RPC
 namespace rpcprotocol {
 
+typedef std::map<std::string, base::Stats<boost::uint64_t> > RpcStatsMap;
 class RpcMessage;
 
 // Ensure that a one-to-one relationship is maintained between channelmanager &
@@ -162,6 +163,15 @@ class ChannelManager {
   * @param id pointer where the id created is returned
   */
   void RemoveChannelId(const boost::uint32_t &id);
+  /**
+  * Retrieve statistics about the duration of each RPC.
+  * @return A map of RPC name and statistics pairs.
+  */
+  RpcStatsMap RpcTimings();
+  /**
+  * Remove all entries from the RPC timings map.
+  */
+  void ClearRpcTimings();
  private:
   boost::shared_ptr<ChannelManagerImpl> pimpl_;
 };

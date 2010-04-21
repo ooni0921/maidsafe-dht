@@ -34,9 +34,46 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/utils.h"
 
 
-namespace {
+TEST(UtilsTest, BEH_BASE_Stats) {
+  {
+    base::Stats<int> stats;
+    EXPECT_EQ(0, stats.Size());
+    EXPECT_EQ(0, stats.Min());
+    EXPECT_EQ(0, stats.Max());
+    EXPECT_EQ(0, stats.Sum());
+    EXPECT_EQ(0, stats.Mean());
 
-}  // namespace
+    stats.Add(1);
+    stats.Add(2);
+    stats.Add(4);
+    stats.Add(5);
+
+    EXPECT_EQ(4, stats.Size());
+    EXPECT_EQ(1, stats.Min());
+    EXPECT_EQ(5, stats.Max());
+    EXPECT_EQ(12, stats.Sum());
+    EXPECT_EQ(3, stats.Mean());
+  }
+  {
+    base::Stats<float> stats;
+    EXPECT_EQ(0, stats.Size());
+    EXPECT_FLOAT_EQ(0.0, stats.Min());
+    EXPECT_FLOAT_EQ(0.0, stats.Max());
+    EXPECT_FLOAT_EQ(0.0, stats.Sum());
+    EXPECT_FLOAT_EQ(0.0, stats.Mean());
+
+    stats.Add(1.1);
+    stats.Add(2.2);
+    stats.Add(3.3);
+    stats.Add(4.4);
+
+    EXPECT_EQ(4, stats.Size());
+    EXPECT_FLOAT_EQ(1.1, stats.Min());
+    EXPECT_FLOAT_EQ(4.4, stats.Max());
+    EXPECT_FLOAT_EQ(11.0, stats.Sum());
+    EXPECT_FLOAT_EQ(2.75, stats.Mean());
+  }
+}
 
 TEST(UtilsTest, BEH_BASE_TidyPath) {
   const std::string dirty_path_ = "/dirty/dirty/boy";
