@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_CHANNELMANAGER_API_H_
 #define MAIDSAFE_CHANNELMANAGER_API_H_
 
+#include <map>
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
 

@@ -41,7 +41,7 @@ std::string client_node_id() {
 }
 
 std::string vault_random_id() {
-  KadId id(0, ID_BITS_SIZE);
+  KadId id(RANDOM_ID);
   return id.ToStringDecoded();
 }
 }  // namespace kad
