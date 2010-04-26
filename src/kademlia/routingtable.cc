@@ -164,7 +164,7 @@ int RoutingTable::AddContact(const Contact &new_contact) {
     exitcode = k_buckets_[index]->AddContact(new_contact);
   switch (exitcode) {
     case SUCCEED: return 0;
-    case FULL: if (!k_buckets_[index]->KeyInRange(holder_id_)) {
+    case FULL: if (kad::K > 2 && !k_buckets_[index]->KeyInRange(holder_id_)) {
                  if (index == brother_bucket_of_holder_) {
                    // Force a peer always accept peers belonging to the brother
                    // bucket of the peer in case they are amongst k closet

@@ -160,6 +160,11 @@ class TestKnodes : public testing::Test {
 };
 
 TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
+  if (kad::K <= 2) {
+    SUCCEED();
+    return;
+  }
+
   std::string kconfig_file = datastore_dir_[0] + "/.kadconfig";
   std::string id("7");
   for (int i = 1; i < kKeySizeBytes*2; ++i)
@@ -245,6 +250,11 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
 }
 
 TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
+  if (kad::K <= 2) {
+    SUCCEED();
+    return;
+  }
+
   std::string kconfig_file = datastore_dir_[0] + "/.kadconfig";
   std::string kconfig_file1 = datastore_dir_[1] + "/.kadconfig";
   std::string id("7"), id2("9");

@@ -107,6 +107,11 @@ TEST_F(TestKbucket, BEH_KAD_AddAndGetContact) {
 }
 
 TEST_F(TestKbucket, BEH_KAD_GetContacts) {
+  if (kad::K <= 2) {
+    SUCCEED();
+    return;
+  }
+
   KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
@@ -161,6 +166,11 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
 }
 
 TEST_F(TestKbucket, BEH_KAD_DeleteContact) {
+  if (kad::K <= 3) {
+    SUCCEED();
+    return;
+  }
+
   KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)
@@ -241,6 +251,11 @@ TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
 }
 
 TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
+  if (kad::K <= 3) {
+    SUCCEED();
+    return;
+  }
+
   KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)

@@ -163,6 +163,11 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Add_Contact) {
 }
 
 TEST_F(TestRoutingTable, BEH_KAD_SplitKBucket) {
+  if (kad::K <= 2) {  // because of force-k
+    SUCCEED();
+    return;
+  }
+
   kad::KadId holder_id(kad::RANDOM_ID);
   kad::RoutingTable routingtable(holder_id);
   boost::uint32_t id[kad::K+1];
@@ -196,6 +201,11 @@ TEST_F(TestRoutingTable, BEH_KAD_SplitKBucket) {
 }
 
 TEST_F(TestRoutingTable, BEH_KAD_NoSplitKBucket) {
+  if (kad::K <= 2) {  // because of force-k
+    SUCCEED();
+    return;
+  }
+
   std::string enc_holder_id;
   for (boost::uint16_t i = 0; i < kad::kKeySizeBytes*2; ++i)
     enc_holder_id += "1";
@@ -298,7 +308,7 @@ TEST_F(TestRoutingTable, BEH_KAD_RefreshList_Touch) {
     ++port;
   }
   ids.clear();
-  for (boost::uint16_t i = 0; i < kad::K/2; ++i) {
+  for (boost::uint16_t i = 0; i < (kad::K < 2 ? 1 : kad::K/2); ++i) {
     std::string id = kad::random_kademlia_id(max_range4, max_range3);
     while (!TestInRange(id, max_range4, max_range3))
       id = kad::random_kademlia_id(max_range4, max_range3);
@@ -467,6 +477,11 @@ TEST_F(TestRoutingTable, BEH_KAD_ClearRoutingTable) {
 }
 
 TEST_F(TestRoutingTable, BEH_KAD_ForceK) {
+  if (kad::K <= 2) {
+    SUCCEED();
+    return;
+  }
+
   kad::KadId range1;
   kad::KadId range2 = kad::KadId::MaxIdUpToPower((kad::kKeySizeBytes*8)-3);
   kad::KadId range3 = kad::KadId::MaxIdUpToPower((kad::kKeySizeBytes*8)-2);
@@ -619,13 +634,16 @@ TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
     contacts[i] = contact;
     ASSERT_EQ(0, routingtable.AddContact(contact));
   }
-  ASSERT_EQ(2, routingtable.KbucketSize());
-  ASSERT_EQ(kad::K+1, routingtable.Size());
+  ASSERT_EQ(kad::K == 1 ? 1 : 2, routingtable.KbucketSize());
+  ASSERT_EQ(2*(kad::K/2)+1, routingtable.Size());
   contact_id = base::DecodeFromHex(contacts_id_first[0]);
   kad::Contact last_second(contact_id, ip, 8880+(kad::K/2)+2, ip,
     8880+(kad::K/2)+2);
   result = routingtable.GetLastSeenContact(1);
-  ASSERT_TRUE(last_second == result);
+  if (kad::K == 1)
+    ASSERT_TRUE(empty == result);
+  else
+    ASSERT_TRUE(last_second == result);
   result = routingtable.GetLastSeenContact(0);
   ASSERT_TRUE(last_first == result);
   result = routingtable.GetLastSeenContact(2);
@@ -633,6 +651,11 @@ TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
 }
 
 TEST_F(TestRoutingTable, BEH_KAD_GetKClosestContacts) {
+  if (kad::K <= 4) {
+    SUCCEED();
+    return;
+  }
+
   std::string holder_id_enc("7");
   for (boost::uint16_t i = 1; i < kad::kKeySizeBytes*2; ++i)
     holder_id_enc += "1";

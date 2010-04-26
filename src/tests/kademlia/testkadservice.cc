@@ -364,7 +364,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   // returned from the search.  Use one of these to search for later.
   std::string later_key;
   std::vector<std::string> rand_ids;
-  for (int i = 0; i < K/2; ++i) {
+  for (int i = 0; i < (K > 1 ? K/2 : 1); ++i) {
     bool unique(false);
     std::string hex_id;
     while (!unique) {
@@ -396,7 +396,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
     EXPECT_TRUE(routingtable_->GetContact(kad::KadId(id, false), &contactback));
     EXPECT_EQ(id, contactback.node_id().ToStringDecoded());
   }
-  EXPECT_EQ((K/2) + 1, routingtable_->Size());
+  EXPECT_EQ((K > 1 ? K/2 : 1) + 1, routingtable_->Size());
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   find_node_response.Clear();
@@ -404,7 +404,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
                      done2);
   EXPECT_TRUE(find_node_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_node_response.result());
-  EXPECT_EQ(K/2, find_node_response.closest_nodes_size());
+  EXPECT_EQ(K > 1 ? K/2 : 1, find_node_response.closest_nodes_size());
   EXPECT_EQ(0, find_node_response.values_size());
   EXPECT_FALSE(find_node_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_.ToStringDecoded(), find_node_response.node_id());
@@ -737,6 +737,7 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
 TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   // Set up details of 10 nodes and add 7 of these to the routing table.
   std::vector<Contact> contacts;
+  int rt(0);
   for (int i = 0; i < 10; ++i) {
     std::string character = boost::lexical_cast<std::string>(i);
     std::string hex_id, id;
@@ -746,17 +747,18 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
     std::string ip("127.0.0.6");
     boost::uint16_t port = 9000 + i;
     Contact contact(id, ip, port, ip, port);
-    if (i < 7)
-      ASSERT_EQ(0, routingtable_->AddContact(contact));
+    if (rt < 7 && rt == i && 0 == routingtable_->AddContact(contact))
+      ++rt;
     contacts.push_back(contact);
   }
-  ASSERT_EQ(7, routingtable_->Size());
+  printf("## rt = %d\n", rt);
+  ASSERT_EQ(rt, routingtable_->Size());
 
   // Check downlisting nodes we don't have returns failure
   rpcprotocol::Controller controller;
   DownlistRequest downlist_request;
   Contact ctc;
-  for (int i = 7; i < 10; ++i) {
+  for (int i = rt; i < 10; ++i) {
     std::string dead_node;
     ASSERT_FALSE(routingtable_->GetContact(contacts[i].node_id(), &ctc));
     if (contacts[i].SerialiseToString(&dead_node))
@@ -772,13 +774,13 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   // Give the function time to allow any ping rpcs to timeout (they shouldn't
   // be called though)
   boost::this_thread::sleep(boost::posix_time::seconds(2));
-  EXPECT_EQ(8, routingtable_->Size());
+  EXPECT_EQ(rt + 1, routingtable_->Size());
 
   // Check downlist works for one we have.
   downlist_request.clear_downlist();
   std::string dead_node;
-  ASSERT_TRUE(routingtable_->GetContact(contacts[5].node_id(), &ctc));
-  if (contacts[5].SerialiseToString(&dead_node))
+  ASSERT_TRUE(routingtable_->GetContact(contacts[rt / 2].node_id(), &ctc));
+  if (contacts[rt / 2].SerialiseToString(&dead_node))
     downlist_request.add_downlist(dead_node);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -786,17 +788,18 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   service_->Downlist(&controller, &downlist_request, &downlist_response, done2);
   int timeout = 8000;  // milliseconds
   int count = 0;
-  while ((routingtable_->Size() > 6) && (count < timeout)) {
+  while ((routingtable_->Size() >= rt) && (count < timeout)) {
     count += 50;
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
-  EXPECT_EQ(7, routingtable_->Size());
+  EXPECT_EQ(rt, routingtable_->Size());
   Contact testcontact;
-  EXPECT_FALSE(routingtable_->GetContact(contacts[5].node_id(), &testcontact));
+  EXPECT_FALSE(routingtable_->GetContact(contacts[rt / 2].node_id(),
+                                         &testcontact));
 
   // Check downlist works for one we have and one we don't.
   downlist_request.clear_downlist();
-  for (int i = 6; i < 8; ++i) {
+  for (int i = rt - 1; i <= rt; ++i) {
     std::string dead_node;
     if (contacts[i].SerialiseToString(&dead_node))
       downlist_request.add_downlist(dead_node);
@@ -806,16 +809,17 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   downlist_response.Clear();
   service_->Downlist(&controller, &downlist_request, &downlist_response, done3);
   count = 0;
-  while ((routingtable_->Size() > 5) && (count < timeout)) {
+  while ((routingtable_->Size() >= rt - 1) && (count < timeout)) {
     count += 50;
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
-  EXPECT_EQ(6, routingtable_->Size());
-  EXPECT_FALSE(routingtable_->GetContact(contacts[6].node_id(), &testcontact));
+  EXPECT_EQ(rt - 1, routingtable_->Size());
+  EXPECT_FALSE(routingtable_->GetContact(contacts[rt - 1].node_id(),
+                                         &testcontact));
 
   // Check downlist with multiple valid nodes
   downlist_request.clear_downlist();
-  for (int i = 2; i < 5; ++i) {
+  for (int i = 2; i <= rt - 1; ++i) {
     std::string dead_node;
     if (contacts[i].SerialiseToString(&dead_node))
       downlist_request.add_downlist(dead_node);
@@ -830,7 +834,7 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
   EXPECT_EQ(3, routingtable_->Size());
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < rt - 1; ++i) {
     if (i > 1)
       EXPECT_FALSE(routingtable_->GetContact(contacts[i].node_id(),
                    &testcontact));

@@ -55,8 +55,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace fs = boost::filesystem;
 
-const boost::int16_t kNetworkSize = 17;
-const boost::int16_t kTestK = 16;
+const boost::int16_t kNetworkSize = kad::K + 1;
+const boost::int16_t kTestK = kad::K;
 
 inline void create_rsakeys(std::string *pub_key, std::string *priv_key) {
   crypto::RsaKeyPair kp;
