@@ -751,7 +751,6 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
       ++rt;
     contacts.push_back(contact);
   }
-  printf("## rt = %d\n", rt);
   ASSERT_EQ(rt, routingtable_->Size());
 
   // Check downlisting nodes we don't have returns failure
