@@ -435,19 +435,12 @@ boost::int32_t random_32bit_integer() {
   boost::int32_t result(0);
   bool success = false;
   while (!success) {
-    try {
-      CryptoPP::AutoSeededRandomPool rng;
-      CryptoPP::Integer rand_num(rng, 32);
-      if (!rand_num.IsConvertableToLong()) {
-        result = std::numeric_limits<boost::int32_t>::max() +
-        static_cast<boost::int32_t>(rand_num.AbsoluteValue().ConvertToLong());
-      } else {
-        result =  static_cast<boost::int32_t>(
-            rand_num.AbsoluteValue().ConvertToLong());
-      }
+    CryptoPP::AutoSeededRandomPool rng;
+    CryptoPP::Integer rand_num(rng, 32);
+    if (rand_num.IsConvertableToLong()) {
+      result =  static_cast<boost::int32_t>(
+          rand_num.AbsoluteValue().ConvertToLong());
       success = true;
-    }
-    catch(...) {
     }
   }
   return result;
@@ -457,19 +450,12 @@ boost::uint32_t random_32bit_uinteger() {
   boost::uint32_t result(0);
   bool success = false;
   while (!success) {
-    try {
-      CryptoPP::AutoSeededRandomPool rng;
-      CryptoPP::Integer rand_num(rng, 32);
-      if (!rand_num.IsConvertableToLong()) {
-        result = std::numeric_limits<boost::uint32_t>::max() +
-        static_cast<boost::uint32_t>(rand_num.AbsoluteValue().ConvertToLong());
-      } else {
-        result = static_cast<boost::uint32_t>(
-            rand_num.AbsoluteValue().ConvertToLong());
-      }
+    CryptoPP::AutoSeededRandomPool rng;
+    CryptoPP::Integer rand_num(rng, 32);
+    if (rand_num.IsConvertableToLong()) {
+      result = static_cast<boost::uint32_t>(
+          rand_num.AbsoluteValue().ConvertToLong());
       success = true;
-    }
-    catch(...) {
     }
   }
   return result;
