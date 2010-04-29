@@ -63,7 +63,7 @@ TransportUDT::TransportUDT()
       ping_rend_cond_(), recv_cond_(), msg_hdl_cond_(), ping_rendezvous_(false),
       directly_connected_(false), accepted_connections_(0), msgs_sent_(0),
       last_id_(0), data_arrived_(), ips_from_connections_(), send_notifier_(),
-      send_sockets_(), transport_type_(Transport::kUdt), transport_id_(0) {
+      send_sockets_(), transport_type_(kUdt), transport_id_(0) {
   UDT::startup();
 }
 

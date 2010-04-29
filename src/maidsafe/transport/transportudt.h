@@ -39,7 +39,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/thread.hpp>
-#include <maidsafe/transport/transporthandler-api.h>
 #include <maidsafe/transport/transport-api.h>
 #include <list>
 #include <map>
@@ -208,7 +207,7 @@ class TransportUDT : public Transport {
   std::map<boost::uint32_t, struct sockaddr> ips_from_connections_;
   boost::function<void(const boost::uint32_t&, const bool&)> send_notifier_;
   std::map<boost::uint32_t, UdtSocket> send_sockets_;
-  Transport::TransportType transport_type_;
+  TransportType transport_type_;
   boost::int16_t transport_id_;
 };
 

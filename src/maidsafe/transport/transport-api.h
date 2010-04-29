@@ -53,7 +53,6 @@ namespace transport {
 class Transport {
  public:
   virtual ~Transport() {}
-  enum TransportType { kUdt, kTcp, kOther };
   virtual TransportType transport_type() = 0;
   virtual boost::int16_t transport_id() = 0;
   virtual void set_transport_id(const boost::int16_t &id) = 0;

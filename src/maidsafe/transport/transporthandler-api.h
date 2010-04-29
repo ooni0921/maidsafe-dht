@@ -33,23 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_TRANSPORT_TRANSPORTHANDLER_API_H_
 #define MAIDSAFE_TRANSPORT_TRANSPORTHANDLER_API_H_
 
-#if defined (__WIN32__) || defined (__MINGW__)
-#include <winsock2.h>
-#include <iphlpapi.h>
-#include <ws2tcpip.h>
-#else
-#include <unistd.h>
-#include <netdb.h>
-#include <net/if.h>  // must be before ifaddrs.h
-#include <sys/ioctl.h>
-#include <sys/socket.h>  // included in apple's net/route.h
-#include <sys/types.h>  // included in apple's net/route.h
-#include <ifaddrs.h>  // used for implementation of LocalIPPort()
-#endif
-
-#include <boost/function.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
-#include <maidsafe/transport/transport-api.h>
+#include <boost/cstdint.hpp>
+#include <boost/function.hpp>
 #include <string>
 #include <map>
 #include <utility>
@@ -61,7 +47,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
+namespace rpcprotocol {
+class RpcMessage;
+}  // namespace rpcprotocol
+
+
 namespace transport {
+
+class Transport;
 
 /**
 * @class TransportHandler
@@ -121,8 +114,7 @@ class TransportHandler {
   *  @return list of all transport ids where the transport type matches
   *  transport_type in FIFO order
   */
-  std::list<boost::int16_t> GetTransportIDByType(
-      Transport::TransportType transport_type);
+  std::list<boost::int16_t> GetTransportIDByType(TransportType transport_type);
 
   /** Declares whether the Transport corrosponding to transport_object is already registered
   *  @param transport_object - pointer to transport to be checked

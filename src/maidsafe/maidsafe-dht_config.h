@@ -36,10 +36,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_MAIDSAFE_DHT_CONFIG_H_
 #define MAIDSAFE_MAIDSAFE_DHT_CONFIG_H_
 
-#include <boost/cstdint.hpp>
-#include <boost/function.hpp>
-#include <string>
-
 
 /*******************************************************************************
  * maidsafe-dht Version                                                        *
@@ -48,27 +44,50 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 /*******************************************************************************
- * Platform Detection                                                          *
+ * Platform detection and platform-specific includes                           *
  ******************************************************************************/
-#if !defined MAIDSAFE_POSIX && !defined MAIDSAFE_WIN32 && \
-    !defined MAIDSAFE_APPLE
 #if defined(linux) || defined(__linux) || defined(__linux__) || \
   defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || \
   defined(__DragonFly__) || defined(sun) || defined(__sun) || \
   defined(__sgi) || defined(__hpux) || defined(__BEOS__) || \
   defined(__IBMCPP__) || defined(_AIX) || defined(__QNXNTO__) || \
   defined(unix) || defined(_XOPEN_SOURCE) || defined(_POSIX_SOURCE)
+#ifndef MAIDSAFE_POSIX
 #define MAIDSAFE_POSIX
+#endif
 
 #elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || \
-  defined(_WIN32_WINNT) || defined(NTDDI_VERSION) || defined(_WIN32_WINDOWS)
+  defined(_WIN32_WINNT) || defined(NTDDI_VERSION) || \
+  defined(_WIN32_WINDOWS) || defined(__MINGW__)
+#ifndef MAIDSAFE_WIN32
 #define MAIDSAFE_WIN32
+#endif
+#include <winsock2.h>
+#include <iphlpapi.h>
+#include <ws2tcpip.h>
 
 #elif defined(macintosh) || defined(__APPLE__) || defined(__APPLE_CC__)
+#ifndef MAIDSAFE_APPLE
 #define MAIDSAFE_APPLE
 #endif
-
 #endif
+
+
+#ifndef MAIDSAFE_WIN32
+#include <unistd.h>
+#include <netdb.h>
+#include <net/if.h>  // must be before ifaddrs.h
+#include <sys/ioctl.h>
+#include <sys/socket.h>  // included in apple's net/route.h
+#include <sys/types.h>  // included in apple's net/route.h
+#include <ifaddrs.h>  // used for implementation of LocalIPPort()
+#endif
+
+#include <boost/cstdint.hpp>
+#include <boost/function.hpp>
+#include <string>
+
+
 
 /*******************************************************************************
  * Kademlia Layer                                                              *
@@ -166,5 +185,15 @@ const std::string kTimeOut("T");
 const std::string kCancelled("C");
 
 }  // namespace rpcprotocol
+
+
+/*******************************************************************************
+ * Transport Layer                                                             *
+ ******************************************************************************/
+namespace transport {
+
+enum TransportType { kUdt, kTcp, kOther };
+
+}  // namespace transport
 
 #endif  // MAIDSAFE_MAIDSAFE_DHT_CONFIG_H_

@@ -129,7 +129,7 @@ bool TransportHandler::AllAreStopped() {
 }
 
 std::list<boost::int16_t> TransportHandler::GetTransportIDByType(
-    Transport::TransportType transport_type) {
+    TransportType transport_type) {
   std::list<boost::int16_t> result;
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   for (it = transports_.begin(); it != transports_.end(); ++it) {

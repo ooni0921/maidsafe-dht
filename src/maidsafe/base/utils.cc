@@ -26,20 +26,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "maidsafe/base/utils.h"
-
-#if defined (MAIDSAFE_WIN32) || defined (__MINGW__)
-#include <winsock2.h>
-#include <iphlpapi.h>
-#else
-#include <unistd.h>
-#include <netdb.h>
-#include <net/if.h>  // must be before ifaddrs.h
-#include <sys/ioctl.h>
-#include <sys/socket.h>  // included in apple's net/route.h
-#include <sys/types.h>  // included in apple's net/route.h
-#include <ifaddrs.h>  // used for implementation of LocalIPPort()
-#endif
-
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 #include <ctype.h>

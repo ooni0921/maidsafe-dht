@@ -170,7 +170,7 @@ int ChannelManagerImpl::Start() {
     return 1;
   }
   std::list<boost::int16_t> udt_transports =
-      transport_handler_->GetTransportIDByType(transport::Transport::kUdt);
+      transport_handler_->GetTransportIDByType(transport::kUdt);
 
   if (udt_transports.empty())
     return 1;
