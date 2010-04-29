@@ -1,7 +1,7 @@
 #! /bin/sh
 echo  "checking please wait (3mins) ....."
- find ../../$1 -name "*.cc" -exec python ../../cpplint.py {} \;   > code_style_errors 2>&1
- find ../../$1 -name "*.h" -exec python ../../cpplint.py {} \;   >> code_style_errors 2>&1
+ find ../../src/$1 -name "*.cc" -exec python ./cpplint.py {} \;   > code_style_errors 2>&1
+ find ../../src$1 -name "*.h" -exec python ./cpplint.py {} \;   >> code_style_errors 2>&1
 
 for k in ../../src/protobuf/ Done Total ../../src/tests/ *\.pb\.* cryptopp udt libupnp
 do
