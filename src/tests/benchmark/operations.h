@@ -34,9 +34,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 #include <string>
 #include <vector>
-#include "maidsafe/crypto.h"
+#include "base/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/maidsafe-dht_config.h"
+
 
 namespace kad {
 class KNode;
@@ -66,8 +66,8 @@ class Operations {
  private:
   void PingCallback(const std::string &result,
                     boost::shared_ptr<CallbackData> data);
-  void FindNodeCallback(const std::string &result,
-                        boost::shared_ptr<CallbackData> data);
+  void GetNodeContactDetailsCallback(const std::string &result,
+                                     boost::shared_ptr<CallbackData> data);
   void StoreCallback(const std::string &result,
                      boost::shared_ptr<CallbackData> data);
   void FindValueCallback(const std::string &result,

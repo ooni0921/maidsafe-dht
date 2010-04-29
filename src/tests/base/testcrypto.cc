@@ -30,7 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
 #include <cstdlib>
-#include "maidsafe/crypto.h"
+#include "base/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 // Obfuscation tests
 TEST(CryptoTest, BEH_BASE_ObfuscatDiffSizes) {
@@ -83,21 +83,21 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
   crypto::Crypto ct;
   // input files
   std::string input1("input1");
-  input1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  input1 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   boost::filesystem::fstream inputfile1(input1.c_str(),
                           std::ios::out | std::ios::trunc | std::ios::binary);
   inputfile1 << "abc";
   inputfile1.close();
   std::string input2("input2");
-  input2 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  input2 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   boost::filesystem::fstream inputfile2(input2.c_str(),
                           std::ios::out | std::ios::trunc | std::ios::binary);
   inputfile2 << "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
   inputfile2.close();
   std::string input3("input3");
-  input3 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  input3 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   boost::filesystem::fstream inputfile3(input3.c_str(),
                           std::ios::out | std::ios::trunc | std::ios::binary);
@@ -117,7 +117,7 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
   ASSERT_NE(ct.Hash(input1, "", crypto::FILE_STRING, true), "") <<
             "Output data empty";
   std::string result("result");
-  result += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   ASSERT_EQ(result, ct.Hash(random_string,
                             result, crypto::STRING_FILE, true));
@@ -297,7 +297,7 @@ TEST(CryptoTest, FUNC_BASE_SymmEncrypt) {
   std::string data = base::RandomString(10*1024*1024);
   // input file
   std::string input1("input1");
-  input1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  input1 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   boost::filesystem::fstream inputfile(input1.c_str(),
                          std::ios::out | std::ios::trunc | std::ios::binary);
@@ -306,16 +306,16 @@ TEST(CryptoTest, FUNC_BASE_SymmEncrypt) {
 
   boost::filesystem::ifstream result_file;
   std::string result1("result1");
-  result1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result1 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result2("result2");
-  result2 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result2 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result3("result3");
-  result3 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result3 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result4("result4");
-  result4 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result4 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
 
 //  ASSERT_EQ(ct.SymmEncrypt(data, "", crypto::STRING_STRING, key), "") <<
@@ -370,19 +370,19 @@ TEST(CryptoTest, BEH_BASE_AsymEncrypt) {
   std::string data = base::RandomString(100);
   // input file
   std::string input1("input1");
-  input1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  input1 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result1("result1");
-  result1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result1 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result2("result2");
-  result2 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result2 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result3("result3");
-  result3 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result3 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result4("result4");
-  result4 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result4 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   boost::filesystem::fstream inputfile(input1.c_str(),
                          std::ios::out | std::ios::trunc | std::ios::binary);
@@ -460,7 +460,7 @@ TEST(CryptoTest, BEH_BASE_AsymSign) {
   rsakp.GenerateKeys(4096);
   // input file
   std::string input1("input1");
-  input1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  input1 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   boost::filesystem::fstream inputfile(input1.c_str(),
                          std::ios::out | std::ios::trunc | std::ios::binary);
@@ -498,19 +498,19 @@ TEST(CryptoTest, BEH_BASE_Compress) {
       "society of virtue and valour... a society of Silly Buggers.";
   // input file
   std::string input1("input1");
-  input1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  input1 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result1("result1");
-  result1 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result1 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result2("result2");
-  result2 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result2 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result3("result3");
-  result3 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result3 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   std::string result4("result4");
-  result4 += boost::lexical_cast<std::string>(base::random_32bit_uinteger()) +
+  result4 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
   boost::filesystem::fstream inputfile(input1.c_str(),
                          std::ios::out | std::ios::trunc | std::ios::binary);

@@ -30,16 +30,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/thread.hpp>
 #include <boost/lexical_cast.hpp>
 #include <iostream>  //  NOLINT
-#include "maidsafe/config.h"
+#include "base/log.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/demo/commands.h"
 #include "protobuf/contact_info.pb.h"
 #include "protobuf/general_messages.pb.h"
-#include "maidsafe/transport-api.h"
-#include "maidsafe/transportudt.h"
-#include "maidsafe/transporthandler-api.h"
+#include "transport/transport-api.h"
+#include "transport/transportudt.h"
+#include "transport/transporthandler-api.h"
 
 namespace po = boost::program_options;
 
@@ -132,7 +133,7 @@ void ctrlc_handler(int b) {
 
 void printf_info(kad::ContactInfo info) {
   kad::Contact ctc(info);
-  printf("Node info: %s", ctc.ToString().c_str());
+  printf("Node info: %s", ctc.DebugString().c_str());
 }
 
 int main(int argc, char **argv) {
@@ -269,10 +270,10 @@ int main(int argc, char **argv) {
     // Starting transport on port
     port = vm["port"].as<boost::uint16_t>();
     transport::TransportHandler trans_handler;
-    boost::int16_t trans_id;
-    trans_handler.Register(new transport::TransportUDT, &trans_id);
+    boost::int16_t transport_id;
+    trans_handler.Register(new transport::TransportUDT, &transport_id);
     rpcprotocol::ChannelManager chmanager(&trans_handler);
-    kad::node_type type;
+    kad::NodeType type;
     if (vm["client"].as<bool>())
       type = kad::CLIENT;
     else
@@ -280,20 +281,20 @@ int main(int argc, char **argv) {
     kad::KNode node(&chmanager, &trans_handler, type, kad::K,
       kad::kAlpha, kad::kBeta, refresh_time, "", "", vm["port_fw"].as<bool>(),
       vm["upnp"].as<bool>());
-    node.SetTransID(trans_id);
+    node.set_transport_id(transport_id);
     if (!chmanager.RegisterNotifiersToTransport() ||
         !trans_handler.RegisterOnServerDown(boost::bind(
         &kad::KNode::HandleDeadRendezvousServer, &node, _1))) {
       return 1;
     }
-    if (0 != trans_handler.Start(port, trans_id) || 0!= chmanager.Start()) {
+    if (0 != trans_handler.Start(port, transport_id) || 0!= chmanager.Start()) {
       printf("Unable to start node on port %d\n", port);
       return 1;
     }
     // setting kadconfig file if it was not in the options
     if (kadconfigpath == "") {
       kadconfigpath = "KnodeInfo" + boost::lexical_cast<std::string>(
-         trans_handler.listening_port(trans_id));
+         trans_handler.listening_port(transport_id));
       boost::filesystem::create_directories(kadconfigpath);
       kadconfigpath += "/.kadconfig";
     }
@@ -306,26 +307,27 @@ int main(int argc, char **argv) {
           vm["bs_local_ip"].as<std::string>(),
           vm["bs_local_port"].as<boost::uint16_t>())) {
         printf("Unable to write kadconfig file to %s\n", kadconfigpath.c_str());
-        trans_handler.Stop(trans_id);
+        trans_handler.Stop(transport_id);
         chmanager.Stop();
         return 1;
       }
     }
 
     // Joining the node to the network
-    JoinCallback cb;
+    JoinCallback callback;
     if (first_node)
       node.Join(kadconfigpath, vm["externalip"].as<std::string>(),
           vm["externalport"].as<boost::uint16_t>(), boost::bind(
-          &JoinCallback::Callback, &cb, _1));
+          &JoinCallback::Callback, &callback, _1));
     else
-      node.Join(kadconfigpath, boost::bind(&JoinCallback::Callback, &cb, _1));
-    while (!cb.result_arrived())
+      node.Join(kadconfigpath, boost::bind(&JoinCallback::Callback, &callback,
+                _1));
+    while (!callback.result_arrived())
       boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     // Checking result of callback
-    if (!cb.success()) {
+    if (!callback.success()) {
       printf("Node failed to join the network.\n");
-      trans_handler.Stop(trans_id);
+      trans_handler.Stop(transport_id);
       chmanager.Stop();
       return 1;
     }
@@ -380,7 +382,7 @@ int main(int argc, char **argv) {
     }
     trans_handler.StopPingRendezvous();
     node.Leave();
-    trans_handler.Stop(trans_id);
+    trans_handler.Stop(transport_id);
     chmanager.Stop();
     printf("\nNode stopped successfully.\n");
   }

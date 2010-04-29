@@ -25,7 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/crypto.h"
+#include "base/crypto.h"
 #include <cryptopp/integer.h>
 #include <cryptopp/pwdbased.h>
 #include <cryptopp/sha.h>
@@ -37,9 +37,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cryptopp/modes.h>
 #include <cryptopp/rsa.h>
 #include <cryptopp/osrng.h>
-#include "maidsafe/config.h"
 #include "maidsafe/maidsafe-dht_config.h"
-#include "maidsafe/utils.h"
+#include "base/utils.h"
+#include "base/log.h"
 
 namespace crypto {
 
@@ -59,11 +59,11 @@ std::string Crypto::XOROperation(const std::string &first,
 
 std::string Crypto::Obfuscate(const std::string &first,
                               const std::string &second,
-                              const obfuscationtype &obt) {
+                              const ObfuscationType &obfuscation_type) {
   std::string result;
   if ((first.length() != second.length()) || (first.length() == 0))
     return result;
-  switch (obt) {
+  switch (obfuscation_type) {
     case XOR:
       result = XOROperation(first, second);
       break;
@@ -95,11 +95,11 @@ std::string Crypto::SecurePassword(const std::string &password,
 template <class T>
 std::string Crypto::HashFunc(const std::string &input,
                              const std::string &output,
-                             const operationtype &ot,
+                             const OperationType &operation_type,
                              const bool &hex,
                              T hash) {
   std::string result;
-  switch (ot) {
+  switch (operation_type) {
     case STRING_STRING:
       if (hex) {
         CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(hash,
@@ -167,39 +167,39 @@ std::string Crypto::HashFunc(const std::string &input,
 
 std::string Crypto::Hash(const std::string &input,
                          const std::string &output,
-                         const operationtype &ot,
+                         const OperationType &operation_type,
                          const bool &hex) {
   switch (hash_algorithm_) {
     case SHA_512: {
       CryptoPP::SHA512 hash;
-      return HashFunc(input, output, ot, hex, hash);
+      return HashFunc(input, output, operation_type, hex, hash);
     }
     case SHA_1: {
       CryptoPP::SHA1 hash;
-      return HashFunc(input, output, ot, hex, hash);
+      return HashFunc(input, output, operation_type, hex, hash);
     }
 //    case SHA_224: {
 //      CryptoPP::SHA224 hash;
-//      return HashFunc(input, output, ot, hex, hash);
+//      return HashFunc(input, output, operation_type, hex, hash);
 //    }
     case SHA_256: {
       CryptoPP::SHA256 hash;
-      return HashFunc(input, output, ot, hex, hash);
+      return HashFunc(input, output, operation_type, hex, hash);
     }
     case SHA_384: {
       CryptoPP::SHA384 hash;
-      return HashFunc(input, output, ot, hex, hash);
+      return HashFunc(input, output, operation_type, hex, hash);
     }
     default: {
       CryptoPP::SHA512 hash;
-      return HashFunc(input, output, ot, hex, hash);
+      return HashFunc(input, output, operation_type, hex, hash);
     }
   }
 }
 
 std::string Crypto::SymmEncrypt(const std::string &input,
                                 const std::string &output,
-                                const operationtype &ot,
+                                const OperationType &operation_type,
                                 const std::string &key) {
   if (symm_algorithm_ != AES_256)
     return "";
@@ -213,7 +213,7 @@ std::string Crypto::SymmEncrypt(const std::string &input,
   std::string result;
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(byte_key,
       sizeof(byte_key), byte_iv);
-  switch (ot) {
+  switch (operation_type) {
     case STRING_STRING:
       CryptoPP::StringSource(input, true,
           new CryptoPP::StreamTransformationFilter(encryptor,
@@ -260,7 +260,7 @@ std::string Crypto::SymmEncrypt(const std::string &input,
 
 std::string Crypto::SymmDecrypt(const std::string &input,
                                 const std::string &output,
-                                const operationtype &ot,
+                                const OperationType &operation_type,
                                 const std::string &key) {
   if (symm_algorithm_ != AES_256)
     return "";
@@ -274,7 +274,7 @@ std::string Crypto::SymmDecrypt(const std::string &input,
   std::string result;
   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(byte_key,
       sizeof(byte_key), byte_iv);
-  switch (ot) {
+  switch (operation_type) {
     case STRING_STRING:
       CryptoPP::StringSource(input, true,
           new CryptoPP::StreamTransformationFilter(decryptor,
@@ -323,14 +323,14 @@ std::string Crypto::SymmDecrypt(const std::string &input,
 std::string Crypto::AsymEncrypt(const std::string &input,
                                 const std::string &output,
                                 const std::string &key,
-                                const operationtype &ot) {
+                                const OperationType &operation_type) {
   try {
     CryptoPP::StringSource pubkey(key, true);
     CryptoPP::RSAES_OAEP_SHA_Encryptor pub(pubkey);
     CryptoPP::AutoSeededRandomPool rand_pool;
     std::string result;
 
-    switch (ot) {
+    switch (operation_type) {
       case STRING_STRING:
         CryptoPP::StringSource(input, true,
             new CryptoPP::PK_EncryptorFilter(rand_pool, pub,
@@ -365,12 +365,12 @@ std::string Crypto::AsymEncrypt(const std::string &input,
 std::string Crypto::AsymDecrypt(const std::string &input,
                                 const std::string &output,
                                 const std::string &key,
-                                const operationtype &ot) {
+                                const OperationType &operation_type) {
   try {
     CryptoPP::StringSource privkey(key, true);
     CryptoPP::RSAES_OAEP_SHA_Decryptor priv(privkey);
     std::string result;
-    switch (ot) {
+    switch (operation_type) {
       case STRING_STRING:
         CryptoPP::StringSource(input, true,
             new CryptoPP::PK_DecryptorFilter(GlobalRNG(), priv,
@@ -405,13 +405,13 @@ std::string Crypto::AsymDecrypt(const std::string &input,
 std::string Crypto::AsymSign(const std::string &input,
                              const std::string &output,
                              const std::string &key,
-                             const operationtype &ot) {
+                             const OperationType &operation_type) {
   try {
     CryptoPP::StringSource privkey(key, true);
     CryptoPP::RSASS<CryptoPP::PKCS1v15, CryptoPP::SHA512>::Signer
         signer(privkey);
     std::string result;
-    switch (ot) {
+    switch (operation_type) {
       case STRING_STRING:
         CryptoPP::StringSource(input, true,
             new CryptoPP::SignerFilter(GlobalRNG(), signer,
@@ -446,7 +446,7 @@ std::string Crypto::AsymSign(const std::string &input,
 bool Crypto::AsymCheckSig(const std::string &input_data,
                           const std::string &input_signature,
                           const std::string &key,
-                          const operationtype &ot) {
+                          const OperationType &operation_type) {
   try {
     CryptoPP::StringSource pubkey(key, true);
 
@@ -456,7 +456,7 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
     CryptoPP::SecByteBlock *signature;
     CryptoPP::SignatureVerificationFilter *verifierFilter;
 
-    if ((ot == STRING_STRING) || (ot == STRING_FILE)) {
+    if ((operation_type == STRING_STRING) || (operation_type == STRING_FILE)) {
       CryptoPP::StringSource signatureString(input_signature, true);
       if (signatureString.MaxRetrievable() != verifier.SignatureLength())
         return result;
@@ -469,7 +469,8 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
       result = verifierFilter->GetLastResult();
       delete signature;
       return result;
-    } else if ((ot == FILE_FILE) || (ot == FILE_STRING)) {
+    } else if ((operation_type == FILE_FILE) ||
+               (operation_type == FILE_STRING)) {
       CryptoPP::FileSource signatureFile(input_signature.c_str(), true);
       if (signatureFile.MaxRetrievable() != verifier.SignatureLength())
         return false;
@@ -495,12 +496,12 @@ bool Crypto::AsymCheckSig(const std::string &input_data,
 std::string Crypto::Compress(const std::string &input,
                              const std::string &output,
                              const boost::uint16_t &compression_level,
-                             const operationtype &ot) {
+                             const OperationType &operation_type) {
   if (compression_level < 0 || compression_level > 9)
     return "";
   try {
     std::string result("");
-    switch (ot) {
+    switch (operation_type) {
       case STRING_STRING:
         CryptoPP::StringSource(input, true, new CryptoPP::Gzip(
             new CryptoPP::StringSink(result), compression_level));
@@ -530,10 +531,10 @@ std::string Crypto::Compress(const std::string &input,
 
 std::string Crypto::Uncompress(const std::string &input,
                                const std::string &output,
-                               const operationtype &ot) {
+                               const OperationType &operation_type) {
   try {
     std::string result;
-    switch (ot) {
+    switch (operation_type) {
       case STRING_STRING:
         CryptoPP::StringSource(input, true, new CryptoPP::Gunzip(
             new CryptoPP::StringSink(result)));

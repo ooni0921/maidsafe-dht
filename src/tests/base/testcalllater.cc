@@ -28,7 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/thread.hpp>
-#include "maidsafe/config.h"
+#include "base/log.h"
 
 #include "base/calllatertimer.h"
 

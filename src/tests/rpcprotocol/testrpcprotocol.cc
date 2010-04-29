@@ -29,15 +29,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <google/protobuf/descriptor.h>
 #include <algorithm>
-#include "maidsafe/config.h"
+#include "base/log.h"
 #include "base/calllatertimer.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "protobuf/rpcmessage.pb.h"
-#include "maidsafe/channel-api.h"
-#include "maidsafe/channelmanager-api.h"
-#include "maidsafe/transport-api.h"
-#include "maidsafe/transportudt.h"
-#include "maidsafe/transporthandler-api.h"
+#include "rpcprotocol/channel-api.h"
+#include "rpcprotocol/channelmanager-api.h"
+#include "transport/transport-api.h"
+#include "transport/transportudt.h"
+#include "transport/transporthandler-api.h"
 #include "tests/rpcprotocol/testservices.pb.h"
 
 class PingTestService : public tests::PingTest {
@@ -522,7 +522,8 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
       const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
       &resultholder, &ResultHolder::GetMirrorResult, &resp1, &controller);
   stubservice1.Mirror(&controller, &req1, &resp1, done1);
-  ASSERT_TRUE(client_chann_manager->DeletePendingRequest(controller.req_id()));
+  ASSERT_TRUE(client_chann_manager->DeletePendingRequest(
+              controller.request_id()));
   boost::this_thread::sleep(boost::posix_time::seconds(11));
   ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
   ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
@@ -543,7 +544,8 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
       const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
       &resultholder, &ResultHolder::GetMirrorResult, &resp2, &controller);
   stubservice2.Mirror(&controller, &req2, &resp2, done2);
-  ASSERT_TRUE(client_chann_manager->DeletePendingRequest(controller.req_id()));
+  ASSERT_TRUE(client_chann_manager->DeletePendingRequest(
+              controller.request_id()));
   boost::this_thread::sleep(boost::posix_time::seconds(4));
   ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
   ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
@@ -576,8 +578,10 @@ TEST_F(RpcProtocolTest, FUNC_RPC_CancelPendingRequest) {
       const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
       &resultholder, &ResultHolder::GetMirrorResult, &resp1, &controller);
   stubservice1.Mirror(&controller, &req1, &resp1, done1);
-  ASSERT_TRUE(client_chann_manager->CancelPendingRequest(controller.req_id()));
-  ASSERT_FALSE(client_chann_manager->CancelPendingRequest(controller.req_id()));
+  ASSERT_TRUE(client_chann_manager->CancelPendingRequest(
+              controller.request_id()));
+  ASSERT_FALSE(client_chann_manager->CancelPendingRequest(
+               controller.request_id()));
 //  boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 //  ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
 //  ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
@@ -601,8 +605,10 @@ TEST_F(RpcProtocolTest, FUNC_RPC_CancelPendingRequest) {
       &resultholder, &ResultHolder::GetMirrorResult, &resp2,
       p_controller.get());
   stubservice2.Mirror(&controller, &req2, &resp2, done2);
-  ASSERT_TRUE(client_chann_manager->CancelPendingRequest(controller.req_id()));
-  ASSERT_FALSE(client_chann_manager->CancelPendingRequest(controller.req_id()));
+  ASSERT_TRUE(client_chann_manager->CancelPendingRequest(
+              controller.request_id()));
+  ASSERT_FALSE(client_chann_manager->CancelPendingRequest(
+               controller.request_id()));
 }
 
 TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
@@ -647,22 +653,22 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
 
 TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
   transport::TransportHandler local_transport_handler;
-  boost::int16_t local_trans_id;
+  boost::int16_t local_transport_id;
   local_transport_handler.Register(new transport::TransportUDT,
-    &local_trans_id);
+    &local_transport_id);
   rpcprotocol::ChannelManager chman(&local_transport_handler);
   ASSERT_TRUE(chman.RegisterNotifiersToTransport());
   std::string local_ip;
   std::string loop_back("127.0.0.1");
   boost::asio::ip::address local_address;
-  if (base::get_local_address(&local_address)) {
+  if (base::GetLocalAddress(&local_address)) {
     local_ip = local_address.to_string();
   } else {
     FAIL() << "Can not get local address";
   }
   ASSERT_NE(loop_back, local_ip);
   ASSERT_EQ(1, chman.Start());
-  ASSERT_EQ(0, local_transport_handler.StartLocal(0, local_trans_id));
+  ASSERT_EQ(0, local_transport_handler.StartLocal(0, local_transport_id));
   ASSERT_EQ(0, chman.Start());
   PingTestService service;
   // creating a channel for the service
@@ -675,13 +681,13 @@ TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel1(client_chann_manager,
     client_transport_handler, client_transport_id, loop_back,
-    local_transport_handler.listening_port(local_trans_id), "", 0, "", 0);
+    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice1(&out_channel1);
   tests::PingRequest req;
   tests::PingResponse resp1;
   req.set_ping("ping");
   req.set_ip("127.0.0.1");
-  req.set_port(local_transport_handler.listening_port(local_trans_id));
+  req.set_port(local_transport_handler.listening_port(local_transport_id));
   ResultHolder resultholder;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
@@ -700,7 +706,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel2(client_chann_manager,
     client_transport_handler, client_transport_id, local_ip,
-    local_transport_handler.listening_port(local_trans_id), "", 0, "", 0);
+    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice2(&out_channel2);
   tests::PingResponse resp2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
@@ -714,7 +720,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
   ASSERT_TRUE(controller.Failed());
   ASSERT_EQ(rpcprotocol::kTimeOut, controller.ErrorText());
 
-  local_transport_handler.Stop(local_trans_id);
+  local_transport_handler.Stop(local_transport_id);
   chman.Stop();
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
   RpcProtocolTest::client_chann_manager->ClearCallLaters();
@@ -722,23 +728,23 @@ TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
 
 TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   transport::TransportHandler local_transport_handler;
-  boost::int16_t local_trans_id;
+  boost::int16_t local_transport_id;
   local_transport_handler.Register(new transport::TransportUDT,
-    &local_trans_id);
+    &local_transport_id);
   rpcprotocol::ChannelManager chman(&local_transport_handler);
   ASSERT_EQ(1, chman.Start());
   ASSERT_TRUE(chman.RegisterNotifiersToTransport());
   std::string local_ip;
   std::string loop_back("127.0.0.1");
   boost::asio::ip::address local_address;
-  if (base::get_local_address(&local_address)) {
+  if (base::GetLocalAddress(&local_address)) {
     local_ip = local_address.to_string();
   } else {
     FAIL() << "Can not get local address";
   }
   ASSERT_NE(loop_back, local_ip);
   ASSERT_EQ(1, chman.Start());
-  ASSERT_EQ(0, local_transport_handler.StartLocal(0, local_trans_id));
+  ASSERT_EQ(0, local_transport_handler.StartLocal(0, local_transport_id));
   ASSERT_FALSE(chman.RegisterNotifiersToTransport());
   ASSERT_EQ(0, chman.Start());
   ASSERT_TRUE(chman.RegisterNotifiersToTransport());
@@ -753,13 +759,13 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel1(client_chann_manager,
     client_transport_handler, client_transport_id, loop_back,
-    local_transport_handler.listening_port(local_trans_id), "", 0, "", 0);
+    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice1(&out_channel1);
   tests::PingRequest req;
   tests::PingResponse resp1;
   req.set_ping("ping");
   req.set_ip("127.0.0.1");
-  req.set_port(local_transport_handler.listening_port(local_trans_id));
+  req.set_port(local_transport_handler.listening_port(local_transport_id));
   ResultHolder resultholder;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
@@ -778,7 +784,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel2(client_chann_manager,
     client_transport_handler, client_transport_id, local_ip,
-    local_transport_handler.listening_port(local_trans_id), "", 0, "", 0);
+    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice2(&out_channel2);
   tests::PingResponse resp2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
@@ -792,21 +798,21 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   ASSERT_TRUE(controller.Failed());
   ASSERT_EQ(rpcprotocol::kTimeOut, controller.ErrorText());
 
-  local_transport_handler.Stop(local_trans_id);
+  local_transport_handler.Stop(local_transport_id);
   chman.Stop();
   // starting transport
   ASSERT_TRUE(chman.RegisterNotifiersToTransport());
   ASSERT_TRUE(local_transport_handler.RegisterOnServerDown(boost::bind(
     &HandleDeadServer, _1, _2, _3)));
-  ASSERT_EQ(0, local_transport_handler.Start(0, local_trans_id));
+  ASSERT_EQ(0, local_transport_handler.Start(0, local_transport_id));
   ASSERT_EQ(0, chman.Start());
-  local_transport_handler.StartPingRendezvous(true, "", 0, local_trans_id);
+  local_transport_handler.StartPingRendezvous(true, "", 0, local_transport_id);
   controller.Reset();
   resultholder.Reset();
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel3(client_chann_manager,
     client_transport_handler, client_transport_id, loop_back,
-    local_transport_handler.listening_port(local_trans_id), "", 0, "", 0);
+    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice3(&out_channel3);
   tests::PingResponse resp3;
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<ResultHolder,
@@ -826,7 +832,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel4(client_chann_manager,
     client_transport_handler, client_transport_id, local_ip,
-    local_transport_handler.listening_port(local_trans_id), "", 0, "", 0);
+    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice4(&out_channel4);
   tests::PingResponse resp4;
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<ResultHolder,
@@ -848,11 +854,11 @@ TEST(RpcControllerTest, BEH_RPC_RpcController) {
   rpcprotocol::Controller controller;
   ASSERT_FALSE(controller.Failed());
   ASSERT_TRUE(controller.ErrorText().empty());
-  ASSERT_EQ(0, controller.req_id());
+  ASSERT_EQ(0, controller.request_id());
   controller.SetFailed(rpcprotocol::kTimeOut);
   boost::uint32_t id = 1234;
-  controller.set_req_id(id);
-  ASSERT_EQ(id, controller.req_id());
+  controller.set_request_id(id);
+  ASSERT_EQ(id, controller.request_id());
   ASSERT_TRUE(controller.Failed());
   ASSERT_EQ(rpcprotocol::kTimeOut, controller.ErrorText());
   controller.StartCancel();
@@ -860,12 +866,12 @@ TEST(RpcControllerTest, BEH_RPC_RpcController) {
   controller.Reset();
   ASSERT_FALSE(controller.Failed());
   ASSERT_TRUE(controller.ErrorText().empty());
-  ASSERT_EQ(0, controller.req_id());
-  ASSERT_EQ(0, controller.duration());
-  controller.start_rpc_timer();
+  ASSERT_EQ(0, controller.request_id());
+  ASSERT_EQ(0, controller.Duration());
+  controller.StartRpcTimer();
   boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  controller.stop_rpc_timer();
-  ASSERT_LE(10, controller.duration());
+  controller.StopRpcTimer();
+  ASSERT_LE(10, controller.Duration());
   std::string service, method;
   controller.message_info(&service, &method);
   ASSERT_TRUE(service.empty());

@@ -25,15 +25,12 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/config.h"
-#include "base/config.h"
 #include "base/calllatertimer.h"
-#include "maidsafe/maidsafe-dht.h"
+#include "base/log.h"
 
 namespace base {
 
-void dummy_timeout_func() {
-}
+void dummy_timeout_func() {}
 
 CallLaterTimer::CallLaterTimer() : timers_mutex_(), is_started_(true),
       worker_(), timers_(), io_(), strand_(io_), timer_(io_), calllater_id_(0) {
@@ -57,10 +54,10 @@ CallLaterTimer::~CallLaterTimer() {
   worker_->join();
 }
 
-void CallLaterTimer::ExecuteFunc(calllater_func cb, boost::uint32_t id,
+void CallLaterTimer::ExecuteFunc(calllater_func callback, boost::uint32_t id,
       const boost::system::error_code &ec) {
   if (!ec) {
-    cb();
+    callback();
     boost::mutex::scoped_lock guard(timers_mutex_);
     timers_map::iterator it = timers_.find(id);
     if (it != timers_.end()) {
@@ -70,7 +67,7 @@ void CallLaterTimer::ExecuteFunc(calllater_func cb, boost::uint32_t id,
 }
 
 int CallLaterTimer::AddCallLater(const boost::uint64_t &msecs,
-      calllater_func cb) {
+      calllater_func callback) {
   {
     boost::mutex::scoped_lock guard(timers_mutex_);
     if ((msecs == 0) || (!is_started_))
@@ -83,8 +80,8 @@ int CallLaterTimer::AddCallLater(const boost::uint64_t &msecs,
     std::pair<timers_map::iterator, bool> p = timers_.insert(timer_pair(
         calllater_id_, timer));
     if (p.second) {
-      timer->async_wait(boost::bind(&CallLaterTimer::ExecuteFunc, this, cb,
-          calllater_id_, _1));
+      timer->async_wait(boost::bind(&CallLaterTimer::ExecuteFunc, this,
+                        callback, calllater_id_, _1));
       return calllater_id_;
     }
   }

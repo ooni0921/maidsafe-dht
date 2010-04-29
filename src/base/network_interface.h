@@ -36,8 +36,6 @@ Created by Julian Cain on 11/3/09.
 #include <string>
 #include <vector>
 
-#include "base/config.h"
-
 namespace base {
 
 /**

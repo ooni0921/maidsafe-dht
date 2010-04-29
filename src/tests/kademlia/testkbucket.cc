@@ -28,8 +28,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
 #include "kademlia/kbucket.h"
-#include "maidsafe/kadid.h"
-#include "maidsafe/crypto.h"
+#include "kademlia/kadid.h"
+#include "base/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 
 namespace kad {
@@ -136,7 +136,7 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
     for (boost::int16_t j = 0; j <= i; ++j) {
       Contact contact;
       ASSERT_TRUE(kbucket.GetContact(id[kad::K - 2 - j], &contact));
-      ASSERT_TRUE(contact == contacts[j]);
+      ASSERT_TRUE(contact.Equals(contacts[j]));
     }
     contacts.clear();
   }
@@ -148,8 +148,8 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
   kbucket.GetContacts(kad::K - 1, ex_contacts, &contacts);
   ASSERT_EQ(kad::K - 3, static_cast<int>(contacts.size()));
   for (boost::int16_t i = 0; i < kad::K - 3; ++i) {
-    EXPECT_TRUE(contacts[i] != ex_contacts[0]);
-    EXPECT_TRUE(contacts[i] !=  ex_contacts[1]);
+    EXPECT_FALSE(contacts[i].Equals(ex_contacts[0]));
+    EXPECT_FALSE(contacts[i].Equals(ex_contacts[1]));
   }
   contacts.clear();
   ex_contacts.clear();
@@ -161,7 +161,7 @@ TEST_F(TestKbucket, BEH_KAD_GetContacts) {
   kbucket.GetContacts(1, ex_contacts, &contacts);
   Contact contact2;
   ASSERT_TRUE(kbucket.GetContact(id[2], &contact2));
-  ASSERT_TRUE(contact2 == contacts[0]) <<
+  ASSERT_TRUE(contact2.Equals(contacts[0])) <<
       "the contact readded was not placed at the begging of the list";
 }
 
@@ -213,7 +213,7 @@ TEST_F(TestKbucket, BEH_KAD_SetLastAccessed) {
     hex_max_val += "f";
   KadId max_value(hex_max_val, true);
   KBucket kbucket(min_value, max_value);
-  boost::uint32_t time_accessed = base::get_epoch_time();
+  boost::uint32_t time_accessed = base::GetEpochTime();
   kbucket.set_last_accessed(time_accessed);
   ASSERT_EQ(time_accessed, kbucket.last_accessed());
 }
@@ -245,7 +245,7 @@ TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
     ASSERT_EQ(i + 1, static_cast<int>(contacts.size()));
     Contact contact;
     ASSERT_TRUE(kbucket.GetContact(id[kad::K - 1], &contact));
-    ASSERT_TRUE(contact == contacts[0]);
+    ASSERT_TRUE(contact.Equals(contacts[0]));
     contacts.clear();
   }
 }
@@ -281,7 +281,7 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
     for (boost::int16_t j = 0; j <= i; ++j) {
       Contact contact;
       ASSERT_TRUE(kbucket.GetContact(id[kad::K - 2-j], &contact));
-      ASSERT_TRUE(contact == contacts[j]);
+      ASSERT_TRUE(contact.Equals(contacts[j]));
     }
     contacts.clear();
   }
@@ -293,8 +293,8 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   kbucket.GetContacts(kad::K - 1, ex_contacts, &contacts);
   ASSERT_EQ(kad::K - 3, contacts.size());
   for (boost::int16_t i = 0; i < kad::K - 3; ++i) {
-    EXPECT_TRUE(contacts[i] != ex_contacts[0]);
-    EXPECT_TRUE(contacts[i] !=  ex_contacts[1]);
+    EXPECT_FALSE(contacts[i].Equals(ex_contacts[0]));
+    EXPECT_FALSE(contacts[i].Equals(ex_contacts[1]));
   }
   contacts.clear();
   ex_contacts.clear();
@@ -306,7 +306,7 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   kbucket.GetContacts(1, ex_contacts, &contacts);
   Contact contact2;
   ASSERT_TRUE(kbucket.GetContact(id[2], &contact2));
-  ASSERT_TRUE(contact2 == contacts[0]) <<
+  ASSERT_TRUE(contact2.Equals(contacts[0])) <<
       "the contact readded was not placed at the begging of the list";
   ex_contacts.clear();
   contacts.clear();
@@ -320,7 +320,7 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   kbucket.GetContacts(1, ex_contacts, &contacts);
   ASSERT_TRUE(kbucket.GetContact(KadId(cry_obj.Hash("newid",
       "", crypto::STRING_STRING, false), false), &contact4));
-  ASSERT_TRUE(contact4 == contacts[0]) <<
+  ASSERT_TRUE(contact4.Equals(contacts[0])) <<
       "the contact readded was not placed at the begging of the list";
 }
 
@@ -336,7 +336,7 @@ TEST_F(TestKbucket, BEH_KAD_GetOldestContact) {
   Contact empty;
   Contact rec;
   rec = kbucket.LastSeenContact();
-  ASSERT_TRUE(empty == rec);
+  ASSERT_TRUE(empty.Equals(rec));
   for (boost::int16_t i = 0; i < kad::K - 1; ++i) {
     id[i] = cry_obj.Hash(boost::lexical_cast<std::string>(i), "",
         crypto::STRING_STRING, false);
@@ -345,7 +345,7 @@ TEST_F(TestKbucket, BEH_KAD_GetOldestContact) {
     Contact firstinput(id[0], ip, port[0], ip, port[0]);
     ASSERT_EQ(SUCCEED, kbucket.AddContact(contact));
     Contact last_seen = kbucket.LastSeenContact();
-    ASSERT_TRUE(firstinput == last_seen);
+    ASSERT_TRUE(firstinput.Equals(last_seen));
   }
 }
 

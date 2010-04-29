@@ -25,10 +25,17 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_VALIDATIONINTERFACE_H_
-#define MAIDSAFE_VALIDATIONINTERFACE_H_
+/*******************************************************************************
+ * NOTE: This header is unlikely to have any breaking changes applied.         *
+ *       However, it should not be regarded as finalised until this notice is  *
+ *       removed.                                                              *
+ ******************************************************************************/
+
+#ifndef BASE_VALIDATIONINTERFACE_H_
+#define BASE_VALIDATIONINTERFACE_H_
 
 #include <string>
+
 
 namespace base {
 /**
@@ -40,7 +47,7 @@ namespace base {
 class SignatureValidator {
  public:
   explicit SignatureValidator(const std::string &id) : id_(id) {}
-  SignatureValidator() : id_("") {}
+  SignatureValidator() : id_() {}
   virtual ~SignatureValidator() {}
   /**
    * Validates the Id of the signer
@@ -49,7 +56,8 @@ class SignatureValidator {
    * @param signed_public_key public key signed
    */
   virtual bool ValidateSignerId(const std::string &signer_id,
-    const std::string &public_key, const std::string &signed_public_key) = 0;
+                                const std::string &public_key,
+                                const std::string &signed_public_key) = 0;
   /**
    * Validates the request signed by sender
    * @param signed_request request to be validated with the public key
@@ -59,8 +67,9 @@ class SignatureValidator {
    * @param rec_id id of the node receiving the request
    */
   virtual bool ValidateRequest(const std::string &signed_request,
-    const std::string &public_key, const std::string &signed_public_key,
-    const std::string &key) = 0;
+                               const std::string &public_key,
+                               const std::string &signed_public_key,
+                               const std::string &key) = 0;
   inline std::string id() const { return id_; }
   inline void set_id(const std::string &id) { id_ = id; }
   private:
@@ -68,4 +77,5 @@ class SignatureValidator {
 };
 
 }  // namespace base
-#endif  // MAIDSAFE_VALIDATIONINTERFACE_H_
+
+#endif  // BASE_VALIDATIONINTERFACE_H_

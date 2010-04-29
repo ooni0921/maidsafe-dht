@@ -25,33 +25,33 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/channelmanager-api.h"
+#include "rpcprotocol/channelmanager-api.h"
 #include "protobuf/general_messages.pb.h"
 #include "rpcprotocol/channelmanagerimpl.h"
 
 namespace rpcprotocol {
 
-ChannelManager::ChannelManager(transport::TransportHandler *ptrans_handler)
-      : pimpl_(new ChannelManagerImpl(ptrans_handler)) {}
+ChannelManager::ChannelManager(transport::TransportHandler *transport_handler)
+      : pimpl_(new ChannelManagerImpl(transport_handler)) {}
 
 ChannelManager::~ChannelManager() {}
 
-void ChannelManager::AddPendingRequest(const boost::uint32_t &req_id,
-      PendingReq req) {
-  pimpl_->AddPendingRequest(req_id, req);
+void ChannelManager::AddPendingRequest(const boost::uint32_t &request_id,
+      PendingReq request) {
+  pimpl_->AddPendingRequest(request_id, request);
 }
 
-bool ChannelManager::DeletePendingRequest(const boost::uint32_t &req_id) {
-  return pimpl_->DeletePendingRequest(req_id);
+bool ChannelManager::DeletePendingRequest(const boost::uint32_t &request_id) {
+  return pimpl_->DeletePendingRequest(request_id);
 }
 
-bool ChannelManager::CancelPendingRequest(const boost::uint32_t &req_id) {
-  return pimpl_->CancelPendingRequest(req_id);
+bool ChannelManager::CancelPendingRequest(const boost::uint32_t &request_id) {
+  return pimpl_->CancelPendingRequest(request_id);
 }
 
-void ChannelManager::AddReqToTimer(const boost::uint32_t &req_id,
+void ChannelManager::AddReqToTimer(const boost::uint32_t &request_id,
       const boost::uint64_t &timeout) {
-  pimpl_->AddReqToTimer(req_id, timeout);
+  pimpl_->AddReqToTimer(request_id, timeout);
 }
 
 boost::uint32_t ChannelManager::CreateNewId() {
@@ -83,8 +83,8 @@ void ChannelManager::ClearCallLaters() {
 }
 
 void ChannelManager::AddTimeOutRequest(const boost::uint32_t &connection_id,
-    const boost::uint32_t &req_id, const int &timeout) {
-  pimpl_->AddTimeOutRequest(connection_id, req_id, timeout);
+    const boost::uint32_t &request_id, const int &timeout) {
+  pimpl_->AddTimeOutRequest(connection_id, request_id, timeout);
 }
 
 void ChannelManager::AddChannelId(boost::uint32_t *id) {

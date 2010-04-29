@@ -191,8 +191,8 @@ bool Gateway::ParseNlmsghdr(nlmsghdr * nl_hdr, NetworkInterface & rt_if) {
 
 #endif
 
-std::vector<NetworkInterface> Gateway::Routes(
-    boost::asio::io_service &, boost::system::error_code & ec) {
+std::vector<NetworkInterface> Gateway::Routes(boost::asio::io_service&,
+                                              boost::system::error_code &ec) {
   std::vector<NetworkInterface> ret;
 
 #if (defined(MAIDSAFE_APPLE) || defined(MAIDSAFE_POSIX) || defined(__MACH__)) \

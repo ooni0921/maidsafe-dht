@@ -26,30 +26,43 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /*******************************************************************************
- * This is the API for maidsafe-dht and is the only program access for         *
- * developers.  The maidsafe-dht_config.h file included is where configuration *
- * may be saved.  You MUST link the maidsafe-dht library.                      *
- *                                                                             *
- * NOTE: These APIs may be amended or deleted in future releases until this    *
- * notice is removed.                                                          *
+ * NOTE: This API is unlikely to have any breaking changes applied.  However,  *
+ *       it should not be regarded as a final API until this notice is removed.*
  ******************************************************************************/
 
-#ifndef MAIDSAFE_CHANNELMANAGER_API_H_
-#define MAIDSAFE_CHANNELMANAGER_API_H_
+#ifndef RPCPROTOCOL_CHANNELMANAGER_API_H_
+#define RPCPROTOCOL_CHANNELMANAGER_API_H_
 
+#include <boost/shared_ptr.hpp>
+#include <boost/cstdint.hpp>
 #include <map>
 #include <string>
 #include "maidsafe/maidsafe-dht_config.h"
 
-#if MAIDSAFE_DHT_VERSION < 19
+#if MAIDSAFE_DHT_VERSION < 20
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
 #endif
 
-// RPC
+
+namespace base {
+template <typename T>
+class Stats;
+}  // namespace base
+
+
+namespace transport {
+class TransportHandler;
+}  // namespace transport
+
+
 namespace rpcprotocol {
 
 typedef std::map<std::string, base::Stats<boost::uint64_t> > RpcStatsMap;
+
+class Channel;
+class ChannelManagerImpl;
+class PendingReq;
 class RpcMessage;
 
 // Ensure that a one-to-one relationship is maintained between channelmanager &
@@ -71,7 +84,7 @@ class ChannelManager {
   * Constructor
   * @param ptransport_handler Pointer to a transport handler object.
   */
-  explicit ChannelManager(transport::TransportHandler *ptrans_handler);
+  explicit ChannelManager(transport::TransportHandler *transport_handler);
   ~ChannelManager();
   /**
   * Registers a channel and identifies it with the name of the RPC service that
@@ -79,7 +92,7 @@ class ChannelManager {
   * @param service_name name that identifies the channel
   * @param channel pointer to a Channel object
   */
-  void RegisterChannel(const std::string &service_name, Channel* channel);
+  void RegisterChannel(const std::string &service_name, Channel *channel);
   /**
   * Removes a previously registered channel.
   * @param service_name name that identifies the channel
@@ -118,41 +131,41 @@ class ChannelManager {
   boost::uint32_t CreateNewId();
   /**
   * Adds a new pending request after an RPC has been sent.
-  * @param req_id id to identify the request
+  * @param request_id id to identify the request
   * @param req structure holding all the information of the request
   */
-  void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
+  void AddPendingRequest(const boost::uint32_t &request_id, PendingReq request);
   /**
   * Removes a pending request from the list and calls the callback of the
   * request with status Cancelled.
-  * @param req_id id of the request
+  * @param request_id id of the request
   * @return True if success, False if status of the object is stopped or
   * no request was found for the id.
   */
-  bool DeletePendingRequest(const boost::uint32_t &req_id);
+  bool DeletePendingRequest(const boost::uint32_t &request_id);
   /**
   * Removes a pending request from the list.
-  * @param req_id id of the request
+  * @param request_id id of the request
   * @return True if success, False if status of the object is stopped or
   * no request was found for the id.
   */
-  bool CancelPendingRequest(const boost::uint32_t &req_id);
+  bool CancelPendingRequest(const boost::uint32_t &request_id);
   /**
   * Adds a request to the timer to check when it times out.
-  * @param req_id id of the request
+  * @param request_id id of the request
   * @param timeout time in milliseconds after which the request times out
   */
-  void AddReqToTimer(const boost::uint32_t &req_id,
-    const boost::uint64_t &timeout);
+  void AddReqToTimer(const boost::uint32_t &request_id,
+                     const boost::uint64_t &timeout);
   /**
   * Adds a request to a list that holds all request that haven't been
   * completely sent via the transport.
   * @param connection_id id of the connection used to send the request
-  * @param req_id id of the request
+  * @param request_id id of the request
   * @param timeout milliseconds after which the request times out
   */
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
-    const boost::uint32_t &req_id, const int &timeout);
+                         const boost::uint32_t &request_id, const int &timeout);
   /**
   * Creates and adds the id of a Channel to a list that holds all the channels
   * using the objet.
@@ -176,6 +189,7 @@ class ChannelManager {
  private:
   boost::shared_ptr<ChannelManagerImpl> pimpl_;
 };
+
 }  // namespace rpcprotocol
 
-#endif  // MAIDSAFE_CHANNELMANAGER_API_H_
+#endif  // RPCPROTOCOL_CHANNELMANAGER_API_H_

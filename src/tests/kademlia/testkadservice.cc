@@ -29,14 +29,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/lexical_cast.hpp>
 #include "kademlia/kadservice.h"
 #include "kademlia/knodeimpl.h"
-#include "maidsafe/alternativestore.h"
-#include "maidsafe/crypto.h"
+#include "base/alternativestore.h"
+#include "base/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
 #include "protobuf/signed_kadvalue.pb.h"
-#include "maidsafe/config.h"
-#include "maidsafe/transport-api.h"
-#include "maidsafe/transportudt.h"
+#include "base/log.h"
+#include "transport/transport-api.h"
+#include "transport/transportudt.h"
 #include "tests/validationimpl.h"
 
 inline void CreateRSAKeys(std::string *pub_key, std::string *priv_key) {
@@ -93,15 +93,15 @@ class KadServicesTest: public testing::Test {
     contact_.set_port(1234);
     contact_.set_local_ip("127.0.0.2");
     contact_.set_local_port(1235);
-    contact_.set_rv_ip("127.0.0.3");
-    contact_.set_rv_port(1236);
+    contact_.set_rendezvous_ip("127.0.0.3");
+    contact_.set_rendezvous_port(1236);
 
-    trans_handler_.Register(new transport::TransportUDT, &trans_id_);
+    trans_handler_.Register(new transport::TransportUDT, &transport_id_);
   }
 
   virtual void SetUp() {
     datastore_.reset(new DataStore(kRefreshTime));
-    routingtable_.reset(new RoutingTable(node_id_));
+    routingtable_.reset(new RoutingTable(node_id_, K));
     service_.reset(new KadService(NatRpcs(&channel_manager_, &trans_handler_),
         datastore_, true,
         boost::bind(&KadServicesTest::AddCtc, this, _1, _2, _3),
@@ -121,12 +121,12 @@ class KadServicesTest: public testing::Test {
   }
 
   virtual void TearDown() {
-    delete trans_handler_.Get(trans_id_);
-    trans_handler_.Remove(trans_id_);
+    delete trans_handler_.Get(transport_id_);
+    trans_handler_.Remove(transport_id_);
   }
 
   transport::TransportHandler trans_handler_;
-  boost::int16_t trans_id_;
+  boost::int16_t transport_id_;
   rpcprotocol::ChannelManager channel_manager_;
   ContactInfo contact_;
   crypto::Crypto crypto_;
@@ -144,40 +144,35 @@ class KadServicesTest: public testing::Test {
   bool GetCtc(const kad::KadId &id, Contact *ctc) {
     return routingtable_->GetContact(id, ctc);
   }
-  void GetRandCtcs(const int &count, const std::vector<Contact> &ex_ctcs,
-      std::vector<Contact> *ctcs) {
+  void GetRandCtcs(const size_t &count, const std::vector<Contact> &ex_ctcs,
+                   std::vector<Contact> *ctcs) {
     ctcs->clear();
     std::vector<Contact> all_contacts;
     int kbuckets = routingtable_->KbucketSize();
     for (int i = 0; i < kbuckets; ++i) {
-      std::vector<kad::Contact> contacts_i;
+      std::vector<Contact> contacts_i;
       routingtable_->GetContacts(i, &contacts_i, ex_ctcs);
       for (int j = 0; j < static_cast<int>(contacts_i.size()); ++j)
         all_contacts.push_back(contacts_i[j]);
     }
-    if (all_contacts.size() < static_cast<size_t>(count + 1)) {
-      *ctcs = all_contacts;
-      return;
-    }
-    std::vector<Contact> temp_vector(count);
-    base::random_sample_n(all_contacts.begin(), all_contacts.end(),
-      temp_vector.begin(), count);
-    *ctcs = temp_vector;
+    std::random_shuffle(all_contacts.begin(), all_contacts.end());
+    all_contacts.resize(std::min(all_contacts.size(), count));
+    *ctcs = all_contacts;
   }
-  void GetKCtcs(const kad::KadId &key, std::vector<Contact> *ctcs,
-      const std::vector<Contact> &ex_ctcs) {
+  void GetKCtcs(const kad::KadId &key, const std::vector<Contact> &ex_ctcs,
+                std::vector<Contact> *ctcs) {
     routingtable_->FindCloseNodes(key, K, ctcs, ex_ctcs);
   }
-  void Ping(const Contact &ctc, base::callback_func_type cb) {
+  void Ping(const Contact &ctc, VoidFunctorOneString callback) {
     boost::thread thrd(boost::bind(&KadServicesTest::ExePingCb, this,
-        ctc.node_id(), cb));
+        ctc.node_id(), callback));
   }
-  void ExePingCb(const kad::KadId &id, base::callback_func_type cb) {
+  void ExePingCb(const kad::KadId &id, VoidFunctorOneString callback) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     routingtable_->RemoveContact(id, true);
     PingResponse resp;
     resp.set_result(kRpcResultFailure);
-    cb(resp.SerializeAsString());
+    callback(resp.SerializeAsString());
   }
 };
 
@@ -446,7 +441,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
     contact.ParseFromString(find_node_response.closest_nodes(i));
     for (itr = close_contacts_copy.begin(); itr < close_contacts_copy.end();
          ++itr) {
-      if (*itr == contact) {
+      if (itr->Equals(contact)) {
         close_contacts_copy.erase(itr);
         break;
       }
@@ -477,7 +472,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
     if (contact.node_id().ToStringDecoded() == later_key)
       found = true;
     for (itr = close_contacts.begin(); itr < close_contacts.end(); ++itr) {
-      if (*itr == contact) {
+      if (itr->Equals(contact)) {
         close_contacts.erase(itr);
         break;
       }

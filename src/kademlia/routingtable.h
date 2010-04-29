@@ -36,16 +36,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 
 #include "kademlia/kadutils.h"
-#include "maidsafe/kadid.h"
-#include "maidsafe/maidsafe-dht_config.h"
+#include "kademlia/kadid.h"
+
 
 namespace kad {
 
+class Contact;
 class KBucket;
 
 class RoutingTable {
  public:
-  RoutingTable(const KadId &holder_id, const boost::uint16_t &rt_K = kad::K);
+  RoutingTable(const KadId &holder_id, const boost::uint16_t &rt_K);
   ~RoutingTable();
   // Add the given contact to the correct k-bucket; if it already
   // exists, its status will be updated

@@ -29,6 +29,8 @@ Created by Julian Cain on 11/3/09.
 */
 
 #include "base/network_interface.h"
+#include "maidsafe/maidsafe-dht_config.h"  // NOLINT (Fraser) - This is needed
+                                           // for preprocessor definitions
 
 #if defined (MAIDSAFE_WIN32)
     // ...

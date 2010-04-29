@@ -26,7 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "kademlia/kbucket.h"
-
+#include "kademlia/contact.h"
 
 namespace kad {
 
@@ -60,7 +60,7 @@ KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
   for (std::list<Contact>::const_iterator it = contacts_.begin();
       it != contacts_.end() && position == -1; it++) {
     Contact current_element = *it;
-    if (new_contact_local == current_element)
+    if (new_contact_local.Equals(current_element))
       position = i;
     i++;
   }

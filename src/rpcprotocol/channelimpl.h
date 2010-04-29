@@ -29,17 +29,30 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define RPCPROTOCOL_CHANNELIMPL_H_
 
 #include <boost/asio.hpp>
+#include <google/protobuf/service.h>
 #include <memory>
 #include <string>
+#include "base/utils.h"
 #include "maidsafe/maidsafe-dht_config.h"
-#include "maidsafe/transporthandler-api.h"
+#include "transport/transporthandler-api.h"
 
 namespace rpcprotocol {
 
+class Controller;
+class ChannelManager;
+
 class ControllerImpl {
  public:
-  ControllerImpl() : timeout_(kRpcTimeout), time_sent_(0), time_received_(0),
-      rtt_(0.0), failure_(), req_id_(0), trans_id_(0), service_(), method_() {}
+  ControllerImpl()
+      : timeout_(kRpcTimeout),
+        time_sent_(0),
+        time_received_(0),
+        rtt_(0.0),
+        failure_(),
+        request_id_(0),
+        transport_id_(0),
+        service_(),
+        method_() {}
   void SetFailed(const std::string &failure) { failure_ = failure; }
   void Reset();
   bool Failed() const { return !failure_.empty(); }
@@ -54,20 +67,22 @@ class ControllerImpl {
   // returns timeout in milliseconds
   boost::uint64_t timeout() const { return timeout_; }
   // returns time between sending and receiving the RPC in milliseconds
-  boost::uint64_t duration() const {
+  boost::uint64_t Duration() const {
     return time_sent_ < time_received_ ? time_received_ - time_sent_ : 0;
   }
   // set sending time
-  void start_rpc_timer() { time_sent_ = base::get_epoch_milliseconds(); }
+  void StartRpcTimer() { time_sent_ = base::GetEpochMilliseconds(); }
   // set receiving time
-  void stop_rpc_timer() { time_received_ = base::get_epoch_milliseconds(); }
+  void StopRpcTimer() { time_received_ = base::GetEpochMilliseconds(); }
   // rtt in milliseconds
   void set_rtt(const float &rtt) { rtt_ = rtt; }
   float rtt() const { return rtt_; }
-  void set_trans_id(const boost::int16_t &trans_id) { trans_id_ = trans_id; }
-  boost::int16_t trans_id() const { return trans_id_; }
-  void set_req_id(const boost::uint32_t &id) { req_id_ = id; }
-  boost::uint32_t req_id() const { return req_id_; }
+  void set_transport_id(const boost::int16_t &transport_id) {
+    transport_id_ = transport_id;
+  }
+  boost::int16_t transport_id() const { return transport_id_; }
+  void set_request_id(const boost::uint32_t &id) { request_id_ = id; }
+  boost::uint32_t request_id() const { return request_id_; }
   // Set additional information for the processed message.
   void set_message_info(const std::string &service, const std::string &method) {
     service_ = service;
@@ -83,37 +98,46 @@ class ControllerImpl {
   boost::uint64_t time_sent_, time_received_;
   float rtt_;
   std::string failure_;
-  boost::uint32_t req_id_;
-  boost::int16_t trans_id_;
+  boost::uint32_t request_id_;
+  boost::int16_t transport_id_;
   std::string service_, method_;
+};
+
+struct RpcInfo {
+  RpcInfo() : ctrl(NULL), rpc_id(0), connection_id(0), transport_id(0) {}
+  Controller *ctrl;
+  boost::uint32_t rpc_id, connection_id;
+  boost::int16_t transport_id;
 };
 
 class ChannelImpl {
  public:
-  ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
-      transport::TransportHandler *ptrans_handler);
-  ChannelImpl(rpcprotocol::ChannelManager *channelmanager,
-      transport::TransportHandler *ptrans_handler, const boost::int16_t
-      &trans_id, const std::string &remote_ip, const boost::uint16_t
-      &remote_port, const std::string &local_ip, const boost::uint16_t
-      &local_port, const std::string &rv_ip, const boost::uint16_t &rv_port);
+  ChannelImpl(ChannelManager *channelmanager,
+              transport::TransportHandler *transport_handler);
+  ChannelImpl(ChannelManager *channelmanager,
+              transport::TransportHandler *transport_handler,
+              const boost::int16_t &transport_id, const std::string &remote_ip,
+              const boost::uint16_t &remote_port, const std::string &local_ip,
+              const boost::uint16_t &local_port,
+              const std::string &rendezvous_ip,
+              const boost::uint16_t &rendezvous_port);
   ~ChannelImpl();
   void CallMethod(const google::protobuf::MethodDescriptor *method,
-                          google::protobuf::RpcController *controller,
-                          const google::protobuf::Message *request,
-                          google::protobuf::Message *response,
-                          google::protobuf::Closure *done);
+                  google::protobuf::RpcController *controller,
+                  const google::protobuf::Message *request,
+                  google::protobuf::Message *response,
+                  google::protobuf::Closure *done);
   void SetService(google::protobuf::Service *service);
   void HandleRequest(const RpcMessage &request,
                      const boost::uint32_t &connection_id,
-                     const boost::int16_t &trans_id,
+                     const boost::int16_t &transport_id,
                      const float &rtt);
  private:
   void SendResponse(const google::protobuf::Message *response, RpcInfo info);
   std::string GetServiceName(const std::string &full_name);
-  transport::TransportHandler *ptrans_handler_;
-  boost::int16_t trans_id_;
-  rpcprotocol::ChannelManager *pmanager_;
+  transport::TransportHandler *transport_handler_;
+  boost::int16_t transport_id_;
+  ChannelManager *pmanager_;
   google::protobuf::Service *pservice_;
   std::string remote_ip_, local_ip_, rv_ip_;
   boost::uint16_t remote_port_, local_port_, rv_port_;

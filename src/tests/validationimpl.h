@@ -29,8 +29,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TESTS_VALIDATIONIMPL_H_
 
 #include <string>
-#include "maidsafe/validationinterface.h"
-#include "maidsafe/maidsafe-dht_config.h"
+#include "base/validationinterface.h"
+
 
 namespace base {
 

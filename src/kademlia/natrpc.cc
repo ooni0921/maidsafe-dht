@@ -26,45 +26,47 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "kademlia/natrpc.h"
-#include "maidsafe/channel-api.h"
-#include "maidsafe/transporthandler-api.h"
+#include "rpcprotocol/channel-api.h"
+#include "transport/transporthandler-api.h"
 
 namespace kad {
 
 NatRpcs::NatRpcs(rpcprotocol::ChannelManager *ch_manager,
-  transport::TransportHandler *ptrans_handler) :
-  pchannel_manager_(ch_manager), ptrans_handler_(ptrans_handler) {}
+  transport::TransportHandler *transport_handler) :
+  pchannel_manager_(ch_manager), transport_handler_(transport_handler) {}
 
 void NatRpcs::NatDetection(const std::string &newcomer,
       const std::string &bootstrap_node, const boost::uint32_t type,
       const std::string &sender_id, const std::string &remote_ip,
-      const boost::uint16_t &remote_port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port, NatDetectionResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb) {
+      const boost::uint16_t &remote_port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, NatDetectionResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback) {
   NatDetectionRequest args;
   args.set_newcomer(newcomer);
   args.set_bootstrap_node(bootstrap_node);
   args.set_type(type);
   args.set_sender_id(sender_id);
-  rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
-    ctler->trans_id(), remote_ip, remote_port, "", 0, rv_ip, rv_port);
+  rpcprotocol::Channel channel(pchannel_manager_, transport_handler_,
+                               ctler->transport_id(), remote_ip, remote_port,
+                               "", 0, rendezvous_ip, rendezvous_port);
   if (type == 2)
     ctler->set_timeout(18);
   KademliaService::Stub service(&channel);
-  service.NatDetection(ctler, &args, resp, cb);
+  service.NatDetection(ctler, &args, resp, callback);
 }
 
 void NatRpcs::NatDetectionPing(const std::string &remote_ip,
-    const boost::uint16_t &remote_port, const std::string &rv_ip,
-    const boost::uint16_t &rv_port, NatDetectionPingResponse *resp,
-    rpcprotocol::Controller *ctler, google::protobuf::Closure *cb) {
+    const boost::uint16_t &remote_port, const std::string &rendezvous_ip,
+    const boost::uint16_t &rendezvous_port, NatDetectionPingResponse *resp,
+    rpcprotocol::Controller *ctler, google::protobuf::Closure *callback) {
   NatDetectionPingRequest args;
   args.set_ping("nat_detection_ping");
   rpcprotocol::Controller controller;
   controller.set_timeout(kRpcNatPingTimeout);
-  rpcprotocol::Channel channel(pchannel_manager_, ptrans_handler_,
-    ctler->trans_id(), remote_ip, remote_port, "", 0, rv_ip, rv_port);
+  rpcprotocol::Channel channel(pchannel_manager_, transport_handler_,
+                               ctler->transport_id(), remote_ip, remote_port,
+                               "", 0, rendezvous_ip, rendezvous_port);
   KademliaService::Stub service(&channel);
-  service.NatDetectionPing(ctler, &args, resp, cb);
+  service.NatDetectionPing(ctler, &args, resp, callback);
 }
 }

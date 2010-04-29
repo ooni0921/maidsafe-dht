@@ -32,11 +32,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <string>
 #include "kademlia/kadutils.h"
-#include "maidsafe/kadid.h"
+#include "kademlia/kadid.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
-
 namespace kad {
+
+class Contact;
 
 class KBucket {
  public:

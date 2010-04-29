@@ -39,7 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/calllatertimer.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "rpcprotocol/channelimpl.h"
-#include "maidsafe/transport-api.h"
+#include "transport/transport-api.h"
 
 namespace rpcprotocol {
 
@@ -47,25 +47,25 @@ typedef std::map<std::string, base::Stats<boost::uint64_t> > RpcStatsMap;
 
 struct PendingReq {
   PendingReq() : args(NULL), callback(NULL), ctrl(NULL), connection_id(0),
-    trans_id(0), timeout(0), size_rec(0) {}
+    transport_id(0), timeout(0), size_rec(0) {}
   google::protobuf::Message* args;
   google::protobuf::Closure* callback;
   Controller *ctrl;
   boost::uint32_t connection_id;
-  boost::int16_t trans_id;
+  boost::int16_t transport_id;
   boost::uint64_t timeout;
   boost::int64_t size_rec;
 };
 
 struct PendingTimeOut {
-  PendingTimeOut() : req_id(0), timeout(0) {}
-  boost::uint32_t req_id;
+  PendingTimeOut() : request_id(0), timeout(0) {}
+  boost::uint32_t request_id;
   boost::uint64_t timeout;
 };
 
 class ChannelManagerImpl {
  public:
-  explicit ChannelManagerImpl(transport::TransportHandler *ptrans_handler);
+  explicit ChannelManagerImpl(transport::TransportHandler *transport_handler);
   ~ChannelManagerImpl();
   void RegisterChannel(const std::string &service_name, Channel* channel);
   void UnRegisterChannel(const std::string &service_name);
@@ -76,25 +76,25 @@ class ChannelManagerImpl {
   int Start();
   int Stop();
   boost::uint32_t CreateNewId();
-  void AddPendingRequest(const boost::uint32_t &req_id, PendingReq req);
-  bool DeletePendingRequest(const boost::uint32_t &req_id);
-  bool CancelPendingRequest(const boost::uint32_t &req_id);
-  void AddReqToTimer(const boost::uint32_t &req_id,
+  void AddPendingRequest(const boost::uint32_t &request_id, PendingReq req);
+  bool DeletePendingRequest(const boost::uint32_t &request_id);
+  bool CancelPendingRequest(const boost::uint32_t &request_id);
+  void AddReqToTimer(const boost::uint32_t &request_id,
     const boost::uint64_t &timeout);
   void AddTimeOutRequest(const boost::uint32_t &connection_id,
-    const boost::uint32_t &req_id, const int &timeout);
+    const boost::uint32_t &request_id, const int &timeout);
   bool RegisterNotifiersToTransport();
   RpcStatsMap RpcTimings();
   void ClearRpcTimings();
  private:
-  void TimerHandler(const boost::uint32_t &req_id);
+  void TimerHandler(const boost::uint32_t &request_id);
   void RequestSent(const boost::uint32_t &connection_id, const bool &success);
   void OnlineStatusChanged(const bool &online);
   void MessageArrive(const RpcMessage &msg,
                      const boost::uint32_t &connection_id,
-                     const boost::int16_t trans_id,
+                     const boost::int16_t transport_id,
                      const float &rtt);
-  transport::TransportHandler *ptrans_handler_;
+  transport::TransportHandler *transport_handler_;
   bool is_started_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
   boost::mutex req_mutex_, channels_mutex_, id_mutex_, pend_timeout_mutex_,

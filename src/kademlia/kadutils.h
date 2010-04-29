@@ -33,10 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 class KadId;
 
-std::string random_kademlia_id(const KadId &min_range,
-                               const KadId &max_range);
+std::string random_kademlia_id(const KadId &min_range, const KadId &max_range);
 std::string client_node_id();
 std::string vault_random_id();
+
 }  // namespace kad
 
 #endif  // KADEMLIA_KADUTILS_H_

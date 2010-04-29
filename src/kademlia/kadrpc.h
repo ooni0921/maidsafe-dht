@@ -29,12 +29,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define KADEMLIA_KADRPC_H_
 
 #include <boost/cstdint.hpp>
+#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <vector>
-#include "maidsafe/channelmanager-api.h"
+#include "rpcprotocol/channelmanager-api.h"
 #include "protobuf/kademlia_service.pb.h"
-#include "maidsafe/transporthandler-api.h"
+#include "transport/transporthandler-api.h"
+#include "maidsafe/maidsafe-dht_config.h"
+
+namespace rpcprotocol {
+class Controller;
+}  // namespace rpcprotocol
 
 namespace kad {
 // different RPCs have different timeouts, normally it is 5 seconds
@@ -46,53 +52,53 @@ class KadId;
 class KadRpcs {
  public:
   KadRpcs(rpcprotocol::ChannelManager *channel_manager,
-      transport::TransportHandler *ptrans_handler);
+      transport::TransportHandler *transport_handler);
   void FindNode(const KadId &key, const std::string &ip,
-      const boost::uint16_t &port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port, FindResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
+      const boost::uint16_t &port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, FindResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback);
   void FindValue(const KadId &key, const std::string &ip,
-      const boost::uint16_t &port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port, FindResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
+      const boost::uint16_t &port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, FindResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback);
   void Ping(const std::string &ip, const boost::uint16_t &port,
-      const std::string &rv_ip, const boost::uint16_t &rv_port,
+      const std::string &rendezvous_ip, const boost::uint16_t &rendezvous_port,
       PingResponse *resp, rpcprotocol::Controller *ctler,
-      google::protobuf::Closure *cb);
+      google::protobuf::Closure *callback);
   void Store(const KadId &key, const SignedValue &value,
       const SignedRequest &sig_req, const std::string &ip,
-      const boost::uint16_t &port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port, StoreResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb,
+      const boost::uint16_t &port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, StoreResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback,
       const boost::int32_t &ttl, const bool &publish);
   void Store(const KadId &key, const std::string &value,
       const std::string &ip, const boost::uint16_t &port,
-      const std::string &rv_ip, const boost::uint16_t &rv_port,
+      const std::string &rendezvous_ip, const boost::uint16_t &rendezvous_port,
       StoreResponse *resp, rpcprotocol::Controller *ctler,
-      google::protobuf::Closure *cb, const boost::int32_t &ttl,
+      google::protobuf::Closure *callback, const boost::int32_t &ttl,
       const bool &publish);
   void Downlist(const std::vector<std::string> downlist,
       const std::string &ip, const boost::uint16_t &port,
-      const std::string &rv_ip, const boost::uint16_t &rv_port,
+      const std::string &rendezvous_ip, const boost::uint16_t &rendezvous_port,
       DownlistResponse *resp, rpcprotocol::Controller *ctler,
-      google::protobuf::Closure *cb);
+      google::protobuf::Closure *callback);
   void Bootstrap(const KadId &local_id, const std::string &local_ip,
       const boost::uint16_t &local_port, const std::string &remote_ip,
-      const boost::uint16_t &remote_port, const node_type &type,
+      const boost::uint16_t &remote_port, const NodeType &type,
       BootstrapResponse *resp, rpcprotocol::Controller *ctler,
-      google::protobuf::Closure *cb);
+      google::protobuf::Closure *callback);
   void Delete(const KadId &key, const SignedValue &value,
       const SignedRequest &sig_req, const std::string &ip,
-      const boost::uint16_t &port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port, DeleteResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
+      const boost::uint16_t &port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, DeleteResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback);
   void set_info(const ContactInfo &info);
  private:
   KadRpcs(const KadRpcs&);
   KadRpcs& operator=(const KadRpcs&);
   ContactInfo info_;
   rpcprotocol::ChannelManager *pchannel_manager_;
-  transport::TransportHandler *ptrans_handler_;
+  transport::TransportHandler *transport_handler_;
 };
 }  // namespace kad
 

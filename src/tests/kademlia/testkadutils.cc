@@ -25,9 +25,11 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <boost/thread/thread.hpp>
 #include <gtest/gtest.h>
 #include "kademlia/kadutils.h"
-#include "maidsafe/kadid.h"
+#include "kademlia/knodeimpl.h"
+#include "kademlia/kadid.h"
 #include "maidsafe/maidsafe-dht.h"
 
 bool InRange(const std::string &key, const kad::KadId &min_range,

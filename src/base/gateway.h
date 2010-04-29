@@ -32,12 +32,9 @@ Created by Julian Cain on 11/3/09.
 #define BASE_GATEWAY_H_
 
 #include <boost/asio.hpp>
-
 #include <vector>
-
+#include "maidsafe/maidsafe-dht_config.h"
 #include "base/network_interface.h"
-#include "base/config.h"
-
 
 #if (defined(MAIDSAFE_APPLE) || defined(MAIDSAFE_POSIX) || defined(__MACH__)) \
     && !defined(MAIDSAFE_LINUX)

@@ -32,16 +32,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <list>
 #include <string>
 #include "protobuf/rpcmessage.pb.h"
-#include "transport/tcptransport.h"
-#include "maidsafe/config.h"
-#include "maidsafe/routingtable.h"
+#include "transport/transporttcp.h"
+#include "base/log.h"
+#include "base/utils.h"
+#include "base/routingtable.h"
 
 void send_rpcmsg(transport::Transport* node, const boost::uint16_t &port,
     const int &repeat, rpcprotocol::RpcMessage msg) {
   boost::uint32_t id;
   boost::asio::ip::address local_address;
   std::string ip;
-  if (base::get_local_address(&local_address)) {
+  if (base::GetLocalAddress(&local_address)) {
     ip = local_address.to_string();
   } else {
     ip = std::string("127.0.0.1");
@@ -57,22 +58,24 @@ void send_rpcmsg(transport::Transport* node, const boost::uint16_t &port,
 
 class Handler {
  public:
-  Handler() : msgs(), raw_msgs(), conn_ids(), raw_conn_ids(), trans_ids(),
-    raw_trans_ids(), msgs_sent(0), msgs_rec(0), str_msg() {
+  Handler() : msgs(), raw_msgs(), connection_ids(), raw_connection_ids(),
+              transport_ids(), raw_transport_ids(), msgs_sent(0), msgs_rec(0),
+              str_msg() {
   }
-  void OnMsgArrived(const std::string &msg, const boost::uint32_t &conn_id,
-    const boost::uint16_t &trans_id, const float&) {
+  void OnMsgArrived(const std::string &msg,
+                    const boost::uint32_t &connection_id,
+                    const boost::uint16_t &transport_id, const float&) {
     raw_msgs.push_back(msg);
-    raw_conn_ids.push_back(conn_id);
-    raw_trans_ids.push_back(trans_id);
+    raw_connection_ids.push_back(connection_id);
+    raw_transport_ids.push_back(transport_id);
   }
   void OnRpcMsgArrived(const rpcprotocol::RpcMessage &msg,
-    const boost::uint32_t &conn_id, const boost::uint16_t &trans_id,
+    const boost::uint32_t &connection_id, const boost::uint16_t &transport_id,
     const float&) {
     if (msg.IsInitialized()) {
       msgs.push_back(msg.SerializeAsString());
-      conn_ids.push_back(conn_id);
-      trans_ids.push_back(trans_id);
+      connection_ids.push_back(connection_id);
+      transport_ids.push_back(transport_id);
     }
   }
   void OnSendRpc(const boost::uint32_t&, const bool &success) {
@@ -88,18 +91,18 @@ class Handler {
     }
   }
   std::list<std::string> msgs, raw_msgs;
-  std::list<boost::uint32_t> conn_ids, raw_conn_ids;
-  std::list<boost::uint16_t> trans_ids, raw_trans_ids;
+  std::list<boost::uint32_t> connection_ids, raw_connection_ids;
+  std::list<boost::uint16_t> transport_ids, raw_transport_ids;
   unsigned int msgs_sent;
   unsigned int msgs_rec;
   std::string str_msg;
 };
 
 TEST(TestTCPTransport, BEH_TRANS_TcpSendOneMessageFromOneToAnother) {
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
   Handler hdlr1, hdlr2;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr1, _1, _2, _3, _4)));
@@ -143,14 +146,14 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendOneMessageFromOneToAnother) {
 TEST(TestTCPTransport, BEH_TRANS_TcpSendMessagesFromManyToOne) {
   boost::uint32_t id;
   Handler hdlr[4];
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  transport::Transport *node3 = new transport::TCPTransport;
-  transport::Transport *node4 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
-  node3->SetID(3);
-  node4->SetID(4);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  transport::Transport *node3 = new transport::TransportTCP;
+  transport::Transport *node4 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
+  node3->set_transport_id(3);
+  node4->set_transport_id(4);
 
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr[0], _1, _2, _3, _4)));
@@ -199,9 +202,9 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMessagesFromManyToOne) {
   EXPECT_EQ(0, node3->ConnectToSend("127.0.0.1", lp_node4, "", 0, "", 0,
     false, &id));
   EXPECT_EQ(0, node3->Send(rpc_msg, id, true));
-  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t now = base::GetEpochTime();
   while (hdlr[3].msgs.size() < size_t(3) &&
-         base::get_epoch_time() - now < 15)
+         base::GetEpochTime() - now < 15)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   node1->Stop();
   node2->Stop();
@@ -229,18 +232,18 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMessagesFromManyToOne) {
 TEST(TestTCPTransport, BEH_TRANS_TcpSendMessagesFromManyToMany) {
   boost::uint32_t id;
   Handler hdlr[6];
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  transport::Transport *node3 = new transport::TCPTransport;
-  transport::Transport *node4 = new transport::TCPTransport;
-  transport::Transport *node5 = new transport::TCPTransport;
-  transport::Transport *node6 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
-  node3->SetID(3);
-  node4->SetID(4);
-  node3->SetID(5);
-  node4->SetID(6);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  transport::Transport *node3 = new transport::TransportTCP;
+  transport::Transport *node4 = new transport::TransportTCP;
+  transport::Transport *node5 = new transport::TransportTCP;
+  transport::Transport *node6 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
+  node3->set_transport_id(3);
+  node4->set_transport_id(4);
+  node3->set_transport_id(5);
+  node4->set_transport_id(6);
 
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr[0], _1, _2, _3, _4)));
@@ -303,10 +306,10 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMessagesFromManyToMany) {
   ASSERT_EQ(0, node3->ConnectToSend("127.0.0.1", lp_node6, "",
     0, "", 0, false, &id));
   ASSERT_EQ(0, node3->Send(rpc_msg, id, true));
-  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t now = base::GetEpochTime();
   bool msgs_received[3] = {false, false, false};
   while ((!msgs_received[0] || !msgs_received[1] || !msgs_received[2]) &&
-          base::get_epoch_time() - now < 15) {
+          base::GetEpochTime() - now < 15) {
     if (hdlr[3].msgs.size() > 0)
       msgs_received[0] = true;
     if (hdlr[4].msgs.size() > 0)
@@ -340,14 +343,14 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMessagesFromManyToMany) {
 TEST(TestTCPTransport, BEH_TRANS_TcpSendMessagesFromOneToMany) {
   boost::uint32_t id;
   Handler hdlr[4];
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  transport::Transport *node3 = new transport::TCPTransport;
-  transport::Transport *node4 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
-  node3->SetID(3);
-  node4->SetID(4);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  transport::Transport *node3 = new transport::TransportTCP;
+  transport::Transport *node4 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
+  node3->set_transport_id(3);
+  node4->set_transport_id(4);
 
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr[0], _1, _2, _3, _4)));
@@ -399,10 +402,10 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMessagesFromOneToMany) {
     false, &id));
   ASSERT_EQ(0, node1->Send(rpc_msg, id, true));
 
-  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t now = base::GetEpochTime();
   bool msgs_received[3] = {false, false, false};
   while ((!msgs_received[0] || !msgs_received[1] || !msgs_received[2]) &&
-          base::get_epoch_time() - now < 15) {
+          base::GetEpochTime() - now < 15) {
     if (hdlr[1].msgs.size() >= size_t(1))
       msgs_received[0] = true;
     if (hdlr[2].msgs.size() >= size_t(1))
@@ -428,10 +431,10 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMessagesFromOneToMany) {
 }
 
 TEST(TestTCPTransport, BEH_TRANS_TcpSendMultipleMsgsSameConnection) {
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  node1->SetID(1);
-  node1->SetID(2);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node1->set_transport_id(2);
   Handler hdlr1, hdlr2;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr1, _1, _2, _3, _4)));
@@ -468,7 +471,7 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMultipleMsgsSameConnection) {
   while (hdlr1.raw_msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   ASSERT_TRUE(hdlr2.raw_msgs.empty());
-  EXPECT_EQ(0, node1->Send(str_msg, hdlr1.raw_conn_ids.front(), true));
+  EXPECT_EQ(0, node1->Send(str_msg, hdlr1.raw_connection_ids.front(), true));
   while (hdlr2.raw_msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 
@@ -489,8 +492,8 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMultipleMsgsSameConnection) {
 
 TEST(TestTCPTransport, BEH_TRANS_TcpFailConnectToInvalidPeer) {
   boost::uint32_t id;
-  transport::Transport *node1 = new transport::TCPTransport;
-  node1->SetID(1);
+  transport::Transport *node1 = new transport::TransportTCP;
+  node1->set_transport_id(1);
   Handler hdlr;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(
     boost::bind(&Handler::OnRpcMsgArrived, &hdlr, _1, _2, _3, _4)));
@@ -509,10 +512,10 @@ TEST(TestTCPTransport, BEH_TRANS_TcpFailConnectToInvalidPeer) {
 
 TEST(TestTCPTransport, BEH_TRANS_TcpGetRemotePeerAddress) {
   boost::uint32_t id;
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
   Handler hdlr1, hdlr2;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr1, _1, _2, _3, _4)));
@@ -548,10 +551,10 @@ TEST(TestTCPTransport, BEH_TRANS_TcpGetRemotePeerAddress) {
 
 TEST(TestTCPTransport, BEH_TRANS_TcpSendMessageFromOneToAnotherBidirectional) {
   boost::uint32_t id;
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
   Handler hdlr1, hdlr2;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr1, _1, _2, _3, _4)));
@@ -578,17 +581,17 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMessageFromOneToAnotherBidirectional) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   // replying on same channel
   ASSERT_FALSE(hdlr2.msgs.empty());
-  ASSERT_FALSE(hdlr2.conn_ids.empty());
+  ASSERT_FALSE(hdlr2.connection_ids.empty());
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(256 * 1024));
   std::string reply_msg;
   rpc_msg.SerializeToString(&reply_msg);
-  ASSERT_EQ(0, node2->Send(rpc_msg, hdlr2.conn_ids.front(), false));
+  ASSERT_EQ(0, node2->Send(rpc_msg, hdlr2.connection_ids.front(), false));
   while (hdlr1.msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   // Closing the connection
-  node1->CloseConnection(hdlr1.conn_ids.front());
-  node2->CloseConnection(hdlr2.conn_ids.front());
+  node1->CloseConnection(hdlr1.connection_ids.front());
+  node2->CloseConnection(hdlr2.connection_ids.front());
   node1->Stop();
   node2->Stop();
   ASSERT_FALSE(hdlr1.msgs.empty());
@@ -603,14 +606,14 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMessageFromOneToAnotherBidirectional) {
 TEST(TestTCPTransport, BEH_TRANS_TcpSendMsgsFromManyToOneBidirectional) {
   boost::uint32_t id;
   Handler hdlr[4];
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  transport::Transport *node3 = new transport::TCPTransport;
-  transport::Transport *node4 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
-  node3->SetID(3);
-  node4->SetID(4);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  transport::Transport *node3 = new transport::TransportTCP;
+  transport::Transport *node4 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
+  node3->set_transport_id(3);
+  node4->set_transport_id(4);
 
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr[0], _1, _2, _3, _4)));
@@ -668,7 +671,8 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMsgsFromManyToOneBidirectional) {
   std::string reply_str;
   rpc_msg.SerializeToString(&reply_str);
   int i = 0;
-  for (it = hdlr[3].conn_ids.begin(); it != hdlr[3].conn_ids.end(); it++) {
+  for (it = hdlr[3].connection_ids.begin(); it != hdlr[3].connection_ids.end();
+       it++) {
     ++i;
     ASSERT_EQ(0, node4->Send(rpc_msg, *it, false));
   }
@@ -677,13 +681,17 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMsgsFromManyToOneBidirectional) {
          hdlr[2].msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 
-  for (it = hdlr[0].conn_ids.begin(); it != hdlr[0].conn_ids.end(); it++)
+  for (it = hdlr[0].connection_ids.begin(); it != hdlr[0].connection_ids.end();
+       it++)
     node1->CloseConnection(*it);
-  for (it = hdlr[1].conn_ids.begin(); it != hdlr[1].conn_ids.end(); it++)
+  for (it = hdlr[1].connection_ids.begin(); it != hdlr[1].connection_ids.end();
+       it++)
     node2->CloseConnection(*it);
-  for (it = hdlr[2].conn_ids.begin(); it != hdlr[2].conn_ids.end(); it++)
+  for (it = hdlr[2].connection_ids.begin(); it != hdlr[2].connection_ids.end();
+       it++)
     node3->CloseConnection(*it);
-  for (it = hdlr[3].conn_ids.begin(); it != hdlr[3].conn_ids.end(); it++)
+  for (it = hdlr[3].connection_ids.begin(); it != hdlr[3].connection_ids.end();
+       it++)
     node4->CloseConnection(*it);
 
   node1->Stop();
@@ -717,10 +725,10 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendMsgsFromManyToOneBidirectional) {
 
 TEST(TestTCPTransport, BEH_TRANS_TcpSendOneMessageCloseAConnection) {
   boost::uint32_t id;
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
   Handler hdlr1, hdlr2;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr1, _1, _2, _3, _4)));
@@ -747,14 +755,14 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendOneMessageCloseAConnection) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   // replying on same channel
   ASSERT_FALSE(hdlr2.msgs.empty());
-  ASSERT_FALSE(hdlr2.conn_ids.empty());
+  ASSERT_FALSE(hdlr2.connection_ids.empty());
   rpc_msg.clear_args();
   rpc_msg.set_args(base::RandomString(256 * 1024));
   std::string reply_msg;
   rpc_msg.SerializeToString(&reply_msg);
   node1->CloseConnection(id);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  EXPECT_EQ(1, node2->Send(rpc_msg, hdlr2.conn_ids.front(), false));
+  EXPECT_EQ(1, node2->Send(rpc_msg, hdlr2.connection_ids.front(), false));
 
   node1->Stop();
   node2->Stop();
@@ -766,10 +774,10 @@ TEST(TestTCPTransport, BEH_TRANS_TcpSendOneMessageCloseAConnection) {
 
 TEST(TestTCPTransport, FUNC_TRANS_TcpStartStopTransport) {
   boost::uint32_t id;
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
   Handler hdlr1, hdlr2;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr1, _1, _2, _3, _4)));
@@ -852,10 +860,10 @@ TEST(TestTCPTransport, FUNC_TRANS_TcpStartStopTransport) {
 }
 
 TEST(TestTCPTransport, BEH_TRANS_TcpStartLocal) {
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
   Handler hdlr1, hdlr2;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr1, _1, _2, _3, _4)));
@@ -872,7 +880,7 @@ TEST(TestTCPTransport, BEH_TRANS_TcpStartLocal) {
   boost::asio::ip::address local_address;
   std::string local_ip;
   std::string loop_back("127.0.0.1");
-  if (base::get_local_address(&local_address)) {
+  if (base::GetLocalAddress(&local_address)) {
     local_ip = local_address.to_string();
   } else {
     FAIL() << "Can not get local address";
@@ -901,10 +909,10 @@ TEST(TestTCPTransport, BEH_TRANS_TcpStartLocal) {
 }
 
 TEST(TestTCPTransport, BEH_TRANS_TcpStartStopLocal) {
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
   Handler hdlr1, hdlr2;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr1, _1, _2, _3, _4)));
@@ -925,7 +933,7 @@ TEST(TestTCPTransport, BEH_TRANS_TcpStartStopLocal) {
   boost::asio::ip::address local_address;
   std::string local_ip;
   std::string loop_back("127.0.0.1");
-  if (base::get_local_address(&local_address)) {
+  if (base::GetLocalAddress(&local_address)) {
     local_ip = local_address.to_string();
   } else {
     FAIL() << "Can not get local address";
@@ -980,10 +988,10 @@ TEST(TestTCPTransport, BEH_TRANS_TcpStartStopLocal) {
 }
 
 TEST(TestTCPTransport, BEH_TRANS_TcpCheckPortAvailable) {
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
   Handler hdlr1, hdlr2;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr1, _1, _2, _3, _4)));
@@ -1003,8 +1011,8 @@ TEST(TestTCPTransport, BEH_TRANS_TcpCheckPortAvailable) {
 }
 
 TEST(TestTCPTransport, BEH_TRANS_TcpRegisterNotifiers) {
-  transport::Transport *node = new transport::TCPTransport;
-  node->SetID(1);
+  transport::Transport *node = new transport::TransportTCP;
+  node->set_transport_id(1);
   Handler hdlr;
 
   ASSERT_EQ(1, node->Start(0));
@@ -1033,10 +1041,10 @@ TEST(TestTCPTransport, BEH_TRANS_TcpRegisterNotifiers) {
 }
 
 TEST(TestTCPTransport, BEH_TRANS_TcpFailStartUsedport) {
-  transport::Transport *node1 = new transport::TCPTransport;
-  transport::Transport *node2 = new transport::TCPTransport;
-  node1->SetID(1);
-  node2->SetID(2);
+  transport::Transport *node1 = new transport::TransportTCP;
+  transport::Transport *node2 = new transport::TransportTCP;
+  node1->set_transport_id(1);
+  node2->set_transport_id(2);
   Handler hdlr1, hdlr2;
   ASSERT_TRUE(node1->RegisterOnRPCMessage(boost::bind(&Handler::OnRpcMsgArrived,
     &hdlr1, _1, _2, _3, _4)));
@@ -1070,8 +1078,8 @@ TEST(TestTCPTransport, FUNC_TRANS_TcpSend1000Msgs) {
   std::string str_rpc_msg(rpc_msg.SerializeAsString());
 
   for (int i = 0; i < kNumNodes; ++i) {
-    nodes[i] = new transport::TCPTransport;
-    nodes[i]->SetID(i);
+    nodes[i] = new transport::TransportTCP;
+    nodes[i]->set_transport_id(i);
 
     ASSERT_TRUE(nodes[i]->RegisterOnRPCMessage(
       boost::bind(&Handler::OnRpcMsgArrivedCounter, &hdlr[i], _1, _2, _3, _4)));

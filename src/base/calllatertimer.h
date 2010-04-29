@@ -46,9 +46,9 @@ typedef std::pair< boost::uint32_t,
     boost::shared_ptr<boost::asio::deadline_timer> > timer_pair;
 
 struct CallLaterMap {
-  CallLaterMap() : time_to_execute(0), cb(), calllater_id(0) {}
+  CallLaterMap() : time_to_execute(0), callback(), calllater_id(0) {}
   boost::uint64_t time_to_execute;
-  calllater_func cb;
+  calllater_func callback;
   boost::uint32_t calllater_id;
 };
 
@@ -60,8 +60,8 @@ class CallLaterTimer {
   int CancelAll();
   bool CancelOne(const boost::uint32_t &calllater_id);
   size_t list_size();
-  // Delay msecs milliseconds to call the function specified by cb
-  int AddCallLater(const boost::uint64_t &msecs, calllater_func cb);
+  // Delay msecs milliseconds to call the function specified by callback
+  int AddCallLater(const boost::uint64_t &msecs, calllater_func callback);
   friend class CallLaterTest;
 
  private:
@@ -73,7 +73,7 @@ class CallLaterTimer {
   FRIEND_TEST(CallLaterTest, BEH_BASE_AddPtrCallLater);
   FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyPtrCallLater);
   FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyAgainPtrCallLater);
-  void ExecuteFunc(calllater_func cb, boost::uint32_t id,
+  void ExecuteFunc(calllater_func callback, boost::uint32_t id,
       const boost::system::error_code &ec);
   CallLaterTimer(const CallLaterTimer&);
   CallLaterTimer& operator=(const CallLaterTimer&);

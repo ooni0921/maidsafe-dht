@@ -25,20 +25,21 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_KADID_H_
-#define MAIDSAFE_KADID_H_
+#ifndef KADEMLIA_KADID_H_
+#define KADEMLIA_KADID_H_
 
 #include <boost/cstdint.hpp>
 #include <string>
 #include <vector>
 #include <exception>
 
+
 namespace kad {
 
-enum  error_codes { OUT_OF_RANGE,
-                    LLIMIT_GT_ULIMIT,
-                    INVALID_STRING,
-                    INVALID_RANGE };
+enum error_codes { OUT_OF_RANGE,
+                   LLIMIT_GT_ULIMIT,
+                   INVALID_STRING,
+                   INVALID_RANGE };
 
 enum id_type { MAX_ID,
                RANDOM_ID };
@@ -187,4 +188,5 @@ class KadId {
 };
 
 }  // namespace kad
-#endif  // MAIDSAFE_KADID_H_
+
+#endif  // KADEMLIA_KADID_H_

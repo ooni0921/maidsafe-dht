@@ -25,11 +25,12 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/online.h"
+#include "base/online.h"
+#include "base/utils.h"
 
 namespace base {
 
-OnlineController* OnlineController::instance() {
+OnlineController* OnlineController::Instance() {
   static OnlineController oc;
   return &oc;
 }
@@ -38,16 +39,16 @@ OnlineController::OnlineController()
     : online_(), ol_mutex_(), observers_() { }
 
 boost::uint16_t OnlineController::RegisterObserver(
-    const boost::uint16_t &group, const Observer &ob) {
+    const boost::uint16_t &group, const Observer &observer) {
   boost::mutex::scoped_lock loch(ol_mutex_);
-  boost::uint16_t id = 1 + base::random_32bit_uinteger() % 65535;
+  boost::uint16_t id = 1 + base::RandomUint32() % 65535;
   std::pair<std::map<boost::uint16_t, GroupedObserver>::iterator, bool> ret;
   ret = observers_.insert(std::pair<boost::uint16_t, GroupedObserver>
-                          (id, GroupedObserver(group, ob)));
+                          (id, GroupedObserver(group, observer)));
   while (!ret.second) {
-    id = 1 + base::random_32bit_uinteger() % 65535;
+    id = 1 + base::RandomUint32() % 65535;
     ret = observers_.insert(std::pair<boost::uint16_t, GroupedObserver>
-                            (id, GroupedObserver(group, ob)));
+                            (id, GroupedObserver(group, observer)));
   }
   return id;
 }
@@ -84,26 +85,27 @@ void OnlineController::UnregisterAll() {
   observers_.clear();
 }
 
-void OnlineController::SetOnline(const boost::uint16_t &group, const bool &b) {
+void OnlineController::SetOnline(const boost::uint16_t &group,
+                                 const bool &online) {
   boost::mutex::scoped_lock loch(ol_mutex_);
-  online_[group] = b;
+  online_[group] = online;
   for (std::map<boost::uint16_t, GroupedObserver>::iterator it =
        observers_.begin(); it != observers_.end(); ++it) {
     if ((*it).second.first == group)
-      (*it).second.second(b);
+      (*it).second.second(online);
   }
 }
 
-void OnlineController::SetAllOnline(const bool &b) {
+void OnlineController::SetAllOnline(const bool &online) {
   boost::mutex::scoped_lock loch(ol_mutex_);
   for (std::map<boost::uint16_t, bool>::iterator it = online_.begin();
        it != online_.end(); ++it) {
-    (*it).second = b;
+    (*it).second = online;
   }
   for (std::map<boost::uint16_t, GroupedObserver>::iterator it =
        observers_.begin(); it != observers_.end(); ++it) {
-    online_[(*it).second.first] = b;
-    (*it).second.second(b);
+    online_[(*it).second.first] = online;
+    (*it).second.second(online);
   }
 }
 

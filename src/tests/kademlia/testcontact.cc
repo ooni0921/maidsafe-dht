@@ -26,7 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
-#include "maidsafe/crypto.h"
+#include "base/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 
 class TestContact : public testing::Test {
@@ -47,12 +47,12 @@ TEST_F(TestContact, BEH_KAD_GetIp_Port_NodeId) {
   kad::KadId node_id(cry_obj.Hash("1238425", "", crypto::STRING_STRING,
       false), false);
   kad::Contact contact(node_id, ip, port, local_ip, local_port);
-  ASSERT_EQ(base::inet_atob(ip), contact.host_ip());
-  ASSERT_EQ(ip, base::inet_btoa(contact.host_ip()));
+  ASSERT_EQ(base::IpAsciiToBytes(ip), contact.host_ip());
+  ASSERT_EQ(ip, base::IpBytesToAscii(contact.host_ip()));
   ASSERT_TRUE(node_id == contact.node_id());
   ASSERT_EQ(port, contact.host_port());
-  ASSERT_EQ(base::inet_atob(local_ip), contact.local_ip());
-  ASSERT_EQ(local_ip, base::inet_btoa(contact.local_ip()));
+  ASSERT_EQ(base::IpAsciiToBytes(local_ip), contact.local_ip());
+  ASSERT_EQ(local_ip, base::IpBytesToAscii(contact.local_ip()));
   ASSERT_EQ(local_port, contact.local_port());
 }
 
@@ -65,23 +65,23 @@ TEST_F(TestContact, BEH_KAD_OverloadedOperators) {
       false));
   kad::Contact contact1(node_id, ip, port, local_ip, local_port);
   kad::Contact contact2(node_id, ip, port, local_ip, local_port);
-  ASSERT_TRUE(contact1 == contact2);
+  ASSERT_TRUE(contact1.Equals(contact2));
   kad::Contact contact3(node_id, ip, 8889);
-  ASSERT_TRUE(contact1 == contact3);
+  ASSERT_TRUE(contact1.Equals(contact3));
   kad::Contact contact4(node_id, "192.168.2.54", port, "192.168.2.54", port);
-  ASSERT_TRUE(contact1 == contact4);
+  ASSERT_TRUE(contact1.Equals(contact4));
   kad::Contact contact5(cry_obj.Hash("5612348", "", crypto::STRING_STRING,
       false), ip, port, ip, port);
-  ASSERT_TRUE(contact1 == contact5);
+  ASSERT_TRUE(contact1.Equals(contact5));
   kad::Contact contact6(cry_obj.Hash("5612348", "", crypto::STRING_STRING,
       false), ip, 8889, ip, 8889);
-  ASSERT_TRUE(contact1 != contact6);
+  ASSERT_FALSE(contact1.Equals(contact6));
   kad::Contact contact7(node_id, "192.168.2.54", 8889, "192.168.2.54", 8889);
-  ASSERT_TRUE(contact1 == contact7);
+  ASSERT_TRUE(contact1.Equals(contact7));
   contact6 = contact1;
-  ASSERT_TRUE(contact1 == contact6);
+  ASSERT_TRUE(contact1.Equals(contact6));
   kad::Contact contact8(contact1);
-  ASSERT_TRUE(contact1 == contact8);
+  ASSERT_TRUE(contact1.Equals(contact8));
 }
 
 TEST_F(TestContact, BEH_KAD_IncreaseGetFailedRPC) {
@@ -110,12 +110,12 @@ TEST_F(TestContact, BEH_KAD_ContactPointer) {
       false));
   kad::Contact *contact = new kad::Contact(node_id, ip, port, local_ip,
     local_port);
-  ASSERT_EQ(base::inet_atob(ip), contact->host_ip());
-  ASSERT_EQ(ip, base::inet_btoa(contact->host_ip()));
+  ASSERT_EQ(base::IpAsciiToBytes(ip), contact->host_ip());
+  ASSERT_EQ(ip, base::IpBytesToAscii(contact->host_ip()));
   ASSERT_EQ(node_id, contact->node_id().ToStringDecoded());
   ASSERT_EQ(port, contact->host_port());
-  ASSERT_EQ(base::inet_atob(local_ip), contact->local_ip());
-  ASSERT_EQ(local_ip, base::inet_btoa(contact->local_ip()));
+  ASSERT_EQ(base::IpAsciiToBytes(local_ip), contact->local_ip());
+  ASSERT_EQ(local_ip, base::IpBytesToAscii(contact->local_ip()));
   ASSERT_EQ(local_port, contact->local_port());
   ASSERT_EQ(0, contact->failed_rpc());
   contact->IncreaseFailed_RPC();
@@ -138,10 +138,10 @@ TEST_F(TestContact, BEH_KAD_SerialiseToString) {
   ASSERT_FALSE(contact1.SerialiseToString(&ser_contact1));
   ASSERT_TRUE(contact1.ParseFromString(ser_contact));
   ASSERT_FALSE(contact1.ParseFromString("invaliddata"));
-  ASSERT_EQ(ip, base::inet_btoa(contact1.host_ip()));
+  ASSERT_EQ(ip, base::IpBytesToAscii(contact1.host_ip()));
   ASSERT_EQ(port, contact1.host_port());
   ASSERT_EQ(node_id, contact1.node_id().ToStringDecoded());
-  ASSERT_EQ(local_ip, base::inet_btoa(contact1.local_ip()));
+  ASSERT_EQ(local_ip, base::IpBytesToAscii(contact1.local_ip()));
   ASSERT_EQ(local_port, contact1.host_port());
 }
 
@@ -156,9 +156,9 @@ TEST_F(TestContact, BEH_KAD_Constructors) {
   ASSERT_EQ(0, ctc1.host_port());
   ASSERT_EQ(0, ctc1.local_port());
   ASSERT_EQ(0, ctc1.rendezvous_port());
-  ASSERT_EQ("Empty contact.\n", ctc1.ToString());
+  ASSERT_EQ("Empty contact.\n", ctc1.DebugString());
 
-  std::string ip(base::inet_atob("192.168.1.55"));
+  std::string ip(base::IpAsciiToBytes("192.168.1.55"));
   boost::uint16_t port(8888);
   std::string node_id(cry_obj.Hash("1238425", "", crypto::STRING_STRING,
     false));
@@ -189,5 +189,5 @@ TEST_F(TestContact, BEH_KAD_Constructors) {
   ASSERT_EQ(port, ctc4.host_port());
   ASSERT_EQ(port, ctc4.local_port());
   ASSERT_EQ(port, ctc4.rendezvous_port());
-  printf("ctc4: %s", ctc4.ToString().c_str());
+  printf("ctc4: %s", ctc4.DebugString().c_str());
 }

@@ -25,102 +25,103 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/knode-api.h"
 #include "kademlia/knodeimpl.h"
+#include "kademlia/knode-api.h"
 
 namespace kad {
 
 KNode::KNode(rpcprotocol::ChannelManager *channel_manager,
-      transport::TransportHandler *ptrans_handler,
-      node_type type, const std::string &private_key, const std::string
+      transport::TransportHandler *transport_handler,
+      NodeType type, const std::string &private_key, const std::string
       &public_key, const bool &port_forwarded, const bool &use_upnp)
-      : pimpl_(new KNodeImpl(channel_manager, ptrans_handler, type,
+      : pimpl_(new KNodeImpl(channel_manager, transport_handler, type,
       private_key, public_key, port_forwarded, use_upnp)) {}
 
 KNode::KNode(rpcprotocol::ChannelManager *channel_manager,
-      transport::TransportHandler *ptrans_handler,
-      node_type type, const boost::uint16_t &k, const boost::uint16_t &alpha,
+      transport::TransportHandler *transport_handler,
+      NodeType type, const boost::uint16_t &k, const boost::uint16_t &alpha,
       const boost::uint16_t &beta, const boost::uint32_t &refresh_time,
       const std::string &private_key, const std::string &public_key,
       const bool &port_forwarded, const bool &use_upnp)
-      : pimpl_(new KNodeImpl(channel_manager, ptrans_handler, type, k, alpha,
+      : pimpl_(new KNodeImpl(channel_manager, transport_handler, type, k, alpha,
       beta, refresh_time, private_key, public_key, port_forwarded,
       use_upnp)) {}
 
 KNode::~KNode() {}
 
-void KNode::SetTransID(boost::int16_t t) {
-  pimpl_->SetTransID(t);
+void KNode::set_transport_id(const boost::int16_t &transport_id) {
+  pimpl_->set_transport_id(transport_id);
 }
 
 void KNode::Join(const KadId &node_id, const std::string &kad_config_file,
-      base::callback_func_type cb) {
-  pimpl_->Join(node_id, kad_config_file, cb);
+      VoidFunctorOneString callback) {
+  pimpl_->Join(node_id, kad_config_file, callback);
 }
 
 void KNode::Join(const std::string &kad_config_file,
-      base::callback_func_type cb) {
-  pimpl_->Join(kad_config_file, cb);
+      VoidFunctorOneString callback) {
+  pimpl_->Join(kad_config_file, callback);
 }
 
 void KNode::Join(const KadId &node_id, const std::string &kad_config_file,
       const std::string &external_ip, const boost::uint16_t &external_port,
-      base::callback_func_type cb) {
-  pimpl_->Join(node_id, kad_config_file, external_ip, external_port, cb);
+      VoidFunctorOneString callback) {
+  pimpl_->Join(node_id, kad_config_file, external_ip, external_port, callback);
 }
 
 void KNode::Join(const std::string &kad_config_file,
       const std::string &external_ip, const boost::uint16_t &external_port,
-      base::callback_func_type cb) {
-  pimpl_->Join(kad_config_file, external_ip, external_port, cb);
+      VoidFunctorOneString callback) {
+  pimpl_->Join(kad_config_file, external_ip, external_port, callback);
 }
 
 void KNode::Leave() {
   pimpl_->Leave();
 }
 
-void KNode::StoreValue(const KadId &key, const SignedValue &value,
-    const SignedRequest &sreq, const boost::int32_t &ttl,
-    base::callback_func_type cb) {
-  pimpl_->StoreValue(key, value, sreq, ttl, cb);
+void KNode::StoreValue(const KadId &key, const SignedValue &signed_value,
+    const SignedRequest &signed_request, const boost::int32_t &ttl,
+    VoidFunctorOneString callback) {
+  pimpl_->StoreValue(key, signed_value, signed_request, ttl, callback);
 }
 
 void KNode::StoreValue(const KadId &key, const std::string &value,
-    const boost::int32_t &ttl, base::callback_func_type cb) {
-  pimpl_->StoreValue(key, value, ttl, cb);
+    const boost::int32_t &ttl, VoidFunctorOneString callback) {
+  pimpl_->StoreValue(key, value, ttl, callback);
 }
 
-void KNode::FindValue(const KadId &key, const bool &check_alt_store,
-      base::callback_func_type cb) {
-  pimpl_->FindValue(key, check_alt_store, cb);
+void KNode::FindValue(const KadId &key, const bool &check_alternative_store,
+      VoidFunctorOneString callback) {
+  pimpl_->FindValue(key, check_alternative_store, callback);
 }
 
-void KNode::FindNode(const KadId &node_id,
-                     base::callback_func_type cb,
+void KNode::GetNodeContactDetails(const KadId &node_id,
+                     VoidFunctorOneString callback,
                      const bool &local) {
-  pimpl_->FindNode(node_id, cb, local);
+  pimpl_->GetNodeContactDetails(node_id, callback, local);
 }
 
-void KNode::FindCloseNodes(const KadId &node_id,
-                           base::callback_func_type cb) {
-  pimpl_->FindCloseNodes(node_id, cb);
+void KNode::FindKClosestNodes(const KadId &node_id,
+                              VoidFunctorOneString callback) {
+  pimpl_->FindKClosestNodes(node_id, callback);
 }
 
-void KNode::FindKClosestNodes(const KadId &key,
-                              std::vector<Contact> *close_nodes,
-                              const std::vector<Contact> &exclude_contacts) {
-  pimpl_->FindKClosestNodes(key, close_nodes, exclude_contacts);
+void KNode::GetKNodesFromRoutingTable(
+    const KadId &key,
+    const std::vector<Contact> &exclude_contacts,
+    std::vector<Contact> *close_nodes) {
+  pimpl_->GetKNodesFromRoutingTable(key, exclude_contacts, close_nodes);
 }
 
-void KNode::Ping(const KadId &node_id, base::callback_func_type cb) {
-  pimpl_->Ping(node_id, cb);
+void KNode::Ping(const KadId &node_id, VoidFunctorOneString callback) {
+  pimpl_->Ping(node_id, callback);
 }
 
-void KNode::Ping(const Contact &remote, base::callback_func_type cb) {
-  pimpl_->Ping(remote, cb);
+void KNode::Ping(const Contact &remote, VoidFunctorOneString callback) {
+  pimpl_->Ping(remote, callback);
 }
 
-int KNode::AddContact(Contact new_contact, const float & rtt,
+int KNode::AddContact(Contact new_contact, const float &rtt,
       const bool &only_db) {
   return pimpl_->AddContact(new_contact, rtt, only_db);
 }
@@ -148,7 +149,7 @@ bool KNode::RefreshValueLocal(const KadId &key,
   return pimpl_->RefreshValueLocal(key, value, ttl);
 }
 
-void KNode::GetRandomContacts(const boost::uint16_t &count,
+void KNode::GetRandomContacts(const size_t &count,
                               const std::vector<Contact> &exclude_contacts,
                               std::vector<Contact> *contacts) {
   pimpl_->GetRandomContacts(count, exclude_contacts, contacts);
@@ -158,7 +159,7 @@ void KNode::HandleDeadRendezvousServer(const bool &dead_server) {
   pimpl_->HandleDeadRendezvousServer(dead_server);
 }
 
-connect_to_node KNode::CheckContactLocalAddress(const KadId &id,
+ConnectionType KNode::CheckContactLocalAddress(const KadId &id,
                                                 const std::string &ip,
                                                 const boost::uint16_t &port,
                                                 const std::string &ext_ip) {
@@ -194,12 +195,12 @@ boost::uint16_t KNode::local_host_port() const {
   return pimpl_->local_host_port();
 }
 
-std::string KNode::rv_ip() const {
-  return pimpl_->rv_ip();
+std::string KNode::rendezvous_ip() const {
+  return pimpl_->rendezvous_ip();
 }
 
-boost::uint16_t KNode::rv_port() const {
-  return pimpl_->rv_port();
+boost::uint16_t KNode::rendezvous_port() const {
+  return pimpl_->rendezvous_port();
 }
 
 bool KNode::is_joined() const {
@@ -228,8 +229,8 @@ boost::int32_t KNode::KeyValueTTL(const KadId &key,
   return pimpl_->KeyValueTTL(key, value);
 }
 
-void KNode::SetAlternativeStore(base::AlternativeStore* alternative_store) {
-  pimpl_->SetAlternativeStore(alternative_store);
+void KNode::set_alternative_store(base::AlternativeStore* alternative_store) {
+  pimpl_->set_alternative_store(alternative_store);
 }
 
 base::AlternativeStore *KNode::alternative_store() {
@@ -240,26 +241,13 @@ void KNode::set_signature_validator(base::SignatureValidator *validator) {
   pimpl_->set_signature_validator(validator);
 }
 
-void KNode::DeleteValue(const KadId &key, const SignedValue &value,
-      const SignedRequest &request, base::callback_func_type cb) {
-  pimpl_->DeleteValue(key, value, request, cb);
+void KNode::DeleteValue(const KadId &key, const SignedValue &signed_value,
+      const SignedRequest &signed_request, VoidFunctorOneString callback) {
+  pimpl_->DeleteValue(key, signed_value, signed_request, callback);
 }
 
-nat_type KNode::host_nat_type() {
+NatType KNode::host_nat_type() {
   return pimpl_->host_nat_type();
-}
-
-void InsertKadContact(const KadId &key,
-                      const kad::Contact &new_contact,
-                      std::vector<kad::Contact> *contacts) {
-  std::list<kad::Contact> contact_list(contacts->begin(), contacts->end());
-  contact_list.push_back(new_contact);
-  SortContactList(&contact_list, key);
-  contacts->clear();
-  for (std::list<kad::Contact>::iterator it = contact_list.begin();
-       it != contact_list.end(); ++it) {
-    contacts->push_back(*it);
-  }
 }
 
 }  // namespace kad

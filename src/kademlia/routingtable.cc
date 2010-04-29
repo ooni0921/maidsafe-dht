@@ -25,17 +25,18 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <boost/cstdint.hpp>
 #include "kademlia/routingtable.h"
+#include <boost/cstdint.hpp>
+#include "base/utils.h"
+#include "kademlia/contact.h"
 #include "kademlia/kbucket.h"
 
 namespace kad {
 
-RoutingTable::RoutingTable(const KadId &holder_id,
-      const boost::uint16_t &rt_K)
-      : k_buckets_(), bucket_upper_address_(), holder_id_(holder_id),
-        bucket_of_holder_(0), brother_bucket_of_holder_(-1),
-        address_space_upper_address_(MAX_ID), K_(rt_K) {
+RoutingTable::RoutingTable(const KadId &holder_id, const boost::uint16_t &rt_K)
+    : k_buckets_(), bucket_upper_address_(), holder_id_(holder_id),
+      bucket_of_holder_(0), brother_bucket_of_holder_(-1),
+      address_space_upper_address_(MAX_ID), K_(rt_K) {
   KadId min_range;
   boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
       address_space_upper_address_, K_));
@@ -105,7 +106,7 @@ void RoutingTable::TouchKBucket(const KadId &node_id) {
   int index = KBucketIndex(node_id);
   if (index < 0)
     return;
-  k_buckets_[index]->set_last_accessed(base::get_epoch_time());
+  k_buckets_[index]->set_last_accessed(base::GetEpochTime());
 }
 
 void RoutingTable::RemoveContact(const KadId &node_id, const bool &force) {
@@ -214,7 +215,7 @@ void RoutingTable::FindCloseNodes(const KadId &key, int count,
 
 void RoutingTable::GetRefreshList(std::vector<KadId> *ids,
   const boost::uint16_t &start_kbucket, const bool &force) {
-  boost::uint32_t curr_time = base::get_epoch_time();
+  boost::uint32_t curr_time = base::GetEpochTime();
   for (size_t i = start_kbucket; i < k_buckets_.size(); i++)
     if (force || curr_time-k_buckets_[i]->last_accessed() > kRefreshTime) {
       ids->push_back(KadId(k_buckets_[i]->range_min(),
@@ -307,7 +308,8 @@ bool get_least_useful_contact(std::list<ContactWithTargetPeer> l,
       it != l.end(); it++) {
     for (std::list<ForceKEntry>::iterator it1 = l_score.begin();
         it1 != l_score.end(); it1++) {
-      if (it->contact == it1->contact) it1->score += t++;
+      if (it->contact.Equals(it1->contact))
+        it1->score += t++;
     }
   }
   l_score.sort(compare_score);

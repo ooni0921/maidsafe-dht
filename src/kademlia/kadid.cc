@@ -25,11 +25,12 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "kademlia/kadid.h"
 #include <boost/lexical_cast.hpp>
 #include <cstdlib>
 #include <cstdio>
-#include "maidsafe/kadid.h"
-#include "maidsafe/maidsafe-dht_config.h"
+#include "base/utils.h"
+
 
 namespace kad {
 
@@ -109,7 +110,7 @@ KadId::KadId(const boost::int16_t &power1, const boost::int16_t &power2)
   unsigned char u_limit = 1;
   if (shift != 0) {
     u_limit = u_limit << shift;
-    raw_id_[u_pos] = base::random_32bit_integer();
+    raw_id_[u_pos] = base::RandomInt32();
   } else if (u_pos > 0) {
     u_pos--;
   }
@@ -131,7 +132,7 @@ KadId::KadId(const boost::int16_t &power1, const boost::int16_t &power2)
     }
   }
   for (id_size_type i = u_pos + 1; i < raw_id_.size(); ++i) {
-    raw_id_[i] = base::random_32bit_integer();
+    raw_id_[i] = base::RandomInt32();
     if (i == l_pos) {
       while (raw_id_[i] < l_limit) {
         if (raw_id_[i] == 0) {
@@ -192,7 +193,7 @@ KadId::KadId(const KadId &min, const KadId &max)
       ++max_non_zero_indx;
       ++it;
     }
-    raw_id_[max_non_zero_indx] = base::random_32bit_integer();
+    raw_id_[max_non_zero_indx] = base::RandomInt32();
     if (max_non_zero_indx != min_non_zero_indx) {
       id_size_type indx = max_non_zero_indx;
       while (raw_id_[indx] >= max.raw_id_[max_non_zero_indx]) {
@@ -202,22 +203,22 @@ KadId::KadId(const KadId &min, const KadId &max)
       ++indx;
       while (indx < raw_id_.size() && all_zeros &&
              indx > min_non_zero_indx) {
-        raw_id_[indx] = base::random_32bit_integer();
+        raw_id_[indx] = base::RandomInt32();
         all_zeros = (raw_id_[indx] == 0) ? true : false;
         ++indx;
       }
       if (!all_zeros) {
         for (id_size_type i = indx; i < raw_id_.size(); ++i) {
-          raw_id_[i] = base::random_32bit_integer();
+          raw_id_[i] = base::RandomInt32();
         }
       } else if (indx < raw_id_.size()) {
         // indx == min_non_zero_indx
-        raw_id_[indx] = base::random_32bit_integer();
+        raw_id_[indx] = base::RandomInt32();
         while (raw_id_[indx] <= min.raw_id_[min_non_zero_indx]) {
           ++raw_id_[indx];
         }
         for (id_size_type i = ++indx; i < raw_id_.size(); ++i) {
-          raw_id_[i] = base::random_32bit_integer();
+          raw_id_[i] = base::RandomInt32();
         }
       }
     } else {
@@ -228,7 +229,7 @@ KadId::KadId(const KadId &min, const KadId &max)
           ++raw_id_[min_non_zero_indx];
       }
       for (id_size_type i = ++min_non_zero_indx; i < raw_id_.size(); ++i) {
-          raw_id_[i] = base::random_32bit_integer();
+          raw_id_[i] = base::RandomInt32();
       }
     }
   }
@@ -236,7 +237,7 @@ KadId::KadId(const KadId &min, const KadId &max)
 
 void KadId::GenerateRandomId() {
   for (id_container::iterator it = raw_id_.begin(); it != raw_id_.end(); ++it) {
-    (*it) = base::random_32bit_integer();
+    (*it) = base::RandomInt32();
   }
 }
 

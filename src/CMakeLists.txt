@@ -166,8 +166,6 @@ IF(UNIX)
   ENDIF()
 ENDIF()
 
-CONFIGURE_FILE(${maidsafe_dht_SOURCE_DIR}/config.h.in ${maidsafe_dht_SOURCE_DIR}/maidsafe/config.h)
-
 ###################################################################################################
 # Google Test library search                                                                      #
 ###################################################################################################
@@ -417,6 +415,10 @@ ADD_LIBRARY(maidsafe_dht_static STATIC ${DHT_SOURCE_FILES})
 # Builds                                                                                          #
 ###################################################################################################
 ADD_DEFINITIONS(-DSTATICLIB)
+IF(HAVE_GLOG)
+  ADD_DEFINITIONS(-DHAVE_GLOG)
+ENDIF()
+
 #Ensure we pick up correct libs and not some older installed one
 IF(MSVC)
 #  SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES IMPORTED_LOCATION bin/libmaidsafe_dht.lib)
@@ -461,7 +463,7 @@ IF(NOT MSVC)
 #    TARGET_LINK_LIBRARIES(kaddemo maidsafe_dht udt cryptopp ${SYS_LIB})
 #    TARGET_LINK_LIBRARIES(benchmark maidsafe_dht udt cryptopp ${SYS_LIB})
 #  ENDIF()
-  TARGET_LINK_LIBRARIES(kaddemo_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})  
+  TARGET_LINK_LIBRARIES(kaddemo_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
   TARGET_LINK_LIBRARIES(benchmark_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
 ENDIF()
 
@@ -617,6 +619,7 @@ IF(NOT MSVC)
   SET_SOURCE_FILES_PROPERTIES(${T_RPCPROTO_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
   SET_SOURCE_FILES_PROPERTIES(${T_UPNP_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
   SET_SOURCE_FILES_PROPERTIES(${T_NATPMP_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
+  SET_SOURCE_FILES_PROPERTIES(${T_DEMO_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
   SET_SOURCE_FILES_PROPERTIES(${T_BENCHMARK_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
   SET_TARGET_PROPERTIES(TESTkademlia TESTknode PROPERTIES COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
   SET_SOURCE_FILES_PROPERTIES(base/crypto.cc  PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
@@ -774,15 +777,42 @@ MESSAGE("    To alter this (e.g. to /usr/local),  cmake ../.. -DINSTALL_PREFIX=/
 MESSAGE("================================================================================")
 MESSAGE("")
 
-# NB - If the following list of public headers changes, ensure /src/build/Win/extract_includes.bat is changed to reflect this.
-SET(PROTOBUF_INSTALL_FILES protobuf/signed_kadvalue.pb.h protobuf/kademlia_service_messages.pb.h protobuf/contact_info.pb.h protobuf/general_messages.pb.h)
+SET(MAIDSAFE_BASE_INSTALL_FILES
+      base/alternativestore.h
+      base/crypto.h
+      base/log.h
+      base/online.h
+      base/routingtable.h
+      base/utils.h
+      base/validationinterface.h)
+SET(MAIDSAFE_KAD_INSTALL_FILES
+      kademlia/contact.h
+      kademlia/kadid.h
+      kademlia/knode-api.h)
+SET(MAIDSAFE_MAIN_INSTALL_FILES
+      maidsafe/maidsafe-dht.h
+      maidsafe/maidsafe-dht_config.h)
+SET(MAIDSAFE_PROTO_INSTALL_FILES
+      protobuf/contact_info.pb.h
+      protobuf/general_messages.pb.h
+      protobuf/kademlia_service_messages.pb.h
+      protobuf/signed_kadvalue.pb.h)
+SET(MAIDSAFE_RPC_INSTALL_FILES
+      rpcprotocol/channel-api.h
+      rpcprotocol/channelmanager-api.h)
+SET(MAIDSAFE_TRANS_INSTALL_FILES
+      transport/transport-api.h
+      transport/transporthandler-api.h
+      transport/transportudt.h)
+SET(ALL_MAIDSAFE_INSTALL_FILES ${MAIDSAFE_BASE_INSTALL_FILES} ${MAIDSAFE_KAD_INSTALL_FILES} ${MAIDSAFE_MAIN_INSTALL_FILES}
+                               ${MAIDSAFE_PROTO_INSTALL_FILES} ${MAIDSAFE_RPC_INSTALL_FILES} ${MAIDSAFE_TRANS_INSTALL_FILES})
 # Check the script /src/build/Win/extract_includes.bat matches this list
 FILE(STRINGS ${maidsafe_dht_SOURCE_DIR}/build/Win/extract_includes.bat EXTRACT_INCLUDE_BAT)
 STRING(REPLACE "\\" "/" EXTRACT_INCLUDE_BAT "${EXTRACT_INCLUDE_BAT}")
-FOREACH(PROTOBUF_INSTALL_FILE ${PROTOBUF_INSTALL_FILES})
-  STRING(REGEX MATCH ${PROTOBUF_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
+FOREACH(MAIDSAFE_INSTALL_FILE ${ALL_MAIDSAFE_INSTALL_FILES})
+  STRING(REGEX MATCH ${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
   IF(NOT FOUND)
-    MESSAGE(FATAL_ERROR "\nUpdate ${maidsafe_dht_SOURCE_DIR}/build/Win/extract_includes.bat to include ${PROTOBUF_INSTALL_FILE}\n")
+    MESSAGE(FATAL_ERROR "\nUpdate ${maidsafe_dht_SOURCE_DIR}/build/Win/extract_includes.bat to include ${MAIDSAFE_INSTALL_FILE}\n")
   ENDIF()
 ENDFOREACH()
 
@@ -800,7 +830,12 @@ ELSE()
           )
 ENDIF()
 
-INSTALL(FILES ${MAIDSAFE_H} ${PROTOBUF_INSTALL_FILES} DESTINATION include/maidsafe)
+INSTALL(FILES ${MAIDSAFE_BASE_INSTALL_FILES} DESTINATION include/maidsafe/base)
+INSTALL(FILES ${MAIDSAFE_KAD_INSTALL_FILES} DESTINATION include/maidsafe/kademlia)
+INSTALL(FILES ${MAIDSAFE_MAIN_INSTALL_FILES} DESTINATION include/maidsafe)
+INSTALL(FILES ${MAIDSAFE_PROTO_INSTALL_FILES} DESTINATION include/maidsafe/protobuf)
+INSTALL(FILES ${MAIDSAFE_RPC_INSTALL_FILES} DESTINATION include/maidsafe/rpcprotocol)
+INSTALL(FILES ${MAIDSAFE_TRANS_INSTALL_FILES} DESTINATION include/maidsafe/transport)
 
 IF(CMAKE_BUILD_TYPE MATCHES Release)
   SET(CPACK_PACKAGE_VERSION_PATCH ${pddate})

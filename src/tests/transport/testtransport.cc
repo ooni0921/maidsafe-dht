@@ -25,36 +25,41 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <boost/asio/ip/address.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/progress.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/thread/thread.hpp>
 #include <gtest/gtest.h>
 #include <list>
 #include <string>
 #include "protobuf/rpcmessage.pb.h"
-#include "maidsafe/transport-api.h"
-#include "maidsafe/transporthandler-api.h"
-#include "maidsafe/transportudt.h"
-#include "maidsafe/config.h"
-#include "maidsafe/routingtable.h"
+#include "transport/transport-api.h"
+#include "transport/transporthandler-api.h"
+#include "transport/transportudt.h"
+#include "base/log.h"
+#include "base/routingtable.h"
+#include "base/utils.h"
 #include "udt/api.h"
 class TransportNode {
  public:
   TransportNode(transport::TransportHandler *tnode_handler,
-                boost::int16_t trans_id) :
-    tnode_handler_(tnode_handler), trans_id_(trans_id), successful_conn_(0),
-    refused_conn_(0) {}
+                boost::int16_t transport_id)
+      : tnode_handler_(tnode_handler),
+        transport_id_(transport_id),
+        successful_conn_(0),
+        refused_conn_(0) {}
   transport::TransportHandler *tnode_handler() { return tnode_handler_; }
   int successful_conn() { return successful_conn_; }
   int refused_conn() { return refused_conn_; }
   void IncreaseSuccessfulConn() { successful_conn_++; }
   void IncreaseRefusedConn() { refused_conn_++; }
-  boost::int16_t GetTransID() { return trans_id_; }
+  boost::int16_t GetTransID() { return transport_id_; }
  private:
   transport::TransportHandler *tnode_handler_;
-  boost::int16_t trans_id_;
+  boost::int16_t transport_id_;
   int successful_conn_, refused_conn_;
 };
 
@@ -63,7 +68,7 @@ void send_string(TransportNode* node, int port, int repeat,
   boost::uint32_t id;
   boost::asio::ip::address local_address;
   std::string ip;
-  if (base::get_local_address(&local_address)) {
+  if (base::GetLocalAddress(&local_address)) {
     ip = local_address.to_string();
   } else {
     ip = std::string("127.0.0.1");
@@ -96,8 +101,8 @@ class MessageHandler {
     msgs_sent_(0), msgs_received_(0), msgs_confirmed_(0), target_msg_(),
     keep_msgs_(true) {}
   void OnRPCMessage(const rpcprotocol::RpcMessage &msg,
-                    const boost::uint32_t &conn_id,
-                    const boost::int16_t trans_id,
+                    const boost::uint32_t &connection_id,
+                    const boost::int16_t transport_id,
                     const float &rtt) {
     std::string message;
     msg.SerializeToString(&message);
@@ -106,17 +111,17 @@ class MessageHandler {
       msgs_confirmed_++;
     if (keep_msgs_) {
       msgs.push_back(message);
-      ids.push_back(conn_id);
+      ids.push_back(connection_id);
     }
     LOG(INFO) << "message " << msgs_received_ << " arrived. RTT = " << rtt
         << std::endl;
     if (node_handler_ != NULL)
-      node_handler_->CloseConnection(conn_id, trans_id);
+      node_handler_->CloseConnection(connection_id, transport_id);
   }
-  void OnMessage(const std::string &msg, const boost::uint32_t &conn_id,
+  void OnMessage(const std::string &msg, const boost::uint32_t &connection_id,
       const boost::int16_t &, const float&) {
     raw_msgs.push_back(msg);
-    raw_ids.push_back(conn_id);
+    raw_ids.push_back(connection_id);
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
     const boost::uint16_t &port) {
@@ -156,15 +161,15 @@ class MessageHandlerEchoReq {
         server_port_(0),
         msgs_sent_(0) {}
     void OnRPCMessage(const rpcprotocol::RpcMessage &msg,
-                      const boost::uint32_t &conn_id,
-                      const boost::int16_t trans_id,
+                      const boost::uint32_t &connection_id,
+                      const boost::int16_t transport_id,
                       const float &rtt) {
     std::string message;
     msg.SerializeToString(&message);
     msgs.push_back(message);
-    ids.push_back(conn_id);
+    ids.push_back(connection_id);
     struct sockaddr addr;
-    if (!node_->GetPeerAddr(conn_id, &addr, trans_id))
+    if (!node_->GetPeerAddr(connection_id, transport_id, &addr))
       LOG(INFO) << "addr not found" << std::endl;
     std::string peer_ip(inet_ntoa(((struct sockaddr_in *)&addr)->sin_addr));
     boost::uint16_t peer_port = ntohs(((struct sockaddr_in *)&addr)->sin_port);
@@ -172,7 +177,7 @@ class MessageHandlerEchoReq {
         << peer_port << " . RTT = " << rtt << std::endl;
     // replying same msg
     if (msgs.size() < size_t(10))
-      node_->Send(msg, conn_id, false, trans_id);
+      node_->Send(msg, connection_id, false, transport_id);
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
     const boost::uint16_t &port) {
@@ -202,17 +207,17 @@ class MessageHandlerEchoResp {
       : node_(node), msgs(), ids(), dead_server_(true),
       server_ip_(), server_port_(0), msgs_sent_(0) {}
     void OnRPCMessage(const rpcprotocol::RpcMessage &msg,
-                      const boost::uint32_t &conn_id,
-                      const boost::int16_t trans_id,
+                      const boost::uint32_t &connection_id,
+                      const boost::int16_t transport_id,
                       const float &rtt) {
     std::string message;
     msg.SerializeToString(&message);
     msgs.push_back(message);
-    ids.push_back(conn_id);
+    ids.push_back(connection_id);
     LOG(INFO) << "message " << msgs.size() << " arrived. RTT = " << rtt
         << std::endl;
     // replying same msg
-    node_->CloseConnection(conn_id, trans_id);
+    node_->CloseConnection(connection_id, transport_id);
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
                               const boost::uint16_t &port) {
@@ -361,9 +366,9 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOne) {
   ASSERT_EQ(0, node3_handler.ConnectToSend("127.0.0.1", lp_node4, "", 0, "", 0,
     false, &id, node3_id));
   ASSERT_EQ(0, node3_handler.Send(rpc_msg, id, true, node3_id));
-  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t now = base::GetEpochTime();
   while (msg_handler[3].msgs.size() < size_t(3) &&
-         base::get_epoch_time() - now < 15)
+         base::GetEpochTime() - now < 15)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   node1_handler.Stop(node1_id);
   node2_handler.Stop(node2_id);
@@ -478,10 +483,10 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToMany) {
   ASSERT_EQ(0, node3_handler.ConnectToSend("127.0.0.1", lp_node6_handler, "",
     0, "", 0, false, &id, node3_id));
   ASSERT_EQ(0, node3_handler.Send(rpc_msg, id, true, node3_id));
-  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t now = base::GetEpochTime();
   bool msgs_received[3] = {false, false, false};
   while ((!msgs_received[0] || !msgs_received[1] || !msgs_received[2]) &&
-          base::get_epoch_time() - now < 15) {
+          base::GetEpochTime() - now < 15) {
     boost::uint16_t zero = 0;
     if (static_cast<boost::uint16_t>(msg_handler[3].msgs.size()) > zero)
       msgs_received[0] = true;
@@ -582,10 +587,10 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromOneToMany) {
     false, &id, node1_id));
   ASSERT_EQ(0, node1_handler.Send(rpc_msg, id, true, node1_id));
 
-  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t now = base::GetEpochTime();
   bool msgs_received[3] = {false, false, false};
   while ((!msgs_received[0] || !msgs_received[1] || !msgs_received[2]) &&
-          base::get_epoch_time() - now < 15) {
+          base::GetEpochTime() - now < 15) {
     if (msg_handler[1].msgs.size() >= size_t(1))
       msgs_received[0] = true;
     if (msg_handler[2].msgs.size() >= size_t(1))
@@ -638,7 +643,7 @@ TEST_F(TransportTest, BEH_TRANS_Send1000Msgs) {
   EXPECT_LT(1, kRepeatSend);  // ensure enough repeats to make test worthwhile
   MessageHandler msg_handler[kNumNodes];
   transport::TransportHandler* nodes[kNumNodes];
-  boost::int16_t trans_ids[kNumNodes];
+  boost::int16_t transport_ids[kNumNodes];
   boost::uint16_t ports[kNumNodes];
   TransportNode* tnodes[kNumNodes-1];
   boost::thread_group thr_grp;
@@ -652,7 +657,7 @@ TEST_F(TransportTest, BEH_TRANS_Send1000Msgs) {
   transport::TransportHandler *trans_handler;
   for (int i = 0; i < kNumNodes; ++i) {
     trans_handler = new transport::TransportHandler;
-    trans_handler->Register(new transport::TransportUDT, &trans_ids[i]);
+    trans_handler->Register(new transport::TransportUDT, &transport_ids[i]);
     nodes[i] = trans_handler;
     msg_handler[i].keep_msgs_ = false;
     msg_handler[i].target_msg_ = sent_msg;
@@ -666,10 +671,10 @@ TEST_F(TransportTest, BEH_TRANS_Send1000Msgs) {
     ASSERT_TRUE(nodes[i]->RegisterOnServerDown(
         boost::bind(&MessageHandler::OnDeadRendezvousServer,
                     &msg_handler[i], _1, _2, _3)));
-    ASSERT_EQ(0, nodes[i]->Start(0, trans_ids[i]));
-    ports[i] = nodes[i]->listening_port(trans_ids[i]);
+    ASSERT_EQ(0, nodes[i]->Start(0, transport_ids[i]));
+    ports[i] = nodes[i]->listening_port(transport_ids[i]);
     if (i != 0) {
-      TransportNode *tnode = new TransportNode(nodes[i], trans_ids[i]);
+      TransportNode *tnode = new TransportNode(nodes[i], transport_ids[i]);
       thrd = new boost::thread(&send_string, tnode, ports[0], kRepeatSend,
                                rpc_msg, false, ports[i]);
       thr_grp.add_thread(thrd);
@@ -697,7 +702,7 @@ TEST_F(TransportTest, BEH_TRANS_Send1000Msgs) {
   }
 
   for (int k = 0; k < kNumNodes; ++k)
-    nodes[k]->Stop(trans_ids[k]);
+    nodes[k]->Stop(transport_ids[k]);
   LOG(INFO) << "Total of successful connections = " << messages_size
       << std::endl;
   ASSERT_EQ(0, msg_handler[0].msgs.size());
@@ -1253,7 +1258,7 @@ TEST_F(TransportTest, FUNC_TRANS_SendRespond) {
   boost::uint32_t id;
   boost::asio::ip::address local_address;
   std::string ip;
-  if (base::get_local_address(&local_address)) {
+  if (base::GetLocalAddress(&local_address)) {
     ip = local_address.to_string();
   } else {
     ip = std::string("127.0.0.1");
@@ -1349,7 +1354,7 @@ TEST_F(TransportTest, BEH_TRANS_SendMultipleMsgsSameConnection) {
   boost::uint32_t id;
   boost::asio::ip::address local_address;
   std::string ip;
-  if (base::get_local_address(&local_address)) {
+  if (base::GetLocalAddress(&local_address)) {
     ip = local_address.to_string();
   } else {
     ip = std::string("127.0.0.1");
@@ -1570,19 +1575,21 @@ TEST_F(TransportTest, BEH_TRANS_AddrUsable) {
     &msg_handler2, _1, _2)));
   ASSERT_EQ(0, node2_handler.Start(0, node2_id));
   boost::uint16_t lp_node2 = node2_handler.listening_port(node2_id);
-  ASSERT_FALSE(node1_handler.IsAddrUsable("", "127.0.0.1", lp_node2, node1_id));
-  ASSERT_FALSE(node1_handler.IsAddrUsable("127.0.0.1", "", lp_node2, node1_id));
-  std::vector<std::string> local_ips = base::get_local_addresses();
+  ASSERT_FALSE(node1_handler.IsAddressUsable("", "127.0.0.1", lp_node2,
+               node1_id));
+  ASSERT_FALSE(node1_handler.IsAddressUsable("127.0.0.1", "", lp_node2,
+               node1_id));
+  std::vector<std::string> local_ips = base::GetLocalAddresses();
   if (local_ips.size() > size_t(0)) {
     std::string server_addr = "127.0.0.1";
     for (boost::uint32_t i = 0; i < local_ips.size(); i++) {
       LOG(INFO) << "Checking local address " << local_ips[i] <<
           " connecting to address " << server_addr << std::endl;
-      ASSERT_FALSE(node1_handler.IsAddrUsable(local_ips[i], server_addr,
+      ASSERT_FALSE(node1_handler.IsAddressUsable(local_ips[i], server_addr,
         lp_node2, node1_id));
     }
-    ASSERT_TRUE(node1_handler.IsAddrUsable(local_ips[0], local_ips[0], lp_node2,
-      node1_id));
+    ASSERT_TRUE(node1_handler.IsAddressUsable(local_ips[0], local_ips[0],
+                lp_node2, node1_id));
   } else {
     LOG(INFO) << "No local addresses where retrieved" << std::endl;
   }
@@ -1615,7 +1622,7 @@ TEST_F(TransportTest, BEH_TRANS_StartLocal) {
   boost::asio::ip::address local_address;
   std::string local_ip;
   std::string loop_back("127.0.0.1");
-  if (base::get_local_address(&local_address)) {
+  if (base::GetLocalAddress(&local_address)) {
     local_ip = local_address.to_string();
   } else {
     FAIL() << "Can not get local address";
@@ -1667,7 +1674,7 @@ TEST_F(TransportTest, BEH_TRANS_StartStopLocal) {
   boost::asio::ip::address local_address;
   std::string local_ip;
   std::string loop_back("127.0.0.1");
-  if (base::get_local_address(&local_address)) {
+  if (base::GetLocalAddress(&local_address)) {
     local_ip = local_address.to_string();
   } else {
     FAIL() << "Can not get local address";
@@ -1777,21 +1784,23 @@ TEST_F(TransportTest, BEH_TRANS_StartBadLocal) {
   std::string kademlia_id = base::RandomString(64);
   std::string bad_local_ip("192.168.1.188");
   boost::uint16_t bad_local_port = 8888;
-  std::string rv_ip("");
-  boost::uint16_t rv_port = 0;
+  std::string rendezvous_ip("");
+  boost::uint16_t rendezvous_port = 0;
   std::string public_key = base::RandomString(64);
   float rtt = 32;
   boost::uint16_t rank = 5;
   boost::uint32_t space = 3232;
-  base::PDRoutingTableTuple tuple_to_store(kademlia_id, bad_local_ip,
-      bad_local_port, rv_ip, rv_port, public_key, rtt, rank, space);
+  base::PublicRoutingTableTuple tuple_to_store(kademlia_id, bad_local_ip,
+      bad_local_port, rendezvous_ip, rendezvous_port, public_key, rtt, rank,
+      space);
 
-  boost::shared_ptr<base::PDRoutingTableHandler> rt_handler =
-      (*base::PDRoutingTable::getInstance())[
-      base::itos(node1_handler.listening_port(node1_id))];
+  boost::shared_ptr<base::PublicRoutingTableHandler> rt_handler =
+      (*base::PublicRoutingTable::GetInstance())[
+      base::IntToString(node1_handler.listening_port(node1_id))];
   ASSERT_EQ(2, rt_handler->ContactLocal(kademlia_id));
   ASSERT_EQ(0, rt_handler->AddTuple(tuple_to_store));
-  ASSERT_EQ(0, rt_handler->UpdateContactLocal(kademlia_id, bad_local_ip, 0));
+  ASSERT_EQ(0, rt_handler->UpdateContactLocal(kademlia_id, bad_local_ip,
+            kad::LOCAL));
   ASSERT_EQ(0, rt_handler->ContactLocal(kademlia_id));
 
   std::string bad_remote_ip("192.168.1.189");
@@ -1805,7 +1814,8 @@ TEST_F(TransportTest, BEH_TRANS_StartBadLocal) {
   ASSERT_EQ(2, rt_handler->ContactLocal(kademlia_id));
   // Set status to local again, and ensure that we can connect via remote ip/
   // port if local fails and that status is set to unknown.
-  ASSERT_EQ(0, rt_handler->UpdateContactLocal(kademlia_id, bad_local_ip, 0));
+  ASSERT_EQ(0, rt_handler->UpdateContactLocal(kademlia_id, bad_local_ip,
+            kad::LOCAL));
   ASSERT_EQ(0, node1_handler.ConnectToSend(loop_back, lp_node2, bad_local_ip,
       bad_local_port, "", 0, true, &id, node1_id));
   ASSERT_EQ(2, rt_handler->ContactLocal(kademlia_id));

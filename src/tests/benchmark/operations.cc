@@ -64,12 +64,12 @@ void Operations::TestFindAndPing(const std::vector<kad::KadId> &nodes,
     boost::shared_ptr<CallbackData> data(new CallbackData());
     boost::mutex::scoped_lock lock(data->mutex);
     for (size_t i = 0; i < nodes.size(); ++i) {
-      boost::uint64_t t = base::get_epoch_milliseconds();
-      node_->FindNode(nodes[i], boost::bind(
-          &Operations::FindNodeCallback, this, _1, data), false);
+      boost::uint64_t t = base::GetEpochMilliseconds();
+      node_->GetNodeContactDetails(nodes[i], boost::bind(
+          &Operations::GetNodeContactDetailsCallback, this, _1, data), false);
       while (static_cast<size_t>(data->returned_count) <= i)
         data->condition.wait(lock);
-      stats.Add(base::get_epoch_milliseconds() - t);
+      stats.Add(base::GetEpochMilliseconds() - t);
       kad::Contact ctc;
       ctc.ParseFromString(data->content);
       contacts.push_back(ctc);
@@ -91,12 +91,12 @@ void Operations::TestFindAndPing(const std::vector<kad::KadId> &nodes,
       boost::shared_ptr<CallbackData> data(new CallbackData());
       boost::mutex::scoped_lock lock(data->mutex);
       for (int j = 0; j < iterations; ++j) {
-        boost::uint64_t t = base::get_epoch_milliseconds();
+        boost::uint64_t t = base::GetEpochMilliseconds();
         node_->Ping(contacts[i], boost::bind(
             &Operations::PingCallback, this, _1, data));
         while (data->returned_count <= j)
           data->condition.wait(lock);
-        it_stats.Add(base::get_epoch_milliseconds() - t);
+        it_stats.Add(base::GetEpochMilliseconds() - t);
       }
       stats.Add(it_stats.Mean());
       printf(" Pinged contact %d, %02d/%02d times "
@@ -169,7 +169,7 @@ void Operations::TestStoreAndFind(const std::vector<kad::KadId> &nodes,
           sig_req.set_signed_public_key(public_key_signature_);
           sig_req.set_signed_request(req_sig);
         }
-        boost::uint64_t t = base::get_epoch_milliseconds();
+        boost::uint64_t t = base::GetEpochMilliseconds();
         if (sign) {
           node_->StoreValue(key, sig_val, sig_req, 86400, boost::bind(
               &Operations::StoreCallback, this, _1, data));
@@ -179,7 +179,7 @@ void Operations::TestStoreAndFind(const std::vector<kad::KadId> &nodes,
         }
         while (data->returned_count <= j)
           data->condition.wait(lock);
-        it_stats.Add(base::get_epoch_milliseconds() - t);
+        it_stats.Add(base::GetEpochMilliseconds() - t);
       }
       store_stats.Add(it_stats.Mean());
       printf(" Stored close to %d, %02d/%02d times "
@@ -207,12 +207,12 @@ void Operations::TestStoreAndFind(const std::vector<kad::KadId> &nodes,
       for (int j = 0; j < iterations; ++j) {
         kad::KadId mod =
             GetModId(val * iterations * nodes.size() + i * iterations + j);
-        boost::uint64_t t = base::get_epoch_milliseconds();
+        boost::uint64_t t = base::GetEpochMilliseconds();
         node_->FindValue(nodes[i] ^ mod, false, boost::bind(
             &Operations::FindValueCallback, this, _1, data));
         while (data->returned_count <= j)
           data->condition.wait(lock);
-        it_stats.Add(base::get_epoch_milliseconds() - t);
+        it_stats.Add(base::GetEpochMilliseconds() - t);
       }
       load_stats.Add(it_stats.Mean());
       printf(" Loaded from %d, %02d/%02d times "
@@ -243,7 +243,7 @@ void Operations::PingCallback(const std::string &result,
   data->condition.notify_one();
 }
 
-void Operations::FindNodeCallback(const std::string &result,
+void Operations::GetNodeContactDetailsCallback(const std::string &result,
                                   boost::shared_ptr<CallbackData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
   data->content.clear();

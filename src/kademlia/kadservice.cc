@@ -27,32 +27,35 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/compressed_pair.hpp>
 #include <utility>
-#include "maidsafe/config.h"
+#include "base/log.h"
 #include "kademlia/kadservice.h"
 #include "kademlia/kadrpc.h"
 #include "kademlia/kadutils.h"
 #include "kademlia/knodeimpl.h"
 #include "kademlia/datastore.h"
-#include "maidsafe/alternativestore.h"
-#include "maidsafe/knode-api.h"
-#include "maidsafe/channel-api.h"
+#include "base/alternativestore.h"
+#include "base/crypto.h"
+#include "kademlia/knode-api.h"
+#include "rpcprotocol/channel-api.h"
 #include "protobuf/signed_kadvalue.pb.h"
-#include "maidsafe/validationinterface.h"
-#include "maidsafe/kadid.h"
+#include "base/validationinterface.h"
+#include "kademlia/kadid.h"
 
 namespace kad {
 
 static void downlist_ping_cb(const std::string&) {}
 
 KadService::KadService(const NatRpcs &nat_rpcs,
-      boost::shared_ptr<DataStore> datastore, const bool &hasRSAkeys,
-      add_contact_function add_cts, get_random_contacts_function rand_cts,
-      get_contact_function get_ctc, get_closestK_function get_kcts,
-      ping_function ping) : nat_rpcs_(nat_rpcs), pdatastore_(datastore),
-      node_joined_(false), node_hasRSAkeys_(hasRSAkeys), node_info_(),
-      alternative_store_(NULL), add_contact_(add_cts),
-      get_random_contacts_(rand_cts), get_contact_(get_ctc),
-      get_closestK_contacts_(get_kcts), ping_(ping),
+                       boost::shared_ptr<DataStore> datastore,
+                       const bool &hasRSAkeys, AddContactFunctor add_cts,
+                       GetRandomContactsFunctor rand_cts,
+                       GetContactFunctor get_ctc,
+                       GetKClosestFunctor get_kcts,
+                       PingFunctor ping)
+    : nat_rpcs_(nat_rpcs), pdatastore_(datastore), node_joined_(false),
+      node_hasRSAkeys_(hasRSAkeys), node_info_(), alternative_store_(NULL),
+      add_contact_(add_cts), get_random_contacts_(rand_cts),
+      get_contact_(get_ctc), get_closestK_contacts_(get_kcts), ping_(ping),
       signature_validator_(NULL) {}
 
 void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
@@ -178,7 +181,7 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
     try {
       KadId key(request->key(), false);
       exclude_contacts.push_back(sender);
-      get_closestK_contacts_(key, &closest_contacts, exclude_contacts);
+      get_closestK_contacts_(key, exclude_contacts, &closest_contacts);
       bool found_node(false);
       for (unsigned int i = 0; i < closest_contacts.size(); ++i) {
         std::string contact_str;
@@ -383,7 +386,7 @@ void KadService::NatDetection(google::protobuf::RpcController *controller,
         rpcprotocol::Controller *ctrler =
             static_cast<rpcprotocol::Controller*>(controller);
         data.controller = new rpcprotocol::Controller;
-        data.controller->set_trans_id(ctrler->trans_id());
+        data.controller->set_transport_id(ctrler->transport_id());
         google::protobuf::Closure *done =
             google::protobuf::NewCallback<KadService,
             const NatDetectionPingResponse*, struct NatDetectionPingData>
@@ -405,7 +408,7 @@ void KadService::NatDetection(google::protobuf::RpcController *controller,
         rpcprotocol::Controller *ctrler =
             static_cast<rpcprotocol::Controller*>(controller);
         data.controller = new rpcprotocol::Controller;
-        data.controller->set_trans_id(ctrler->trans_id());
+        data.controller->set_transport_id(ctrler->transport_id());
         google::protobuf::Closure *done =
           google::protobuf::NewCallback<KadService,
             const NatDetectionPingResponse*,
@@ -450,7 +453,7 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
     return;
   }
   // Checking if it is a client to return its external ip/port
-  if (static_cast<node_type>(request->node_type()) == CLIENT) {
+  if (static_cast<NodeType>(request->node_type()) == CLIENT) {
     response->set_bootstrap_id(node_info_.node_id());
     response->set_newcomer_ext_ip(request->newcomer_ext_ip());
     response->set_newcomer_ext_port(request->newcomer_ext_port());
@@ -488,8 +491,6 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
 }
 
 void KadService::SendNatDetection(NatDetectionData data) {
-  if (NULL == data.controller)
-    printf("Empty\n");
   std::vector<Contact> random_contacts;
   get_random_contacts_(1, data.ex_contacts, &random_contacts);
   if (random_contacts.size() != 1) {
@@ -505,9 +506,9 @@ void KadService::SendNatDetection(NatDetectionData data) {
     data.newcomer.SerialiseToString(&newcomer_str);
     rpcprotocol::Controller *temp_controller =
         static_cast<rpcprotocol::Controller*>(data.controller);
-    boost::int16_t temp_trans_id = temp_controller->trans_id();
+    boost::int16_t temp_transport_id = temp_controller->transport_id();
     data.controller = new rpcprotocol::Controller;
-    data.controller->set_trans_id(temp_trans_id);
+    data.controller->set_transport_id(temp_transport_id);
     NatDetectionResponse *resp = new NatDetectionResponse;
     google::protobuf::Closure *done = google::protobuf::NewCallback<
       KadService, const NatDetectionResponse*, struct NatDetectionData>(this,

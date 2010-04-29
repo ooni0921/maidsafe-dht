@@ -25,22 +25,35 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*******************************************************************************
- * This is the API for maidsafe-dht and is the only program access for         *
- * developers.  The maidsafe-dht_config.h file included is where configuration *
- * may be saved.  You MUST link the maidsafe-dht library.                      *
- *                                                                             *
- * NOTE: These APIs may be amended or deleted in future releases until this    *
- * notice is removed.                                                          *
- ******************************************************************************/
-
 #ifndef MAIDSAFE_MAIDSAFE_DHT_H_
 #define MAIDSAFE_MAIDSAFE_DHT_H_
 
-#include "maidsafe/transport-api.h"
-#include "maidsafe/transporthandler-api.h"
-#include "maidsafe/channel-api.h"
-#include "maidsafe/channelmanager-api.h"
-#include "maidsafe/knode-api.h"
+// Configuration file
+#include "maidsafe/maidsafe-dht_config.h"
+
+// API files
+#include "transport/transporthandler-api.h"
+#include "transport/transport-api.h"
+#include "rpcprotocol/channelmanager-api.h"
+#include "rpcprotocol/channel-api.h"
+#include "kademlia/knode-api.h"
+
+// General files
+#include "base/alternativestore.h"
+#include "base/crypto.h"
+#include "kademlia/kadid.h"
+#include "base/log.h"
+#include "kademlia/contact.h"
+#include "base/online.h"
+#include "base/routingtable.h"
+#include "transport/transportudt.h"
+#include "base/utils.h"
+#include "base/validationinterface.h"
+
+// Generated protocol buffer files
+#include "protobuf/signed_kadvalue.pb.h"
+#include "protobuf/kademlia_service_messages.pb.h"
+#include "protobuf/contact_info.pb.h"
+#include "protobuf/general_messages.pb.h"
 
 #endif  // MAIDSAFE_MAIDSAFE_DHT_H_

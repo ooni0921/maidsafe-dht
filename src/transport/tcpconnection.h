@@ -97,7 +97,9 @@ class TCPConnection
   * Set the identifier for the object.  It is returned in all the notifiers.
   * @param id integer that is associated as the id of the connection
   */
-  inline void set_conn_id(const boost::uint32_t &id) { conn_id_ = id; }
+  inline void set_connection_id(const boost::uint32_t &id) {
+    connection_id_ = id;
+  }
   /**
   * Closes the socket.
   */
@@ -147,7 +149,7 @@ class TCPConnection
   tcp::socket socket_;
   std::string in_data_, out_data_;
   boost::array<char, 1024> tmp_data_;
-  boost::uint32_t in_data_size_, conn_id_;
+  boost::uint32_t in_data_size_, connection_id_;
   boost::function<void(const boost::uint32_t&, const bool&, const bool&,
     const boost::system::error_code &error)> send_notifier_;
   boost::function<void(const std::string, const boost::uint32_t&,

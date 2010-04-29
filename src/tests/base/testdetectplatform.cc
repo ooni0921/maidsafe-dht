@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include <stdio.h>
-#include "base/config.h"
+#include "maidsafe/maidsafe-dht_config.h"
 
 TEST(FindPlatform, BEH_BASE_DetectPlatform) {
   int macflag(0);

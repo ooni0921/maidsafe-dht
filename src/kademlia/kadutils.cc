@@ -25,7 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kademlia/kadutils.h"
-#include "maidsafe/kadid.h"
+#include "kademlia/kadid.h"
 
 namespace kad {
 
@@ -44,4 +44,5 @@ std::string vault_random_id() {
   KadId id(RANDOM_ID);
   return id.ToStringDecoded();
 }
+
 }  // namespace kad

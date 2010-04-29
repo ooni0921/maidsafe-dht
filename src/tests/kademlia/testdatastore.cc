@@ -27,12 +27,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/thread.hpp>
 #include <boost/lexical_cast.hpp>
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
 #include "kademlia/datastore.h"
-#include "maidsafe/crypto.h"
+#include "base/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 
 class DataStoreTest: public testing::Test {
@@ -98,7 +99,7 @@ TEST_F(DataStoreTest, FUNC_KAD_LoadExistingData) {
       crypto::STRING_STRING, false));
   std::string key1(cry_obj_.Hash(value1, "", crypto::STRING_STRING,
       false));
-  boost::int32_t now(base::get_epoch_time());
+  boost::int32_t now(base::GetEpochTime());
   ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, true));
   std::vector<std::string> values;
   ASSERT_TRUE(test_ds_->LoadItem(key1, &values));
@@ -111,7 +112,7 @@ TEST_F(DataStoreTest, FUNC_KAD_LoadExistingData) {
   std::string value2_2 = base::RandomString(5);  // small value
   std::string value2_3 = cry_obj_.Hash("vvvx12xxxzzzz3322", "",
       crypto::STRING_STRING, false);
-  now = base::get_epoch_time();
+  now = base::GetEpochTime();
   ASSERT_TRUE(test_ds_->StoreItem(key2, value2_1, 3600*24, false));
   ASSERT_TRUE(test_ds_->StoreItem(key2, value2_2, 3600*24, false));
   ASSERT_TRUE(test_ds_->StoreItem(key2, value2_3, 3600*24, false));
@@ -471,7 +472,7 @@ TEST_F(DataStoreTest, FUNC_KAD_DeleteExpiredValues) {
   ASSERT_TRUE(test_ds_->RefreshItem(keys[3], values[3], &ser_del_request));
   boost::this_thread::sleep(boost::posix_time::seconds(5));
   test_ds_->DeleteExpiredValues();
-  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t now = base::GetEpochTime();
   std::set<std::string> rec_keys;
   ASSERT_TRUE(test_ds_->Keys(&rec_keys));
   ASSERT_EQ(keys.size()-3, rec_keys.size());

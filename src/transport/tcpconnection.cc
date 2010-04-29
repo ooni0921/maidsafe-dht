@@ -26,7 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <boost/bind.hpp>
-#include "maidsafe/config.h"
+#include "base/log.h"
 #include "transport/tcpconnection.h"
 
 namespace transport {
@@ -37,7 +37,7 @@ TCPConnection::TCPConnection(boost::asio::io_service &io_service,  // NOLINT
     boost::function<void(const std::string, const boost::uint32_t&,
     const boost::system::error_code&)> read_notifier)
     : socket_(io_service), in_data_(), out_data_(), tmp_data_(),
-      in_data_size_(0), conn_id_(0), send_notifier_(send_notifier),
+      in_data_size_(0), connection_id_(0), send_notifier_(send_notifier),
       read_notifier_(read_notifier), out_port_(0), send_once_(true),
       sending_rpc_(false), closed_(false), receiving_(false) {
 }
@@ -88,21 +88,21 @@ void TCPConnection::ReadHandle(const bool &read_size,
     }
     DLOG(ERROR) << "error reading in a connection: " << ec << " - "
       << ec.message() << "\n";
-    read_notifier_(in_data_, conn_id_, ec);
+    read_notifier_(in_data_, connection_id_, ec);
     return;
   }
 
   if (!read_size) {
     if (bytes_read == 0) {
       receiving_ = false;
-      read_notifier_(in_data_, conn_id_, ec);
+      read_notifier_(in_data_, connection_id_, ec);
       return;
     }
     std::string rec_string(tmp_data_.data(), bytes_read);
     in_data_ += rec_string;
     if (in_data_.size() >= in_data_size_) {
       receiving_ = false;
-      read_notifier_(in_data_, conn_id_, ec);
+      read_notifier_(in_data_, connection_id_, ec);
       return;
     }
   }
@@ -125,7 +125,7 @@ void TCPConnection::WriteHandle(const boost::system::error_code &ec,
     }
     DLOG(ERROR) << "error sending in a connection: " << ec << " - "
       << ec.message() << "\n";
-    send_notifier_(conn_id_, send_once_, sending_rpc_, ec);
+    send_notifier_(connection_id_, send_once_, sending_rpc_, ec);
     return;
   }
   if (size_sent) {
@@ -134,7 +134,7 @@ void TCPConnection::WriteHandle(const boost::system::error_code &ec,
       boost::bind(&TCPConnection::WriteHandle, shared_from_this(),
         boost::asio::placeholders::error, false));
   } else {
-    send_notifier_(conn_id_, send_once_, sending_rpc_, ec);
+    send_notifier_(connection_id_, send_once_, sending_rpc_, ec);
   }
 }
 

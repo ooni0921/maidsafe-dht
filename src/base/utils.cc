@@ -25,6 +25,21 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "base/utils.h"
+
+#if defined (MAIDSAFE_WIN32) || defined (__MINGW__)
+#include <winsock2.h>
+#include <iphlpapi.h>
+#else
+#include <unistd.h>
+#include <netdb.h>
+#include <net/if.h>  // must be before ifaddrs.h
+#include <sys/ioctl.h>
+#include <sys/socket.h>  // included in apple's net/route.h
+#include <sys/types.h>  // included in apple's net/route.h
+#include <ifaddrs.h>  // used for implementation of LocalIPPort()
+#endif
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 #include <ctype.h>
@@ -33,105 +48,46 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cryptopp/hex.h>
 #include <string>
 #include <limits>
-#include "base/config.h"
-#include "maidsafe/maidsafe-dht_config.h"
-#include "maidsafe/utils.h"
+#include "base/log.h"
 
 namespace base {
 
-std::string TidyPath(const std::string &original_path_) {
-  //  if path is root, don't change it
-  if (original_path_.size() == 1)
-    return original_path_;
-  std::string amended_path_ = original_path_;
-  //  if path has training slash, remove it
-  if (amended_path_.at(amended_path_.size()-1) == '/'\
-    || amended_path_.at(amended_path_.size()-1) == '\\')
-    amended_path_ = amended_path_.substr(0, amended_path_.size()-1);
-  //  if path has leading slash, remove it
-  if (amended_path_.at(0) == '/' || amended_path_.at(0) == '\\')
-    amended_path_ = amended_path_.substr(1, amended_path_.size()-1);
-  return amended_path_;
-}
-
-std::string itos_ull(boost::uint64_t value) {
-  std::string str_value(boost::lexical_cast<std::string>(value));
-  return str_value;
-}
-
-boost::uint64_t stoi_ull(std::string value) {
-  boost::uint64_t int_value(boost::lexical_cast<boost::uint64_t>(value));
-  return int_value;
-}
-
-std::string itos_ul(boost::uint32_t value) {
-  std::string str_value(boost::lexical_cast<std::string>(value));
-  return str_value;
-}
-
-boost::uint32_t stoi_ul(std::string value) {
-  boost::uint32_t int_value(boost::lexical_cast<boost::uint32_t>(value));
-  return int_value;
-}
-
-std::string itos_l(boost::int32_t value) {
-  std::string str_value(boost::lexical_cast<std::string>(value));
-  return str_value;
-}
-
-boost::int32_t stoi_l(std::string value) {
-  boost::int32_t int_value(boost::lexical_cast<boost::int32_t>(value));
-  return int_value;
-}
-
-std::string itos(int value) {
-  std::string str_value(boost::lexical_cast<std::string>(value));
-  return str_value;
-}
-
-int stoi(std::string value) {
-  int int_value(boost::lexical_cast<int>(value));
-  return int_value;
-}
-
-std::wstring StrToWStr(const std::string &string_) {
-  std::wstring wstring_(string_.length(), L' ');
-  std::copy(string_.begin(), string_.end(), wstring_.begin());
-  return wstring_;
-}
-
-std::string WStrToStr(const std::wstring &wstring_) {
-  std::string string_(wstring_.length(), ' ');
-  std::copy(wstring_.begin(), wstring_.end(), string_.begin());
-  return string_;
-}
-
-std::string StrToLwr(const std::string &string_) {
-  std::string lowercase_ = "";
-  for (unsigned int i = 0; i < string_.length(); i++) {
-    lowercase_ += tolower(string_.at(i));
-  }
-  return lowercase_;
-}
-
-bool ValidateName(const std::string &str) {
-  for (unsigned int i = 0; i < str.length(); i++) {
-    switch (str[i]) {
-      case '\\':return false;
-      case '/':return false;
-      case ':':return false;
-      case '*':return false;
-      case '?':return false;
-      case '"':return false;
-      case '<':return false;
-      case '>':return false;
-      case '|':return false;
+boost::int32_t RandomInt32() {
+  boost::int32_t result(0);
+  bool success = false;
+  while (!success) {
+    CryptoPP::AutoSeededRandomPool rng;
+    CryptoPP::Integer rand_num(rng, 32);
+    if (rand_num.IsConvertableToLong()) {
+      result =  static_cast<boost::int32_t>(
+          rand_num.AbsoluteValue().ConvertToLong());
+      success = true;
     }
   }
-  return true;
+  return result;
 }
 
-std::string RandomString(int length) {
+boost::uint32_t RandomUint32() {
+  boost::uint32_t result(0);
+  bool success = false;
+  while (!success) {
+    CryptoPP::AutoSeededRandomPool rng;
+    CryptoPP::Integer rand_num(rng, 32);
+    if (rand_num.IsConvertableToLong()) {
+      result = static_cast<boost::uint32_t>(
+          rand_num.AbsoluteValue().ConvertToLong());
+      success = true;
+    }
+  }
+  return result;
+}
+
+std::string IntToString(const int &value) {
+  std::string str_value(boost::lexical_cast<std::string>(value));
+  return str_value;
+}
+
+std::string RandomString(const int &length) {
   std::string str;
   CryptoPP::AutoSeededRandomPool rng;
   CryptoPP::Integer rand_num(rng, 32);
@@ -172,86 +128,108 @@ std::string DecodeFromHex(const std::string &hex_input) {
   return non_hex_output;
 }
 
-std::string inet_atob(const std::string &dec_ip) {
-  boost::asio::ip::address_v4 host_ip_v4 =
-      boost::asio::ip::address_v4::from_string(dec_ip);
-  boost::asio::ip::address_v4::bytes_type address_ = host_ip_v4.to_bytes();
-  unsigned char c_str_address[4] = {(unsigned char)address_[0],
-    (unsigned char)address_[1], (unsigned char)address_[2],
-    (unsigned char)address_[3]};
-  std::string result(reinterpret_cast<const char*>(c_str_address), 4);
-  return result;
-}
-
-std::string inet_btoa(const std::string &ipv4) {
-  boost::asio::ip::address_v4::bytes_type address_;
-  for (int i = 0; i < 4; i++)
-    address_[i] = (unsigned char)ipv4[i];
-  boost::asio::ip::address_v4 host_ip_v4(address_);
-  return host_ip_v4.to_string();
-}
-
-boost::uint32_t get_epoch_time() {
+boost::uint32_t GetEpochTime() {
   boost::posix_time::ptime
     t(boost::posix_time::microsec_clock::universal_time());
   boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
   return static_cast<boost::uint32_t>((t-start).total_seconds());
 }
 
-boost::uint64_t get_epoch_milliseconds() {
+boost::uint64_t GetEpochMilliseconds() {
   boost::posix_time::ptime
     t(boost::posix_time::microsec_clock::universal_time());
   boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
   return static_cast<boost::uint64_t>((t-start).total_milliseconds());
 }
 
-boost::uint64_t get_epoch_nanoseconds() {
+boost::uint64_t GetEpochNanoseconds() {
   boost::posix_time::ptime
     t(boost::posix_time::microsec_clock::universal_time());
   boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
   return static_cast<boost::uint64_t>((t-start).total_nanoseconds());
 }
 
-boost::uint32_t generate_next_transaction_id(const boost::uint32_t &id) {
+boost::uint32_t GenerateNextTransactionId(const boost::uint32_t &id) {
   boost::uint32_t next_id;
   boost::uint32_t max_id = 2147483646;
   if (id == 0) {
-    next_id = (random_32bit_integer()+get_epoch_time()%10000)%max_id;
+    next_id = (RandomInt32() + GetEpochTime() % 10000) % max_id;
     if (next_id == 0)
       next_id = 1;
   } else {
-    next_id = (id+1)%max_id;
+    next_id = (id + 1) % max_id;
     if (next_id == 0)
       next_id = 1;
   }
   return next_id;
 }
 
-void inet_ntoa(boost::uint32_t addr, char * ipbuf) {
+std::string IpAsciiToBytes(const std::string &decimal_ip) {
+  try {
+    boost::asio::ip::address host_ip =
+        boost::asio::ip::address::from_string(decimal_ip);
+    if (host_ip.is_v4()) {
+      boost::asio::ip::address_v4::bytes_type addr = host_ip.to_v4().to_bytes();
+      std::string result(addr.begin(), addr.end());
+      return result;
+    } else if (host_ip.is_v6()) {
+      boost::asio::ip::address_v6::bytes_type addr = host_ip.to_v6().to_bytes();
+      std::string result(addr.begin(), addr.end());
+      return result;
+    }
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << e.what() << std::endl;
+  }
+  return "";
+}
+
+std::string IpBytesToAscii(const std::string &bytes_ip) {
+  try {
+    if (bytes_ip.size() == 4) {
+      boost::asio::ip::address_v4::bytes_type bytes_type_ip;
+      for (int i = 0; i < 4; ++i)
+        bytes_type_ip[i] = bytes_ip.at(i);
+      boost::asio::ip::address_v4 address(bytes_type_ip);
+      return address.to_string();
+    } else if (bytes_ip.size() == 16) {
+      boost::asio::ip::address_v6::bytes_type bytes_type_ip;
+      for (int i = 0; i < 16; ++i)
+        bytes_type_ip[i] = bytes_ip.at(i);
+      *bytes_type_ip.c_array() = *bytes_ip.c_str();
+      boost::asio::ip::address_v6 address(bytes_type_ip);
+      return address.to_string();
+    }
+  }
+  catch(const std::exception&) {}
+  return "";
+}
+
+void IpNetToAscii(boost::uint32_t address, char *ip_buffer) {
   // TODO(dan): warning thrown on 64-bit machine
   const int sizer = 15;
   #ifdef __MSVC__
-    _snprintf(ipbuf, sizer, "%u.%u.%u.%u", (addr>>24)&0xFF, \
-      (addr>>16)&0xFF, (addr>>8)&0xFF, (addr>>0)&0xFF);
+    _snprintf(ip_buffer, sizer, "%u.%u.%u.%u", (address>>24)&0xFF,
+        (address>>16)&0xFF, (address>>8)&0xFF, (address>>0)&0xFF);
   #else
-    snprintf(ipbuf, sizer, "%u.%u.%u.%u", (addr>>24)&0xFF, \
-      (addr>>16)&0xFF, (addr>>8)&0xFF, (addr>>0)&0xFF);
+    snprintf(ip_buffer, sizer, "%u.%u.%u.%u", (address>>24)&0xFF,
+        (address>>16)&0xFF, (address>>8)&0xFF, (address>>0)&0xFF);
   #endif
 }
 
-boost::uint32_t inet_aton(const char * buf) {
+boost::uint32_t IpAsciiToNet(const char *buffer) {
   // net_server inexplicably doesn't have this function; so I'll just fake it
   boost::uint32_t ret = 0;
   int shift = 24;  //  fill out the MSB first
   bool startQuad = true;
-  while ((shift >= 0)&&(*buf)) {
+  while ((shift >= 0)&&(*buffer)) {
     if (startQuad) {
-      unsigned char quad = (unsigned char) atoi(buf);
+      unsigned char quad = (unsigned char) atoi(buffer);
       ret |= (((boost::uint32_t)quad) << shift);
       shift -= 8;
     }
-    startQuad = (*buf == '.');
-    buf++;
+    startQuad = (*buffer == '.');
+    buffer++;
   }
   return ret;
 }
@@ -265,9 +243,9 @@ static boost::uint32_t SockAddrToUint32(struct sockaddr * a) {
 }
 #endif
 
-void get_net_interfaces(std::vector<struct device_struct> *alldevices) {
+void GetNetInterfaces(std::vector<struct DeviceStruct> *alldevices) {
   boost::asio::ip::address ip_address_tmp;
-  device_struct singledevice;
+  DeviceStruct singledevice;
 #if defined(MAIDSAFE_POSIX) || defined (MAIDSAFE_APPLE)
   struct ifaddrs * ifap;
   if (getifaddrs(&ifap) == 0) {
@@ -278,16 +256,16 @@ void get_net_interfaces(std::vector<struct device_struct> *alldevices) {
       boost::uint32_t dstAddr = SockAddrToUint32(p->ifa_dstaddr);
       if (ifaAddr > 0) {
         char ifaAddrStr[32];
-        base::inet_ntoa(ifaAddr, ifaAddrStr);
+        base::IpNetToAscii(ifaAddr, ifaAddrStr);
         char maskAddrStr[32];
-        base::inet_ntoa(maskAddr, maskAddrStr);
+        base::IpNetToAscii(maskAddr, maskAddrStr);
         char dstAddrStr[32];
-        base::inet_ntoa(dstAddr, dstAddrStr);
+        base::IpNetToAscii(dstAddr, dstAddrStr);
         ip_address_tmp = boost::asio::ip::address(
           boost::asio::ip::address().from_string(ifaAddrStr));
-        device_struct singledevice;
+        DeviceStruct singledevice;
         singledevice.ip_address = ip_address_tmp;
-        singledevice.interface_ = p->ifa_name;
+        singledevice.device_interface = p->ifa_name;
         // add the device to the vector
         alldevices->push_back(singledevice);
       }
@@ -359,7 +337,7 @@ void get_net_interfaces(std::vector<struct device_struct> *alldevices) {
         while ((next) && (name == NULL)) {
           IP_ADDR_STRING * ipAddr = &next->IpAddressList;
           while (ipAddr) {
-            if (base::inet_aton(ipAddr->IpAddress.String) ==
+            if (base::IpAsciiToNet(ipAddr->IpAddress.String) ==
               ntohl(row.dwAddr)) {
               name = next->AdapterName;
               desc = next->Description;
@@ -390,18 +368,18 @@ void get_net_interfaces(std::vector<struct device_struct> *alldevices) {
       }
 
       char ifaAddrStr[32];
-      base::inet_ntoa(ipAddr, ifaAddrStr);
+      base::IpNetToAscii(ipAddr, ifaAddrStr);
       // netmask retrieved for possible future use
       char maskAddrStr[32];
-      base::inet_ntoa(netmask, maskAddrStr);
+      base::IpNetToAscii(netmask, maskAddrStr);
       char dstAddrStr[32];
-      base::inet_ntoa(baddr, dstAddrStr);
+      base::IpNetToAscii(baddr, dstAddrStr);
 
       ip_address_tmp = boost::asio::ip::address(
         boost::asio::ip::address().from_string(ifaAddrStr));
-      device_struct singledevice;
+      DeviceStruct singledevice;
       singledevice.ip_address = ip_address_tmp;
-      singledevice.interface_ = desc;
+      singledevice.device_interface = desc;
       // add the device to the vector
       alldevices->push_back(singledevice);
     }   // end for
@@ -411,12 +389,12 @@ void get_net_interfaces(std::vector<struct device_struct> *alldevices) {
   }   // end if (iptable)
 
 #endif  // MAIDSAFE_WIN32
-}   // end of get_net_interfaces
+}   // end of GetNetInterfaces
 
-bool get_local_address(boost::asio::ip::address *local_address) {
+bool GetLocalAddress(boost::asio::ip::address *local_address) {
   // get all network interfaces
-  std::vector<struct device_struct> alldevices;
-  get_net_interfaces(&alldevices);
+  std::vector<struct DeviceStruct> alldevices;
+  GetNetInterfaces(&alldevices);
   if (!alldevices.empty()) {
     // take the first non-bogus IP address
     for (unsigned int i = 0; i < alldevices.size(); i++) {
@@ -431,51 +409,19 @@ bool get_local_address(boost::asio::ip::address *local_address) {
   return false;
 }
 
-boost::int32_t random_32bit_integer() {
-  boost::int32_t result(0);
-  bool success = false;
-  while (!success) {
-    CryptoPP::AutoSeededRandomPool rng;
-    CryptoPP::Integer rand_num(rng, 32);
-    if (rand_num.IsConvertableToLong()) {
-      result =  static_cast<boost::int32_t>(
-          rand_num.AbsoluteValue().ConvertToLong());
-      success = true;
-    }
-  }
-  return result;
-}
-
-boost::uint32_t random_32bit_uinteger() {
-  boost::uint32_t result(0);
-  bool success = false;
-  while (!success) {
-    CryptoPP::AutoSeededRandomPool rng;
-    CryptoPP::Integer rand_num(rng, 32);
-    if (rand_num.IsConvertableToLong()) {
-      result = static_cast<boost::uint32_t>(
-          rand_num.AbsoluteValue().ConvertToLong());
-      success = true;
-    }
-  }
-  return result;
-}
-
-std::vector<std::string> get_local_addresses() {
+std::vector<std::string> GetLocalAddresses() {
   // get all network interfaces
   std::vector<std::string> addresses;
-  std::vector<struct device_struct> alldevices;
-  get_net_interfaces(&alldevices);
-  if (!alldevices.empty()) {
-    // take the first non-bogus IP address
-    for (size_t i = 0; i < alldevices.size(); i++) {
-      if (alldevices[i].ip_address.to_string().substr(0, 2) != "0." &&
-          alldevices[i].ip_address.to_string().substr(0, 4) != "127." &&
-          alldevices[i].ip_address.to_string().substr(0, 8) != "169.254.") {
-        addresses.push_back(alldevices[i].ip_address.to_string());
-      }
+  std::vector<struct DeviceStruct> alldevices;
+  GetNetInterfaces(&alldevices);
+  for (size_t i = 0; i < alldevices.size(); i++) {
+    if (alldevices[i].ip_address.to_string().substr(0, 2) != "0." &&
+        alldevices[i].ip_address.to_string().substr(0, 4) != "127." &&
+        alldevices[i].ip_address.to_string().substr(0, 8) != "169.254.") {
+      addresses.push_back(alldevices[i].ip_address.to_string());
     }
   }
   return addresses;
 }
+
 }  // namespace base

@@ -27,73 +27,73 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 /*******************************************************************************
- * This file defines all constants used by the maidsafe-dht library.  It also  *
- * contains forward declarations and enumerations required by the library.     *
+ * This file defines all main constants and enums used by the library.         *
  *                                                                             *
- * NOTE: These settings and functions WILL be amended or deleted in future     *
- * releases until this notice is removed.                                      *
+ * NOTE: This file is unlikely to have any breaking changes applied.  However, *
+ *       it should not be regarded as final until this notice is removed.      *
  ******************************************************************************/
 
 #ifndef MAIDSAFE_MAIDSAFE_DHT_CONFIG_H_
 #define MAIDSAFE_MAIDSAFE_DHT_CONFIG_H_
 
-
-#if defined (__WIN32__) || defined (__MINGW__)
-#include <winsock2.h>
-#include <iphlpapi.h>
-#else  // apple and POSIX
-#include <unistd.h>
-#include <netdb.h>
-#include <net/if.h>  // must be before ifaddrs.h
-#include <sys/ioctl.h>
-// # include <net/route.h>  // not using this for the moment
-#include <sys/socket.h>  // included in apple's net/route.h
-#include <sys/types.h>  // included in apple's net/route.h
-#include <ifaddrs.h>  // used for old implementation of LocalIPPort() remove
-                      // when new soln impmltd.
-#endif
-
-#include <boost/asio.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/function.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/shared_ptr.hpp>
-#include <google/protobuf/service.h>
-#include <google/protobuf/message.h>
-
-// not here #include <cryptopp/hex.h>
-
-#ifdef WIN32
-  #include <ws2tcpip.h>
-// dirvine - ugly ugly hack !!
-#ifdef __MINGW__
-void WSAAPI freeaddrinfo(struct addrinfo*);
-int WSAAPI getaddrinfo(const char*, const char*, const struct addrinfo*,
-  struct addrinfo**);
-int WSAAPI getnameinfo(const struct sockaddr*, socklen_t, char*, DWORD,
-  char*, DWORD, int);
-#endif  // dirvines ugly ugly hack
-#endif
-#ifndef WIN32
-  #include <cstdlib>
-  #include <cstring>
-#endif
-
-#include <algorithm>
 #include <string>
-#include <vector>
-#include "maidsafe/crypto.h"
-#include "maidsafe/routingtable.h"
-#include "maidsafe/utils.h"
-#include "maidsafe/kadid.h"
 
-#define MAIDSAFE_DHT_VERSION 19
 
 /*******************************************************************************
- * KADEMLIA LAYER                                                              *
+ * maidsafe-dht Version                                                        *
+ ******************************************************************************/
+#define MAIDSAFE_DHT_VERSION 20
+
+
+/*******************************************************************************
+ * Platform Detection                                                          *
+ ******************************************************************************/
+#if defined(linux) || defined(__linux) || defined(__linux__) || \
+  defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || \
+  defined(__DragonFly__) || defined(sun) || defined(__sun) || \
+  defined(__sgi) || defined(__hpux) || defined(__BEOS__) || \
+  defined(__IBMCPP__) || defined(_AIX) || defined(__QNXNTO__) || \
+  defined(unix) || defined(_XOPEN_SOURCE) || defined(_POSIX_SOURCE)
+#define MAIDSAFE_POSIX
+
+#elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || \
+  defined(_WIN32_WINNT) || defined(NTDDI_VERSION) || defined(_WIN32_WINDOWS)
+#define MAIDSAFE_WIN32
+
+#elif defined(macintosh) || defined(__APPLE__) || defined(__APPLE_CC__)
+#define MAIDSAFE_APPLE
+#endif
+
+
+/*******************************************************************************
+ * Kademlia Layer                                                              *
  ******************************************************************************/
 namespace kad {
-// KADEMLIA CONSTANTS
+
+// Functor for general callback functions.
+typedef boost::function<void(const std::string&)> VoidFunctorOneString;
+
+enum KBucketExitCode { SUCCEED, FULL, FAIL };
+
+// DIRECT_CONNECTED - node is directly connected to the internet, IP is an
+//                    external IP or port has been manually mapped or port
+//                    mapped with UPnP
+// RESTRICTED - node is behind a port or address restricted NAT, has to be
+//              contacted with its rendezvous server
+// NONE - node is behind a symmetric NAT and can not be contacted without it
+//        making the first contact and keeping the connection open
+enum NatType { DIRECT_CONNECTED, RESTRICTED, NONE };
+
+// CLIENT - does not map external ip and port, is not stored in other  nodes
+//          routing table
+// CLIENT_PORT_MAPPED - maps external ip and port, is not stored in other nodes
+//                      routing table
+// VAULT - maps external ip and port, complete functionality of a kademlia node
+enum NodeType { CLIENT, CLIENT_PORT_MAPPED, VAULT };
+
+enum ConnectionType { LOCAL, REMOTE, UNKNOWN };
 
 // The size of DHT keys and node IDs in bytes.
 const boost::uint16_t kKeySizeBytes = 64;
@@ -116,19 +116,12 @@ const boost::uint32_t kRefreshTime = 3600;  // 1 hour
 const boost::uint32_t kRepublishTime = 43200;  // 12 hours
 
 // The duration (in seconds) after which a given <key,value> is deleted locally.
-const boost::uint32_t kExpireTime = kRepublishTime+3600;
-
-// Kademlia RPC timeout duration (in milliseconds).
-// const int kRpcTimeout = 10000;
+const boost::uint32_t kExpireTime = kRepublishTime + kRefreshTime + 300;
 
 // RPC result constants.
 const std::string kRpcResultSuccess("T");
 const std::string kRpcResultFailure("F");
 // TODO(Fraser#5#): 2009-05-15 - Make these bools
-
-// Defines whether or not an existing local <key,value> database should be
-// reused (true) or overwritten (false) on initialisation of the datastore.
-const bool kReuseDatabase = false;
 
 // The ratio of k successful individual kad store RPCs to yield overall success.
 const double kMinSuccessfulPecentageStore = 0.75;
@@ -141,212 +134,15 @@ const boost::uint16_t kFailedRpc = 0;
 const boost::uint32_t kMaxBootstrapContacts = 10000;
 
 // Signature used to sign anonymous RPC requests.
-const std::string kAnonymousSignedRequest("ffffffffffffffffffffffffffffffffffff"
-    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-    "ffffffffffffffffff");
-
-
-// KADEMLIA ENUMERATIONS, DATA TYPE DEFINITIONS, AND FORWARD DECLARATIONS
-enum KBucketExitCode { SUCCEED, FULL, FAIL };
-
-// DIR_CONN - node is directly connected to the internet, ip is an external ip
-//            or port has been manually mapped or port mapped with UPnP
-// RESTRICTED - node is behind a port or address restricted NAT, has to be
-//              contacted with its rendezvous server
-// NONE - node is behind a symmetric NAT and can not be contacted without it
-//        making the first contact and keeping the connection open
-enum nat_type { DIR_CONN, RESTRICTED, NONE };
-
-// CLIENT - does not map external ip and port, is not stored in other  nodes
-//          routing table
-// CLIENT_PORT_MAPPED - maps external ip and port, is not stored in other nodes
-//                      routing table
-// VAULT - maps external ip and port, complete functionality of a kademlia node
-enum node_type { CLIENT, CLIENT_PORT_MAPPED, VAULT };
-enum connect_to_node { LOCAL, REMOTE, UNKNOWN };
-enum remote_find_method { FIND_NODE, FIND_VALUE, BOOTSTRAP };
-class KNodeImpl;
-class KadRpcs;
-class ContactInfo;
-
-class Contact {
-// This class contains information on a single remote contact
- public:
-  Contact(const std::string &node_id, const std::string &host_ip,
-      const boost::uint16_t &host_port, const std::string &local_ip,
-      const boost::uint16_t &local_port, const std::string &rendezvous_ip,
-      const boost::uint16_t &rendezvous_port);
-  Contact(const std::string &node_id, const std::string &host_ip,
-      const boost::uint16_t &host_port);
-  Contact(const std::string &node_id, const std::string &host_ip,
-      const boost::uint16_t &host_port, const std::string &local_ip,
-      const boost::uint16_t &local_port);
-
-  Contact(const KadId &node_id, const std::string &host_ip,
-      const boost::uint16_t &host_port, const std::string &local_ip,
-      const boost::uint16_t &local_port, const std::string &rendezvous_ip,
-      const boost::uint16_t &rendezvous_port);
-  Contact(const KadId &node_id, const std::string &host_ip,
-      const boost::uint16_t &host_port);
-  Contact(const KadId &node_id, const std::string &host_ip,
-      const boost::uint16_t &host_port, const std::string &local_ip,
-      const boost::uint16_t &local_port);
-
-  explicit Contact(const ContactInfo &contact_info);
-  Contact();
-  Contact(const Contact&rhs);
-  // Test whether this contact is equal to another according node id or (ip,
-  // port)
-  bool operator == (const Contact &other) const;
-  bool operator != (const Contact &other) const;
-  // clone the content from another
-  Contact& operator=(const Contact &other);
-  bool SerialiseToString(std::string *ser_output);
-  bool ParseFromString(const std::string &data);
-  inline const KadId& node_id() const { return node_id_; }
-  inline const std::string& host_ip() const { return host_ip_; }
-  inline boost::uint16_t host_port() const { return host_port_; }
-  inline boost::uint16_t failed_rpc() const { return failed_rpc_; }
-  inline void IncreaseFailed_RPC() { ++failed_rpc_; }
-  const std::string& rendezvous_ip() const { return rendezvous_ip_; }
-  boost::uint16_t rendezvous_port() const { return rendezvous_port_; }
-  std::string ToString() const;
-  inline boost::uint64_t last_seen() const { return last_seen_; }
-  inline void set_last_seen(boost::uint64_t last_seen) {
-    last_seen_ = last_seen;
-  }
-  inline const std::string& local_ip() const { return local_ip_; }
-  inline boost::uint16_t local_port() const { return local_port_; }
- private:
-  KadId node_id_;
-  std::string host_ip_;
-  boost::uint16_t host_port_;
-  boost::uint16_t failed_rpc_;
-  std::string rendezvous_ip_;
-  boost::uint16_t rendezvous_port_;
-  boost::uint64_t last_seen_;
-  std::string local_ip_;
-  boost::uint16_t local_port_;
-};
+const std::string kAnonymousSignedRequest(2 * kKeySizeBytes, 'f');
 
 }  // namespace kad
 
 
-
 /*******************************************************************************
- * BASE LAYER - FREE FUNCTIONS FOR USE IN ALL LAYERS                           *
- ******************************************************************************/
-namespace base {
-
-// Data type definition for general callback functions.
-typedef boost::function<void(const std::string&)> callback_func_type;
-
-// Data type definition for RPC callback functions.
-typedef boost::function<void(const std::string&, const std::string &)>
-    rpc_callback_func;
-
-// Convert from int to string.
-std::string itos(int value);
-
-// Convert from string to int.
-int stoi(std::string value);
-
-// Encode a string to hex.
-std::string EncodeToHex(const std::string &non_hex_input);
-
-// Decode a string from hex.
-std::string DecodeFromHex(const std::string &hex_input);
-
-// Return the number of seconds since 1st January 1970.
-boost::uint32_t get_epoch_time();
-
-// Return the number of milliseconds since 1st January 1970.
-boost::uint64_t get_epoch_milliseconds();
-
-// Return the number of nanoseconds since 1st January 1970.
-boost::uint64_t get_epoch_nanoseconds();
-
-// Convert an IP in decimal dotted format to IPv4
-std::string inet_atob(const std::string &dec_ip);
-
-// Convert an IPv4 to decimal dotted format
-std::string inet_btoa(const std::string &ipv4);
-
-// Generate a (transaction) id between 1 & 2147483646 inclusive.
-boost::uint32_t generate_next_transaction_id(const boost::uint32_t &id);
-
-// Convert an internet network address into dotted string format.
-void inet_ntoa(boost::uint32_t addr, char *ipbuf);
-
-// Convert a dotted string format internet address into Ipv4 format.
-boost::uint32_t inet_aton(const char * buf);
-
-// Return a list of network interfaces in the format of "address, adapter name".
-void get_net_interfaces(std::vector<struct device_struct> *alldevices);
-
-// Return the first local network interface found.
-bool get_local_address(boost::asio::ip::address *local_address);
-
-std::vector<std::string> get_local_addresses();
-
-// Generate a 32bit signed integer
-// Use this function if receiving it in a variable that is int or int32_t
-// or if before assinging to a signed int variable you are doing a modulo op
-boost::int32_t random_32bit_integer();
-
-// Generate a 32bit unsigned integer
-// Use this one if receiving it in a variable that is unsigned int or uint32_t
-boost::uint32_t random_32bit_uinteger();
-
-// Generate a random string.
-std::string RandomString(int length);
-
-struct device_struct {
-  device_struct() : ip_address(), interface_("") {}
-  boost::asio::ip::address ip_address;
-  std::string interface_;
-};
-
-// Get a random sample of N elements of a container(vector, list, set)
-// Usage:
-// random_sample(container.begin(), container.end(), result.begin(), N)
-template <class ForwardIterator, class OutputIterator>
-    OutputIterator random_sample_n(ForwardIterator begin,
-                                   ForwardIterator end,
-                                   OutputIterator result,
-                                   int N) {
-  int remaining = std::distance(begin, end);
-
-  // To avoid clashing of Visual Studio's min macro
-  #ifdef __MSVC__
-    int m = min(N, remaining);
-  #else
-    int m = std::min(N, remaining);
-  #endif
-  while (m > 0) {
-    if (static_cast<int>((random_32bit_uinteger() % remaining)) < m) {
-      *result = *begin;
-      ++result;
-      --m;
-    }
-    --remaining;
-    ++begin;
-  }
-  return result;
-}
-
-class AlternativeStore;
-class CallLaterTimer;
-}  // namespace base
-
-
-
-/*******************************************************************************
- * RPC INTERFACE                                                               *
+ * RPC Layer                                                                   *
  ******************************************************************************/
 namespace rpcprotocol {
-
-// RPC CONSTANTS
 
 // Maximum port number.
 const boost::uint16_t kMaxPort = 65535;
@@ -355,7 +151,7 @@ const boost::uint16_t kMaxPort = 65535;
 const boost::uint16_t kMinPort = 5000;
 
 // RPC timeout duration (in milliseconds).
-const boost::uint32_t kRpcTimeout = 10000;  // 10 seconds
+const boost::uint32_t kRpcTimeout = 10000;
 
 // RPC result constants.
 const std::string kStartTransportSuccess("T");
@@ -366,21 +162,6 @@ const std::string kStartTransportFailure("F");
 const std::string kTimeOut("T");
 const std::string kCancelled("C");
 
-// RPC ENUMERATIONS, DATA TYPE DEFINITIONS, AND FORWARD DECLARATIONS
-struct RpcInfo;
-struct PendingReq;
-class RpcMessage;
-class ChannelManagerImpl;
-class ControllerImpl;
-class ChannelImpl;
-class ChannelManager;
-class Controller;
-class Channel;
 }  // namespace rpcprotocol
-
-namespace transport {
-class Transport;
-class TransportHandler;
-}  // namespace transport
 
 #endif  // MAIDSAFE_MAIDSAFE_DHT_CONFIG_H_

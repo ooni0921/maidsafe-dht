@@ -32,28 +32,32 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 #include <string>
 #include "protobuf/kademlia_service.pb.h"
-#include "maidsafe/channelmanager-api.h"
-#include "maidsafe/transporthandler-api.h"
+#include "rpcprotocol/channelmanager-api.h"
+#include "transport/transporthandler-api.h"
+
+namespace rpcprotocol {
+class Controller;
+}  // namespace rpcprotocol
 
 namespace kad {
 const boost::uint32_t kRpcNatPingTimeout = 3;
 class NatRpcs {
  public:
   NatRpcs(rpcprotocol::ChannelManager *ch_manager, transport::TransportHandler
-    *ptrans_handler);
+    *transport_handler);
   void NatDetection(const std::string &newcomer,
       const std::string &bootstrap_node, const boost::uint32_t type,
       const std::string &sender_id, const std::string &remote_ip,
-      const boost::uint16_t &remote_port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port, NatDetectionResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
+      const boost::uint16_t &remote_port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, NatDetectionResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback);
   void NatDetectionPing(const std::string &remote_ip,
-      const boost::uint16_t &remote_port, const std::string &rv_ip,
-      const boost::uint16_t &rv_port, NatDetectionPingResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *cb);
+      const boost::uint16_t &remote_port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, NatDetectionPingResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback);
  private:
   rpcprotocol::ChannelManager *pchannel_manager_;
-  transport::TransportHandler *ptrans_handler_;
+  transport::TransportHandler *transport_handler_;
 };
-}
+}  // namespace kad
 #endif  // KADEMLIA_NATRPC_H_

@@ -28,10 +28,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TESTS_KADEMLIA_FAKE_CALLBACKS_H_
 #define TESTS_KADEMLIA_FAKE_CALLBACKS_H_
 
+#include <boost/thread/thread.hpp>
 #include <list>
 #include <vector>
 #include <string>
-#include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/general_messages.pb.h"
 #include "protobuf/kademlia_service_messages.pb.h"
 
@@ -117,9 +117,9 @@ class FindCallback : public FakeCallback {
   std::vector<kad::SignedValue> signed_values_;
 };
 
-class FindNodeCallback : public FakeCallback {
+class GetNodeContactDetailsCallback : public FakeCallback {
  public:
-  FindNodeCallback() : FakeCallback(), result_msg(), contact_("") {
+  GetNodeContactDetailsCallback() : result_msg(), contact_() {
   }
   void CallbackFunc(const std::string &res) {
     if (!result_msg.ParseFromString(res)) {
@@ -176,10 +176,10 @@ class DeleteValueCallback :public FakeCallback {
   kad::DeleteResponse result_msg;
 };
 
-inline void wait_result(FakeCallback *cb) {
+inline void wait_result(FakeCallback *callback) {
   while (1) {
     {
-      if (cb->result() != "")
+      if (callback->result() != "")
         return;
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));

@@ -30,7 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/assert.hpp>
 #include <boost/lexical_cast.hpp>
 #include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/utils.h"
+#include "base/utils.h"
 #include "libupnp/miniwget.h"
 #include "libupnp/miniupnpc.h"
 #include "libupnp/upnpcommands.h"
@@ -94,7 +94,7 @@ bool UpnpIgdClientImpl::AddPortMapping(const PortMapping &mapping) {
 
   if (has_services_) {
     boost::asio::ip::address ip_addr;
-    base::get_local_address(&ip_addr);
+    base::GetLocalAddress(&ip_addr);
 
     int res = UPNP_AddPortMapping(upnp_urls_.controlURL,
                                   igd_data_.servicetype,

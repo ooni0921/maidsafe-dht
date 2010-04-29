@@ -25,29 +25,34 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 /*******************************************************************************
- * This file may be included with the library, but is not required.  It        *
- * provides additional utilities over and above those in maidsafe_dht.config.h *
- * namespace base that may be useful to projects using the library.            *
- *                                                                             *
- * NOTE: These settings and functions WILL be amended or deleted in future     *
- * releases until this notice is removed.                                      *
+ * NOTE: This header is unlikely to have any breaking changes applied.         *
+ *       However, it should not be regarded as finalised until this notice is  *
+ *       removed.                                                              *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_UTILS_H_
-#define MAIDSAFE_UTILS_H_
+#ifndef BASE_UTILS_H_
+#define BASE_UTILS_H_
 
+#include <boost/asio/ip/address.hpp>
 #include <boost/cstdint.hpp>
 #include <string>
 #include <vector>
+#include "maidsafe/maidsafe-dht_config.h"
 
-// Forward declaration
+
 namespace kad {
 class Contact;
 }  // namespace kad
 
+
 namespace base {
+
+struct DeviceStruct {
+  DeviceStruct() : ip_address(), device_interface() {}
+  boost::asio::ip::address ip_address;
+  std::string device_interface;
+};
 
 /**
 * @class Stats
@@ -107,43 +112,60 @@ class Stats {
   T sum_;
 };
 
-// Remove leading and trailing slashes from path unless path is "/".
-std::string TidyPath(const std::string &original_path_);
+// Generate a 32bit signed integer
+// Use this function if receiving it in a variable that is int or int32_t
+// or if before assinging to a signed int variable you are doing a modulo op
+boost::int32_t RandomInt32();
 
-// Convert from boost::uint64_t to string.
-std::string itos_ull(boost::uint64_t value);
+// Generate a 32bit unsigned integer
+// Use this one if receiving it in a variable that is unsigned int or uint32_t
+boost::uint32_t RandomUint32();
 
-// Convert from string to boost::uint64_t.
-boost::uint64_t stoi_ull(std::string value);
+// Convert from int to string.
+std::string IntToString(const int &value);
 
-// Convert from boost::uint32_t to string.
-std::string itos_ul(boost::uint32_t value);
+// Generate a random string.
+std::string RandomString(const int &length);
 
-// Convert from string to boost::uint32_t.
-boost::uint32_t stoi_ul(std::string value);
+// Encode a string to hex.
+std::string EncodeToHex(const std::string &non_hex_input);
 
-// Convert from boost::int32_t to string.
-std::string itos_l(boost::int32_t value);
+// Decode a string from hex.
+std::string DecodeFromHex(const std::string &hex_input);
 
-// Convert from string to boost::int32_t.
-boost::int32_t stoi_l(std::string value);
+// Return the number of seconds since 1st January 1970.
+boost::uint32_t GetEpochTime();
 
-// Convert from string to wstring.
-std::wstring StrToWStr(const std::string &string_);
+// Return the number of milliseconds since 1st January 1970.
+boost::uint64_t GetEpochMilliseconds();
 
-// Convert from wstring to string.
-std::string WStrToStr(const std::wstring &wstring_);
+// Return the number of nanoseconds since 1st January 1970.
+boost::uint64_t GetEpochNanoseconds();
 
-// Convert string to all lowercase.
-std::string StrToLwr(const std::string &string_);
+// Convert an IP in ASCII format to IPv4 or IPv6 bytes
+std::string IpAsciiToBytes(const std::string &decimal_ip);
 
-// Check for disallowed characters for filenames.
-bool ValidateName(const std::string &str);
+// Convert an IPv4 or IPv6 in bytes format to ASCII format
+std::string IpBytesToAscii(const std::string &bytes_ip);
 
-// Add a kad Contact to the vector & sort ascending by kademlia distance to key.
-void InsertKadContact(const std::string &key,
-                      const kad::Contact &new_contact,
-                      std::vector<kad::Contact> *contacts);
+// Convert an internet network address into dotted string format.
+void IpNetToAscii(boost::uint32_t address, char *ip_buffer);
+
+// Convert a dotted string format internet address into Ipv4 format.
+boost::uint32_t IpAsciiToNet(const char *buffer);
+
+// Return a list of network interfaces in the format of "address, adapter name".
+void GetNetInterfaces(std::vector<struct DeviceStruct> *alldevices);
+
+// Return the first local network interface found.
+bool GetLocalAddress(boost::asio::ip::address *local_address);
+
+// Return all local addresses
+std::vector<std::string> GetLocalAddresses();
+
+// Generate a (transaction) id between 1 & 2147483646 inclusive.
+boost::uint32_t GenerateNextTransactionId(const boost::uint32_t &id);
+
 }  // namespace base
 
-#endif  // MAIDSAFE_UTILS_H_
+#endif  // BASE_UTILS_H_

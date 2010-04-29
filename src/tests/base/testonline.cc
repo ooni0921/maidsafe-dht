@@ -27,8 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include "base/calllatertimer.h"
-#include "maidsafe/maidsafe-dht_config.h"
-#include "maidsafe/online.h"
+#include "base/online.h"
 
 bool o1, o2, o3, o4;
 
@@ -53,17 +52,17 @@ void Observer4(bool b) {
 }
 
 TEST(OnlineControllerTest, BEH_BASE_SingletonAddress) {
-  base::OnlineController *olc1 = base::OnlineController::instance();
+  base::OnlineController *olc1 = base::OnlineController::Instance();
   olc1->Reset();
-  base::OnlineController *olc2 = base::OnlineController::instance();
+  base::OnlineController *olc2 = base::OnlineController::Instance();
   ASSERT_EQ(olc1, olc2);
   olc1 = olc2 = NULL;
 }
 
 TEST(OnlineControllerTest, BEH_BASE_OnlineReset) {
-  base::OnlineController *olc1 = base::OnlineController::instance();
+  base::OnlineController *olc1 = base::OnlineController::Instance();
   olc1->Reset();
-  base::OnlineController *olc2 = base::OnlineController::instance();
+  base::OnlineController *olc2 = base::OnlineController::Instance();
   ASSERT_EQ(olc1, olc2);
   ASSERT_FALSE(olc1->Online(0));
   ASSERT_FALSE(olc2->Online(0));
@@ -80,9 +79,9 @@ TEST(OnlineControllerTest, BEH_BASE_OnlineReset) {
 }
 
 TEST(OnlineControllerTest, BEH_BASE_SetGetOnline) {
-  base::OnlineController *olc1 = base::OnlineController::instance();
+  base::OnlineController *olc1 = base::OnlineController::Instance();
   olc1->Reset();
-  base::OnlineController *olc2 = base::OnlineController::instance();
+  base::OnlineController *olc2 = base::OnlineController::Instance();
   ASSERT_EQ(olc1, olc2);
   ASSERT_FALSE(olc1->Online(0));
   ASSERT_FALSE(olc2->Online(0));
@@ -108,9 +107,9 @@ TEST(OnlineControllerTest, BEH_BASE_SetGetOnline) {
 }
 
 TEST(OnlineControllerTest, BEH_BASE_ThreadedSetGetOnline) {
-  base::OnlineController *olc1 = base::OnlineController::instance();
+  base::OnlineController *olc1 = base::OnlineController::Instance();
   olc1->Reset();
-  base::OnlineController *olc2 = base::OnlineController::instance();
+  base::OnlineController *olc2 = base::OnlineController::Instance();
   ASSERT_EQ(olc1, olc2);
   ASSERT_FALSE(olc1->Online(0));
   ASSERT_FALSE(olc2->Online(0));
@@ -140,9 +139,9 @@ TEST(OnlineControllerTest, BEH_BASE_ThreadedSetGetOnline) {
 }
 
 TEST(OnlineControllerTest, BEH_BASE_ObserverRegistration) {
-  base::OnlineController *olc1 = base::OnlineController::instance();
+  base::OnlineController *olc1 = base::OnlineController::Instance();
   olc1->Reset();
-  base::OnlineController *olc2 = base::OnlineController::instance();
+  base::OnlineController *olc2 = base::OnlineController::Instance();
   ASSERT_EQ(olc1, olc2);
   ASSERT_FALSE(olc1->Online(0));
   ASSERT_FALSE(olc2->Online(0));
@@ -178,9 +177,9 @@ TEST(OnlineControllerTest, BEH_BASE_ObserverRegistration) {
 }
 
 TEST(OnlineControllerTest, BEH_BASE_MultipleObserverRegistration) {
-  base::OnlineController *olc1 = base::OnlineController::instance();
+  base::OnlineController *olc1 = base::OnlineController::Instance();
   olc1->Reset();
-  base::OnlineController *olc2 = base::OnlineController::instance();
+  base::OnlineController *olc2 = base::OnlineController::Instance();
   ASSERT_EQ(olc1, olc2);
   ASSERT_FALSE(olc1->Online(0));
   ASSERT_FALSE(olc2->Online(0));
@@ -224,7 +223,7 @@ TEST(OnlineControllerTest, BEH_BASE_MultipleObserverRegistration) {
 
 TEST(OnlineControllerTest, BEH_BASE_GroupedObserverRegistration) {
   printf("Zeroth.\n");
-  base::OnlineController *olc = base::OnlineController::instance();
+  base::OnlineController *olc = base::OnlineController::Instance();
   olc->Reset();
 
   ASSERT_EQ(0, olc->ObserversCount());

@@ -25,40 +25,26 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_ONLINE_H_
-#define MAIDSAFE_ONLINE_H_
+/*******************************************************************************
+ * NOTE: This header is unlikely to have any breaking changes applied.         *
+ *       However, it should not be regarded as finalised until this notice is  *
+ *       removed.                                                              *
+ ******************************************************************************/
 
-#include <boost/function.hpp>
-#include <map>
-#include "maidsafe/maidsafe-dht_config.h"
+#ifndef BASE_ALTERNATIVESTORE_H_
+#define BASE_ALTERNATIVESTORE_H_
+
+#include <string>
+
 
 namespace base {
 
-class OnlineController  {
-  typedef boost::function<void(const bool&)> Observer;
-  typedef std::pair<boost::uint16_t, Observer> GroupedObserver;
+class AlternativeStore {
  public:
-  static OnlineController* instance();
-  boost::uint16_t RegisterObserver(const boost::uint16_t &group,
-                                   const Observer &ob);
-  bool UnregisterObserver(boost::uint16_t id);
-  void UnregisterGroup(const boost::uint16_t &group);
-  void UnregisterAll();
-  void SetOnline(const boost::uint16_t &group, const bool &b);
-  void SetAllOnline(const bool &b);
-  bool Online(const boost::uint16_t &group);
-  boost::uint16_t ObserversCount();
-  boost::uint16_t ObserversInGroupCount(const boost::uint16_t &group);
-  void Reset();
-
- private:
-  OnlineController();
-  ~OnlineController() {}
-  std::map<boost::uint16_t, bool> online_;
-  boost::mutex ol_mutex_;
-  std::map<boost::uint16_t, GroupedObserver> observers_;
+  virtual ~AlternativeStore() {}
+  virtual bool Has(const std::string &key) = 0;
 };
 
 }  // namespace base
 
-#endif  // MAIDSAFE_ONLINE_H_
+#endif  // BASE_ALTERNATIVESTORE_H_

@@ -25,29 +25,30 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/config.h"
+#include "transport/transporttcp.h"
+#include "base/log.h"
+#include "base/utils.h"
 #include "protobuf/transport_message.pb.h"
-#include "transport/tcptransport.h"
 
 namespace transport {
 
-TCPTransport::TCPTransport()
-    : id_(-1), listening_port_(0), outgoing_port_(0), current_id_(0),
-      io_service_(), acceptor_(io_service_), stop_(true), rpcmsg_notifier_(),
-      msg_notifier_(), service_routine_(), connections_(), conn_mutex_(),
-      msg_handler_mutex_(), rpcmsg_handler_mutex_(), send_handler_mutex_(),
-      peer_addr_(), new_connection_() {
-}
+TransportTCP::TransportTCP()
+    : transport_id_(-1), listening_port_(0), outgoing_port_(0), current_id_(0),
+      io_service_(), acceptor_(io_service_), stop_(true),
+      rpc_message_notifier_(), message_notifier_(), service_routine_(),
+      connections_(), conn_mutex_(), msg_handler_mutex_(),
+      rpcmsg_handler_mutex_(), send_handler_mutex_(), peer_addr_(),
+      new_connection_() {}
 
-TCPTransport::~TCPTransport() {
+TransportTCP::~TransportTCP() {
   if (!stop_)
     Stop();
 }
 
-int TCPTransport::Start(const boost::uint16_t &port) {
+int TransportTCP::Start(const boost::uint16_t &port) {
   if (!stop_)
     return 1;
-  if ((rpcmsg_notifier_.empty() && msg_notifier_.empty()) ||
+  if ((rpc_message_notifier_.empty() && message_notifier_.empty()) ||
        send_notifier_.empty())
     return 1;
   listening_port_ = port;
@@ -72,31 +73,31 @@ int TCPTransport::Start(const boost::uint16_t &port) {
   }
 
   new_connection_.reset(new TCPConnection(io_service_,
-    boost::bind(&TCPTransport::HandleConnSend, this, _1, _2, _3, _4),
-    boost::bind(&TCPTransport::HandleConnRecv, this, _1, _2, _3)));
+    boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
+    boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
 
   acceptor_.async_accept(new_connection_->Socket(), peer_addr_,
-    boost::bind(&TCPTransport::HandleAccept, this,
+    boost::bind(&TransportTCP::HandleAccept, this,
       boost::asio::placeholders::error));
   stop_ = false;
   try {
     service_routine_.reset(new boost::thread(
-      boost::bind(&TCPTransport::StartService, this)));
+      boost::bind(&TransportTCP::StartService, this)));
   } catch(...) {
     stop_ = true;
     acceptor_.close();
     return 1;
   }
-  current_id_ = base::generate_next_transaction_id(current_id_);
+  current_id_ = base::GenerateNextTransactionId(current_id_);
   if (port == 0)
     listening_port_ = acceptor_.local_endpoint().port();
   return 0;
 }
 
-int TCPTransport::StartLocal(const boost::uint16_t &port) {
+int TransportTCP::StartLocal(const boost::uint16_t &port) {
   if (!stop_)
     return 1;
-  if ((rpcmsg_notifier_.empty() && msg_notifier_.empty()) ||
+  if ((rpc_message_notifier_.empty() && message_notifier_.empty()) ||
        send_notifier_.empty())
     return 1;
   listening_port_ = port;
@@ -124,36 +125,36 @@ int TCPTransport::StartLocal(const boost::uint16_t &port) {
   }
 
   new_connection_.reset(new TCPConnection(io_service_,
-    boost::bind(&TCPTransport::HandleConnSend, this, _1, _2, _3, _4),
-    boost::bind(&TCPTransport::HandleConnRecv, this, _1, _2, _3)));
+    boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
+    boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
 
   acceptor_.async_accept(new_connection_->Socket(),
-    boost::bind(&TCPTransport::HandleAccept, this,
+    boost::bind(&TransportTCP::HandleAccept, this,
       boost::asio::placeholders::error));
   stop_ = false;
   try {
     service_routine_.reset(new boost::thread(
-      boost::bind(&TCPTransport::StartService, this)));
+      boost::bind(&TransportTCP::StartService, this)));
   } catch(...) {
     stop_ = true;
     acceptor_.close();
     return 1;
   }
-  current_id_ = base::generate_next_transaction_id(current_id_);
+  current_id_ = base::GenerateNextTransactionId(current_id_);
   if (port == 0)
     listening_port_ = acceptor_.local_endpoint().port();
   return 0;
 }
 
-void TCPTransport::Stop() {
+void TransportTCP::Stop() {
   if (stop_)
     return;
-  io_service_.post(boost::bind(&TCPTransport::HandleStop, this));
+  io_service_.post(boost::bind(&TransportTCP::HandleStop, this));
   while (!stop_)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
-void TCPTransport::HandleStop() {
+void TransportTCP::HandleStop() {
   acceptor_.close();
   boost::mutex::scoped_lock guard(conn_mutex_);
   std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
@@ -164,37 +165,37 @@ void TCPTransport::HandleStop() {
   stop_ = true;
 }
 
-void TCPTransport::CloseConnection(const boost::uint32_t &conn_id) {
+void TransportTCP::CloseConnection(const boost::uint32_t &connection_id) {
   std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
   boost::mutex::scoped_lock guard(conn_mutex_);
-  it = connections_.find(conn_id);
+  it = connections_.find(connection_id);
   if (it != connections_.end()) {
     it->second->Close();
-    connections_.erase(conn_id);
+    connections_.erase(connection_id);
   }
 }
 
-bool TCPTransport::RegisterOnMessage(boost::function<void(const std::string&,
+bool TransportTCP::RegisterOnMessage(boost::function<void(const std::string&,
       const boost::uint32_t&, const boost::int16_t&,
       const float &)> on_message) {
   if (stop_) {
-    msg_notifier_ = on_message;
+    message_notifier_ = on_message;
     return true;
   }
   return false;
 }
 
-bool TCPTransport::RegisterOnRPCMessage(boost::function < void(
+bool TransportTCP::RegisterOnRPCMessage(boost::function < void(
       const rpcprotocol::RpcMessage&, const boost::uint32_t&,
       const boost::int16_t&, const float &) > on_rpcmessage) {
   if (stop_) {
-    rpcmsg_notifier_ = on_rpcmessage;
+    rpc_message_notifier_ = on_rpcmessage;
     return true;
   }
   return false;
 }
 
-bool TCPTransport::RegisterOnSend(boost::function < void(const boost::uint32_t&,
+bool TransportTCP::RegisterOnSend(boost::function < void(const boost::uint32_t&,
       const bool&) > on_send) {
   if (stop_) {
     send_notifier_ = on_send;
@@ -203,7 +204,7 @@ bool TCPTransport::RegisterOnSend(boost::function < void(const boost::uint32_t&,
   return false;
 }
 
-bool TCPTransport::CanConnect(const std::string &ip,
+bool TransportTCP::CanConnect(const std::string &ip,
       const boost::uint16_t &port) {
   if (stop_)
     return false;
@@ -211,7 +212,7 @@ bool TCPTransport::CanConnect(const std::string &ip,
   boost::asio::ip::tcp::endpoint addr;
   std::string dec_lip;
   if (ip.size() == 4)
-    dec_lip = base::inet_btoa(ip);
+    dec_lip = base::IpBytesToAscii(ip);
   else
     dec_lip = ip;
   addr.address(boost::asio::ip::address::from_string(dec_lip));
@@ -227,7 +228,7 @@ bool TCPTransport::CanConnect(const std::string &ip,
   return result;
 }
 
-bool TCPTransport::ConnectionExists(const boost::uint32_t &connection_id) {
+bool TransportTCP::ConnectionExists(const boost::uint32_t &connection_id) {
   std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
   boost::mutex::scoped_lock guard(conn_mutex_);
   it = connections_.find(connection_id);
@@ -236,7 +237,7 @@ bool TCPTransport::ConnectionExists(const boost::uint32_t &connection_id) {
   return false;
 }
 
-bool TCPTransport::IsPortAvailable(const boost::uint16_t &port) {
+bool TransportTCP::IsPortAvailable(const boost::uint16_t &port) {
   tcp::acceptor acceptor(io_service_);
   boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),
     port);
@@ -253,7 +254,7 @@ bool TCPTransport::IsPortAvailable(const boost::uint16_t &port) {
   return true;
 }
 
-void TCPTransport::HandleAccept(const boost::system::error_code &ec) {
+void TransportTCP::HandleAccept(const boost::system::error_code &ec) {
   if (ec) {
     DLOG(ERROR) << "TCP(" << listening_port_ <<
       ") Error accepting a connection: " << ec << " - " << ec.message() << "\n";
@@ -266,20 +267,20 @@ void TCPTransport::HandleAccept(const boost::system::error_code &ec) {
   {
     boost::mutex::scoped_lock guard(conn_mutex_);
     connections_[current_id_] = new_connection_;
-    new_connection_->set_conn_id(current_id_);
-    current_id_ = base::generate_next_transaction_id(current_id_);
+    new_connection_->set_connection_id(current_id_);
+    current_id_ = base::GenerateNextTransactionId(current_id_);
   }
   new_connection_->StartReceiving();
   new_connection_.reset(new TCPConnection(io_service_,
-    boost::bind(&TCPTransport::HandleConnSend, this, _1, _2, _3, _4),
-    boost::bind(&TCPTransport::HandleConnRecv, this, _1, _2, _3)));
+    boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
+    boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
 
   acceptor_.async_accept(new_connection_->Socket(), peer_addr_,
-    boost::bind(&TCPTransport::HandleAccept, this,
+    boost::bind(&TransportTCP::HandleAccept, this,
       boost::asio::placeholders::error));
 }
 
-void TCPTransport::HandleConnSend(const boost::uint32_t &conn_id,
+void TransportTCP::HandleConnSend(const boost::uint32_t &connection_id,
     const bool &send_once, const bool &rpc_sent,
     const boost::system::error_code &ec) {
   bool result(true);
@@ -287,7 +288,7 @@ void TCPTransport::HandleConnSend(const boost::uint32_t &conn_id,
     {
       boost::mutex::scoped_lock guard(conn_mutex_);
       std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
-      it = connections_.find(conn_id);
+      it = connections_.find(connection_id);
       if (it != connections_.end()) {
         connections_.erase(it);
       }
@@ -300,25 +301,25 @@ void TCPTransport::HandleConnSend(const boost::uint32_t &conn_id,
   }
   if (rpc_sent) {
     boost::mutex::scoped_lock guard(send_handler_mutex_);
-    send_notifier_(conn_id, result);
+    send_notifier_(connection_id, result);
   }
   {
     boost::mutex::scoped_lock guard(conn_mutex_);
     std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
-    it = connections_.find(conn_id);
+    it = connections_.find(connection_id);
     if (it != connections_.end()) {
       it->second->StartReceiving();
     }
   }
 }
 
-void TCPTransport::HandleConnRecv(const std::string &msg,
-    const boost::uint32_t &conn_id, const boost::system::error_code &ec) {
+void TransportTCP::HandleConnRecv(const std::string &msg,
+    const boost::uint32_t &connection_id, const boost::system::error_code &ec) {
   if (ec) {
     {
       boost::mutex::scoped_lock guard(conn_mutex_);
       std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
-      it = connections_.find(conn_id);
+      it = connections_.find(connection_id);
       if (it != connections_.end()) {
         it->second->Close();
         connections_.erase(it);
@@ -333,13 +334,13 @@ void TCPTransport::HandleConnRecv(const std::string &msg,
 
   TransportMessage t_msg;
   if (t_msg.ParseFromString(msg)) {
-    if (t_msg.has_rpc_msg() && !rpcmsg_notifier_.empty()) {
+    if (t_msg.has_rpc_msg() && !rpc_message_notifier_.empty()) {
       boost::mutex::scoped_lock guard(rpcmsg_handler_mutex_);
-      rpcmsg_notifier_(t_msg.rpc_msg(), conn_id, id_, 0.0);
+      rpc_message_notifier_(t_msg.rpc_msg(), connection_id, transport_id_, 0.0);
     }
-  } else if (!msg_notifier_.empty()) {
+  } else if (!message_notifier_.empty()) {
     boost::mutex::scoped_lock guard(msg_handler_mutex_);
-    msg_notifier_(msg, conn_id, id_, 0.0);
+    message_notifier_(msg, connection_id, transport_id_, 0.0);
   } else {
     LOG(WARNING) << "TCP(" << listening_port_ <<
         ") Invalid Message received" << std::endl;
@@ -348,21 +349,21 @@ void TCPTransport::HandleConnRecv(const std::string &msg,
   {
     boost::mutex::scoped_lock guard(conn_mutex_);
     std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
-    it = connections_.find(conn_id);
+    it = connections_.find(connection_id);
     if (it != connections_.end()) {
       it->second->StartReceiving();
     }
   }
 }
 
-bool TCPTransport::GetPeerAddr(const boost::uint32_t &conn_id,
-    struct sockaddr *addr) {
+bool TransportTCP::GetPeerAddr(const boost::uint32_t &connection_id,
+    struct sockaddr *peer_address) {
   std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
   boost::mutex::scoped_lock guard(conn_mutex_);
-  it = connections_.find(conn_id);
+  it = connections_.find(connection_id);
   if (it != connections_.end()) {
     boost::system::error_code error;
-    addr = reinterpret_cast<sockaddr*>(
+    peer_address = reinterpret_cast<sockaddr*>(
       it->second->RemoteEndPoint(error).data());
     if (error)
       return false;
@@ -372,7 +373,7 @@ bool TCPTransport::GetPeerAddr(const boost::uint32_t &conn_id,
   return false;
 }
 
-bool TCPTransport::HasReceivedData(const boost::uint32_t &connection_id,
+bool TransportTCP::HasReceivedData(const boost::uint32_t &connection_id,
     boost::int64_t *size) {
   std::map<boost::uint32_t, tcpconnection_ptr>::iterator it;
   boost::mutex::scoped_lock guard(conn_mutex_);
@@ -387,18 +388,18 @@ bool TCPTransport::HasReceivedData(const boost::uint32_t &connection_id,
   return false;
 }
 
-int TCPTransport::ConnectToSend(const std::string &remote_ip,
+int TransportTCP::ConnectToSend(const std::string &remote_ip,
       const boost::uint16_t &remote_port, const std::string&,
       const boost::uint16_t&, const std::string&, const boost::uint16_t&,
       const bool &keep_connection,
-      boost::uint32_t *conn_id) {
+      boost::uint32_t *connection_id) {
   tcpconnection_ptr conn(new TCPConnection(io_service_,
-    boost::bind(&TCPTransport::HandleConnSend, this, _1, _2, _3, _4),
-    boost::bind(&TCPTransport::HandleConnRecv, this, _1, _2, _3)));
+    boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
+    boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
   boost::asio::ip::tcp::endpoint addr;
   std::string dec_lip;
   if (remote_ip.size() == 4)
-    dec_lip = base::inet_btoa(remote_ip);
+    dec_lip = base::IpBytesToAscii(remote_ip);
   else
     dec_lip = remote_ip;
   addr.address(boost::asio::ip::address::from_string(dec_lip));
@@ -415,17 +416,17 @@ int TCPTransport::ConnectToSend(const std::string &remote_ip,
   {
     boost::mutex::scoped_lock guard(conn_mutex_);
     connections_[current_id_] = conn;
-    conn->set_conn_id(current_id_);
-    *conn_id = current_id_;
-    current_id_ = base::generate_next_transaction_id(current_id_);
+    conn->set_connection_id(current_id_);
+    *connection_id = current_id_;
+    current_id_ = base::GenerateNextTransactionId(current_id_);
   }
   if (keep_connection)
     conn->send_once(false);
   return 0;
 }
 
-int TCPTransport::Send(const rpcprotocol::RpcMessage &data,
-      const boost::uint32_t &conn_id, const bool&) {
+int TransportTCP::Send(const rpcprotocol::RpcMessage &data,
+      const boost::uint32_t &connection_id, const bool&) {
   if (data.IsInitialized()) {
     TransportMessage t_msg;
     rpcprotocol::RpcMessage *rpc_msg = t_msg.mutable_rpc_msg();
@@ -434,7 +435,7 @@ int TCPTransport::Send(const rpcprotocol::RpcMessage &data,
     {
       boost::mutex::scoped_lock guard(conn_mutex_);
       std::map<boost::uint32_t, tcpconnection_ptr>::iterator it =
-          connections_.find(conn_id);
+          connections_.find(connection_id);
       if (it != connections_.end()) {
         it->second->sending_rpc(true);
         it->second->Send(ser_tmsg);
@@ -447,7 +448,7 @@ int TCPTransport::Send(const rpcprotocol::RpcMessage &data,
     {
       boost::mutex::scoped_lock guard(conn_mutex_);
       std::map<boost::uint32_t, tcpconnection_ptr>::iterator it =
-          connections_.find(conn_id);
+          connections_.find(connection_id);
       if (it != connections_.end()) {
         it->second->Close();
         connections_.erase(it);
@@ -457,13 +458,13 @@ int TCPTransport::Send(const rpcprotocol::RpcMessage &data,
   }
 }
 
-int TCPTransport::Send(const std::string &data, const boost::uint32_t &conn_id,
-      const bool&) {
+int TransportTCP::Send(const std::string &data,
+                       const boost::uint32_t &connection_id, const bool&) {
   if (!data.empty()) {
     {
       boost::mutex::scoped_lock guard(conn_mutex_);
       std::map<boost::uint32_t, tcpconnection_ptr>::iterator it =
-          connections_.find(conn_id);
+          connections_.find(connection_id);
       if (it != connections_.end()) {
         it->second->Send(data);
       } else {
@@ -475,7 +476,7 @@ int TCPTransport::Send(const std::string &data, const boost::uint32_t &conn_id,
     {
       boost::mutex::scoped_lock guard(conn_mutex_);
       std::map<boost::uint32_t, tcpconnection_ptr>::iterator it =
-          connections_.find(conn_id);
+          connections_.find(connection_id);
       if (it != connections_.end()) {
         it->second->Close();
         connections_.erase(it);
@@ -485,18 +486,18 @@ int TCPTransport::Send(const std::string &data, const boost::uint32_t &conn_id,
   }
 }
 
-struct sockaddr& TCPTransport::peer_address() {
+struct sockaddr& TransportTCP::peer_address() {
   struct sockaddr *addr = reinterpret_cast<sockaddr*>(peer_addr_.data());
   return *addr;
 }
 
-void TCPTransport::HandleStopIOService() {
+void TransportTCP::HandleStopIOService() {
   io_service_.reset();
 }
 
-void TCPTransport::StartService() {
+void TransportTCP::StartService() {
   boost::this_thread::at_thread_exit(boost::bind(
-    &TCPTransport::HandleStopIOService, this));
+    &TransportTCP::HandleStopIOService, this));
   io_service_.run();
 }
 }

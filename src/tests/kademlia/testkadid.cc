@@ -26,8 +26,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <gtest/gtest.h>
-#include "maidsafe/kadid.h"
-#include "maidsafe/maidsafe-dht_config.h"
+#include "kademlia/kadid.h"
+#include "base/utils.h"
 
 
 std::string increasehex(char hex_char) {
@@ -307,7 +307,7 @@ TEST(TestKadId, BEH_KAD_CtrBetweenPowersExceptions) {
 TEST(TestKadId, BEH_KAD_CtrBetweenPowersRandom) {
   std::string bin_id1(kad::ID_BITS_SIZE, '0');
   std::string bin_id2(kad::ID_BITS_SIZE, '0');
-  boost::int16_t lpower = (base::random_32bit_integer() % kad::ID_BITS_SIZE);
+  boost::int16_t lpower = (base::RandomInt32() % kad::ID_BITS_SIZE);
   bin_id1[kad::ID_BITS_SIZE - 1 - lpower] = '1';
   for (boost::int16_t i = lpower + 1; i <= kad::ID_BITS_SIZE; ++i) {
     kad::KadId id(lpower, i);

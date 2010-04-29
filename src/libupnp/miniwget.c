@@ -173,7 +173,7 @@ miniwget2(const char * url, const char * host,
 						if(i<n-4)
 						{
 							/* Copy the content into respbuffet */
-							respbuffer = (char *)realloc((void *)respbuffer, 
+							respbuffer = (char *)realloc((void *)respbuffer,
 														 allreadyread+(n-i-4));
 							memcpy(respbuffer+allreadyread, buf + i + 4, n-i-4);
 							allreadyread += (n-i-4);
@@ -185,7 +185,7 @@ miniwget2(const char * url, const char * host,
 			}
 			else
 			{
-				respbuffer = (char *)realloc((void *)respbuffer, 
+				respbuffer = (char *)realloc((void *)respbuffer,
 								 allreadyread+n);
 				memcpy(respbuffer+allreadyread, buf, n);
 				allreadyread += n;
@@ -205,7 +205,7 @@ miniwget2(const char * url, const char * host,
  *   url :		source string not modified
  *   hostname :	hostname destination string (size of MAXHOSTNAMELEN+1)
  *   port :		port (destination)
- *   path :		pointer to the path part of the URL 
+ *   path :		pointer to the path part of the URL
  *
  * Return values :
  *    0 - Failure

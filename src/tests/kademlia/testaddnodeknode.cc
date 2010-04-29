@@ -31,12 +31,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/lexical_cast.hpp>
 #include "maidsafe/maidsafe-dht.h"
 #include "tests/kademlia/fake_callbacks.h"
-#include "maidsafe/transport-api.h"
-#include "maidsafe/transportudt.h"
-#include "maidsafe/channelmanager-api.h"
-#include "maidsafe/config.h"
+#include "base/routingtable.h"
+#include "transport/transportudt.h"
+#include "transport/transport-api.h"
+#include "rpcprotocol/channelmanager-api.h"
+#include "base/log.h"
 #include "protobuf/rpcmessage.pb.h"
-#include "maidsafe/transporthandler-api.h"
+#include "transport/transporthandler-api.h"
 
 namespace kad {
 
@@ -45,13 +46,13 @@ class MessageHandler {
   MessageHandler(): msgs(), ids(), dead_server_(true), server_ip_(),
     server_port_(0), node_(NULL), msgs_sent_(0) {}
   void OnMessage(const rpcprotocol::RpcMessage &msg,
-      const boost::uint32_t conn_id) {
+      const boost::uint32_t connection_id) {
     std::string message;
     msg.SerializeToString(&message);
     msgs.push_back(message);
-    ids.push_back(conn_id);
+    ids.push_back(connection_id);
     if (node_ != NULL)
-      node_->CloseConnection(conn_id, id_);
+      node_->CloseConnection(connection_id, id_);
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
     const boost::uint16_t &port) {
@@ -89,7 +90,7 @@ class TestKnodes : public testing::Test {
   void SetUp() {
     transports_.clear();
     test_dir_ = std::string("TestKnodes") + boost::lexical_cast<std::string>(
-        base::random_32bit_uinteger());
+        base::RandomUint32());
     try {
       if (boost::filesystem::exists(test_dir_))
         boost::filesystem::remove_all(test_dir_);
@@ -121,7 +122,7 @@ class TestKnodes : public testing::Test {
           boost::filesystem::path(datastore_dir_[i]));
       nodes_.push_back(KNode(ch_managers_[i], trans_handlers_[i], VAULT, "",
           "", false, false));
-      nodes_[i].SetTransID(transports_[i]);
+      nodes_[i].set_transport_id(transports_[i]);
     }
   }
   void TearDown() {
@@ -169,16 +170,16 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   std::string id("7");
   for (int i = 1; i < kKeySizeBytes*2; ++i)
     id += "1";
-  GeneralKadCallback cb;
+  GeneralKadCallback callback;
   boost::asio::ip::address local_ip;
-  ASSERT_TRUE(base::get_local_address(&local_ip));
+  ASSERT_TRUE(base::GetLocalAddress(&local_ip));
   kad::KadId kadid(id, true);
   nodes_[0].Join(kadid, kconfig_file,
     local_ip.to_string(), trans_handlers_[0]->listening_port(transports_[0]),
-    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
-  wait_result(&cb);
-  ASSERT_EQ(kRpcResultSuccess, cb.result());
-  cb.Reset();
+    boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
+  wait_result(&callback);
+  ASSERT_EQ(kRpcResultSuccess, callback.result());
+  callback.Reset();
   ASSERT_TRUE(nodes_[0].is_joined());
 
   // Adding Contacts until kbucket splits and filling kbuckets
@@ -235,7 +236,7 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   // waiting for the ping to the last seen contact to timeout
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(nodes_[0].GetContact(contact.node_id(), &rec_contact));
-  ASSERT_TRUE(contact == rec_contact);
+  ASSERT_TRUE(contact.Equals(rec_contact));
   ASSERT_FALSE(nodes_[0].GetContact(last_seen.node_id(), &rec_contact));
 
   nodes_[0].Leave();
@@ -262,16 +263,16 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
     id += "1";
     id2 += "2";
   }
-  GeneralKadCallback cb;
+  GeneralKadCallback callback;
   boost::asio::ip::address local_ip;
-  ASSERT_TRUE(base::get_local_address(&local_ip));
+  ASSERT_TRUE(base::GetLocalAddress(&local_ip));
   kad::KadId kid(id, true), kid2(id2, true);
   nodes_[0].Join(kid, kconfig_file,
     local_ip.to_string(), trans_handlers_[0]->listening_port(transports_[0]),
-    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
-  wait_result(&cb);
-  ASSERT_EQ(kRpcResultSuccess, cb.result());
-  cb.Reset();
+    boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
+  wait_result(&callback);
+  ASSERT_EQ(kRpcResultSuccess, callback.result());
+  callback.Reset();
   ASSERT_TRUE(nodes_[0].is_joined());
   // Joining node 2 bootstrapped to node 1 so that node 1 adds him to its
   // routing table
@@ -288,10 +289,10 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   output1.close();
 
   nodes_[1].Join(kid2, kconfig_file1,
-    boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
-  wait_result(&cb);
-  ASSERT_EQ(kRpcResultSuccess, cb.result());
-  cb.Reset();
+    boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
+  wait_result(&callback);
+  ASSERT_EQ(kRpcResultSuccess, callback.result());
+  callback.Reset();
   ASSERT_TRUE(nodes_[1].is_joined());
   Contact last_seen;
   ASSERT_TRUE(nodes_[0].GetContact(nodes_[1].node_id(), &last_seen));
@@ -357,16 +358,16 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   ASSERT_TRUE(nodes_[0].GetContact(last_seen.node_id(), &rec_contact));
 
   // Getting info from base routing table to check rtt
-  base::PDRoutingTableTuple tuple;
-  ASSERT_EQ(0, (*base::PDRoutingTable::getInstance())[base::itos(
+  base::PublicRoutingTableTuple tuple;
+  ASSERT_EQ(0, (*base::PublicRoutingTable::GetInstance())[base::IntToString(
       nodes_[0].host_port())]->GetTupleInfo(
           nodes_[1].node_id().ToStringDecoded(), &tuple));
-  ASSERT_EQ(nodes_[1].node_id().ToStringDecoded(), tuple.kademlia_id_);
-  ASSERT_EQ(nodes_[1].host_ip(), tuple.host_ip_);
-  ASSERT_EQ(nodes_[1].host_port(), tuple.host_port_);
-  ASSERT_EQ(nodes_[1].rv_ip(), tuple.rendezvous_ip_);
-  ASSERT_EQ(nodes_[1].rv_port(), tuple.rendezvous_port_);
-  EXPECT_LT(0.0, tuple.rtt_);
+  ASSERT_EQ(nodes_[1].node_id().ToStringDecoded(), tuple.kademlia_id);
+  ASSERT_EQ(nodes_[1].host_ip(), tuple.host_ip);
+  ASSERT_EQ(nodes_[1].host_port(), tuple.host_port);
+  ASSERT_EQ(nodes_[1].rendezvous_ip(), tuple.rendezvous_ip);
+  ASSERT_EQ(nodes_[1].rendezvous_port(), tuple.rendezvous_port);
+  EXPECT_LT(0.0, tuple.rtt);
 
   nodes_[1].Leave();
   nodes_[0].Leave();

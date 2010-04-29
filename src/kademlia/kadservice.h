@@ -33,10 +33,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gtest/gtest_prod.h"
 #include "maidsafe/maidsafe-dht_config.h"
 #include "protobuf/kademlia_service.pb.h"
+#include "kademlia/contact.h"
 #include "kademlia/natrpc.h"
 
 namespace base {
 class SignatureValidator;
+class AlternativeStore;
 }
 
 namespace kad {
@@ -44,17 +46,20 @@ class DataStore;
 class Contact;
 class KadId;
 
-typedef boost::function< int(Contact, const float&, const bool&) >  // NOLINT
-    add_contact_function;
-typedef boost::function< void(const boost::uint16_t&, const
-    std::vector<Contact>&, std::vector<Contact>*) >
-    get_random_contacts_function;
-typedef boost::function< bool(const  KadId&, Contact*) >  // NOLINT
-    get_contact_function;
-typedef boost::function< void(const KadId&, std::vector<Contact>*,
-    const std::vector<Contact>&) > get_closestK_function;
-typedef boost::function< void(const Contact&, base::callback_func_type) >
-    ping_function;
+typedef boost::function<int(Contact, const float&, const bool&)>  // NOLINT
+    AddContactFunctor;
+
+typedef boost::function<void(const boost::uint16_t&,
+                             const std::vector<Contact>&,
+                             std::vector<Contact>*)> GetRandomContactsFunctor;
+
+typedef boost::function<bool(const KadId&, Contact*)> GetContactFunctor;  // NOLINT
+
+typedef boost::function<void(const KadId&, const std::vector<Contact>&,
+                             std::vector<Contact>*)> GetKClosestFunctor;
+
+typedef boost::function<void(const Contact&, VoidFunctorOneString)>
+    PingFunctor;
 
 struct NatDetectionData {
   Contact newcomer;
@@ -76,9 +81,9 @@ struct NatDetectionPingData {
 class KadService : public KademliaService {
  public:
   KadService(const NatRpcs &nat_rpcs, boost::shared_ptr<DataStore> datastore,
-      const bool &hasRSAkeys, add_contact_function add_cts,
-      get_random_contacts_function rand_cts, get_contact_function get_ctc,
-      get_closestK_function get_kcts, ping_function ping);
+      const bool &hasRSAkeys, AddContactFunctor add_cts,
+      GetRandomContactsFunctor rand_cts, GetContactFunctor get_ctc,
+      GetKClosestFunctor get_kcts, PingFunctor ping);
   void Ping(google::protobuf::RpcController *controller,
       const PingRequest *request, PingResponse *response,
       google::protobuf::Closure *done);
@@ -153,14 +158,14 @@ class KadService : public KademliaService {
   bool node_joined_, node_hasRSAkeys_;
   ContactInfo node_info_;
   base::AlternativeStore *alternative_store_;
-  add_contact_function add_contact_;
-  get_random_contacts_function get_random_contacts_;
-  get_contact_function get_contact_;
-  get_closestK_function get_closestK_contacts_;
-  ping_function ping_;
+  AddContactFunctor add_contact_;
+  GetRandomContactsFunctor get_random_contacts_;
+  GetContactFunctor get_contact_;
+  GetKClosestFunctor get_closestK_contacts_;
+  PingFunctor ping_;
   base::SignatureValidator *signature_validator_;
   KadService(const KadService&);
   KadService& operator=(const KadService&);
 };
-}  // namespace
+}  // namespace kad
 #endif  // KADEMLIA_KADSERVICE_H_
