@@ -50,6 +50,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*******************************************************************************
  * Platform Detection                                                          *
  ******************************************************************************/
+#if !defined MAIDSAFE_POSIX && !defined MAIDSAFE_WIN32 && \
+    !defined MAIDSAFE_APPLE
 #if defined(linux) || defined(__linux) || defined(__linux__) || \
   defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || \
   defined(__DragonFly__) || defined(sun) || defined(__sun) || \
@@ -66,6 +68,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAIDSAFE_APPLE
 #endif
 
+#endif
 
 /*******************************************************************************
  * Kademlia Layer                                                              *

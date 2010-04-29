@@ -25,35 +25,38 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
+#ifndef MAIDSAFE_UPNP_UPNPCLIENT_H_
+#define MAIDSAFE_UPNP_UPNPCLIENT_H_
 
-// Configuration file
-#include <maidsafe/maidsafe-dht_config.h>
+#include <boost/shared_ptr.hpp>
+#include <string>
+// #include "maidsafe/upnp/upnpclientimpl.h"
+#include "maidsafe/upnp/miniupnpclientimpl.h"
 
-// API files
-#include <maidsafe/transport/transporthandler-api.h>
-#include <maidsafe/transport/transport-api.h>
-#include <maidsafe/rpcprotocol/channelmanager-api.h>
-#include <maidsafe/rpcprotocol/channel-api.h>
-#include <maidsafe/kademlia/knode-api.h>
+namespace upnp {
 
-// General files
-#include <maidsafe/base/alternativestore.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/kademlia/kadid.h>
-#include <maidsafe/base/log.h>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/base/online.h>
-#include <maidsafe/base/routingtable.h>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/base/validationinterface.h>
+// control point for a UPnP Internet Gateway Device
+class UpnpIgdClient {
+ public:
+  UpnpIgdClient();
+  ~UpnpIgdClient();
 
-// Generated protocol buffer files
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
+  bool IsAsync();
+  bool HasServices();
 
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+  bool InitControlPoint();
+  bool AddPortMapping(const int &port, const ProtocolType &protocol);
+  bool DeletePortMapping(const int &port, const ProtocolType &protocol);
+
+  std::string GetExternalIpAddress();
+
+  void SetNewMappingCallback(const upnp_callback &new_mapping_callback);
+  void SetLostMappingCallback(const upnp_callback &lost_mapping_callback);
+  void SetFailedMappingCallback(const upnp_callback &failed_mapping_callback);
+ private:
+  boost::shared_ptr<UpnpIgdClientImpl> pimpl_;
+};
+
+}  // namespace upnp
+
+#endif  // MAIDSAFE_UPNP_UPNPCLIENT_H_

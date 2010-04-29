@@ -25,35 +25,16 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
-
-// Configuration file
-#include <maidsafe/maidsafe-dht_config.h>
-
-// API files
-#include <maidsafe/transport/transporthandler-api.h>
-#include <maidsafe/transport/transport-api.h>
-#include <maidsafe/rpcprotocol/channelmanager-api.h>
-#include <maidsafe/rpcprotocol/channel-api.h>
-#include <maidsafe/kademlia/knode-api.h>
-
-// General files
-#include <maidsafe/base/alternativestore.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/kademlia/kadid.h>
-#include <maidsafe/base/log.h>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/base/online.h>
-#include <maidsafe/base/routingtable.h>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/base/validationinterface.h>
-
-// Generated protocol buffer files
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
-
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+#include <gtest/gtest.h>
+#include "maidsafe/base/log.h"
+int main(int argc, char **argv) {
+  // Initialising logging
+  google::InitGoogleLogging(argv[0]);
+  // setting output to be stderr
+#ifndef HAVE_GLOG
+  bool FLAGS_logtostderr;
+#endif
+  FLAGS_logtostderr = true;
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

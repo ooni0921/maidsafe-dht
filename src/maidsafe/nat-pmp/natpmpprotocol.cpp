@@ -23,37 +23,40 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Created by Julian Cain on 11/3/09.
+
 */
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
+#include "maidsafe/nat-pmp/natpmpprotocol.h"
 
-// Configuration file
-#include <maidsafe/maidsafe-dht_config.h>
+namespace natpmp {
 
-// API files
-#include <maidsafe/transport/transporthandler-api.h>
-#include <maidsafe/transport/transport-api.h>
-#include <maidsafe/rpcprotocol/channelmanager-api.h>
-#include <maidsafe/rpcprotocol/channel-api.h>
-#include <maidsafe/kademlia/knode-api.h>
+const char * Protocol::StringFromOpcode(unsigned int opcode) {
+  const char * str;
 
-// General files
-#include <maidsafe/base/alternativestore.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/kademlia/kadid.h>
-#include <maidsafe/base/log.h>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/base/online.h>
-#include <maidsafe/base/routingtable.h>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/base/validationinterface.h>
+  switch (opcode) {
+    case kErrorInvalidArgs:
+      str = "invalid arguments";
+      break;
+    case kErrorSocketError:
+      str = "socket() failed";
+      break;
+    case kErrorCannotGetGateway:
+      str = "cannot get default gateway ip address";
+      break;
+    case kResultOutOfResources:
+      str = "Out of resources (NAT box cannot create any more mappings at "
+            "this time).";
+      break;
+    case kResultNetworkFailure:
+      str = "Network Failure, nat box may have not obtained a DHCP lease.";
+      break;
+    default:
+      str = "Unknown NAT-PMP error";
+  }
 
-// Generated protocol buffer files
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
+  return str;
+}
 
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+}  // namespace natpmp

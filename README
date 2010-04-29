@@ -19,7 +19,8 @@ Directory structure
     • Win_MSVC
     • tools
 • doc (documentation including API structure [To be completed])
-• src (all source files)
+• src
+    • maidsafe (all source files)
 
 
 For full build instructions, see http://code.google.com/p/maidsafe-dht/wiki/DevBuild

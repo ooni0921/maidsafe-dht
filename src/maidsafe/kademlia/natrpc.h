@@ -25,35 +25,39 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
+#ifndef MAIDSAFE_KADEMLIA_NATRPC_H_
+#define MAIDSAFE_KADEMLIA_NATRPC_H_
 
-// Configuration file
-#include <maidsafe/maidsafe-dht_config.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/cstdint.hpp>
+#include <string>
+#include "maidsafe/protobuf/kademlia_service.pb.h"
+#include "maidsafe/rpcprotocol/channelmanager-api.h"
+#include "maidsafe/transport/transporthandler-api.h"
 
-// API files
-#include <maidsafe/transport/transporthandler-api.h>
-#include <maidsafe/transport/transport-api.h>
-#include <maidsafe/rpcprotocol/channelmanager-api.h>
-#include <maidsafe/rpcprotocol/channel-api.h>
-#include <maidsafe/kademlia/knode-api.h>
+namespace rpcprotocol {
+class Controller;
+}  // namespace rpcprotocol
 
-// General files
-#include <maidsafe/base/alternativestore.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/kademlia/kadid.h>
-#include <maidsafe/base/log.h>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/base/online.h>
-#include <maidsafe/base/routingtable.h>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/base/validationinterface.h>
-
-// Generated protocol buffer files
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
-
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+namespace kad {
+const boost::uint32_t kRpcNatPingTimeout = 3;
+class NatRpcs {
+ public:
+  NatRpcs(rpcprotocol::ChannelManager *ch_manager, transport::TransportHandler
+    *transport_handler);
+  void NatDetection(const std::string &newcomer,
+      const std::string &bootstrap_node, const boost::uint32_t type,
+      const std::string &sender_id, const std::string &remote_ip,
+      const boost::uint16_t &remote_port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, NatDetectionResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback);
+  void NatDetectionPing(const std::string &remote_ip,
+      const boost::uint16_t &remote_port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, NatDetectionPingResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback);
+ private:
+  rpcprotocol::ChannelManager *pchannel_manager_;
+  transport::TransportHandler *transport_handler_;
+};
+}  // namespace kad
+#endif  // MAIDSAFE_KADEMLIA_NATRPC_H_

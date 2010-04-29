@@ -25,35 +25,42 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
+#ifndef MAIDSAFE_UPNP_UPNPCFG_H_
+#define MAIDSAFE_UPNP_UPNPCFG_H_
 
-// Configuration file
-#include <maidsafe/maidsafe-dht_config.h>
+#include <boost/function.hpp>
+#include <string>
+#include <map>
 
-// API files
-#include <maidsafe/transport/transporthandler-api.h>
-#include <maidsafe/transport/transport-api.h>
-#include <maidsafe/rpcprotocol/channelmanager-api.h>
-#include <maidsafe/rpcprotocol/channel-api.h>
-#include <maidsafe/kademlia/knode-api.h>
+namespace upnp {
 
-// General files
-#include <maidsafe/base/alternativestore.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/kademlia/kadid.h>
-#include <maidsafe/base/log.h>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/base/online.h>
-#include <maidsafe/base/routingtable.h>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/base/validationinterface.h>
+const int kSearchTime = 2;
+const int kLeaseDuration = 900;
+const int kRefreshThreshold = 10;
+const char kClientName[] = "maidsafe-dht";
 
-// Generated protocol buffer files
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
+enum ProtocolType {
+  kUdp = 0,
+  kTcp = 1
+};
 
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+// params: port, protocol
+typedef boost::function<void(const int&, const ProtocolType&)> upnp_callback;
+
+struct PortMapping {
+  PortMapping(const int &port_,
+              const ProtocolType &protocol_): internal_port(port_),
+                                              external_port(port_),
+                                              protocol(protocol_),
+                                              enabled(false),
+                                              last_refresh() {}
+  int internal_port;
+  int external_port;
+  ProtocolType protocol;
+  bool enabled;
+  std::map<std::string, boost::uint32_t> last_refresh;
+};
+
+}  // namespace upnp
+
+#endif  // MAIDSAFE_UPNP_UPNPCFG_H_

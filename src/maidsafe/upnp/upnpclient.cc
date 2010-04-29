@@ -25,35 +25,55 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
+#include "maidsafe/upnp/upnpclient.h"
 
-// Configuration file
-#include <maidsafe/maidsafe-dht_config.h>
+#include <vector>
 
-// API files
-#include <maidsafe/transport/transporthandler-api.h>
-#include <maidsafe/transport/transport-api.h>
-#include <maidsafe/rpcprotocol/channelmanager-api.h>
-#include <maidsafe/rpcprotocol/channel-api.h>
-#include <maidsafe/kademlia/knode-api.h>
+namespace upnp {
 
-// General files
-#include <maidsafe/base/alternativestore.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/kademlia/kadid.h>
-#include <maidsafe/base/log.h>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/base/online.h>
-#include <maidsafe/base/routingtable.h>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/base/validationinterface.h>
+UpnpIgdClient::UpnpIgdClient() : pimpl_(new UpnpIgdClientImpl()) {}
 
-// Generated protocol buffer files
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
+UpnpIgdClient::~UpnpIgdClient() {}
 
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+bool UpnpIgdClient::IsAsync() {
+  return pimpl_->IsAsync();
+}
+
+bool UpnpIgdClient::HasServices() {
+  return pimpl_->HasServices();
+}
+
+bool UpnpIgdClient::InitControlPoint() {
+  return pimpl_->InitControlPoint();
+}
+
+bool UpnpIgdClient::AddPortMapping(const int &port,
+                                   const ProtocolType &protocol) {
+  return pimpl_->AddPortMapping(PortMapping(port, protocol));
+}
+
+bool UpnpIgdClient::DeletePortMapping(const int &port,
+                                      const ProtocolType &protocol) {
+  return pimpl_->DeletePortMapping(port, protocol);
+}
+
+std::string UpnpIgdClient::GetExternalIpAddress() {
+  return pimpl_->GetExternalIpAddress();
+}
+
+void UpnpIgdClient::SetNewMappingCallback(
+       const upnp_callback &new_mapping_callback) {
+  pimpl_->SetNewMappingCallback(new_mapping_callback);
+}
+
+void UpnpIgdClient::SetLostMappingCallback(
+       const upnp_callback &lost_mapping_callback) {
+  pimpl_->SetLostMappingCallback(lost_mapping_callback);
+}
+
+void UpnpIgdClient::SetFailedMappingCallback(
+       const upnp_callback &failed_mapping_callback) {
+  pimpl_->SetFailedMappingCallback(failed_mapping_callback);
+}
+
+}  // namespace upnp

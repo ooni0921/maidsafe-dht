@@ -25,35 +25,40 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
+#ifndef MAIDSAFE_TESTS_VALIDATIONIMPL_H_
+#define MAIDSAFE_TESTS_VALIDATIONIMPL_H_
 
-// Configuration file
-#include <maidsafe/maidsafe-dht_config.h>
+#include <string>
+#include "maidsafe/base/validationinterface.h"
 
-// API files
-#include <maidsafe/transport/transporthandler-api.h>
-#include <maidsafe/transport/transport-api.h>
-#include <maidsafe/rpcprotocol/channelmanager-api.h>
-#include <maidsafe/rpcprotocol/channel-api.h>
-#include <maidsafe/kademlia/knode-api.h>
 
-// General files
-#include <maidsafe/base/alternativestore.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/kademlia/kadid.h>
-#include <maidsafe/base/log.h>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/base/online.h>
-#include <maidsafe/base/routingtable.h>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/base/validationinterface.h>
+namespace base {
 
-// Generated protocol buffer files
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
+class TestValidator : public SignatureValidator {
+ public:
+  TestValidator() : SignatureValidator() {}
+  /**
+   * Signer Id is not validated, return always true
+   */
+  bool ValidateSignerId(const std::string &, const std::string &,
+      const std::string &) {
+    return true;
+  }
+  /**
+   * Validates the request signed with private key that corresponds
+   * to public_key
+   */
+  bool ValidateRequest(const std::string &signed_request,
+      const std::string &public_key, const std::string &signed_public_key,
+      const std::string &key) {
+    if (signed_request == kad::kAnonymousSignedRequest)
+      return true;
+    crypto::Crypto checker;
+    return checker.AsymCheckSig(checker.Hash(public_key + signed_public_key
+      + key, "", crypto::STRING_STRING, true), signed_request, public_key,
+      crypto::STRING_STRING);
+  }
+};
 
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+}  // namespace base
+#endif  // MAIDSAFE_TESTS_VALIDATIONIMPL_H_

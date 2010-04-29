@@ -208,8 +208,8 @@ SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR} ${Gtest_LIBRARY_DIR_DEBUG})
 ###################################################################################################
 # Protocol Buffers library search                                                                 #
 ###################################################################################################
-FILE(GLOB PROTO_FILES RELATIVE ${${PROJECT_NAME}_SOURCE_DIR} "${${PROJECT_NAME}_SOURCE_DIR}/protobuf/*.proto")
-FILE(GLOB TEST_PROTO_FILES RELATIVE ${${PROJECT_NAME}_SOURCE_DIR} "${${PROJECT_NAME}_SOURCE_DIR}/tests/rpcprotocol/*.proto")
+FILE(GLOB PROTO_FILES RELATIVE ${${PROJECT_NAME}_SOURCE_DIR} "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/protobuf/*.proto")
+FILE(GLOB TEST_PROTO_FILES RELATIVE ${${PROJECT_NAME}_SOURCE_DIR} "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/*.proto")
 SET(PROTO_FILES ${PROTO_FILES} ${TEST_PROTO_FILES})
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindProtobuf.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Protobuf_INCLUDE_DIR})
@@ -291,74 +291,74 @@ ENDIF()
 ###################################################################################################
 ####    CODE    ####
 LIST(APPEND M_LIBUPNP_DIR
-       ${${PROJECT_NAME}_SOURCE_DIR}/libupnp/igd_desc_parse.c
-       ${${PROJECT_NAME}_SOURCE_DIR}/libupnp/minixml.c
-       ${${PROJECT_NAME}_SOURCE_DIR}/libupnp/minisoap.c
-       ${${PROJECT_NAME}_SOURCE_DIR}/libupnp/miniwget.c
-       ${${PROJECT_NAME}_SOURCE_DIR}/libupnp/upnpcommands.c
-       ${${PROJECT_NAME}_SOURCE_DIR}/libupnp/upnpreplyparse.c
-       ${${PROJECT_NAME}_SOURCE_DIR}/libupnp/upnperrors.c
-       ${${PROJECT_NAME}_SOURCE_DIR}/libupnp/miniupnpc.c
-       ${${PROJECT_NAME}_SOURCE_DIR}/libupnp/minissdpc.c)
-FILE(GLOB M_NATPMP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/nat-pmp/*.c*"
-                       "${${PROJECT_NAME}_SOURCE_DIR}/nat-pmp/*.h*")
-FILE(GLOB M_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/upnp/*.c*"
-                     "${${PROJECT_NAME}_SOURCE_DIR}/upnp/*.h*")
-LIST(REMOVE_ITEM M_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/upnp/upnpclientimpl.cc")
-LIST(REMOVE_ITEM M_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/upnp/upnpclientimpl.h")
-FILE(GLOB M_PROTOBUF_DIR "${${PROJECT_NAME}_SOURCE_DIR}/protobuf/*.c*"
-                         "${${PROJECT_NAME}_SOURCE_DIR}/protobuf/*.h*")
-FILE(GLOB M_BASE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/base/*.c*"
-                     "${${PROJECT_NAME}_SOURCE_DIR}/base/*.h*")
-FILE(GLOB M_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/kademlia/*.c*"
-                         "${${PROJECT_NAME}_SOURCE_DIR}/kademlia/*.h*")
+       ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/igd_desc_parse.c
+       ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/minixml.c
+       ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/minisoap.c
+       ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/miniwget.c
+       ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/upnpcommands.c
+       ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/upnpreplyparse.c
+       ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/upnperrors.c
+       ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/miniupnpc.c
+       ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/minissdpc.c)
+FILE(GLOB M_NATPMP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/nat-pmp/*.c*"
+                       "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/nat-pmp/*.h*")
+FILE(GLOB M_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/*.c*"
+                     "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/*.h*")
+LIST(REMOVE_ITEM M_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/upnpclientimpl.cc")
+LIST(REMOVE_ITEM M_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/upnpclientimpl.h")
+FILE(GLOB M_PROTOBUF_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/protobuf/*.c*"
+                         "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/protobuf/*.h*")
+FILE(GLOB M_BASE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/*.c*"
+                     "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/*.h*")
+FILE(GLOB M_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/kademlia/*.c*"
+                         "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/kademlia/*.h*")
 SET(STYLE_KADEMLIA ${M_KADEMLIA_DIR})
-FILE(GLOB M_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/rpcprotocol/*.c*"
-                         "${${PROJECT_NAME}_SOURCE_DIR}/rpcprotocol/*.h*")
+FILE(GLOB M_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/rpcprotocol/*.c*"
+                         "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/rpcprotocol/*.h*")
 SET(STYLE_RPCPROTO ${M_RPCPROTO_DIR})
-FILE(GLOB M_TRANSPORT_DIR "${${PROJECT_NAME}_SOURCE_DIR}/transport/*.c*"
-                          "${${PROJECT_NAME}_SOURCE_DIR}/transport/*.h*")
+FILE(GLOB M_TRANSPORT_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/transport/*.c*"
+                          "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/transport/*.h*")
 FILE(GLOB MAIDSAFE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/*.c*"
                        "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/*.h*")
 ####    TESTS    ####
-FILE(GLOB T_BASE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/base/*.c*"
-                     "${${PROJECT_NAME}_SOURCE_DIR}/tests/base/*.h*")
-FILE(GLOB T_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/kademlia/*.c*"
-                         "${${PROJECT_NAME}_SOURCE_DIR}/tests/kademlia/*.h*")
-LIST(REMOVE_ITEM T_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/kademlia/testknode.cc")
-FILE(GLOB T_TRANSPORT_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/transport/*.c*"
-                          "${${PROJECT_NAME}_SOURCE_DIR}/tests/transport/*.h*")
-FILE(GLOB T_MAIN "${${PROJECT_NAME}_SOURCE_DIR}/tests/main.cc"
-                 "${${PROJECT_NAME}_SOURCE_DIR}/tests/validationimpl.h")
-FILE(GLOB T_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/rpcprotocol/*.c*"
-                         "${${PROJECT_NAME}_SOURCE_DIR}/tests/rpcprotocol/*.h*")
+FILE(GLOB T_BASE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/base/*.c*"
+                     "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/base/*.h*")
+FILE(GLOB T_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/*.c*"
+                         "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/*.h*")
+LIST(REMOVE_ITEM T_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/testknode.cc")
+FILE(GLOB T_TRANSPORT_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/transport/*.c*"
+                          "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/transport/*.h*")
+FILE(GLOB T_MAIN "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/main.cc"
+                 "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/validationimpl.h")
+FILE(GLOB T_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/*.c*"
+                         "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/*.h*")
 SET(STYLE_RPCPROTO_DIR ${T_RPCPROTO_DIR})
-LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.h")
-LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/rpcprotocol/testservices.pb.cc")
-FILE(GLOB T_NATPMP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/nat-pmp/*.c*"
-                       "${${PROJECT_NAME}_SOURCE_DIR}/tests/nat-pmp/*.h*")
-FILE(GLOB T_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/upnp/*.c*"
-                     "${${PROJECT_NAME}_SOURCE_DIR}/tests/upnp/*.h*")
-FILE(GLOB T_FUNC_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/functionalkademlia/*.c*"
-                              "${${PROJECT_NAME}_SOURCE_DIR}/tests/functionalkademlia/*.h*")
-LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/kademlia/testknode.cc")
-FILE(GLOB T_DEMO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/demo/*.c*"
-                     "${${PROJECT_NAME}_SOURCE_DIR}/tests/demo/*.h*")
-FILE(GLOB T_BENCHMARK_DIR "${${PROJECT_NAME}_SOURCE_DIR}/tests/benchmark/*.c*"
-                          "${${PROJECT_NAME}_SOURCE_DIR}/tests/benchmark/*.h*")
+LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/testservices.pb.h")
+LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/testservices.pb.cc")
+FILE(GLOB T_NATPMP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/nat-pmp/*.c*"
+                       "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/nat-pmp/*.h*")
+FILE(GLOB T_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/upnp/*.c*"
+                     "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/upnp/*.h*")
+FILE(GLOB T_FUNC_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/functionalkademlia/*.c*"
+                              "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/functionalkademlia/*.h*")
+LIST(REMOVE_ITEM T_FUNC_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/testknode.cc")
+FILE(GLOB T_DEMO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/demo/*.c*"
+                     "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/demo/*.h*")
+FILE(GLOB T_BENCHMARK_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/benchmark/*.c*"
+                          "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/benchmark/*.h*")
 LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${M_NATPMP_DIR} ${MAIDSAFE_DIR})
 ###################################################################################################
 # Traverse subdirs for imported 3rd party libs                                                    #
 ###################################################################################################
-ADD_SUBDIRECTORY(${${PROJECT_NAME}_SOURCE_DIR}/udt ${CMAKE_BINARY_DIR}/udt)
-ADD_SUBDIRECTORY(${${PROJECT_NAME}_SOURCE_DIR}/cryptopp ${CMAKE_BINARY_DIR}/cryptopp)
+ADD_SUBDIRECTORY(${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/udt ${CMAKE_BINARY_DIR}/udt)
+ADD_SUBDIRECTORY(${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/cryptopp ${CMAKE_BINARY_DIR}/cryptopp)
 
 ###################################################################################################
 # All Platforms:  Add Test Exes and Create all maidsafe_dht libs                                  #
 ###################################################################################################
 ADD_EXECUTABLE(TESTbase ${T_MAIN} ${T_BASE_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_H})
-ADD_EXECUTABLE(TESTknode "${${PROJECT_NAME}_SOURCE_DIR}/tests/kademlia/testknode.cc" ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTknode "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/testknode.cc" ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTnatpmp ${T_MAIN} ${T_NATPMP_DIR} ${MAIDSAFE_H})
@@ -628,8 +628,8 @@ IF(NOT MSVC)
   SET_SOURCE_FILES_PROPERTIES(${T_DEMO_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
   SET_SOURCE_FILES_PROPERTIES(${T_BENCHMARK_DIR} COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
   SET_TARGET_PROPERTIES(TESTkademlia TESTknode PROPERTIES COMPILE_FLAGS ${MAIDSAFE_DHT_CXX_FLAGS})
-  SET_SOURCE_FILES_PROPERTIES(${${PROJECT_NAME}_SOURCE_DIR}/base/crypto.cc PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
-  SET_SOURCE_FILES_PROPERTIES(${${PROJECT_NAME}_SOURCE_DIR}/base/utils.cc PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
+  SET_SOURCE_FILES_PROPERTIES(${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/crypto.cc PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
+  SET_SOURCE_FILES_PROPERTIES(${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/utils.cc PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
   SET_SOURCE_FILES_PROPERTIES("*boost/*" PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
   SET_SOURCE_FILES_PROPERTIES("*google/protobuf/repeated_field.h" PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
   SET_SOURCE_FILES_PROPERTIES(${M_PROTOBUF_DIR} PROPERTIES COMPILE_FLAGS "${SILENT_BUILD}")
@@ -779,72 +779,72 @@ MESSAGE("=======================================================================
 MESSAGE("")
 
 SET(MAIDSAFE_BASE_INSTALL_FILES
-      base/alternativestore.h
-      base/crypto.h
-      base/log.h
-      base/online.h
-      base/routingtable.h
-      base/utils.h
-      base/validationinterface.h)
+      maidsafe/base/alternativestore.h
+      maidsafe/base/crypto.h
+      maidsafe/base/log.h
+      maidsafe/base/online.h
+      maidsafe/base/routingtable.h
+      maidsafe/base/utils.h
+      maidsafe/base/validationinterface.h)
 SET(MAIDSAFE_KAD_INSTALL_FILES
-      kademlia/contact.h
-      kademlia/kadid.h
-      kademlia/knode-api.h)
+      maidsafe/kademlia/contact.h
+      maidsafe/kademlia/kadid.h
+      maidsafe/kademlia/knode-api.h)
 SET(MAIDSAFE_MAIN_INSTALL_FILES
       maidsafe/maidsafe-dht.h
       maidsafe/maidsafe-dht_config.h)
 SET(MAIDSAFE_PROTO_INSTALL_FILES
-      protobuf/contact_info.pb.h
-      protobuf/general_messages.pb.h
-      protobuf/kademlia_service_messages.pb.h
-      protobuf/signed_kadvalue.pb.h)
+      maidsafe/protobuf/contact_info.pb.h
+      maidsafe/protobuf/general_messages.pb.h
+      maidsafe/protobuf/kademlia_service_messages.pb.h
+      maidsafe/protobuf/signed_kadvalue.pb.h)
 SET(MAIDSAFE_RPC_INSTALL_FILES
-      rpcprotocol/channel-api.h
-      rpcprotocol/channelmanager-api.h)
+      maidsafe/rpcprotocol/channel-api.h
+      maidsafe/rpcprotocol/channelmanager-api.h)
 SET(MAIDSAFE_TRANS_INSTALL_FILES
-      transport/transport-api.h
-      transport/transporthandler-api.h
-      transport/transportudt.h)
+      maidsafe/transport/transport-api.h
+      maidsafe/transport/transporthandler-api.h
+      maidsafe/transport/transportudt.h)
 # Check the script /build/Win_MSVC/extract_includes.bat matches this list
 FILE(STRINGS ${${PROJECT_NAME}_ROOT}/build/Win_MSVC/extract_includes.bat EXTRACT_INCLUDE_BAT)
 STRING(REPLACE "\\" "/" EXTRACT_INCLUDE_BAT "${EXTRACT_INCLUDE_BAT}")
 FOREACH(MAIDSAFE_INSTALL_FILE ${MAIDSAFE_BASE_INSTALL_FILES})
-  STRING(REGEX MATCH ${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
+  STRING(REGEX MATCH src/${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
   IF(NOT FOUND)
     MESSAGE(FATAL_ERROR "\nUpdate build/Win_MSVC/extract_includes.bat to include ${MAIDSAFE_INSTALL_FILE}\n")
   ENDIF()
   SET(ABS_MAIDSAFE_BASE_INSTALL_FILES ${ABS_MAIDSAFE_BASE_INSTALL_FILES} ${${PROJECT_NAME}_SOURCE_DIR}/${MAIDSAFE_INSTALL_FILE})
 ENDFOREACH()
 FOREACH(MAIDSAFE_INSTALL_FILE ${MAIDSAFE_KAD_INSTALL_FILES})
-  STRING(REGEX MATCH ${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
+  STRING(REGEX MATCH src/${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
   IF(NOT FOUND)
     MESSAGE(FATAL_ERROR "\nUpdate build/Win_MSVC/extract_includes.bat to include ${MAIDSAFE_INSTALL_FILE}\n")
   ENDIF()
   SET(ABS_MAIDSAFE_KAD_INSTALL_FILES ${ABS_MAIDSAFE_KAD_INSTALL_FILES} ${${PROJECT_NAME}_SOURCE_DIR}/${MAIDSAFE_INSTALL_FILE})
 ENDFOREACH()
 FOREACH(MAIDSAFE_INSTALL_FILE ${MAIDSAFE_MAIN_INSTALL_FILES})
-  STRING(REGEX MATCH ${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
+  STRING(REGEX MATCH src/${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
   IF(NOT FOUND)
     MESSAGE(FATAL_ERROR "\nUpdate build/Win_MSVC/extract_includes.bat to include ${MAIDSAFE_INSTALL_FILE}\n")
   ENDIF()
   SET(ABS_MAIDSAFE_MAIN_INSTALL_FILES ${ABS_MAIDSAFE_MAIN_INSTALL_FILES} ${${PROJECT_NAME}_SOURCE_DIR}/${MAIDSAFE_INSTALL_FILE})
 ENDFOREACH()
 FOREACH(MAIDSAFE_INSTALL_FILE ${MAIDSAFE_PROTO_INSTALL_FILES})
-  STRING(REGEX MATCH ${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
+  STRING(REGEX MATCH src/${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
   IF(NOT FOUND)
     MESSAGE(FATAL_ERROR "\nUpdate build/Win_MSVC/extract_includes.bat to include ${MAIDSAFE_INSTALL_FILE}\n")
   ENDIF()
   SET(ABS_MAIDSAFE_PROTO_INSTALL_FILES ${ABS_MAIDSAFE_PROTO_INSTALL_FILES} ${${PROJECT_NAME}_SOURCE_DIR}/${MAIDSAFE_INSTALL_FILE})
 ENDFOREACH()
 FOREACH(MAIDSAFE_INSTALL_FILE ${MAIDSAFE_RPC_INSTALL_FILES})
-  STRING(REGEX MATCH ${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
+  STRING(REGEX MATCH src/${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
   IF(NOT FOUND)
     MESSAGE(FATAL_ERROR "\nUpdate build/Win_MSVC/extract_includes.bat to include ${MAIDSAFE_INSTALL_FILE}\n")
   ENDIF()
   SET(ABS_MAIDSAFE_RPC_INSTALL_FILES ${ABS_MAIDSAFE_RPC_INSTALL_FILES} ${${PROJECT_NAME}_SOURCE_DIR}/${MAIDSAFE_INSTALL_FILE})
 ENDFOREACH()
 FOREACH(MAIDSAFE_INSTALL_FILE ${MAIDSAFE_TRANS_INSTALL_FILES})
-  STRING(REGEX MATCH ${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
+  STRING(REGEX MATCH src/${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
   IF(NOT FOUND)
     MESSAGE(FATAL_ERROR "\nUpdate build/Win_MSVC/extract_includes.bat to include ${MAIDSAFE_INSTALL_FILE}\n")
   ENDIF()

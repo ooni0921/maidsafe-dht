@@ -1,4 +1,4 @@
-/* Copyright (c) 2009 maidsafe.net limited
+/* Copyright (c) 2010 maidsafe.net limited
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -25,35 +25,31 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
 
-// Configuration file
-#include <maidsafe/maidsafe-dht_config.h>
+#ifndef MAIDSAFE_BASE_LOG_H_
+#define MAIDSAFE_BASE_LOG_H_
 
-// API files
-#include <maidsafe/transport/transporthandler-api.h>
-#include <maidsafe/transport/transport-api.h>
-#include <maidsafe/rpcprotocol/channelmanager-api.h>
-#include <maidsafe/rpcprotocol/channel-api.h>
-#include <maidsafe/kademlia/knode-api.h>
+#ifdef HAVE_GLOG
+#include <glog/logging.h>
 
-// General files
-#include <maidsafe/base/alternativestore.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/kademlia/kadid.h>
-#include <maidsafe/base/log.h>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/base/online.h>
-#include <maidsafe/base/routingtable.h>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/base/validationinterface.h>
+#else
+#include <iostream>  // NOLINT
+namespace google {
+inline void InitGoogleLogging(char*) {}  // NOLINT
+}  // namespace google
 
-// Generated protocol buffer files
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
+class LogMessageVoidify {
+ public:
+  LogMessageVoidify() {}
+  void operator &(std::ostream&) {}
+};
 
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+#define LOG(severity) std::cerr
+#ifndef NDEBUG
+  #define DLOG(severity) std::cerr
+#else
+  #define DLOG(severity) true ? (void) 0 : LogMessageVoidify() & LOG(severity)
+#endif
+#endif
+
+#endif  // MAIDSAFE_BASE_LOG_H_

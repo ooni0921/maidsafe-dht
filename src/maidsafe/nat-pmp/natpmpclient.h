@@ -23,37 +23,85 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Created by Julian Cain on 11/3/09.
+
 */
 
-#ifndef MAIDSAFE_MAIDSAFE_DHT_H_
-#define MAIDSAFE_MAIDSAFE_DHT_H_
+#ifndef MAIDSAFE_NAT_PMP_NATPMPCLIENT_H_
+#define MAIDSAFE_NAT_PMP_NATPMPCLIENT_H_
 
-// Configuration file
-#include <maidsafe/maidsafe-dht_config.h>
+#include <boost/asio.hpp>
+#include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
 
-// API files
-#include <maidsafe/transport/transporthandler-api.h>
-#include <maidsafe/transport/transport-api.h>
-#include <maidsafe/rpcprotocol/channelmanager-api.h>
-#include <maidsafe/rpcprotocol/channel-api.h>
-#include <maidsafe/kademlia/knode-api.h>
+#include "maidsafe/nat-pmp/natpmpclientimpl.h"
 
-// General files
-#include <maidsafe/base/alternativestore.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/kademlia/kadid.h>
-#include <maidsafe/base/log.h>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/base/online.h>
-#include <maidsafe/base/routingtable.h>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/base/validationinterface.h>
+namespace natpmp {
 
-// Generated protocol buffer files
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
+/**
+  * Implements a NAT-PMP client.
+  */
+class NatPmpClient {
+ public:
 
-#endif  // MAIDSAFE_MAIDSAFE_DHT_H_
+/**
+  * Constructor
+  * @param ios The boost::asio::io_service object to use.
+  */
+  explicit NatPmpClient(boost::asio::io_service & ios);
+
+/**
+  * Destructor
+  */
+  ~NatPmpClient();
+
+/**
+  * Start the underlying subsystem.
+  */
+  void Start();
+
+/**
+  * Stop the underlying subsystem.
+  */
+  void Stop();
+
+/**
+  * Set the port map success callback.
+  */
+  void SetMapPortSuccessCallback(
+      const NatPmpMapPortSuccessCbType & map_port_success_cb);
+
+/**
+  * Maps a private port to a public port of the given protocol and
+  * lifetime.
+  * @param protocol
+  * @param private_port
+  * @param public_port
+  * @param lifetime
+  */
+  void MapPort(boost::uint32_t protocol,
+               boost::uint16_t private_port,
+               boost::uint16_t public_port,
+               boost::uint64_t lifetime);
+
+ private:
+
+  // ...
+
+ protected:
+
+/**
+  * Reference to the boost::asio::io_service object.
+  */
+  boost::asio::io_service & io_service_;
+
+/**
+  * The underlying nat-pmp implementation.
+  */
+  boost::shared_ptr<NatPmpClientImpl> impl_;
+};
+
+}  // namespace natpmp
+
+#endif  // MAIDSAFE_NAT_PMP_NATPMPCLIENT_H_
