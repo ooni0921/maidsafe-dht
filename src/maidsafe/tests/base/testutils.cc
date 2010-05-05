@@ -90,6 +90,7 @@ TEST(UtilsTest, BEH_BASE_IntegersAndStrings) {
             "string -> int -> string failed for negative int.";
 }
 
+
 TEST(UtilsTest, BEH_BASE_RandomString) {
   unsigned int length = 4096;
   std::string first = base::RandomString(length);
@@ -102,7 +103,7 @@ TEST(UtilsTest, BEH_BASE_RandomString) {
   for (int i = 0; i < static_cast<int>(length); i++) {
     ASSERT_GT(127, static_cast<int>(first[i]));
     ASSERT_GT(127, static_cast<int>(second[i]));
-    // checking all characters are asci characters
+    // checking all characters are ascii characters
     ASSERT_TRUE(((47 < static_cast<int>(first[i])) &&
                  (static_cast<int>(first[i] <  58))) ||
                 ((64 < static_cast<int>(first[i])) &&

@@ -143,7 +143,7 @@ STRING(STRIP ${TMP_CURRENT_PROTOC_VERSION} CURRENT_PROTOC_VERSION)
 
 MESSAGE("-- Found Google Protocol Buffers library")
 IF(MSVC)
-  MESSAGE("-- Found Google Protocol Buffers debug library")
+  MESSAGE("-- Found Google Protocol Buffers Debug library")
 ENDIF()
 
 #Function to generate CC and header files derived from proto files

@@ -77,7 +77,7 @@ bool CompareContact(const ContactAndTargetKey &first,
 // sort the contact list according the distance to the target key
 void SortContactList(std::list<Contact> *contact_list,
     const KadId &target_key) {
-  if (contact_list->size() == 0) {
+  if (contact_list->empty()) {
     return;
   }
   std::list<ContactAndTargetKey> temp_list;
@@ -101,7 +101,7 @@ void SortContactList(std::list<Contact> *contact_list,
 // sort the contact list according the distance to the target key
 void SortLookupContact(std::list<LookupContact> *contact_list,
     const KadId &target_key) {
-  if (contact_list->size() == 0) {
+  if (contact_list->empty()) {
     return;
   }
   std::list<ContactAndTargetKey> temp_list;
@@ -918,16 +918,13 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
     if (closest_nodes.size() > 0) {
       bool stored_local = false;
       if (type_ != CLIENT) {
-        // If this node itself is closer to the key than the last (furtherest)
+        // If this node itself is closer to the key than the last (furthest)
         // node in the returned list, store the value at this node as well.
         if (closest_nodes.size() < K_) {
           stored_local = true;
         } else {
-          Contact furthest_contact = closest_nodes[closest_nodes.size()-1];
-          if (KadId::CloserToTarget(node_id_, furthest_contact.node_id(),
-              key)) {
-            stored_local = true;
-          }
+          stored_local = KadId::CloserToTarget(node_id_,
+              closest_nodes.back().node_id(), key);
         }
         if (stored_local) {
           bool local_result;
@@ -1554,7 +1551,7 @@ void KNodeImpl::StartSearchIteration(const KadId &key,
     prouting_table_->FindCloseNodes(key, alpha_, &close_nodes,
                                       exclude_contacts);
   }
-  if (close_nodes.size() == 0) {
+  if (close_nodes.empty()) {
     CallbackWithFailure(callback);
     return;
   }
@@ -1690,7 +1687,7 @@ void KNodeImpl::SearchIteration(boost::shared_ptr<IterativeLookUpData> data) {
           prouting_table_->FindCloseNodes(data->key, alpha_, &close_nodes,
               exclude_contacts);
         }
-        if (close_nodes.size() == 0) {
+        if (close_nodes.empty()) {
           SearchIteration_Callback(data);
           return;
         }
@@ -2142,7 +2139,7 @@ void KNodeImpl::SendDownlist(boost::shared_ptr<IterativeLookUpData> data) {
           downlist.push_back(dead_node);
       }
     }
-    if (downlist.size() != 0) {
+    if (!downlist.empty()) {
       // TODO(Haiyang): restrict the parallel level to Alpha
       ConnectionType conn_type = CheckContactLocalAddress(it1->giver.node_id(),
           it1->giver.local_ip(), it1->giver.local_port(), it1->giver.host_ip());

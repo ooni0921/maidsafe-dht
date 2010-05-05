@@ -63,7 +63,7 @@ void UpnpTest::OnFailedMapping(const int &port,
          protocol == upnp::kUdp ? "UDP" : "TCP", port);
 }
 
-TEST_F(UpnpTest, BEH_UPNP_PortMappingTest) {
+TEST_F(UpnpTest, FUNC_UPNP_PortMappingTest) {
   upnp::UpnpIgdClient upnp;
 
   printf("Initialising UPnP...\n");

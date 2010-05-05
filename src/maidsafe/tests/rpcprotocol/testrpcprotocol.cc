@@ -348,7 +348,11 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
   ASSERT_FALSE(controller2.Failed());
   controller2.Reset();
 
-  std::string test_string(base::RandomString(5 * 1024 * 1024));
+  std::string test_string;
+  test_string.reserve(5 * 1024 * 1024);
+  std::string random_substring(base::RandomString(1024));
+  for (int i = 0; i < 5 * 1024; ++i)
+    test_string += random_substring;
   tests::MirrorTest::Stub stubservice3(&out_channel);
   tests::StringMirrorRequest req3;
   tests::StringMirrorResponse resp3;
@@ -552,7 +556,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   ASSERT_FALSE(client_chann_manager->DeletePendingRequest(1));
 }
 
-TEST_F(RpcProtocolTest, FUNC_RPC_CancelPendingRequest) {
+TEST_F(RpcProtocolTest, BEH_RPC_CancelPendingRequest) {
   MirrorTestService mirrorservice;
   rpcprotocol::Channel service_channel(server_chann_manager,
     server_transport_handler);
@@ -651,7 +655,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
   RpcProtocolTest::client_chann_manager->ClearCallLaters();
 }
 
-TEST_F(RpcProtocolTest, BEH_RPC_ChannelManagerLocalTransport) {
+TEST_F(RpcProtocolTest, FUNC_RPC_ChannelManagerLocalTransport) {
   transport::TransportHandler local_transport_handler;
   boost::int16_t local_transport_id;
   local_transport_handler.Register(new transport::TransportUDT,

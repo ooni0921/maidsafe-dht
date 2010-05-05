@@ -637,7 +637,7 @@ TEST_F(TransportTest, BEH_TRANS_TimeoutForSendingToAWrongPeer) {
   node1_handler.Stop(node1_id);
 }
 
-TEST_F(TransportTest, BEH_TRANS_Send1000Msgs) {
+TEST_F(TransportTest, FUNC_TRANS_Send1000Msgs) {
   const int kNumNodes(6), kRepeatSend(200);
   // No. of times to repeat the send message.
   ASSERT_LT(2, kNumNodes);  // ensure enough nodes for test
@@ -1230,7 +1230,7 @@ TEST_F(TransportTest, FUNC_TRANS_StartStopTransport) {
   node2_handler.Stop(node2_id);
 }
 
-TEST_F(TransportTest, FUNC_TRANS_SendRespond) {
+TEST_F(TransportTest, BEH_TRANS_SendRespond) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
   node1_handler.Register(new transport::TransportUDT, &node1_id);
@@ -1648,7 +1648,7 @@ TEST_F(TransportTest, BEH_TRANS_StartLocal) {
   node2_handler.Stop(node2_id);
 }
 
-TEST_F(TransportTest, BEH_TRANS_StartStopLocal) {
+TEST_F(TransportTest, FUNC_TRANS_StartStopLocal) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
   node1_handler.Register(new transport::TransportUDT, &node1_id);
@@ -1757,7 +1757,7 @@ TEST_F(TransportTest, BEH_TRANS_CheckPortAvailable) {
   ASSERT_TRUE(node2_handler.IsPortAvailable(lp_node1_handler, node2_id));
 }
 
-TEST_F(TransportTest, BEH_TRANS_StartBadLocal) {
+TEST_F(TransportTest, FUNC_TRANS_StartBadLocal) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
   node1_handler.Register(new transport::TransportUDT, &node1_id);

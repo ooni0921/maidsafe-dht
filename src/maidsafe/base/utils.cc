@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/base/utils.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/scoped_array.hpp>
 #include <ctype.h>
 #include <maidsafe/cryptopp/integer.h>
 #include <maidsafe/cryptopp/osrng.h>
@@ -73,31 +74,30 @@ std::string IntToString(const int &value) {
   return str_value;
 }
 
-std::string RandomString(const int &length) {
-  std::string str;
-  CryptoPP::AutoSeededRandomPool rng;
-  CryptoPP::Integer rand_num(rng, 32);
-  for ( int i = 0 ; i < length ; ++i ) {
-    boost::uint32_t num;
-    if (!rand_num.IsConvertableToLong()) {
-      num = std::numeric_limits<boost::uint32_t>::max()
-        + static_cast<boost::uint32_t>(
-          rand_num.AbsoluteValue().ConvertToLong());
-    } else {
-      num = static_cast<boost::uint32_t>(
-        rand_num.AbsoluteValue().ConvertToLong());
+std::string RandomString(const size_t &length) {
+  std::string random_string;
+  random_string.reserve(length);
+  while (random_string.size() < length) {
+    size_t iter_length = std::min(length - random_string.size(), size_t(65536));
+    CryptoPP::AutoSeededRandomPool random_number_generator;
+    boost::scoped_array<byte> random_bytes(new byte[iter_length]);
+    random_number_generator.GenerateBlock(random_bytes.get(), iter_length);
+    std::string random_substring(random_bytes.get(),
+                                 random_bytes.get() + iter_length);
+    for (size_t i = 0; i < iter_length; ++i) {
+      boost::uint8_t *random_char =
+          reinterpret_cast<boost::uint8_t*>(&random_substring.at(i));
+      *random_char = *random_char % 122;
+      if (48 > *random_char)
+        *random_char += 48;
+      if ((57 < *random_char) && (65 > *random_char))
+        *random_char += 7;
+      if ((90 < *random_char) && (97 > *random_char))
+        *random_char += 6;
     }
-    num = num % 122;
-    if ( 48 > num )
-      num += 48;
-    if ( ( 57 < num ) && ( 65 > num ) )
-      num += 7;
-    if ( ( 90 < num ) && ( 97 > num ) )
-      num += 6;
-    str += static_cast<char>(num);
-    rand_num.Randomize(rng, 32);
+    random_string += random_substring;
   }
-  return str;
+  return random_string;
 }
 
 std::string EncodeToHex(const std::string &non_hex_input) {

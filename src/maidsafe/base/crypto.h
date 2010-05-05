@@ -243,7 +243,7 @@ class Crypto {
   template <class T>
   std::string HashFunc(const std::string &input, const std::string &output,
                        const OperationType &operation_type, const bool &hex,
-                       T hash);
+                       T *hash);
   HashType hash_algorithm_;
   SymmetricEncryptionType symm_algorithm_;
 };

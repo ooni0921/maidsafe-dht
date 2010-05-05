@@ -259,7 +259,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
     Contact contact(id, ip, port + i, ip, port + i);
     EXPECT_GE(routingtable_->AddContact(contact), 0);
   }
-  EXPECT_GE(routingtable_->Size(), 2*K);
+  EXPECT_GE(routingtable_->Size(), static_cast<size_t>(2*K));
   std::string wrong_hex_key;
   for (int i = 0; i < 128; ++i)
     wrong_hex_key += "b";
@@ -423,7 +423,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
       close_contacts.push_back(contact);
     EXPECT_GE(routingtable_->AddContact(contact), 0);
   }
-  EXPECT_GE(routingtable_->Size(), 2*K);
+  EXPECT_GE(routingtable_->Size(), static_cast<size_t>(2*K));
   std::string value("Value");
   ASSERT_TRUE(datastore_->StoreItem(key, value, 24*3600, true));
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
@@ -782,7 +782,8 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   service_->Downlist(&controller, &downlist_request, &downlist_response, done2);
   int timeout = 8000;  // milliseconds
   int count = 0;
-  while ((routingtable_->Size() >= rt) && (count < timeout)) {
+  while ((routingtable_->Size() >= static_cast<size_t>(rt)) &&
+         (count < timeout)) {
     count += 50;
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
@@ -803,7 +804,8 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   downlist_response.Clear();
   service_->Downlist(&controller, &downlist_request, &downlist_response, done3);
   count = 0;
-  while ((routingtable_->Size() >= rt - 1) && (count < timeout)) {
+  while ((routingtable_->Size() >= static_cast<size_t>(rt - 1)) &&
+         (count < timeout)) {
     count += 50;
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
@@ -886,7 +888,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
     Contact contact(id, ip, port + i, ip, port + i);
     EXPECT_GE(routingtable_->AddContact(contact), 0);
   }
-  EXPECT_GE(routingtable_->Size(), 2*K);
+  EXPECT_GE(routingtable_->Size(), static_cast<size_t>(2*K));
   std::string wrong_hex_key(128, 'b');
   std::string wrong_key = base::DecodeFromHex(wrong_hex_key);
   EXPECT_TRUE(datastore_->StoreItem(wrong_key, "X", 24*3600, false));

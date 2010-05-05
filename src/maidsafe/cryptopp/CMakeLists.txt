@@ -36,17 +36,18 @@
 #==============================================================================#
 
 
+SET_DIRECTORY_PROPERTIES(PROPERTIES INCLUDE_DIRECTORIES "")
+
 FILE(GLOB cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+IF(MSVC)
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/eprecomp.cpp")
+ENDIF()
 FILE(GLOB cryptopp_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
-#ADD_LIBRARY(cryptopp SHARED ${cryptopp_SOURCES})
-ADD_LIBRARY(cryptopp_static STATIC  ${cryptopp_SOURCES})
+#ADD_LIBRARY(cryptopp SHARED ${cryptopp_SOURCES} ${cryptopp_HEADERS})
+ADD_LIBRARY(cryptopp_static STATIC ${cryptopp_SOURCES} ${cryptopp_HEADERS})
 #IF(NOT MSVC)
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES OUTPUT_NAME cryptopp)
-#ENDIF()
-
-#IF(WIN32)
-#  TARGET_LINK_LIBRARIES(cryptopp ws2_32.lib)
 #ENDIF()
 
 IF(MSVC)
@@ -64,8 +65,11 @@ ELSE()
           )
 ENDIF()
 
-ADD_DEFINITIONS(-DNDEBUG)
-IF(CMAKE_BUILD_TYPE MATCHES "Debug" OR MSVC)
+IF(NOT MSVC)
+  ADD_DEFINITIONS(-DNDEBUG)
+ENDIF()
+
+IF(CMAKE_BUILD_TYPE MATCHES "Debug")
   SET(OPT_FLAG "-O3")
 ELSE()
   SET(OPT_FLAG "")
@@ -82,7 +86,14 @@ ELSEIF(WIN32 AND NOT MSVC)
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "-mthreads -w -finline-functions ${OPT_FLAG} -D_WIN32_WINNT=0x0501")
 ELSEIF(WIN32 AND MSVC)
   CMAKE_POLICY(SET CMP0008 NEW)
-  ADD_DEFINITIONS(-D_WINDOWS -DWIN32 -D_UNICODE -DUNICODE)
-  SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Oi /Oy /GL /GF /EHsc /MD /Gy /W3 /Zi")
-  SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Oi /D_DEBUG /EHsc /MDd /W3 /ZI")
+  SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "/D_WINDOWS /DUSE_PRECOMPILED_HEADERS /DWIN32 /D_VC80_UPGRADE=0x0710 /EHsc /W3")
+  SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Oi /Oy /GL /DNDEBUG /GF /MD /Gy /Zi")
+  SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Oi /D_DEBUG /MDd /arch:SSE /ZI")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/dll.cpp") # this file doesn't use precompiled headers
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/iterhash.cpp") # this file doesn't use precompiled headers
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp") # this file is used to create precompiled headers
+  SET_SOURCE_FILES_PROPERTIES(${cryptopp_SOURCES} PROPERTIES
+                               COMPILE_FLAGS "/Yu\"pch.h\"")
+  SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp PROPERTIES
+                               COMPILE_FLAGS "/Yc\"pch.h\"")
 ENDIF()

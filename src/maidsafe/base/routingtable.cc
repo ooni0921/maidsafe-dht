@@ -110,6 +110,7 @@ int PublicRoutingTableHandler::GetClosestContacts(
     return -1;
   boost::mutex::scoped_lock guard(mutex_);
   std::vector< boost::reference_wrapper<const PublicRoutingTableTuple> > temp;
+  temp.reserve(routingtable_.size());
   BOOST_FOREACH(const PublicRoutingTableTuple &pdrtt, routingtable_)temp.
       push_back(boost::cref(pdrtt));
   std::sort(temp.begin(), temp.end(), boost::bind(

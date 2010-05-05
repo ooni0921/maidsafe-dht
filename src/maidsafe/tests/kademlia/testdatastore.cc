@@ -53,7 +53,7 @@ class DataStoreTest: public testing::Test {
   DataStoreTest &operator=(const DataStoreTest&);
 };
 
-TEST_F(DataStoreTest, FUNC_KAD_StoreValidData) {
+TEST_F(DataStoreTest, BEH_KAD_StoreValidData) {
   std::set<std::string> keys;
   ASSERT_TRUE(test_ds_->Keys(&keys));
   ASSERT_TRUE(keys.empty());
@@ -63,7 +63,11 @@ TEST_F(DataStoreTest, FUNC_KAD_StoreValidData) {
       crypto::STRING_STRING, false);
   std::string value1 = cry_obj_.Hash("vfdsfdasfdasfdsaferrfd", "",
       crypto::STRING_STRING, false);
-  std::string value2 = base::RandomString(5 * 1024 * 1024);  // big value 5MB
+  std::string value2;
+  value2.reserve(5 * 1024 * 1024);  // big value 5MB
+  std::string random_substring(base::RandomString(1024));
+  for (int i = 0; i < 5 * 1024; ++i)
+    value2 += random_substring;
   ASSERT_TRUE(test_ds_->StoreItem(key1, value1, 3600*24, false));
   ASSERT_TRUE(test_ds_->StoreItem(key2, value2, 3600*24, false));
   ASSERT_TRUE(test_ds_->Keys(&keys));
@@ -93,7 +97,7 @@ TEST_F(DataStoreTest, BEH_KAD_StoreInvalidData) {
   ASSERT_FALSE(test_ds_->StoreItem("", value1, 0, false));
 }
 
-TEST_F(DataStoreTest, FUNC_KAD_LoadExistingData) {
+TEST_F(DataStoreTest, BEH_KAD_LoadExistingData) {
   // one value under a key
   std::string value1(cry_obj_.Hash("oybbggjhhtytyerterter", "",
       crypto::STRING_STRING, false));
@@ -108,7 +112,11 @@ TEST_F(DataStoreTest, FUNC_KAD_LoadExistingData) {
   // multiple values under a key
   std::string key2 = cry_obj_.Hash("erraaaaa4334223", "", crypto::STRING_STRING,
       false);
-  std::string value2_1 = base::RandomString(3*1024*1024);  // big value
+  std::string value2_1;
+  value2_1.reserve(3 * 1024 * 1024);  // big value 3MB
+  std::string random_substring(base::RandomString(1024));
+  for (int i = 0; i < 3 * 1024; ++i)
+    value2_1 += random_substring;
   std::string value2_2 = base::RandomString(5);  // small value
   std::string value2_3 = cry_obj_.Hash("vvvx12xxxzzzz3322", "",
       crypto::STRING_STRING, false);
@@ -274,7 +282,12 @@ TEST_F(DataStoreTest, BEH_KAD_StoreMultipleValues) {
   std::vector<std::string> values1;
   values1.push_back(cry_obj_.Hash("vfdsfdasfdasfdsaferrfd", "",
       crypto::STRING_STRING, false));
-  values1.push_back(base::RandomString(1024 * 1024));  // big value 1MB
+  std::string random_string;
+  random_string.reserve(1024 * 1024);  // big value 1MB
+  std::string random_substring(base::RandomString(1024));
+  for (int i = 0; i < 1024; ++i)
+    random_string += random_substring;
+  values1.push_back(random_string);
   for (unsigned int i = 0; i < values1.size(); i++)
     ASSERT_TRUE(test_ds_->StoreItem(key1, values1[i], 3600*24, false));
   std::vector<std::string> values;
@@ -447,7 +460,7 @@ TEST_F(DataStoreTest, FUNC_KAD_ExpiredValuesNotRefreshed) {
       missed_value = true;
       break;
     }
-    ASSERT_GE(ttl, refvalues[i].ttl_);
+    ASSERT_GE(static_cast<int>(ttl), refvalues[i].ttl_);
   }
   ASSERT_FALSE(missed_value);
 }

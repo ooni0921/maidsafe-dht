@@ -79,7 +79,7 @@ TEST(CryptoTest, BEH_BASE_SetGetAlgorithm) {
   ASSERT_EQ(ct.hash_algorithm(), crypto::SHA_512) << "Hash algorithm wrong";
 }
 
-TEST(CryptoTest, FUNC_BASE_Hash) {
+TEST(CryptoTest, BEH_BASE_Hash) {
   crypto::Crypto ct;
   // input files
   std::string input1("input1");
@@ -107,8 +107,11 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
 
   // output file
   boost::filesystem::ifstream resfile;
-  std::string res;
-  std::string random_string(base::RandomString(10*1024*1024));
+  std::string random_string;
+  random_string.reserve(10 * 1024 * 1024);
+  std::string random_substring(base::RandomString(1024));
+  for (int i = 0; i < 10 * 1024; ++i)
+    random_string += random_substring;
 //  ASSERT_EQ(ct.Hash(random_string, "",
 //            crypto::STRING_STRING, true), "");
   ct.set_hash_algorithm(crypto::SHA_512);
@@ -123,7 +126,7 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
                             result, crypto::STRING_FILE, true));
   ASSERT_TRUE(boost::filesystem::exists(result));
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
-  res = "";
+  std::string res;
   resfile >> res;
   resfile.close();
   ASSERT_NE("", res);
@@ -149,7 +152,7 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
     resfile.clear();
   }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
-  res = "";
+  res.clear();
   resfile >> res;
   resfile.close();
   ASSERT_EQ("ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a"
@@ -163,7 +166,7 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
     resfile.clear();
   }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
-  res = "";
+  res.clear();
   resfile >> res;
   resfile.close();
   ASSERT_EQ("ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a"
@@ -187,7 +190,7 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
     resfile.clear();
   }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
-  res = "";
+  res.clear();
   resfile >> res;
   resfile.close();
   ASSERT_EQ("a9993e364706816aba3e25717850c26c9cd0d89d", res);
@@ -198,7 +201,7 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
     resfile.clear();
   }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
-  res = "";
+  res.clear();
   resfile >> res;
   resfile.close();
   ASSERT_EQ("a9993e364706816aba3e25717850c26c9cd0d89d", res);
@@ -221,7 +224,7 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
     resfile.clear();
   }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
-  res = "";
+  res.clear();
   resfile >> res;
   resfile.close();
   ASSERT_EQ("ba7816bf8f01cfea414140de5dae2223b0036"
@@ -233,7 +236,7 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
     resfile.clear();
   }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
-  res = "";
+  res.clear();
   resfile >> res;
   resfile.close();
   ASSERT_EQ("ba7816bf8f01cfea414140de5dae2223b"
@@ -260,7 +263,7 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
     resfile.clear();
   }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
-  res = "";
+  res.clear();
   resfile >> res;
   resfile.close();
   ASSERT_EQ("cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed"
@@ -272,11 +275,12 @@ TEST(CryptoTest, FUNC_BASE_Hash) {
     resfile.clear();
   }
   resfile.open(result.c_str(), std::ios::in |std::ios::binary);
-  res = "";
+  res.clear();
   resfile >> res;
   resfile.close();
   ASSERT_EQ("cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed"
             "8086072ba1e7cc2358baeca134c825a7", res);
+
   boost::filesystem::remove(result);
 
   boost::filesystem::remove(input1);
@@ -291,10 +295,14 @@ TEST(CryptoTest, BEH_BASE_SetSymmAlgorithm) {
   ASSERT_EQ(ct.symm_algorithm(), crypto::AES_256) << "GetSymmAlgorithm Failed";
 }
 
-TEST(CryptoTest, FUNC_BASE_SymmEncrypt) {
+TEST(CryptoTest, BEH_BASE_SymmEncrypt) {
   crypto::Crypto ct;
   std::string key = "some key";
-  std::string data = base::RandomString(10*1024*1024);
+  std::string data;
+  data.reserve(10 * 1024 * 1024);
+  std::string random_substring(base::RandomString(1024));
+  for (int i = 0; i < 10 * 1024; ++i)
+    data += random_substring;
   // input file
   std::string input1("input1");
   input1 += boost::lexical_cast<std::string>(base::RandomUint32()) +

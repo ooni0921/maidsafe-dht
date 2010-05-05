@@ -97,15 +97,15 @@ std::string Crypto::HashFunc(const std::string &input,
                              const std::string &output,
                              const OperationType &operation_type,
                              const bool &hex,
-                             T hash) {
+                             T *hash) {
   std::string result;
   switch (operation_type) {
     case STRING_STRING:
       if (hex) {
-        CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(hash,
+        CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(*hash,
             new CryptoPP::HexEncoder(new CryptoPP::StringSink(result), false)));
       } else {
-        CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(hash,
+        CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(*hash,
             new CryptoPP::StringSink(result)));
       }
       break;
@@ -113,11 +113,11 @@ std::string Crypto::HashFunc(const std::string &input,
       result = output;
       try {
         if (hex) {
-          CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(hash,
+          CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(*hash,
               new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
               false)));
         } else {
-          CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(hash,
+          CryptoPP::StringSource(input, true, new CryptoPP::HashFilter(*hash,
               new CryptoPP::FileSink(output.c_str())));
         }
       }
@@ -130,12 +130,13 @@ std::string Crypto::HashFunc(const std::string &input,
       try {
         if (hex) {
           CryptoPP::FileSource(input.c_str(), true,
-              new CryptoPP::HashFilter(hash,
+              new CryptoPP::HashFilter(*hash,
               new CryptoPP::HexEncoder(new CryptoPP::StringSink(result),
               false)));
         } else {
           CryptoPP::FileSource(input.c_str(), true,
-              new CryptoPP::HashFilter(hash, new CryptoPP::StringSink(result)));
+              new CryptoPP::HashFilter(*hash,
+              new CryptoPP::StringSink(result)));
         }
       }
       catch(const CryptoPP::Exception &e) {
@@ -148,12 +149,12 @@ std::string Crypto::HashFunc(const std::string &input,
       try {
         if (hex) {
           CryptoPP::FileSource(input.c_str(), true,
-              new CryptoPP::HashFilter(hash,
+              new CryptoPP::HashFilter(*hash,
               new CryptoPP::HexEncoder(new CryptoPP::FileSink(output.c_str()),
               false)));
         } else {
           CryptoPP::FileSource(input.c_str(), true,
-              new CryptoPP::HashFilter(hash,
+              new CryptoPP::HashFilter(*hash,
               new CryptoPP::FileSink(output.c_str())));
         }
       }
@@ -172,27 +173,27 @@ std::string Crypto::Hash(const std::string &input,
   switch (hash_algorithm_) {
     case SHA_512: {
       CryptoPP::SHA512 hash;
-      return HashFunc(input, output, operation_type, hex, hash);
+      return HashFunc(input, output, operation_type, hex, &hash);
     }
     case SHA_1: {
       CryptoPP::SHA1 hash;
-      return HashFunc(input, output, operation_type, hex, hash);
+      return HashFunc(input, output, operation_type, hex, &hash);
     }
 //    case SHA_224: {
 //      CryptoPP::SHA224 hash;
-//      return HashFunc(input, output, operation_type, hex, hash);
+//      return HashFunc(input, output, operation_type, hex, &hash);
 //    }
     case SHA_256: {
       CryptoPP::SHA256 hash;
-      return HashFunc(input, output, operation_type, hex, hash);
+      return HashFunc(input, output, operation_type, hex, &hash);
     }
     case SHA_384: {
       CryptoPP::SHA384 hash;
-      return HashFunc(input, output, operation_type, hex, hash);
+      return HashFunc(input, output, operation_type, hex, &hash);
     }
     default: {
       CryptoPP::SHA512 hash;
-      return HashFunc(input, output, operation_type, hex, hash);
+      return HashFunc(input, output, operation_type, hex, &hash);
     }
   }
 }
@@ -204,7 +205,7 @@ std::string Crypto::SymmEncrypt(const std::string &input,
   if (symm_algorithm_ != AES_256)
     return "";
   CryptoPP::SHA512 hash;
-  std::string hashkey = HashFunc(key, "", STRING_STRING, true, hash);
+  std::string hashkey = HashFunc(key, "", STRING_STRING, true, &hash);
   byte byte_key[AES256_KeySize], byte_iv[AES256_IVSize];
   CryptoPP::StringSource(hashkey.substr(0, AES256_KeySize), true,
       new CryptoPP::ArraySink(byte_key, sizeof(byte_key)));
@@ -265,7 +266,7 @@ std::string Crypto::SymmDecrypt(const std::string &input,
   if (symm_algorithm_ != AES_256)
     return "";
   CryptoPP::SHA512 hash;
-  std::string hashkey = HashFunc(key, "", STRING_STRING, true, hash);
+  std::string hashkey = HashFunc(key, "", STRING_STRING, true, &hash);
   byte byte_key[ AES256_KeySize ], byte_iv[ AES256_IVSize ];
   CryptoPP::StringSource(hashkey.substr(0, AES256_KeySize), true,
       new CryptoPP::ArraySink(byte_key, sizeof(byte_key)));

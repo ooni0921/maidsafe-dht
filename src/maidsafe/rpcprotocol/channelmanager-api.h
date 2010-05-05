@@ -62,7 +62,7 @@ typedef std::map<std::string, base::Stats<boost::uint64_t> > RpcStatsMap;
 
 class Channel;
 class ChannelManagerImpl;
-class PendingReq;
+struct PendingReq;
 class RpcMessage;
 
 // Ensure that a one-to-one relationship is maintained between channelmanager &
