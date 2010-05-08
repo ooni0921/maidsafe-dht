@@ -47,17 +47,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace base {
 class AlternativeStore;
 class SignatureValidator;
-}  // namesapce base
+}  // namespace base
 
 
 namespace rpcprotocol {
 class ChannelManager;
-}  // namesapce rpcprotocol
+}  // namespace rpcprotocol
 
 
 namespace transport {
 class TransportHandler;
-}  // namesapce transport
+}  // namespace transport
 
 
 namespace kad {
