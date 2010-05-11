@@ -47,14 +47,23 @@ inline void CreateRSAKeys(std::string *pub_key, std::string *priv_key) {
 }
 
 inline void CreateSignedRequest(const std::string &pub_key,
-    const std::string &priv_key, const std::string &key,
-    std::string *sig_pub_key, std::string *sig_req) {
+                                const std::string &priv_key,
+                                const std::string &key,
+                                std::string *sig_pub_key,
+                                std::string *sig_req) {
   crypto::Crypto cobj;
   cobj.set_symm_algorithm(crypto::AES_256);
   cobj.set_hash_algorithm(crypto::SHA_512);
   *sig_pub_key = cobj.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
   *sig_req = cobj.AsymSign(cobj.Hash(pub_key + *sig_pub_key + key, "",
-      crypto::STRING_STRING, true), "", priv_key, crypto::STRING_STRING);
+                                     crypto::STRING_STRING, true),
+                           "", priv_key, crypto::STRING_STRING);
+}
+
+inline void CreateDecodedKey(std::string *key) {
+  crypto::Crypto cobj;
+  cobj.set_hash_algorithm(crypto::SHA_512);
+  *key = cobj.Hash(base::RandomString(64), "", crypto::STRING_STRING, false);
 }
 
 class DummyAltStore : public base::AlternativeStore {
@@ -782,8 +791,7 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   service_->Downlist(&controller, &downlist_request, &downlist_response, done2);
   int timeout = 8000;  // milliseconds
   int count = 0;
-  while ((routingtable_->Size() >= static_cast<size_t>(rt)) &&
-         (count < timeout)) {
+  while (routingtable_->Size() >= size_t(rt) && count < timeout) {
     count += 50;
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
@@ -804,8 +812,7 @@ TEST_F(KadServicesTest, FUNC_KAD_ServicesDownlist) {
   downlist_response.Clear();
   service_->Downlist(&controller, &downlist_request, &downlist_response, done3);
   count = 0;
-  while ((routingtable_->Size() >= static_cast<size_t>(rt - 1)) &&
-         (count < timeout)) {
+  while (routingtable_->Size() >= size_t(rt - 1) && count < timeout) {
     count += 50;
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
@@ -1209,6 +1216,177 @@ TEST_F(KadServicesTest, FUNC_KAD_RefreshDeletedValue) {
     response.signed_request().signed_public_key());
   EXPECT_EQ(sreq.signed_request(), response.signed_request().signed_request());
   delete done;
+}
+
+TEST_F(KadServicesTest, BEH_KAD_UpdateValue) {
+  std::string public_key, private_key, publickey_signature, request_signature,
+              key;
+  CreateDecodedKey(&key);
+  CreateRSAKeys(&public_key, &private_key);
+  CreateSignedRequest(public_key, private_key, key, &publickey_signature,
+                      &request_signature);
+
+  // Fail: Request not initialised
+  rpcprotocol::Controller controller;
+  UpdateRequest request;
+  UpdateResponse response;
+  Callback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<Callback>
+                                    (&cb_obj, &Callback::CallbackFunction);
+  service_->Update(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kRpcResultFailure, response.result());
+  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+
+  // Fail: Request not properly initialised
+  request.set_key(key);
+  SignedValue *new_value = request.mutable_new_value();
+  SignedValue *old_value = request.mutable_old_value();
+  request.set_ttl(86400);
+  SignedRequest *signed_request = request.mutable_request();
+  ContactInfo *sender_info = request.mutable_sender_info();
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  response.Clear();
+  service_->Update(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kRpcResultFailure, response.result());
+  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+
+  // Fail: trying to update non-existent value
+  crypto::Crypto co;
+  std::string nv(base::RandomString(16));
+  new_value->set_value(nv);
+  new_value->set_value_signature(co.AsymSign(nv, "", private_key,
+                                             crypto::STRING_STRING));
+  std::string ov(base::RandomString(16));
+  old_value->set_value(ov);
+  old_value->set_value_signature(co.AsymSign(ov, "", private_key,
+                                             crypto::STRING_STRING));
+
+  std::string kad_id(co.Hash(public_key + publickey_signature, "",
+                             crypto::STRING_STRING, false));
+  signed_request->set_signer_id(kad_id);
+  signed_request->set_public_key(public_key);
+  signed_request->set_signed_public_key(publickey_signature);
+  signed_request->set_signed_request(request_signature);
+  *sender_info = contact_;
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  response.Clear();
+  service_->Update(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kRpcResultFailure, response.result());
+  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+
+  // Fail: Value to update doesn't exist
+  size_t total_values(5);
+  for (size_t n = 0; n < total_values; ++n) {
+    SignedValue sv;
+    sv.set_value("value" + base::IntToString(n));
+    sv.set_value_signature(co.AsymSign(sv.value(), "", private_key,
+                                       crypto::STRING_STRING));
+    ASSERT_TRUE(service_->pdatastore_->StoreItem(key, sv.SerializeAsString(),
+                                                 3600 * 24, false));
+  }
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  response.Clear();
+  service_->Update(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kRpcResultFailure, response.result());
+  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+
+  // Fail: New value doesn't validate
+  old_value = request.mutable_old_value();
+  old_value->set_value("value0");
+  old_value->set_value_signature(co.AsymSign(old_value->value(), "",
+                                             private_key,
+                                             crypto::STRING_STRING));
+  new_value = request.mutable_new_value();
+  new_value->set_value("valueX");
+  new_value->set_value_signature("signature of value X");
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  response.Clear();
+  service_->Update(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kRpcResultFailure, response.result());
+  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+
+  // Fail: Old value doesn't validate
+  std::string wrong_public, wrong_private, wrong_publickey_signature,
+              wrong_request_signature;
+  CreateRSAKeys(&wrong_public, &wrong_private);
+  CreateSignedRequest(wrong_public, wrong_private, key,
+                      &wrong_publickey_signature, &wrong_request_signature);
+  old_value = request.mutable_old_value();
+  old_value->set_value("value0");
+  old_value->set_value_signature(co.AsymSign(old_value->value(), "",
+                                             private_key,
+                                             crypto::STRING_STRING));
+  new_value = request.mutable_new_value();
+  new_value->set_value("valueX");
+  new_value->set_value_signature(co.AsymSign(new_value->value(), "",
+                                             wrong_private,
+                                             crypto::STRING_STRING));
+  signed_request = request.mutable_request();
+  signed_request->set_signer_id(kad_id);
+  signed_request->set_public_key(wrong_public);
+  signed_request->set_signed_public_key(wrong_publickey_signature);
+  signed_request->set_signed_request(wrong_request_signature);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  response.Clear();
+  service_->Update(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kRpcResultFailure, response.result());
+  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+
+  // Fail: Update fails
+  old_value = request.mutable_old_value();
+  old_value->set_value("value0");
+  old_value->set_value_signature(co.AsymSign(old_value->value(), "",
+                                             private_key,
+                                             crypto::STRING_STRING));
+  new_value = request.mutable_new_value();
+  new_value->set_value("value2");
+  new_value->set_value_signature(co.AsymSign(new_value->value(), "",
+                                             private_key,
+                                             crypto::STRING_STRING));
+  signed_request = request.mutable_request();
+  signed_request->set_signer_id(kad_id);
+  signed_request->set_public_key(public_key);
+  signed_request->set_signed_public_key(publickey_signature);
+  signed_request->set_signed_request(request_signature);
+  done = google::protobuf::NewCallback<Callback>
+         (&cb_obj, &Callback::CallbackFunction);
+  response.Clear();
+  service_->Update(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  ASSERT_EQ(kRpcResultFailure, response.result());
+  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+
+  // Successful updates
+  for (size_t a = 0; a < total_values; ++a) {
+    old_value = request.mutable_old_value();
+    old_value->set_value("value" + base::IntToString(a));
+    old_value->set_value_signature(co.AsymSign(old_value->value(), "",
+                                               private_key,
+                                               crypto::STRING_STRING));
+    new_value = request.mutable_new_value();
+    new_value->set_value("value_" + base::IntToString(a));
+    new_value->set_value_signature(co.AsymSign(new_value->value(), "",
+                                               private_key,
+                                               crypto::STRING_STRING));
+    done = google::protobuf::NewCallback<Callback>
+           (&cb_obj, &Callback::CallbackFunction);
+    response.Clear();
+    service_->Update(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kRpcResultSuccess, response.result());
+    ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+  }
 }
 
 }  // namespace kad

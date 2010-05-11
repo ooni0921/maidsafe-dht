@@ -754,3 +754,50 @@ TEST_F(DataStoreTest, BEH_KAD_DeleteDelStatusExpiredValues) {
   ASSERT_TRUE(test_ds_->Keys(&keys));
   ASSERT_TRUE(keys.empty());
 }
+
+TEST_F(DataStoreTest, BEH_KAD_UpdateItem) {
+  size_t total_values(5);
+  for (size_t n = 0; n < total_values; ++n) {
+    std::string key("key" + base::IntToString(n));
+    std::string value("value" + base::IntToString(n));
+    ASSERT_TRUE(test_ds_->StoreItem(key, value, 3600*24, false));
+  }
+  std::set<std::string> keys;
+  ASSERT_TRUE(test_ds_->Keys(&keys));
+  ASSERT_EQ(total_values, keys.size());
+  std::vector<std::string> vs;
+  ASSERT_TRUE(test_ds_->LoadItem("key0", &vs));
+  ASSERT_EQ(size_t(1), vs.size());
+  ASSERT_EQ("value0", vs[0]);
+
+  ASSERT_TRUE(test_ds_->UpdateItem("key0", "value0", "misbolas0", 500, true));
+  keys.clear();
+  ASSERT_TRUE(test_ds_->Keys(&keys));
+  ASSERT_EQ(total_values, keys.size());
+  vs.clear();
+  ASSERT_TRUE(test_ds_->LoadItem("key0", &vs));
+  ASSERT_EQ(size_t(1), vs.size());
+  ASSERT_EQ("misbolas0", vs[0]);
+
+  std::string key("key0");
+  for (size_t a = 0; a < total_values; ++a) {
+    std::string value("value_" + base::IntToString(a));
+    ASSERT_TRUE(test_ds_->StoreItem(key, value, 3600*24, false));
+  }
+  vs.clear();
+  ASSERT_TRUE(test_ds_->LoadItem("key0", &vs));
+  ASSERT_EQ(size_t(6), vs.size());
+
+  ASSERT_FALSE(test_ds_->UpdateItem("key0", "value_2", "misbolas0", 500, true));
+  ASSERT_TRUE(test_ds_->UpdateItem("key0", "value_2", "value_2", 30000, true));
+  ASSERT_TRUE(test_ds_->UpdateItem("key0", "value_2", "bolotas0", 500, true));
+  vs.clear();
+  ASSERT_TRUE(test_ds_->LoadItem("key0", &vs));
+  ASSERT_EQ(size_t(6), vs.size());
+  std::set<std::string> value_set(vs.begin(), vs.end());
+  ASSERT_EQ(size_t(6), value_set.size());
+  std::set<std::string>::iterator it = value_set.find("misbolas0");
+  ASSERT_FALSE(value_set.end() == it);
+  it = value_set.find("bolotas0");
+  ASSERT_FALSE(value_set.end() == it);
+}

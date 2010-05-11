@@ -32,8 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kad {
 
-DataStore::DataStore(const boost::uint32_t &t_refresh): datastore_(),
-    t_refresh_(0), mutex_() {
+DataStore::DataStore(const boost::uint32_t &t_refresh)
+    : datastore_(), t_refresh_(0), mutex_() {
   t_refresh_ = t_refresh + (base::RandomUint32() % 5);
 }
 
@@ -50,9 +50,9 @@ bool DataStore::Keys(std::set<std::string> *keys) {
   return true;
 }
 
-bool DataStore::StoreItem(const std::string &key,
-      const std::string &value, const boost::int32_t &time_to_live,
-      const bool &hashable) {
+bool DataStore::StoreItem(const std::string &key, const std::string &value,
+                          const boost::int32_t &time_to_live,
+                          const bool &hashable) {
   if (key.empty() || value.empty() || time_to_live == 0)
     return false;
 
@@ -75,7 +75,7 @@ bool DataStore::StoreItem(const std::string &key,
 }
 
 bool DataStore::LoadItem(const std::string &key,
-    std::vector<std::string> *values) {
+                         std::vector<std::string> *values) {
   values->clear();
   boost::mutex::scoped_lock guard(mutex_);
   std::pair<datastore::iterator, datastore::iterator> p =
@@ -95,8 +95,7 @@ bool DataStore::LoadItem(const std::string &key,
   return true;
 }
 
-bool DataStore::DeleteItem(const std::string &key,
-    const std::string &value) {
+bool DataStore::DeleteItem(const std::string &key, const std::string &value) {
   datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
   boost::mutex::scoped_lock guard(mutex_);
   if (it == datastore_.end())
@@ -116,7 +115,7 @@ bool DataStore::DeleteKey(const std::string &key) {
 }
 
 boost::uint32_t DataStore::LastRefreshTime(const std::string &key,
-      const std::string &value) {
+                                           const std::string &value) {
   boost::mutex::scoped_lock guard(mutex_);
   datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
   if (it == datastore_.end())
@@ -125,7 +124,7 @@ boost::uint32_t DataStore::LastRefreshTime(const std::string &key,
 }
 
 boost::uint32_t DataStore::ExpireTime(const std::string &key,
-      const std::string &value) {
+                                      const std::string &value) {
   boost::mutex::scoped_lock guard(mutex_);
   datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
   if (it == datastore_.end())
@@ -173,7 +172,7 @@ void DataStore::Clear() {
 }
 
 boost::int32_t DataStore::TimeToLive(const std::string &key,
-      const std::string &value) {
+                                     const std::string &value) {
   boost::mutex::scoped_lock guard(mutex_);
   datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
   if (it == datastore_.end())
@@ -185,7 +184,7 @@ boost::uint32_t DataStore::t_refresh() const {
   return t_refresh_;
 }
 
-std::vector< std::pair<std::string, bool> > DataStore::LoadKeyAppendableAttr(
+std::vector<std::pair<std::string, bool> > DataStore::LoadKeyAppendableAttr(
     const std::string &key) {
   std::vector< std::pair<std::string, bool> > result;
   boost::mutex::scoped_lock guard(mutex_);
@@ -199,8 +198,9 @@ std::vector< std::pair<std::string, bool> > DataStore::LoadKeyAppendableAttr(
   return result;
 }
 
-bool DataStore::RefreshItem(const std::string &key, const std::string &value,
-      std::string *str_delete_req) {
+bool DataStore::RefreshItem(const std::string &key,
+                            const std::string &value,
+                            std::string *str_delete_req) {
   boost::mutex::scoped_lock guard(mutex_);
   datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
   if (it == datastore_.end())
@@ -215,12 +215,13 @@ bool DataStore::RefreshItem(const std::string &key, const std::string &value,
   tuple.ttl_ = it->ttl_;
   tuple.expire_time_ = it->expire_time_;
   tuple.appendable_key_ = it->appendable_key_;
-  datastore_.replace(it, tuple);
-  return true;
+
+  return datastore_.replace(it, tuple);
 }
 
 bool DataStore::MarkForDeletion(const std::string &key,
-    const std::string &value, const std::string &ser_del_request) {
+                                const std::string &value,
+                                const std::string &ser_del_request) {
   boost::mutex::scoped_lock guard(mutex_);
   datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
   if (it == datastore_.end())
@@ -235,12 +236,12 @@ bool DataStore::MarkForDeletion(const std::string &key,
   tuple.last_refresh_time_ = it->last_refresh_time_;
   tuple.ser_delete_req_ = ser_del_request;
   tuple.del_status_ = MARKED_FOR_DELETION;
-  datastore_.replace(it, tuple);
-  return true;
+
+  return datastore_.replace(it, tuple);
 }
 
 bool DataStore::MarkAsDeleted(const std::string &key,
-    const std::string &value) {
+                              const std::string &value) {
   boost::mutex::scoped_lock guard(mutex_);
   datastore::iterator it = datastore_.find(boost::make_tuple(key, value));
   if (it == datastore_.end() || it->del_status_ != MARKED_FOR_DELETION)
@@ -252,7 +253,30 @@ bool DataStore::MarkAsDeleted(const std::string &key,
   tuple.last_refresh_time_ = it->last_refresh_time_;
   tuple.ser_delete_req_ = it->ser_delete_req_;
   tuple.del_status_ = DELETED;
-  datastore_.replace(it, tuple);
-  return true;
+
+  return datastore_.replace(it, tuple);
 }
+
+bool DataStore::UpdateItem(const std::string &key,
+                           const std::string &old_value,
+                           const std::string &new_value,
+                           const boost::int32_t &time_to_live,
+                           const bool &hashable) {
+  boost::mutex::scoped_lock guard(mutex_);
+  datastore::iterator it = datastore_.find(boost::make_tuple(key, old_value));
+  if (it == datastore_.end() || it->del_status_ == MARKED_FOR_DELETION ||
+      it->del_status_ == DELETED)
+    return false;
+
+  key_value_tuple tuple(key, new_value, 0);
+  boost::uint32_t now(base::GetEpochTime());
+  tuple.ttl_ = time_to_live;
+  tuple.expire_time_ = now + time_to_live;
+  tuple.last_refresh_time_ = now;
+  tuple.del_status_ = NOT_DELETED;
+  tuple.appendable_key_ = !hashable;
+
+  return datastore_.replace(it, tuple);
+}
+
 }  // namespace kad

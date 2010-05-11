@@ -12,4 +12,5 @@ service KademliaService {
   rpc NatDetectionPing (NatDetectionPingRequest) returns (NatDetectionPingResponse);
   rpc Bootstrap (BootstrapRequest) returns (BootstrapResponse);
   rpc Delete (DeleteRequest) returns (DeleteResponse);
+  rpc Update (UpdateRequest) returns (UpdateResponse);
 }

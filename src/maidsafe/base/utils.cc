@@ -33,8 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <maidsafe/cryptopp/integer.h>
 #include <maidsafe/cryptopp/osrng.h>
 #include <maidsafe/cryptopp/hex.h>
-#include <string>
+#include <algorithm>
 #include <limits>
+#include <string>
 #include "maidsafe/base/log.h"
 
 namespace base {

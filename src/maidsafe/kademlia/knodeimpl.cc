@@ -2463,4 +2463,161 @@ void KNodeImpl::DelValue_IterativeDeleteValue(const DeleteResponse *response,
   }
 }
 
+void KNodeImpl::UpdateValue(const KadId &key,
+                            const SignedValue &old_value,
+                            const SignedValue &new_value,
+                            const SignedRequest &signed_request,
+                            boost::uint32_t ttl,
+                            VoidFunctorOneString callback) {
+  if (!old_value.IsInitialized() || !new_value.IsInitialized() ||
+      !signed_request.IsInitialized()) {
+    DeleteResponse resp;
+    resp.set_result(kad::kRpcResultFailure);
+    std::string ser_resp(resp.SerializeAsString());
+    callback(ser_resp);
+    DLOG(WARNING) << "KNodeImpl::UpdateValue - uninitialised values or request"
+                  << std::endl;
+    return;
+  }
+  FindKClosestNodes(key, boost::bind(&KNodeImpl::ExecuteUpdateRPCs,
+                                     this, _1, key, old_value, new_value,
+                                     signed_request, ttl, callback));
+}
+
+void KNodeImpl::ExecuteUpdateRPCs(const std::string &result,
+                                  const KadId &key,
+                                  const SignedValue &old_value,
+                                  const SignedValue &new_value,
+                                  const SignedRequest &sig_req,
+                                  boost::uint32_t ttl,
+                                  VoidFunctorOneString callback) {
+  if (!is_joined_)
+    return;
+
+  FindResponse result_msg;
+  if (!result_msg.ParseFromString(result) ||
+      result_msg.closest_nodes_size() == 0 ||
+      result_msg.result() != kRpcResultSuccess) {
+    DeleteResponse resp;
+    resp.set_result(kad::kRpcResultFailure);
+    std::string ser_resp(resp.SerializeAsString());
+    callback(ser_resp);
+    DLOG(WARNING) << "KNodeImpl::ExecuteUpdateRPCs - failed find nodes"
+                  << std::endl;
+    return;
+  }
+
+  std::vector<Contact> closest_nodes;
+  for (int i = 0; i < result_msg.closest_nodes_size(); ++i) {
+    Contact node;
+    if (node.ParseFromString(result_msg.closest_nodes(i)))
+      closest_nodes.push_back(node);
+  }
+
+  if (closest_nodes.size() < size_t(kMinSuccessfulPecentageStore * K)) {
+    DeleteResponse resp;
+    resp.set_result(kad::kRpcResultFailure);
+    std::string ser_resp(resp.SerializeAsString());
+    callback(ser_resp);
+    DLOG(WARNING) << "KNodeImpl::ExecuteUpdateRPCs - Not enough nodes"
+                  << std::endl;
+    return;
+  }
+
+  boost::shared_ptr<UpdateValueData> uvd(new UpdateValueData(key, old_value,
+                                                             new_value, sig_req,
+                                                             callback));
+  for (size_t n = 0; n < closest_nodes.size(); ++n) {
+    boost::shared_ptr<UpdateCallbackArgs> uca(new UpdateCallbackArgs());
+    uca->uvd = uvd;
+    uca->contact = closest_nodes[n];
+    uca->response = new UpdateResponse;
+    UpdatePDRTContactToRemote(closest_nodes[n].node_id(),
+                              closest_nodes[n].host_ip());
+    uca->controller = new rpcprotocol::Controller;
+    google::protobuf::Closure *done = google::protobuf::NewCallback
+                                      <KNodeImpl,
+                                       boost::shared_ptr<UpdateCallbackArgs> >
+                                      (this, &KNodeImpl::UpdateValueResponses,
+                                       uca);
+    ConnectionType conn_type = CheckContactLocalAddress(
+                                   closest_nodes[n].node_id(),
+                                   closest_nodes[n].local_ip(),
+                                   closest_nodes[n].local_port(),
+                                   closest_nodes[n].host_ip());
+    std::string contact_ip, rendezvous_ip;
+    boost::uint16_t contact_port(0), rendezvous_port(0);
+    uca->ct = conn_type;
+    if (conn_type == LOCAL) {
+      uca->uvd->retries = 1;
+      contact_ip = closest_nodes[n].local_ip();
+      contact_port = closest_nodes[n].local_port();
+    } else {
+      contact_ip = closest_nodes[n].host_ip();
+      contact_port = closest_nodes[n].host_port();
+      rendezvous_ip = closest_nodes[n].rendezvous_ip();
+      rendezvous_port = closest_nodes[n].rendezvous_port();
+    }
+    kadrpcs_.Update(key, new_value, old_value, ttl, sig_req, contact_ip,
+                    contact_port, rendezvous_ip, rendezvous_port,
+                    uca->response, uca->controller, done);
+  }
+}
+
+void KNodeImpl::UpdateValueResponses(
+    boost::shared_ptr<UpdateCallbackArgs> uca) {
+  if (uca->response->IsInitialized()) {
+    if (!uca->response->has_node_id() ||
+        uca->response->node_id() != uca->contact.node_id().ToStringDecoded()) {
+      // Check if a retry is warranted
+      if (uca->uvd->retries < 1) {
+        ++uca->uvd->retries;
+        uca->response = new UpdateResponse;
+        uca->controller = new rpcprotocol::Controller;
+        google::protobuf::Closure *done;
+        done = google::protobuf::NewCallback
+               <KNodeImpl, boost::shared_ptr<UpdateCallbackArgs> >
+               (this, &KNodeImpl::UpdateValueResponses, uca);
+        kadrpcs_.Update(uca->uvd->uvd_key, uca->uvd->uvd_new_value,
+                        uca->uvd->uvd_old_value, uca->uvd->ttl,
+                        uca->uvd->uvd_request_signature, uca->contact.host_ip(),
+                        uca->contact.host_port(),
+                        uca->contact.rendezvous_ip(),
+                        uca->contact.rendezvous_port(), uca->response,
+                        uca->controller, done);
+        return;
+      // No retry: failed
+      } else {
+        RemoveContact(uca->contact.node_id());
+        ++uca->uvd->uvd_calledback;
+      }
+    // The RPC came back successfully
+    } else {
+      AddContact(uca->contact, uca->controller->rtt(), false);
+      ++uca->uvd->uvd_calledback;
+      ++uca->uvd->uvd_succeeded;
+    }
+  }
+
+  delete uca->response;
+  delete uca->controller;
+
+  if (uca->uvd->uvd_calledback == K) {
+    UpdateResponse update_result;
+    if (uca->uvd->uvd_succeeded <
+        boost::uint8_t(K * kMinSuccessfulPecentageStore)) {
+      // Sadly, we didn't gather the numbers to ensure success
+      update_result.set_result(kRpcResultFailure);
+
+      DLOG(WARNING) << "KNodeImpl::ExecuteUpdateRPCs - Not enough succ in RPCs"
+                    << std::endl;
+
+    } else {
+      update_result.set_result(kRpcResultSuccess);
+    }
+    std::string serialised_result(update_result.SerializeAsString());
+    uca->uvd->uvd_callback(serialised_result);
+  }
+}
+
 }  // namespace kad

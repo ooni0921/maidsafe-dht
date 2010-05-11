@@ -112,6 +112,10 @@ class KadService : public KademliaService {
   void Delete(google::protobuf::RpcController *controller,
       const DeleteRequest *request, DeleteResponse *response,
       google::protobuf::Closure *done);
+  void Update(google::protobuf::RpcController *controller,
+              const UpdateRequest *request,
+              UpdateResponse *response,
+              google::protobuf::Closure *done);
   inline void set_node_joined(const bool &joined) {
     node_joined_ = joined;
   }
@@ -128,9 +132,7 @@ class KadService : public KademliaService {
   FRIEND_TEST(NatDetectionTest, BEH_KAD_SendNatDet);
   FRIEND_TEST(NatDetectionTest, BEH_KAD_BootstrapNatDetRv);
   FRIEND_TEST(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet);
-//  bool ValidateSignedRequest(const std::string &public_key, const std::string
-//      &signed_public_key, const std::string &signed_request, const std::string
-//      &key);
+  FRIEND_TEST(KadServicesTest, BEH_KAD_UpdateValue);
   bool GetSender(const ContactInfo &sender_info, Contact *sender);
   void Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
       struct NatDetectionData data);
@@ -167,5 +169,6 @@ class KadService : public KademliaService {
   KadService(const KadService&);
   KadService& operator=(const KadService&);
 };
+
 }  // namespace kad
 #endif  // MAIDSAFE_KADEMLIA_KADSERVICE_H_

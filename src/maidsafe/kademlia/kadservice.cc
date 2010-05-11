@@ -673,4 +673,151 @@ void KadService::Delete(google::protobuf::RpcController *controller,
   done->Run();
 }
 
+void KadService::Update(google::protobuf::RpcController *controller,
+                        const UpdateRequest *request,
+                        UpdateResponse *response,
+                        google::protobuf::Closure *done) {
+  // only node with RSAkeys can update values
+  response->set_node_id(node_info_.node_id());
+  response->set_result(kRpcResultFailure);
+
+  if (!node_joined_ || !node_hasRSAkeys_ || !request->IsInitialized()) {
+    done->Run();
+#ifdef DEBUG
+    if (!node_joined_)
+      DLOG(WARNING) << "KadService::Update - !node_joined_" << std::endl;
+    if (!node_hasRSAkeys_)
+      DLOG(WARNING) << "KadService::Update - !node_hasRSAkeys_" << std::endl;
+    if (!request->IsInitialized())
+      DLOG(WARNING) << "KadService::Update - !request->IsInitialized()" <<
+                       std::endl;
+#endif
+    return;
+  }
+
+  // validating request
+  if (signature_validator_ == NULL ||
+      !signature_validator_->ValidateSignerId(
+          request->request().signer_id(),
+          request->request().public_key(),
+          request->request().signed_public_key()) ||
+       !signature_validator_->ValidateRequest(
+          request->request().signed_request(),
+          request->request().public_key(),
+          request->request().signed_public_key(), request->key())) {
+    done->Run();
+#ifdef DEBUG
+    if (signature_validator_ == NULL)
+      DLOG(WARNING) << "KadService::Update - signature_validator_ == NULL" <<
+                       std::endl;
+    if (!signature_validator_->ValidateSignerId(
+          request->request().signer_id(),
+          request->request().public_key(),
+          request->request().signed_public_key()))
+      DLOG(WARNING) << "KadService::Update - Failed ValidateSignerId" <<
+                 std::endl;
+    if (!signature_validator_->ValidateRequest(
+          request->request().signed_request(),
+          request->request().public_key(),
+          request->request().signed_public_key(), request->key()))
+      DLOG(WARNING) << "KadService::Update - Failed ValidateRequest" <<
+                 std::endl;
+#endif
+    return;
+  }
+
+  // Check the key exists
+  std::vector<std::string> values_str;
+  if (!pdatastore_->LoadItem(request->key(), &values_str)) {
+    done->Run();
+    DLOG(WARNING) << "KadService::Update - Didn't find key" << std::endl;
+    return;
+  }
+
+  // Check the value to be updated exists
+  bool found(false);
+  std::string ser_sv(request->old_value().SerializeAsString());
+  for (size_t n = 0; n < values_str.size() && !found; ++n) {
+    if (ser_sv == values_str[n]) {
+      found = true;
+    }
+  }
+
+  if (!found) {
+    done->Run();
+    DLOG(WARNING) << "KadService::Update - Didn't find value" << std::endl;
+    return;
+  }
+
+  crypto::Crypto cobj;
+  if (!cobj.AsymCheckSig(request->new_value().value(),
+                         request->new_value().value_signature(),
+                         request->request().public_key(),
+                         crypto::STRING_STRING)) {
+    done->Run();
+    DLOG(WARNING) << "KadService::Update - New value doesn't validate" <<
+                     std::endl;
+    return;
+  }
+
+  SignedValue sv;
+  sv.ParseFromString(ser_sv);
+  if (!cobj.AsymCheckSig(sv.value(),
+                         sv.value_signature(),
+                         request->request().public_key(),
+                         crypto::STRING_STRING)) {
+    done->Run();
+    DLOG(WARNING) << "KadService::Update - Old value doesn't validate" <<
+                     std::endl;
+    return;
+  }
+
+/*******************************************************************************
+This code would check if the current value is hashable, and accept only
+hashable replacement values.
+
+//  bool current_hashable(request->key() ==
+//                        cobj.Hash(sv.value() + sv.value_signature(), "",
+//                                  crypto::STRING_STRING, false));
+//  bool new_hashable(request->key() ==
+//                    cobj.Hash(request->new_value().value() +
+//                                  request->new_value().value_signature(),
+//                              "", crypto::STRING_STRING, false));
+//  if (current_hashable && !new_hashable && values_str.size() == size_t(1)) {
+//    done->Run();
+//    DLOG(WARNING) << "KadService::Update - Hashable tags don't match" <<
+//                     std::endl;
+//    return;
+//  }
+*******************************************************************************/
+
+  bool new_hashable(request->key() ==
+                    cobj.Hash(request->new_value().value() +
+                                  request->new_value().value_signature(),
+                              "", crypto::STRING_STRING, false));
+  Contact sender;
+  if (!pdatastore_->UpdateItem(request->key(),
+                               request->old_value().SerializeAsString(),
+                               request->new_value().SerializeAsString(),
+                               request->ttl(), new_hashable)) {
+    done->Run();
+    DLOG(WARNING) << "KadService::Update - Failed UpdateItem" << std::endl;
+    return;
+  }
+
+  if (GetSender(request->sender_info(), &sender)) {
+    rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
+                                    (controller);
+    if (ctrl != NULL)
+      add_contact_(sender, ctrl->rtt(), false);
+    else
+      add_contact_(sender, 0.0, false);
+    response->set_result(kRpcResultSuccess);
+  } else {
+    DLOG(WARNING) << "KadService::Update - Failed to add_contact_" << std::endl;
+  }
+
+  done->Run();
+}
+
 }  // namespace kad

@@ -158,7 +158,7 @@ class GeneralKadCallback : public FakeCallback {
   base::GeneralResponse result_msg;
 };
 
-class DeleteValueCallback :public FakeCallback {
+class DeleteValueCallback : public FakeCallback {
  public:
   DeleteValueCallback() : FakeCallback(), result_msg() {
   }
@@ -174,6 +174,25 @@ class DeleteValueCallback :public FakeCallback {
   };
  private:
   kad::DeleteResponse result_msg;
+};
+
+class UpdateValueCallback : public FakeCallback {
+ public:
+  UpdateValueCallback() : FakeCallback(), result_msg() { }
+
+  void CallbackFunc(const std::string &res) {
+    if (!result_msg.ParseFromString(res))
+      result_msg.set_result(kad::kRpcResultFailure);
+    result_ = result_msg.result();
+  }
+
+  void Reset() {
+    result_msg.Clear();
+    result_ = "";
+  }
+
+ private:
+  kad::UpdateResponse result_msg;
 };
 
 inline void wait_result(FakeCallback *callback) {

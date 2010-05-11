@@ -92,6 +92,12 @@ class KadRpcs {
       const boost::uint16_t &port, const std::string &rendezvous_ip,
       const boost::uint16_t &rendezvous_port, DeleteResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *callback);
+  void Update(const KadId &key, const SignedValue &new_value,
+      const SignedValue &old_value, const boost::int32_t &ttl,
+      const SignedRequest &sig_req, const std::string &ip,
+      const boost::uint16_t &port, const std::string &rendezvous_ip,
+      const boost::uint16_t &rendezvous_port, UpdateResponse *resp,
+      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback);
   void set_info(const ContactInfo &info);
  private:
   KadRpcs(const KadRpcs&);

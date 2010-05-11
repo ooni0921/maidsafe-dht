@@ -184,4 +184,29 @@ void KadRpcs::Delete(const KadId &key, const SignedValue &value,
   KademliaService::Stub service(&channel);
   service.Delete(ctler, &args, resp, callback);
 }
-}  // namepsace
+
+void KadRpcs::Update(const KadId &key, const SignedValue &new_value,
+    const SignedValue &old_value, const boost::int32_t &ttl,
+    const SignedRequest &sig_req, const std::string &ip,
+    const boost::uint16_t &port, const std::string &rendezvous_ip,
+    const boost::uint16_t &rendezvous_port, UpdateResponse *resp,
+    rpcprotocol::Controller *ctler, google::protobuf::Closure *callback) {
+  UpdateRequest args;
+  args.set_key(key.ToStringDecoded());
+  SignedValue *newvalue = args.mutable_new_value();
+  *newvalue = new_value;
+  SignedValue *oldvalue = args.mutable_old_value();
+  *oldvalue = old_value;
+  args.set_ttl(ttl);
+  SignedRequest *sreq = args.mutable_request();
+  *sreq = sig_req;
+  ContactInfo *sender_info = args.mutable_sender_info();
+  *sender_info = info_;
+  rpcprotocol::Channel channel(pchannel_manager_, transport_handler_,
+                               ctler->transport_id(), ip, port, "", 0,
+                               rendezvous_ip, rendezvous_port);
+  KademliaService::Stub service(&channel);
+  service.Update(ctler, &args, resp, callback);
+}
+
+}  // namespace kad

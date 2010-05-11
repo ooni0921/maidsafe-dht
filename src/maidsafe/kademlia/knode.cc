@@ -241,6 +241,15 @@ void KNode::set_signature_validator(base::SignatureValidator *validator) {
   pimpl_->set_signature_validator(validator);
 }
 
+void KNode::UpdateValue(const KadId &key,
+                        const SignedValue &old_value,
+                        const SignedValue &new_value,
+                        const SignedRequest &signed_request,
+                        boost::uint32_t ttl,
+                        VoidFunctorOneString callback) {
+  pimpl_->UpdateValue(key, old_value, new_value, signed_request, ttl, callback);
+}
+
 void KNode::DeleteValue(const KadId &key, const SignedValue &signed_value,
       const SignedRequest &signed_request, VoidFunctorOneString callback) {
   pimpl_->DeleteValue(key, signed_value, signed_request, callback);

@@ -107,7 +107,6 @@ message NatDetectionPingResponse {
   optional bytes node_id = 3;
 };
 
-
 message DeleteRequest {
   required bytes key = 1;
   required SignedValue value = 2;
@@ -116,6 +115,20 @@ message DeleteRequest {
 };
 
 message DeleteResponse {
+  required bytes result = 1;
+  optional bytes node_id = 2;
+};
+
+message UpdateRequest {
+  required string key = 1;
+  required SignedValue new_value = 2;
+  required SignedValue old_value = 3;
+  required int32 ttl = 4;
+  required SignedRequest request = 5;
+  required ContactInfo sender_info = 6;
+};
+
+message UpdateResponse {
   required bytes result = 1;
   optional bytes node_id = 2;
 };

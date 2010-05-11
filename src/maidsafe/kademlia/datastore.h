@@ -55,11 +55,11 @@ struct refresh_value {
   boost::int32_t ttl_;
   delete_status del_status_;
   refresh_value(const std::string &key, const std::string &value, const
-      boost::int32_t &ttl) : key_(key), value_(value), ttl_(ttl),
-      del_status_(NOT_DELETED) {}
+                boost::int32_t &ttl)
+      : key_(key), value_(value), ttl_(ttl), del_status_(NOT_DELETED) {}
   refresh_value(const std::string &key, const std::string &value, const
-      delete_status &del_status) : key_(key), value_(value),
-      ttl_(0), del_status_(del_status) {}
+                delete_status &del_status)
+      : key_(key), value_(value), ttl_(0), del_status_(del_status) {}
 };
 
 struct key_value_tuple {
@@ -70,20 +70,20 @@ struct key_value_tuple {
   delete_status del_status_;
 
   key_value_tuple(const std::string &key, const std::string &value,
-      const boost::uint32_t &last_refresh_time,
-      const boost::uint32_t &expire_time, const boost::int32_t &ttl,
-      const bool &appendable_key) : key_(key), value_(value),
-        ser_delete_req_(""), last_refresh_time_(last_refresh_time),
-        expire_time_(expire_time), ttl_(ttl), appendable_key_(appendable_key),
-        del_status_(NOT_DELETED) {
+                  const boost::uint32_t &last_refresh_time,
+                  const boost::uint32_t &expire_time, const boost::int32_t &ttl,
+                  const bool &appendable_key)
+      : key_(key), value_(value), ser_delete_req_(),
+        last_refresh_time_(last_refresh_time), expire_time_(expire_time),
+        ttl_(ttl), appendable_key_(appendable_key), del_status_(NOT_DELETED) {
     if (ttl < 0)
       expire_time_ = 0;
   }
   key_value_tuple(const std::string &key, const std::string &value,
-      const boost::uint32_t &last_refresh_time) : key_(key), value_(value),
-        ser_delete_req_(""), last_refresh_time_(last_refresh_time),
-        expire_time_(0), ttl_(0), appendable_key_(false),
-        del_status_(NOT_DELETED) {}
+                  const boost::uint32_t &last_refresh_time)
+      : key_(key), value_(value), ser_delete_req_(),
+        last_refresh_time_(last_refresh_time), expire_time_(0), ttl_(0),
+        appendable_key_(false), del_status_(NOT_DELETED) {}
 };
 
 /* Tags */
@@ -123,14 +123,14 @@ class DataStore {
   bool Keys(std::set<std::string> *keys);
   // time_to_live is in seconds.
   bool StoreItem(const std::string &key, const std::string &value,
-      const boost::int32_t &time_to_live, const bool &hashable);
+                 const boost::int32_t &time_to_live, const bool &hashable);
   bool LoadItem(const std::string &key, std::vector<std::string> *values);
   bool DeleteKey(const std::string &key);
   bool DeleteItem(const std::string &key, const std::string &value);
   void DeleteExpiredValues();
 
   boost::uint32_t LastRefreshTime(const std::string &key,
-      const std::string &value);
+                                  const std::string &value);
   boost::uint32_t ExpireTime(const std::string &key, const std::string &value);
   std::vector<refresh_value> ValuesToRefresh();
   boost::int32_t TimeToLive(const std::string &key, const std::string &value);
@@ -138,13 +138,18 @@ class DataStore {
   std::vector< std::pair<std::string, bool> > LoadKeyAppendableAttr(
       const std::string &key);
   bool RefreshItem(const std::string &key, const std::string &value,
-    std::string *str_delete_req);
+                   std::string *str_delete_req);
   // If key, value pair does not exist, then it returns false
   bool MarkForDeletion(const std::string &key, const std::string &value,
-    const std::string &ser_del_request);
+                       const std::string &ser_del_request);
   // If key, value pair does not exist or its status is not MARKED_FOR_DELETION,
   // then it returns false
   bool MarkAsDeleted(const std::string &key, const std::string &value);
+  bool UpdateItem(const std::string &key,
+                  const std::string &old_value,
+                  const std::string &new_value,
+                  const boost::int32_t &time_to_live,
+                  const bool &hashable);
   boost::uint32_t t_refresh() const;
  private:
   datastore datastore_;
@@ -152,7 +157,6 @@ class DataStore {
   boost::uint32_t t_refresh_;
   boost::mutex mutex_;
 };
-
 
 }  // namespace kad
 #endif  // MAIDSAFE_KADEMLIA_DATASTORE_H_

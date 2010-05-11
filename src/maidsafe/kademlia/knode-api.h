@@ -221,6 +221,23 @@ class KNode {
                    const SignedRequest &signed_request,
                    VoidFunctorOneString callback);
   /**
+  * Update a Value of the network, only in networks with nodes that have public
+  * and private keys a value, that is of the form <data, signed data>, can be
+  * updated.  Only the one who signed the value can update it.
+  * @param key kad::KadId object that is the key under which the value is stored
+  * @param old_value signed value to be updated
+  * @param new_value signed value to be updated
+  * @param signed_request request to update the value, it is validated before the
+  * value is updated
+  * @param callback callback function where result of the operation is notified
+  */
+  void UpdateValue(const KadId &key,
+                   const SignedValue &old_value,
+                   const SignedValue &new_value,
+                   const SignedRequest &signed_request,
+                   boost::uint32_t ttl,
+                   VoidFunctorOneString callback);
+  /**
   * Find a value in the network.  If several values are stored under the same
   * key, a list with all the values is returned.
   * If any KNode during the iterative lookup has the value in its
