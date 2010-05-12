@@ -75,17 +75,18 @@ std::string IntToString(const int &value) {
   return str_value;
 }
 
-std::string RandomString(const size_t &length) {
+std::string RandomString(const boost::uint32_t &length) {
   std::string random_string;
   random_string.reserve(length);
   while (random_string.size() < length) {
-    size_t iter_length = std::min(length - random_string.size(), size_t(65536));
+    boost::uint32_t iter_length = std::min(length - random_string.size(),
+        boost::uint32_t(65536));
     CryptoPP::AutoSeededRandomPool random_number_generator;
     boost::scoped_array<byte> random_bytes(new byte[iter_length]);
     random_number_generator.GenerateBlock(random_bytes.get(), iter_length);
     std::string random_substring(random_bytes.get(),
                                  random_bytes.get() + iter_length);
-    for (size_t i = 0; i < iter_length; ++i) {
+    for (boost::uint32_t i = 0; i < iter_length; ++i) {
       boost::uint8_t *random_char =
           reinterpret_cast<boost::uint8_t*>(&random_substring.at(i));
       *random_char = *random_char % 122;

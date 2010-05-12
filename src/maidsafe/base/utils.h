@@ -125,7 +125,7 @@ boost::uint32_t RandomUint32();
 std::string IntToString(const int &value);
 
 // Generate a random string.
-std::string RandomString(const size_t &length);
+std::string RandomString(const boost::uint32_t & length);
 
 // Encode a string to hex.
 std::string EncodeToHex(const std::string &non_hex_input);
