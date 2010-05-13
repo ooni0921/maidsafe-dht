@@ -133,8 +133,9 @@ class ChannelManager {
   * Adds a new pending request after an RPC has been sent.
   * @param request_id id to identify the request
   * @param req structure holding all the information of the request
+  * @return True if pending request successfully added, False otherwise
   */
-  void AddPendingRequest(const boost::uint32_t &request_id, PendingReq request);
+  bool AddPendingRequest(const boost::uint32_t &request_id, PendingReq request);
   /**
   * Removes a pending request from the list and calls the callback of the
   * request with status Cancelled.

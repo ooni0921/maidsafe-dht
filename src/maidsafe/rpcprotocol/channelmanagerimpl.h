@@ -76,7 +76,7 @@ class ChannelManagerImpl {
   int Start();
   int Stop();
   boost::uint32_t CreateNewId();
-  void AddPendingRequest(const boost::uint32_t &request_id, PendingReq req);
+  bool AddPendingRequest(const boost::uint32_t &request_id, PendingReq req);
   bool DeletePendingRequest(const boost::uint32_t &request_id);
   bool CancelPendingRequest(const boost::uint32_t &request_id);
   void AddReqToTimer(const boost::uint32_t &request_id,

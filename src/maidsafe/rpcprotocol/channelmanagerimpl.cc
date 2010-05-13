@@ -85,13 +85,14 @@ void ChannelManagerImpl::RemoveChannelId(const boost::uint32_t &id) {
   delete_channels_cond_.notify_all();
 }
 
-void ChannelManagerImpl::AddPendingRequest(const boost::uint32_t &request_id,
+bool ChannelManagerImpl::AddPendingRequest(const boost::uint32_t &request_id,
       PendingReq req) {
   if (!is_started_) {
-    return;
+    return false;
   }
   boost::mutex::scoped_lock guard(req_mutex_);
   pending_req_[request_id] = req;
+  return true;
 }
 
 bool ChannelManagerImpl::DeletePendingRequest(

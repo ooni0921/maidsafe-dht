@@ -43,7 +43,7 @@ class TestRefresh : public testing::Test {
  public:
   TestRefresh() : trans_handlers_(), ch_managers_(), nodes_(), datadirs_(),
     test_dir_("TestKnodes_"), testK_(4), testRefresh_(10),
-    testNetworkSize_(10) {
+    testNetworkSize_(10), transports_ids_() {
     test_dir_ += boost::lexical_cast<std::string>(
       base::RandomUint32());
   }
@@ -66,6 +66,7 @@ class TestRefresh : public testing::Test {
           new transport::TransportHandler));
       trans_handlers_.at(i)->Register(new transport::TransportUDT,
                                       &transport_id);
+      transports_ids_.push_back(transport_id);
       ch_managers_.push_back(boost::shared_ptr<rpcprotocol::ChannelManager>(
           new rpcprotocol::ChannelManager(trans_handlers_[i].get())));
       std::string datadir = test_dir_ + std::string("/datastore") +
@@ -128,7 +129,8 @@ class TestRefresh : public testing::Test {
       EXPECT_FALSE(nodes_[i]->is_joined());
       trans_handlers_[i]->Stop(0);
       ch_managers_[i]->Stop();
-      // delete trans_handlers_[i]->Get(0);
+      delete trans_handlers_[i]->Get(transports_ids_[i]);
+      trans_handlers_[i]->Remove(transports_ids_[i]);
     }
     try {
       boost::filesystem::remove_all(test_dir_);
@@ -139,6 +141,7 @@ class TestRefresh : public testing::Test {
     nodes_.clear();
     ch_managers_.clear();
     trans_handlers_.clear();
+    transports_ids_.clear();
   }
 
   std::vector< boost::shared_ptr<transport::TransportHandler> > trans_handlers_;
@@ -149,6 +152,7 @@ class TestRefresh : public testing::Test {
   boost::uint16_t testK_;
   boost::uint32_t testRefresh_;
   boost::int16_t testNetworkSize_;
+  std::vector<boost::int16_t> transports_ids_;
 };
 
 TEST_F(TestRefresh, FUNC_KAD_RefreshValue) {
@@ -266,13 +270,15 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
   EXPECT_FALSE(node.is_joined());
   trans_handler.Stop(transport_id);
   ch_manager.Stop();
+  delete trans_handler.Get(transport_id);
+  trans_handler.Remove(transport_id);
 }
 
 class TestRefreshSignedValues : public testing::Test {
  public:
   TestRefreshSignedValues() : trans_handlers_(), ch_managers_(), nodes_(),
     datadirs_(), test_dir_("TestKnodes_"), testK_(4), testRefresh_(10),
-    testNetworkSize_(10), validator() {
+    testNetworkSize_(10), validator(), transport_ids_() {
       test_dir_ +=
         boost::lexical_cast<std::string>(base::RandomUint32());
   }
@@ -297,6 +303,7 @@ class TestRefreshSignedValues : public testing::Test {
           new transport::TransportHandler));
       trans_handlers_.at(i)->Register(new transport::TransportUDT,
                                       &transport_id);
+      transport_ids_.push_back(transport_id);
       ch_managers_.push_back(boost::shared_ptr<rpcprotocol::ChannelManager>(
           new rpcprotocol::ChannelManager(trans_handlers_[i].get())));
       std::string datadir = test_dir_ + std::string("/datastore") +
@@ -360,8 +367,9 @@ class TestRefreshSignedValues : public testing::Test {
       nodes_[i]->Leave();
       EXPECT_FALSE(nodes_[i]->is_joined());
       trans_handlers_[i]->Stop(0);
-      // delete trans_handlers_[i]->Get(0);
       ch_managers_[i]->Stop();
+      delete trans_handlers_[i]->Get(transport_ids_[i]);
+      trans_handlers_[i]->Remove(transport_ids_[i]);
     }
     try {
       boost::filesystem::remove_all(test_dir_);
@@ -373,6 +381,7 @@ class TestRefreshSignedValues : public testing::Test {
     nodes_.clear();
     ch_managers_.clear();
     trans_handlers_.clear();
+    transport_ids_.clear();
   }
 
   std::vector< boost::shared_ptr<transport::TransportHandler> > trans_handlers_;
@@ -384,6 +393,7 @@ class TestRefreshSignedValues : public testing::Test {
   boost::uint32_t testRefresh_;
   boost::int16_t testNetworkSize_;
   base::TestValidator validator;
+  std::vector<boost::int16_t> transport_ids_;
 };
 
 TEST_F(TestRefreshSignedValues, FUNC_KAD_RefreshSignedValue) {
@@ -548,8 +558,9 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   node.Leave();
   EXPECT_FALSE(node.is_joined());
   trans_handler.Stop(transport_id);
-  // delete trans_handler.Get(transport_id);
   ch_manager.Stop();
+  delete trans_handler.Get(transport_id);
+  trans_handler.Remove(transport_id);
 }
 
 TEST_F(TestRefreshSignedValues, FUNC_KAD_InformOfDeletedValue) {

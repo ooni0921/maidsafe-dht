@@ -178,12 +178,14 @@ class RpcProtocolTest : public testing::Test {
  protected:
   static void SetUpTestCase() {
     server_transport_handler = new transport::TransportHandler;
-    server_transport_handler->Register(new transport::TransportUDT,
+    server_udt_transport = new transport::TransportUDT;
+    server_transport_handler->Register(server_udt_transport,
       &server_transport_id);
     server_chann_manager = new
       rpcprotocol::ChannelManager(server_transport_handler);
     client_transport_handler = new transport::TransportHandler;
-    client_transport_handler->Register(new transport::TransportUDT,
+    client_udt_transport = new transport::TransportUDT;
+    client_transport_handler->Register(client_udt_transport,
       &client_transport_id);
     client_chann_manager = new
       rpcprotocol::ChannelManager(client_transport_handler);
@@ -196,6 +198,8 @@ class RpcProtocolTest : public testing::Test {
     trans_temp->CleanUp();
     delete server_transport_handler;
     delete client_transport_handler;
+    delete client_udt_transport;
+    delete server_udt_transport;
   }
   virtual void SetUp() {
     ASSERT_TRUE(server_chann_manager->RegisterNotifiersToTransport());
@@ -226,6 +230,7 @@ class RpcProtocolTest : public testing::Test {
   static transport::TransportHandler *server_transport_handler,
     *client_transport_handler;
   static boost::int16_t server_transport_id, client_transport_id;
+  static transport::Transport *client_udt_transport, *server_udt_transport;
 };
 
 rpcprotocol::ChannelManager* RpcProtocolTest::server_chann_manager = NULL;
@@ -234,6 +239,8 @@ transport::TransportHandler* RpcProtocolTest::server_transport_handler = NULL;
 transport::TransportHandler* RpcProtocolTest::client_transport_handler = NULL;
 boost::int16_t RpcProtocolTest::server_transport_id = 0;
 boost::int16_t RpcProtocolTest::client_transport_id = 0;
+transport::Transport* RpcProtocolTest::client_udt_transport = NULL;
+transport::Transport* RpcProtocolTest::server_udt_transport = NULL;
 
 TEST_F(RpcProtocolTest, BEH_RPC_RegisterAChannel) {
   PingTestService service;
@@ -657,8 +664,9 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
 
 TEST_F(RpcProtocolTest, FUNC_RPC_ChannelManagerLocalTransport) {
   transport::TransportHandler local_transport_handler;
+  transport::TransportUDT local_udt_transport;
   boost::int16_t local_transport_id;
-  local_transport_handler.Register(new transport::TransportUDT,
+  local_transport_handler.Register(&local_udt_transport,
     &local_transport_id);
   rpcprotocol::ChannelManager chman(&local_transport_handler);
   ASSERT_TRUE(chman.RegisterNotifiersToTransport());

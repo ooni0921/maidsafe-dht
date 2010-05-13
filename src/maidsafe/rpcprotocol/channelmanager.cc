@@ -36,9 +36,9 @@ ChannelManager::ChannelManager(transport::TransportHandler *transport_handler)
 
 ChannelManager::~ChannelManager() {}
 
-void ChannelManager::AddPendingRequest(const boost::uint32_t &request_id,
+bool ChannelManager::AddPendingRequest(const boost::uint32_t &request_id,
       PendingReq request) {
-  pimpl_->AddPendingRequest(request_id, request);
+  return pimpl_->AddPendingRequest(request_id, request);
 }
 
 bool ChannelManager::DeletePendingRequest(const boost::uint32_t &request_id) {

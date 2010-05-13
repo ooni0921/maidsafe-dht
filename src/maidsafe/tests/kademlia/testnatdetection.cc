@@ -66,7 +66,7 @@ class NatDetectionTest: public testing::Test {
       routingtableA_(), routingtableB_(), routingtableC_(), channelA_(),
       channelB_(), channelC_() {
     boost::int16_t transport_id;
-    for (boost::uint16_t i = 0; i < 3; ++i) {
+    for (boost::uint8_t i = 0; i < 3; ++i) {
       trans_handlers_.push_back(new transport::TransportHandler);
       transport::TransportUDT *temp_trans = new transport::TransportUDT;
       trans_handlers_[i]->Register(temp_trans, &transport_id);
@@ -77,7 +77,15 @@ class NatDetectionTest: public testing::Test {
     channel_managerC_ = rpcprotocol::ChannelManager(trans_handlers_[2]);
   }
 
-  ~NatDetectionTest() {}
+  ~NatDetectionTest() {
+    for (boost::uint8_t i = 0; i < 3; ++i) {
+      delete trans_handlers_[i]->Get(transports_[i]);
+      trans_handlers_[i]->Remove(transports_[i]);
+      delete trans_handlers_[i];
+    }
+    transports_.clear();
+    trans_handlers_.clear();
+  }
 
   virtual void SetUp() {
     // Node A.
@@ -219,12 +227,8 @@ class NatDetectionTest: public testing::Test {
     trans_temp->CleanUp();
     for (boost::uint16_t i = 0; i < 3; ++i) {
       trans_handlers_[i]->Stop(transports_[i]);
-      // trans_handlers_[i]->Remove(transports_[i]);
-      // delete trans_handlers_[i]->Get(transports_[i]);
-      // trans_handlers_[i]->Remove(transports_[i]);
     }
 
-    transports_.clear();
     channel_managerA_.UnRegisterChannel(serviceA_->GetDescriptor()->name());
     channelA_.reset();
     channel_managerB_.UnRegisterChannel(serviceB_->GetDescriptor()->name());
@@ -445,6 +449,7 @@ TEST_F(NatDetectionTest, BEH_KAD_BootstrapNatDetRv) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_EQ(2, response.nat_type());
   EXPECT_TRUE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
+  delete controller;
 }
 
 TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
@@ -466,6 +471,7 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   EXPECT_EQ(0, response.nat_type());
   Contact contactback;
   EXPECT_FALSE(routingtableC_->GetContact(contactA_.node_id(), &contactback));
+  delete ctrl1;
 
 //   If NatDetectionResponse is uninitialised, NAT type can't be asserted, so
 //   node B calls new NatDetection rpc and should identify NAT type as 1.
@@ -485,6 +491,7 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   EXPECT_TRUE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
   routingtableB_->RemoveContact(contactA_.node_id(), false);
   EXPECT_FALSE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
+  delete ctrl2;
 
   // If NatDetectionResponse is failure, NAT type can't be asserted, so node B
   // calls new NatDetection rpc and should identify NAT type as 1.
@@ -504,6 +511,7 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
   EXPECT_TRUE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
   routingtableB_->RemoveContact(contactA_.node_id(), false);
   EXPECT_FALSE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
+  delete ctrl3;
 
   // If NatDetectionResponse is success, NAT type is 1.
   nd_response = new NatDetectionResponse;
@@ -542,6 +550,7 @@ TEST_F(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
   EXPECT_EQ(kad::kRpcResultFailure, response.result());
   EXPECT_FALSE(routingtableB_->GetContact(contactA_.node_id(), &contactback));
+  delete ctrl5;
 }
 
 TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {

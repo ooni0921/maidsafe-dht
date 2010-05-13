@@ -139,7 +139,10 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
         req.timeout = kRpcTimeout;
       }
       req.ctrl = ctrl;
-      pmanager_->AddPendingRequest(msg.message_id(), req);
+      if (!pmanager_->AddPendingRequest(msg.message_id(), req)) {
+        done->Run();
+        return;
+      }
       pmanager_->AddTimeOutRequest(connection_id, msg.message_id(),
                                    req.timeout);
       if (0 != transport_handler_->Send(msg, connection_id, true,
@@ -156,7 +159,10 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
       ctrl->set_timeout(1);
       req.timeout = ctrl->timeout();
       req.ctrl = ctrl;
-      pmanager_->AddPendingRequest(msg.message_id(), req);
+      if (!pmanager_->AddPendingRequest(msg.message_id(), req)) {
+        done->Run();
+        return;
+      }
       pmanager_->AddReqToTimer(msg.message_id(), req.timeout);
       return;
     }

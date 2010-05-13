@@ -251,9 +251,10 @@ class TransportTest: public testing::Test {
 TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnother) {
   boost::uint32_t id = 0;
   transport::TransportHandler node1_handler, node2_handler;
+  transport::TransportUDT node1_transudt, node2_transudt;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler[2];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -300,10 +301,12 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToOne) {
   transport::TransportHandler node1_handler, node2_handler, node3_handler,
     node4_handler;
   boost::int16_t node1_id, node2_id, node3_id, node4_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
-  node3_handler.Register(new transport::TransportUDT, &node3_id);
-  node4_handler.Register(new transport::TransportUDT, &node4_id);
+  transport::TransportUDT node1_transudt, node2_transudt, node3_transudt,
+    node4_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
+  node3_handler.Register(&node3_transudt, &node3_id);
+  node4_handler.Register(&node4_transudt, &node4_id);
   MessageHandler msg_handler[4];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -394,13 +397,15 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromManyToMany) {
   boost::uint32_t id;
   transport::TransportHandler node1_handler, node2_handler, node3_handler,
     node4_handler, node5_handler, node6_handler;
+  transport::TransportUDT node1_transudt, node2_transudt, node3_transudt,
+    node4_transudt, node5_transudt, node6_transudt;
   boost::int16_t node1_id, node2_id, node3_id, node4_id, node5_id, node6_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
-  node3_handler.Register(new transport::TransportUDT, &node3_id);
-  node4_handler.Register(new transport::TransportUDT, &node4_id);
-  node5_handler.Register(new transport::TransportUDT, &node5_id);
-  node6_handler.Register(new transport::TransportUDT, &node6_id);
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
+  node3_handler.Register(&node3_transudt, &node3_id);
+  node4_handler.Register(&node4_transudt, &node4_id);
+  node5_handler.Register(&node5_transudt, &node5_id);
+  node6_handler.Register(&node6_transudt, &node6_id);
   MessageHandler msg_handler[6];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -518,10 +523,12 @@ TEST_F(TransportTest, BEH_TRANS_SendMessagesFromOneToMany) {
   transport::TransportHandler node1_handler, node2_handler, node3_handler,
     node4_handler;
   boost::int16_t node1_id, node2_id, node3_id, node4_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
-  node3_handler.Register(new transport::TransportUDT, &node3_id);
-  node4_handler.Register(new transport::TransportUDT, &node4_id);
+  transport::TransportUDT node1_udttrans, node2_transudt, node3_transudt,
+    node4_transudt;
+  node1_handler.Register(&node1_udttrans, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
+  node3_handler.Register(&node3_transudt, &node3_id);
+  node4_handler.Register(&node4_transudt, &node4_id);
   MessageHandler msg_handler[4];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -616,7 +623,8 @@ TEST_F(TransportTest, BEH_TRANS_TimeoutForSendingToAWrongPeer) {
   boost::uint32_t id;
   transport::TransportHandler node1_handler;
   boost::int16_t node1_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
+  transport::TransportUDT node1_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
   MessageHandler msg_handler[1];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -645,6 +653,7 @@ TEST_F(TransportTest, FUNC_TRANS_Send1000Msgs) {
   MessageHandler msg_handler[kNumNodes];
   transport::TransportHandler* nodes[kNumNodes];
   boost::int16_t transport_ids[kNumNodes];
+  transport::TransportUDT udt_transports[kNumNodes];
   boost::uint16_t ports[kNumNodes];
   TransportNode* tnodes[kNumNodes-1];
   boost::thread_group thr_grp;
@@ -658,7 +667,7 @@ TEST_F(TransportTest, FUNC_TRANS_Send1000Msgs) {
   transport::TransportHandler *trans_handler;
   for (int i = 0; i < kNumNodes; ++i) {
     trans_handler = new transport::TransportHandler;
-    trans_handler->Register(new transport::TransportUDT, &transport_ids[i]);
+    trans_handler->Register(&udt_transports[i], &transport_ids[i]);
     nodes[i] = trans_handler;
     msg_handler[i].keep_msgs_ = false;
     msg_handler[i].target_msg_ = sent_msg;
@@ -720,8 +729,9 @@ TEST_F(TransportTest, BEH_TRANS_GetRemotePeerAddress) {
   boost::uint32_t id;
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler[2];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -768,8 +778,9 @@ TEST_F(TransportTest, BEH_TRANS_SendMessageFromOneToAnotherBidirectional) {
   boost::uint32_t id;
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler[2];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -828,11 +839,13 @@ TEST_F(TransportTest, BEH_TRANS_SendMsgsFromManyToOneBidirectional) {
   boost::uint32_t id;
   transport::TransportHandler node1_handler, node2_handler, node3_handler,
     node4_handler;
+  transport::TransportUDT node1_transudt, node2_transudt, node3_transudt,
+    node4_transudt;
   boost::int16_t node1_id, node2_id, node3_id, node4_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
-  node3_handler.Register(new transport::TransportUDT, &node3_id);
-  node4_handler.Register(new transport::TransportUDT, &node4_id);
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
+  node3_handler.Register(&node3_transudt, &node3_id);
+  node4_handler.Register(&node4_transudt, &node4_id);
   MessageHandler msg_handler[4];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -951,8 +964,9 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageCloseAConnection) {
   boost::uint32_t id;
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler[2];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -1006,8 +1020,9 @@ TEST_F(TransportTest, BEH_TRANS_SendOneMessageCloseAConnection) {
 TEST_F(TransportTest, FUNC_TRANS_PingRendezvousServer) {
   transport::TransportHandler node1_handler, rendezvous_node;
   boost::int16_t node1_id, rendezvous_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  rendezvous_node.Register(new transport::TransportUDT, &rendezvous_id);
+  transport::TransportUDT node1_transudt, rv_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  rendezvous_node.Register(&rv_transudt, &rendezvous_id);
   MessageHandler msg_handler[2];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -1040,8 +1055,9 @@ TEST_F(TransportTest, FUNC_TRANS_PingRendezvousServer) {
 TEST_F(TransportTest, FUNC_TRANS_PingDeadRendezvousServer) {
   transport::TransportHandler node1_handler, rendezvous_node;
   boost::int16_t node1_id, rendezvous_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  rendezvous_node.Register(new transport::TransportUDT, &rendezvous_id);
+  transport::TransportUDT node1_transudt, rv_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  rendezvous_node.Register(&rv_transudt, &rendezvous_id);
   MessageHandler msg_handler[2];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -1079,9 +1095,10 @@ TEST_F(TransportTest, FUNC_TRANS_ReconnectToDifferentServer) {
   transport::TransportHandler node1_handler, rendezvous_node1,
     rendezvous_node2;
   boost::int16_t node1_id, rendezvous_node1_id, rendezvous_node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  rendezvous_node1.Register(new transport::TransportUDT, &rendezvous_node1_id);
-  rendezvous_node2.Register(new transport::TransportUDT, &rendezvous_node2_id);
+  transport::TransportUDT node1_transudt, rv1_transudt, rv2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  rendezvous_node1.Register(&rv1_transudt, &rendezvous_node1_id);
+  rendezvous_node2.Register(&rv2_transudt, &rendezvous_node2_id);
   MessageHandler msg_handler[3];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -1137,8 +1154,9 @@ TEST_F(TransportTest, FUNC_TRANS_StartStopTransport) {
   boost::uint32_t id;
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler[2];
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage,
@@ -1233,8 +1251,9 @@ TEST_F(TransportTest, FUNC_TRANS_StartStopTransport) {
 TEST_F(TransportTest, BEH_TRANS_SendRespond) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandlerEchoReq msg_handler1(&node1_handler);
   MessageHandlerEchoResp msg_handler2(&node2_handler);
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(boost::bind(
@@ -1313,8 +1332,9 @@ TEST_F(TransportTest, BEH_TRANS_SendRespond) {
 TEST_F(TransportTest, BEH_TRANS_FailStartUsedport) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler1;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3, _4)));
@@ -1332,8 +1352,9 @@ TEST_F(TransportTest, BEH_TRANS_FailStartUsedport) {
 TEST_F(TransportTest, BEH_TRANS_SendMultipleMsgsSameConnection) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler1, msg_handler2;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3, _4)));
@@ -1413,9 +1434,10 @@ TEST_F(TransportTest, BEH_TRANS_SendMultipleMsgsSameConnection) {
 TEST_F(TransportTest, BEH_TRANS_SendViaRdz) {
   transport::TransportHandler node1_handler, node2_handler, node3_handler;
   boost::int16_t node1_id, node2_id, node3_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
-  node3_handler.Register(new transport::TransportUDT, &node3_id);
+  transport::TransportUDT node1_transudt, node2_transudt, node3_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
+  node3_handler.Register(&node3_transudt, &node3_id);
   MessageHandler msg_handler1, msg_handler2, msg_handler3;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3, _4)));
@@ -1467,8 +1489,9 @@ TEST_F(TransportTest, BEH_TRANS_SendViaRdz) {
 TEST_F(TransportTest, BEH_TRANS_NoNotificationForInvalidMsgs) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   UDT::startup();
   MessageHandler msg_handler1, msg_handler2;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
@@ -1511,8 +1534,9 @@ TEST_F(TransportTest, BEH_TRANS_NoNotificationForInvalidMsgs) {
 TEST_F(TransportTest, BEH_TRANS_NotificationForInvalidMsgs) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   UDT::startup();
   MessageHandler msg_handler1, msg_handler2;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
@@ -1556,8 +1580,9 @@ TEST_F(TransportTest, BEH_TRANS_NotificationForInvalidMsgs) {
 TEST_F(TransportTest, BEH_TRANS_AddrUsable) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler1, msg_handler2;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3, _4)));
@@ -1601,8 +1626,9 @@ TEST_F(TransportTest, BEH_TRANS_AddrUsable) {
 TEST_F(TransportTest, BEH_TRANS_StartLocal) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler1, msg_handler2;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3, _4)));
@@ -1651,8 +1677,9 @@ TEST_F(TransportTest, BEH_TRANS_StartLocal) {
 TEST_F(TransportTest, FUNC_TRANS_StartStopLocal) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler1, msg_handler2;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3, _4)));
@@ -1740,8 +1767,9 @@ TEST_F(TransportTest, FUNC_TRANS_StartStopLocal) {
 TEST_F(TransportTest, BEH_TRANS_CheckPortAvailable) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler1;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3, _4)));
@@ -1760,8 +1788,9 @@ TEST_F(TransportTest, BEH_TRANS_CheckPortAvailable) {
 TEST_F(TransportTest, FUNC_TRANS_StartBadLocal) {
   transport::TransportHandler node1_handler, node2_handler;
   boost::int16_t node1_id, node2_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
-  node2_handler.Register(new transport::TransportUDT, &node2_id);
+  transport::TransportUDT node1_transudt, node2_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
+  node2_handler.Register(&node2_transudt, &node2_id);
   MessageHandler msg_handler1, msg_handler2;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(
     boost::bind(&MessageHandler::OnRPCMessage, &msg_handler1, _1, _2, _3, _4)));
@@ -1839,7 +1868,8 @@ TEST_F(TransportTest, FUNC_TRANS_StartBadLocal) {
 TEST_F(TransportTest, BEH_TRANS_RegisterNotifiers) {
   transport::TransportHandler node1_handler;
   boost::int16_t node1_id;
-  node1_handler.Register(new transport::TransportUDT, &node1_id);
+  transport::TransportUDT node1_transudt;
+  node1_handler.Register(&node1_transudt, &node1_id);
   ASSERT_EQ(1, node1_handler.Start(0, node1_id));
   MessageHandler msg_handler1;
   ASSERT_TRUE(node1_handler.RegisterOnRPCMessage(

@@ -1604,6 +1604,10 @@ void KNodeImpl::SendFindRpc(Contact remote,
   } else if (data->method == FIND_VALUE) {
     kadrpcs_.FindValue(data->key, contact_ip, contact_port, rendezvous_ip,
         rendezvous_port, resp, callback_args.rpc_ctrler, done);
+  } else {
+    delete done;
+    delete resp;
+    delete callback_args.rpc_ctrler;
   }
 }
 

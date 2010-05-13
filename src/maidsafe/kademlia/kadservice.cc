@@ -74,14 +74,12 @@ void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
     }
     if (data.controller != NULL) {
       add_contact_(sender, data.controller->rtt(), false);
+      delete data.controller;
+      data.controller = NULL;
     } else {
       add_contact_(sender, 0.0, false);
     }
     delete response;
-    if (data.controller != NULL) {
-      delete data.controller;
-      data.controller = NULL;
-    }
     data.done->Run();
   } else {
     data.ex_contacts.push_back(data.node_c);
@@ -103,13 +101,11 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
           data.newcomer.local_port());  // No rendezvous info
       if (data.controller != NULL) {
         add_contact_(sender, data.controller->rtt(), false);
+        delete data.controller;
+        data.controller = NULL;
       } else {
         add_contact_(sender, 0.0, false);
       }
-      /*
-      delete data.controller;
-      data.controller = NULL;
-      */
       data.done->Run();
     } else {
       // Node B asks C to try a rendezvous to A with B as rendezvous
@@ -126,10 +122,6 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
           "", 0, resp, data.controller, done);
     }
   } else {
-    /*
-    delete data.controller;
-    data.controller = NULL;
-    */
     data.ex_contacts.push_back(data.node_c);
     SendNatDetection(data);
   }
