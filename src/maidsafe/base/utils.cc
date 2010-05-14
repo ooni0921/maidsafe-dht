@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <limits>
 #include <string>
 #include "maidsafe/base/log.h"
+#include "maidsafe/base/network_interface.h"
 
 namespace base {
 
@@ -232,169 +233,26 @@ static boost::uint32_t SockAddrToUint32(struct sockaddr * a) {
 #endif
 
 void GetNetInterfaces(std::vector<struct DeviceStruct> *alldevices) {
-  boost::asio::ip::address ip_address_tmp;
-  DeviceStruct singledevice;
-#if defined(MAIDSAFE_POSIX) || defined (MAIDSAFE_APPLE)
-  struct ifaddrs * ifap;
-  if (getifaddrs(&ifap) == 0) {
-    struct ifaddrs * p = ifap;
-    while (p) {
-      boost::uint32_t ifaAddr = SockAddrToUint32(p->ifa_addr);
-      boost::uint32_t maskAddr = SockAddrToUint32(p->ifa_netmask);
-      boost::uint32_t dstAddr = SockAddrToUint32(p->ifa_dstaddr);
-      if (ifaAddr > 0) {
-        char ifaAddrStr[32];
-        base::IpNetToAscii(ifaAddr, ifaAddrStr);
-        char maskAddrStr[32];
-        base::IpNetToAscii(maskAddr, maskAddrStr);
-        char dstAddrStr[32];
-        base::IpNetToAscii(dstAddr, dstAddrStr);
-        ip_address_tmp = boost::asio::ip::address(
-          boost::asio::ip::address().from_string(ifaAddrStr));
-        DeviceStruct singledevice;
-        singledevice.ip_address = ip_address_tmp;
-        singledevice.device_interface = p->ifa_name;
-        // add the device to the vector
-        alldevices->push_back(singledevice);
-      }
-        p = p->ifa_next;
-    }
-    freeifaddrs(ifap);
+  alldevices->clear();
+  boost::system::error_code ec;
+  std::vector<NetworkInterface> net_interfaces;
+  net_interfaces = NetworkInterface::LocalList(ec);
+  if (ec)
+    return;
+  for (std::vector<NetworkInterface>::iterator it = net_interfaces.begin();
+       it != net_interfaces.end(); ++it) {
+    DeviceStruct device;
+    device.device_interface = std::string(it->name);
+    device.ip_address = it->destination;
+    alldevices->push_back(device);
   }
-
-#elif defined(MAIDSAFE_WIN32)
-  //  To get Windows IPv4 address table, we have to call GetIpAddrTable()
-  //  multiple times in order to deal with potential race conditions properly.
-  //  See comment below.
-  MIB_IPADDRTABLE * ipTable = NULL;
-  // {
-  ULONG bufLen = 0;
-  for (int i = 0; i < 5; i++) {
-    DWORD ipRet = GetIpAddrTable(ipTable, &bufLen, false);
-    if (ipRet == ERROR_INSUFFICIENT_BUFFER) {
-      free(ipTable);  //  in case we had previously allocated it
-      ipTable = reinterpret_cast<MIB_IPADDRTABLE *>(malloc(bufLen));
-    } else {
-      if (ipRet == NO_ERROR) {
-        break;
-      } else {
-        free(ipTable);
-        ipTable = NULL;
-        break;
-      }
-    }
-  }
-
-// Try to get the Adapters-info table, so we can given useful names to the IP
-// addresses we are returning. Have to call GetAdaptersInfo() up to 5 times
-// to handle
-// the potential race condition between the size-query call and the get-data
-// call. I love a well-designed M$ API :^P
-
-  if (ipTable) {
-    IP_ADAPTER_INFO * pAdapterInfo = NULL;
-    ULONG bufLen = 0;
-
-    for (int i = 0; i < 5; i++) {
-      DWORD apRet = GetAdaptersInfo(pAdapterInfo, &bufLen);
-      if (apRet == ERROR_BUFFER_OVERFLOW) {
-        free(pAdapterInfo);  //  in case we had previously allocated it
-        pAdapterInfo = reinterpret_cast<IP_ADAPTER_INFO *>(malloc(bufLen));
-      } else {
-        if (apRet == ERROR_SUCCESS) {
-          break;
-        } else {
-          free(pAdapterInfo);
-          pAdapterInfo = NULL;
-          break;
-        }
-      }
-    }
-
-
-    for (DWORD i = 0; i < ipTable->dwNumEntries; i++) {
-      const MIB_IPADDRROW & row = ipTable->table[i];
-
-      //  Now lookup the appropriate adaptor-name in the pAdaptorInfos,
-      //  if we can find it
-      const char * name = NULL;
-      const char * desc = NULL;
-
-      if (pAdapterInfo) {
-        IP_ADAPTER_INFO * next = pAdapterInfo;
-        while ((next) && (name == NULL)) {
-          IP_ADDR_STRING * ipAddr = &next->IpAddressList;
-          while (ipAddr) {
-            if (base::IpAsciiToNet(ipAddr->IpAddress.String) ==
-              ntohl(row.dwAddr)) {
-              name = next->AdapterName;
-              desc = next->Description;
-              break;
-            }
-            ipAddr = ipAddr->Next;
-          }
-          next = next->Next;
-        }
-      }
-
-      char buf[128];
-      if (name == NULL) {
-        #ifdef __MSVC__
-          _snprintf(buf, sizeof(buf), "unnamed-%lu", i);
-        #else
-          snprintf(buf, sizeof(buf), "unnamed-%lu", i);
-        #endif
-        name = buf;
-        break;
-      }
-
-      boost::uint32_t ipAddr = ntohl(row.dwAddr);
-      boost::uint32_t netmask = ntohl(row.dwMask);
-      boost::uint32_t baddr = ipAddr & netmask;
-      if (row.dwBCastAddr) {
-        baddr |= ~netmask;
-      }
-
-      char ifaAddrStr[32];
-      base::IpNetToAscii(ipAddr, ifaAddrStr);
-      // netmask retrieved for possible future use
-      char maskAddrStr[32];
-      base::IpNetToAscii(netmask, maskAddrStr);
-      char dstAddrStr[32];
-      base::IpNetToAscii(baddr, dstAddrStr);
-
-      ip_address_tmp = boost::asio::ip::address(
-        boost::asio::ip::address().from_string(ifaAddrStr));
-      DeviceStruct singledevice;
-      singledevice.ip_address = ip_address_tmp;
-      singledevice.device_interface = desc;
-      // add the device to the vector
-      alldevices->push_back(singledevice);
-    }   // end for
-
-    free(pAdapterInfo);
-    free(ipTable);
-  }   // end if (iptable)
-
-#endif  // MAIDSAFE_WIN32
-}   // end of GetNetInterfaces
+}
 
 bool GetLocalAddress(boost::asio::ip::address *local_address) {
-  // get all network interfaces
-  std::vector<struct DeviceStruct> alldevices;
-  GetNetInterfaces(&alldevices);
-  if (!alldevices.empty()) {
-    // take the first non-bogus IP address
-    for (unsigned int i = 0; i < alldevices.size(); i++) {
-      if (alldevices[i].ip_address.to_string().substr(0, 2) != "0." &&
-          alldevices[i].ip_address.to_string().substr(0, 7) != "169.254" &&
-          alldevices[i].ip_address.to_string().substr(0, 4) != "127.") {
-        *local_address = alldevices[i].ip_address;
-        return true;
-      }
-    }
-  }
-  return false;
+  *local_address = NetworkInterface::LocalAddress();
+  if (NetworkInterface::IsAny(*local_address))
+    return false;
+  return true;
 }
 
 std::vector<std::string> GetLocalAddresses() {
@@ -402,11 +260,12 @@ std::vector<std::string> GetLocalAddresses() {
   std::vector<std::string> addresses;
   std::vector<struct DeviceStruct> alldevices;
   GetNetInterfaces(&alldevices);
-  for (size_t i = 0; i < alldevices.size(); i++) {
-    if (alldevices[i].ip_address.to_string().substr(0, 2) != "0." &&
-        alldevices[i].ip_address.to_string().substr(0, 4) != "127." &&
-        alldevices[i].ip_address.to_string().substr(0, 8) != "169.254.") {
-      addresses.push_back(alldevices[i].ip_address.to_string());
+  for (std::vector<struct DeviceStruct>::iterator it = alldevices.begin();
+       it != alldevices.end(); ++it) {
+    if (!NetworkInterface::IsLoopback(it->ip_address) &&
+        !NetworkInterface::IsMulticast(it->ip_address) &&
+        !NetworkInterface::IsAny(it->ip_address)) {
+      addresses.push_back(it->ip_address.to_string());
     }
   }
   return addresses;
