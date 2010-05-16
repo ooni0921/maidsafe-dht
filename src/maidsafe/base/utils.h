@@ -133,13 +133,13 @@ std::string EncodeToHex(const std::string &non_hex_input);
 // Decode a string from hex.
 std::string DecodeFromHex(const std::string &hex_input);
 
-// Return the number of seconds since 1st January 1970.
+// Return the number of seconds since 1st January 2000.
 boost::uint32_t GetEpochTime();
 
-// Return the number of milliseconds since 1st January 1970.
+// Return the number of milliseconds since 1st January 2000.
 boost::uint64_t GetEpochMilliseconds();
 
-// Return the number of nanoseconds since 1st January 1970.
+// Return the number of nanoseconds since 1st January 2000.
 boost::uint64_t GetEpochNanoseconds();
 
 // Convert an IP in ASCII format to IPv4 or IPv6 bytes

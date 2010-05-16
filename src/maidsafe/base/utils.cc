@@ -120,21 +120,21 @@ std::string DecodeFromHex(const std::string &hex_input) {
 boost::uint32_t GetEpochTime() {
   boost::posix_time::ptime
     t(boost::posix_time::microsec_clock::universal_time());
-  boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
+  boost::posix_time::ptime start(boost::gregorian::date(2000, 1, 1));
   return static_cast<boost::uint32_t>((t-start).total_seconds());
 }
 
 boost::uint64_t GetEpochMilliseconds() {
   boost::posix_time::ptime
     t(boost::posix_time::microsec_clock::universal_time());
-  boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
+  boost::posix_time::ptime start(boost::gregorian::date(2000, 1, 1));
   return static_cast<boost::uint64_t>((t-start).total_milliseconds());
 }
 
 boost::uint64_t GetEpochNanoseconds() {
   boost::posix_time::ptime
     t(boost::posix_time::microsec_clock::universal_time());
-  boost::posix_time::ptime start(boost::gregorian::date(1970, 1, 1));
+  boost::posix_time::ptime start(boost::gregorian::date(2000, 1, 1));
   return static_cast<boost::uint64_t>((t-start).total_nanoseconds());
 }
 
