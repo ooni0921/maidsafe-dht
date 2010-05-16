@@ -175,7 +175,7 @@ bool Commands::ReadFile(const std::string &path, std::string *content) {
     fin.read(temp, size);
     fin.close();
     *content = std::string(temp, size);
-    delete temp;
+    delete [] temp;
   }
   catch(const std::exception &ex) {
     printf("Error reading from file %s: %s\n", path.c_str(), ex.what());
