@@ -30,6 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/base/utils.h"
 #include "maidsafe/protobuf/transport_message.pb.h"
 
+#include "maidsafe/base/network_interface.h"
+
 namespace transport {
 
 TransportTCP::TransportTCP()
@@ -486,9 +488,12 @@ int TransportTCP::Send(const std::string &data,
   }
 }
 
-struct sockaddr& TransportTCP::peer_address() {
-  struct sockaddr *addr = reinterpret_cast<sockaddr*>(peer_addr_.data());
-  return *addr;
+bool TransportTCP::peer_address(struct sockaddr *peer_addr) {
+  struct sockaddr *pa = reinterpret_cast<sockaddr*>(peer_addr_.data());
+  *peer_addr = *pa;
+  boost::asio::ip::address addr = base::NetworkInterface::SockaddrToAddress(
+    peer_addr);
+  return peer_addr != NULL;
 }
 
 void TransportTCP::HandleStopIOService() {

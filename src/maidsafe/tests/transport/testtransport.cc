@@ -43,6 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/base/routingtable.h"
 #include "maidsafe/base/utils.h"
 #include "maidsafe/udt/api.h"
+#include "maidsafe/base/network_interface.h"
 
 class TransportNode {
  public:
@@ -764,11 +765,15 @@ TEST_F(TransportTest, BEH_TRANS_GetRemotePeerAddress) {
   ASSERT_EQ(0, node1_handler.Send(rpc_msg, id, true, node1_id));
   while (msg_handler[1].msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  struct sockaddr peer_addr = node2_handler.peer_address(node1_id);
-  std::string peer_ip(inet_ntoa(((struct sockaddr_in *)&peer_addr)->sin_addr));
+
+  struct sockaddr peer_addr;
+  ASSERT_TRUE(node2_handler.peer_address(node1_id, &peer_addr));
+  boost::asio::ip::address addr = base::NetworkInterface::SockaddrToAddress(
+    &peer_addr);
+  ASSERT_EQ(std::string("127.0.0.1"), addr.to_string());
+
   boost::uint16_t peer_port =
     ntohs(((struct sockaddr_in *)&peer_addr)->sin_port);
-  ASSERT_EQ(std::string("127.0.0.1"), peer_ip);
   ASSERT_EQ(lp_node1_handler, peer_port);
   node1_handler.Stop(node1_id);
   node2_handler.Stop(node2_id);

@@ -84,7 +84,9 @@ bool NetworkInterface::IsAny(const boost::asio::ip::address & addr) {
   if (addr.is_v4()) {
     return addr.to_v4() == boost::asio::ip::address_v4::any();
   } else {
-    return addr.to_v6() == boost::asio::ip::address_v6::any();
+    /*  Currently only supporting IPv4 as IPv6 has yet to be tested */
+    // TODO(Alec): Test system using IPv6 addresses
+    return /*addr.to_v6() == boost::asio::ip::address_v6::any()*/true;
   }
 }
 

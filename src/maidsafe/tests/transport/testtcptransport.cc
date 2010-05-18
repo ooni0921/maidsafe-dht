@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/base/log.h"
 #include "maidsafe/base/utils.h"
 #include "maidsafe/base/routingtable.h"
+#include "maidsafe/base/network_interface.h"
 
 void send_rpcmsg(transport::Transport* node, const boost::uint16_t &port,
     const int &repeat, rpcprotocol::RpcMessage msg) {
@@ -540,9 +541,14 @@ TEST(TestTCPTransport, BEH_TRANS_TcpGetRemotePeerAddress) {
   ASSERT_EQ(0, node1->Send(rpc_msg, id, true));
   while (hdlr2.msgs.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  struct sockaddr peer_addr = node2->peer_address();
-  std::string peer_ip(inet_ntoa(((struct sockaddr_in *)&peer_addr)->sin_addr));
-  ASSERT_EQ(std::string("127.0.0.1"), peer_ip);
+
+  struct sockaddr peer_addr;
+  ASSERT_TRUE(node2->peer_address(&peer_addr));
+
+  boost::asio::ip::address addr = base::NetworkInterface::SockaddrToAddress(
+    &peer_addr);
+
+  ASSERT_EQ(std::string("127.0.0.1"), addr.to_string());
   node1->Stop();
   node2->Stop();
   delete node1;

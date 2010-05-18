@@ -163,7 +163,8 @@ class TransportHandler {
   void CloseConnection(const boost::uint32_t &connection_id,
                        const boost::int16_t &transport_id);
   bool is_stopped(const boost::int16_t &transport_id);
-  struct sockaddr& peer_address(const boost::int16_t &transport_id);
+  bool peer_address(const boost::int16_t &transport_id,
+                    struct sockaddr* addr);
   bool GetPeerAddr(const boost::uint32_t &connection_id,
                    const boost::int16_t &transport_id,
                    struct sockaddr *peer_address);

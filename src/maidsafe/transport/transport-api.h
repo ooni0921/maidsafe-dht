@@ -91,7 +91,7 @@ class Transport {
   virtual void CloseConnection(const boost::uint32_t &connection_id) = 0;
   virtual void Stop() = 0;
   virtual bool is_stopped() const = 0;
-  virtual struct sockaddr& peer_address() = 0;
+  virtual bool peer_address(struct sockaddr *peer_addr) = 0;
   virtual bool GetPeerAddr(const boost::uint32_t &connection_id,
                            struct sockaddr *peer_address) = 0;
   virtual bool ConnectionExists(const boost::uint32_t &connection_id) = 0;

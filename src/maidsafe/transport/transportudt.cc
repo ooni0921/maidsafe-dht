@@ -286,6 +286,14 @@ void TransportUDT::Stop() {
       << last_id_ << std::endl;
 }
 
+bool TransportUDT::peer_address(struct sockaddr* addr) {
+  if (&peer_address_ != NULL) {
+    *addr = peer_address_;
+    return true;
+  }
+  return false;
+}
+
 void TransportUDT::ReceiveHandler() {
   timeval tv;
   tv.tv_sec = 0;

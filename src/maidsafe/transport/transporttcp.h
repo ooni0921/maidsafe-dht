@@ -81,7 +81,7 @@ class TransportTCP : public Transport {
   void CloseConnection(const boost::uint32_t &connection_id);
   void Stop();
   bool is_stopped() const { return stop_; }
-  struct sockaddr& peer_address();
+  bool peer_address(struct sockaddr *peer_addr);
   bool GetPeerAddr(const boost::uint32_t &connection_id,
                    struct sockaddr *peer_address);
   bool ConnectionExists(const boost::uint32_t &connection_id);

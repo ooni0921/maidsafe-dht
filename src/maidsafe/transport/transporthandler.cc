@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/transport/transport-api.h"
 #include "maidsafe/base/log.h"
 #include "maidsafe/base/online.h"
+#include "maidsafe/base/network_interface.h"
 
 namespace transport {
 TransportHandler::TransportHandler()
@@ -308,18 +309,19 @@ bool TransportHandler::is_stopped(const boost::int16_t &transport_id) {
   return (*it).second->is_stopped();
 }
 
-struct sockaddr& TransportHandler::peer_address(
-    const boost::int16_t &transport_id) {
+bool TransportHandler::peer_address(const boost::int16_t &transport_id,
+                                    struct sockaddr *peer_addr) {
+  boost::asio::ip::address addr = base::NetworkInterface::SockaddrToAddress(
+    peer_addr);
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(transport_id);
   if (it == transports_.end()) {
-    struct sockaddr *addr = NULL;
     DLOG(ERROR) << "peer_address: Couldn't find Transport matching ID: " <<
         transport_id << "\n";
-    return *addr;
+    return false;
   }
 
-  return (*it).second->peer_address();
+  return (*it).second->peer_address(peer_addr);
 }
 
 bool TransportHandler::GetPeerAddr(const boost::uint32_t &connection_id,

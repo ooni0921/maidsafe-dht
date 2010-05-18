@@ -80,8 +80,9 @@ std::string RandomString(const boost::uint32_t &length) {
   std::string random_string;
   random_string.reserve(length);
   while (random_string.size() < length) {
-    boost::uint32_t iter_length = std::min(length - random_string.size(),
-        boost::uint32_t(65536));
+    boost::uint32_t iter_length =
+      std::min(static_cast<boost::uint32_t>(length - random_string.size()),
+              boost::uint32_t(65536));
     CryptoPP::AutoSeededRandomPool random_number_generator;
     boost::scoped_array<byte> random_bytes(new byte[iter_length]);
     random_number_generator.GenerateBlock(random_bytes.get(), iter_length);
