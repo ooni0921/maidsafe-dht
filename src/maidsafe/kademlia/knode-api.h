@@ -305,7 +305,7 @@ class KNode {
   /**
   * Get a node from the routing table.
   * @param id id of the node
-  * @param contact referece to a Contact object where the contact info of the
+  * @param contact reference to a Contact object where the contact info of the
   * node is returned
   * @return True if node is found, false otherwise
   */

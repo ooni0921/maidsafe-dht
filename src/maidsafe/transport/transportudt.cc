@@ -1182,4 +1182,4 @@ bool TransportUDT::RegisterOnServerDown(
   }
   return false;
 }
-};  // namespace transport
+}  // namespace transport

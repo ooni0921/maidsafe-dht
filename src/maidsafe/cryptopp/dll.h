@@ -16,6 +16,8 @@
 #include "des.h"
 #include "dh.h"
 #include "dsa.h"
+#include "ec2n.h"
+#include "eccrypto.h"
 #include "ecp.h"
 #include "files.h"
 #include "fips140.h"

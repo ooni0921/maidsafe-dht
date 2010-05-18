@@ -52,7 +52,7 @@ std::string increasehex(char hex_char) {
     default: res = "0";
   }
   return res;
-};
+}
 
 TEST(TestKadId, BEH_KAD_ToBinary) {
   std::string id1, id2, binid1, binid2;

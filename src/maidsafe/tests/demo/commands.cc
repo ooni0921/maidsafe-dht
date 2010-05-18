@@ -26,6 +26,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <iostream>  // NOLINT
+#include <iomanip>
+#include <cassert>
+
+#include "boost/format.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread.hpp>
@@ -326,7 +330,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       printf("Invalid number of arguments for findnode command\n");
     } else {
       try {
-        kad::KadId key(std::string(args[0]), true);
+        kad::KadId key(std::string(args.at(0)), true);
         node_->GetNodeContactDetails(key, boost::bind(
             &Commands::GetNodeContactDetailsCallback, this, _1, key), false);
         *wait_for_cb = true;
@@ -342,7 +346,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       printf("Invalid number of arguments for pingnode command\n");
     } else {
       try {
-        kad::KadId key(std::string(args[0]), true);
+        kad::KadId key(std::string(args.at(0)), true);
         node_->Ping(key, boost::bind(&Commands::PingCallback, this, _1,
             key));
         *wait_for_cb = true;
@@ -422,17 +426,16 @@ void Commands::Store50Callback(const std::string &result,
 
 void Commands::PrintRpcTimings() {
   rpcprotocol::RpcStatsMap rpc_timings(chmanager_->RpcTimings());
-  printf("Calls  RPC Name                                            "
-         "min/avg/max\n");
+ std::cout << boost::format("Calls  RPC Name  %40t% min/avg/max\n");
   for (rpcprotocol::RpcStatsMap::const_iterator it = rpc_timings.begin();
        it != rpc_timings.end();
        ++it) {
-    printf("%5llux %-50s  %.2f/%.2f/%.2f s\n",
-           it->second.Size(),
-           it->first.c_str(),
-           it->second.Min() / 1000.0,
-           it->second.Mean() / 1000.0,
-           it->second.Max() / 1000.0);
+ std::cout << boost::format("%1% : %2% %40t% %3% / %4% / %5% \n")
+           % it->second.Size()
+           % it->first.c_str()
+           % it->second.Min() // / 1000.0
+           % it->second.Mean() // / 1000.0
+           % it->second.Max(); // / 1000.0;
   }
 }
 }

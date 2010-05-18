@@ -426,4 +426,4 @@ void TransportHandler::OnSend(const boost::uint32_t &connection_id,
     if (!send_notifier_.empty())
       send_notifier_(connection_id, success);
 }
-};  // namespace transport
+}  // namespace transport

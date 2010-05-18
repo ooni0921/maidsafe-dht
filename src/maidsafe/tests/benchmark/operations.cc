@@ -26,6 +26,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <iostream>  // NOLINT
+#include <iomanip>
+#include <cassert>
+
+#include "boost/format.hpp"
+
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread.hpp>
@@ -295,17 +300,16 @@ kad::KadId Operations::GetModId(int iteration) {
 }
 
 void Operations::PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
-  printf("Calls  RPC Name                                            "
-         "min/avg/max\n");
+  std::cout << boost::format("Calls  RPC Name  %40t% min/avg/max\n");
   for (rpcprotocol::RpcStatsMap::const_iterator it = rpc_timings.begin();
        it != rpc_timings.end();
        ++it) {
-    printf("%5llux %-50s  %.2f/%.2f/%.2f s\n",
-           it->second.Size(),
-           it->first.c_str(),
-           it->second.Min() / 1000.0,
-           it->second.Mean() / 1000.0,
-           it->second.Max() / 1000.0);
+    std::cout << boost::format("%1% : %2% %40t% %3% / %4% / %5% \n")
+           % it->second.Size()
+           % it->first.c_str()
+           % it->second.Min() // / 1000.0
+           % it->second.Mean() // / 1000.0
+           % it->second.Max(); // / 1000.0;
   }
 }
 

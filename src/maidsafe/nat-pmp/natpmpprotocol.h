@@ -71,7 +71,7 @@ class Protocol {
     kResultNetworkFailure = 3,
     kResultOutOfResources = 4,
     kResultUnsupportedOpcode = 5,
-    kResultUndefined = 64,
+    kResultUndefined = 64
   };
 
 /**
@@ -84,7 +84,7 @@ class Protocol {
     kErrorSend = 4,
     kErrorReceiveFrom = 5,
     kErrorSourceConflict = 6,
-    kErrorCannotGetGateway = 7,
+    kErrorCannotGetGateway = 7
   };
 
 /**
