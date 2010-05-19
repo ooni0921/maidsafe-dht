@@ -41,15 +41,16 @@ SET_DIRECTORY_PROPERTIES(PROPERTIES INCLUDE_DIRECTORIES "")
 FILE(GLOB cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 FILE(GLOB cryptopp_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
-IF(MSVC)
+#IF(MSVC)
   # Not used
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/eccrypto.cpp")
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/eprecomp.cpp")
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/cryptlib_bds.cpp")
-ENDIF()
+  LIST(REMOVE_ITEM cryptopp_SOURCES
+"${CMAKE_CURRENT_SOURCE_DIR}/cryptlib_bds.cpp")
+#ENDIF()
 
 # Set up test
-IF(MSVC)
+#IF(MSVC)
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/adhoc.cpp")
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/bench.cpp")
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/bench2.cpp")
@@ -83,13 +84,21 @@ IF(MSVC)
                             ${CMAKE_CURRENT_SOURCE_DIR}/validate.h)
 
   ADD_EXECUTABLE(cryptest ${cryptopp_TEST_SOURCES} ${cryptopp_TEST_HEADERS})
-  
+
   # Need to copy test data to correct location
   FILE(GLOB cryptopp_TEST_DATA "${CMAKE_CURRENT_SOURCE_DIR}/TestData/*.dat")
-  FILE(GLOB cryptopp_TEST_VECTORS "${CMAKE_CURRENT_SOURCE_DIR}/TestVectors/*.txt")
+  FILE(GLOB
+cryptopp_TEST_VECTORS "${CMAKE_CURRENT_SOURCE_DIR}/TestVectors/*.txt")
+
+IF(MSVC)
   FILE(MAKE_DIRECTORY cryptopp)
   FILE(COPY ${cryptopp_TEST_DATA} DESTINATION TestData)
   FILE(COPY ${cryptopp_TEST_VECTORS} DESTINATION TestVectors)
+ELSE(MSVC)
+  FILE(COPY ${cryptopp_TEST_DATA} DESTINATION
+${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TestData)
+  FILE(COPY ${cryptopp_TEST_VECTORS} DESTINATION
+${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TestVectors)
 ENDIF()
 
 #ADD_LIBRARY(cryptopp SHARED ${cryptopp_SOURCES} ${cryptopp_HEADERS})
@@ -126,9 +135,24 @@ IF(APPLE)
   ADD_DEFINITIONS(-DCRYPTOPP_DISABLE_ASM)
 #  SET_TARGET_PROPERTIES(cryptopp PROPERTIES COMPILE_FLAGS "-w -finline-functions ${OPT_FLAG}")
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "-fPIC -w -finline-functions ${OPT_FLAG}")
+  ADD_TEST(cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest v)
+  ADD_TEST(cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest v)
+  ADD_TEST(cryptest_aes ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest tv aes)
+  ADD_TEST(cryptest_sha ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest tv sha)
+  ADD_TEST(cryptest_rsa_pss ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest tv  rsa_pss)
+  ADD_TEST(cryptest_rsa_oaep ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest tv rsa_oaep)
+  ADD_TEST(cryptest_rsa_pkcs1_1_5 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest tv  rsa_pkcs1_1_5)
 ELSEIF(UNIX AND NOT APPLE)
 #  SET_TARGET_PROPERTIES(cryptopp PROPERTIES COMPILE_FLAGS "-w -pipe -finline-functions ${OPT_FLAG}")
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "-fPIC -w -pipe -finline-functions ${OPT_FLAG}")
+  TARGET_LINK_LIBRARIES(cryptest cryptopp_static )
+  ADD_TEST(cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest v)
+  ADD_TEST(cryptest_aes ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest tv aes)
+  ADD_TEST(cryptest_sha ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest tv sha)
+  ADD_TEST(cryptest_rsa_pss ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest tv rsa_pss)
+  ADD_TEST(cryptest_rsa_oaep ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest tv rsa_oaep)
+  ADD_TEST(cryptest_rsa_pkcs1_1_5 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest tv rsa_pkcs1_1_5)
+
 ELSEIF(WIN32 AND NOT MSVC)
 #  SET_TARGET_PROPERTIES(cryptopp PROPERTIES COMPILE_FLAGS "-mthreads -w -finline-functions ${OPT_FLAG} -D_WIN32_WINNT=0x0501")
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "-mthreads -w -finline-functions ${OPT_FLAG} -D_WIN32_WINNT=0x0501")
@@ -136,23 +160,33 @@ ELSEIF(WIN32 AND MSVC)
 
   CMAKE_POLICY(SET CMP0008 NEW)
 
-  SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "/D_WINDOWS /DUSE_PRECOMPILED_HEADERS /DWIN32 /D_VC80_UPGRADE=0x0710 /EHsc /W3")
-  SET_TARGET_PROPERTIES(cryptest PROPERTIES COMPILE_FLAGS "/D_CONSOLE /DWIN32 /D_VC80_UPGRADE=0x0710 /D_MBCS /EHsc /W3 /Zm400"
-                                            LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG"
+  SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "/D_WINDOWS
+/DUSE_PRECOMPILED_HEADERS /DWIN32 /D_VC80_UPGRADE=0x0710 /EHsc /W3")
+  SET_TARGET_PROPERTIES(cryptest PROPERTIES COMPILE_FLAGS "/D_CONSOLE /DWIN32
+/D_VC80_UPGRADE=0x0710 /D_MBCS /EHsc /W3 /Zm400"
+                                            LINK_FLAGS_RELEASE "/OPT:REF
+/OPT:ICF /LTCG"
                                             LINK_FLAGS_RELWITHDEBINFO "/LTCG"
                                             LINK_FLAGS_MINSIZEREL "/LTCG")
 
   SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Oi /Oy /GL /DNDEBUG /GF /MD /Gy /Zi")
   SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Oi /D_DEBUG /MDd /arch:SSE /ZI")
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/dll.cpp") # this file doesn't use precompiled headers
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/iterhash.cpp") # this file doesn't use precompiled headers
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/iterhash.cpp")
+# this file doesn't use precompiled headers
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp") # this file is used to create precompiled headers
   SET_SOURCE_FILES_PROPERTIES(${cryptopp_SOURCES} PROPERTIES
                                COMPILE_FLAGS "/Yu\"pch.h\"")
   SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp PROPERTIES
                                COMPILE_FLAGS "/Yc\"pch.h\"")
 
-  TARGET_LINK_LIBRARIES(cryptest cryptopp_static odbc32.lib odbccp32.lib Ws2_32.lib)
+  TARGET_LINK_LIBRARIES(cryptest cryptopp_static odbc32.lib odbccp32.lib
+Ws2_32.lib)
 
-  ADD_TEST(cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest.exe v)
+  ADD_TEST(cryptest cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest.exe v)
+  ADD_TEST(cryptest_aes cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest.exe tv aes)
+  ADD_TEST(cryptest_sha cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest.exe tv sha)
+  ADD_TEST(cryptest_rsa_pss ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest.exe tv rsa_pss)
+  ADD_TEST(cryptest_rsa_oaep ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest.exe tv rsa_oaep)
+  ADD_TEST(cryptest_rsa_pkcs1_1_5 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest.exe tv rsa_pkcs1_1_5)
 ENDIF()
