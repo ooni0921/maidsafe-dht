@@ -25,22 +25,21 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <iostream>  // NOLINT
-#include <iomanip>
-#include <cassert>
+#include "maidsafe/tests/benchmark/operations.h"
 
-#include "boost/format.hpp"
-
+#include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <cassert>
+#include <iomanip>
+#include <iostream>  // NOLINT
 #include <string>
 #include <vector>
 
-#include "maidsafe/tests/benchmark/operations.h"
 #include "maidsafe/protobuf/kademlia_service_messages.pb.h"
 #include "maidsafe/maidsafe-dht.h"
 
@@ -307,9 +306,9 @@ void Operations::PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
     std::cout << boost::format("%1% : %2% %40t% %3% / %4% / %5% \n")
            % it->second.Size()
            % it->first.c_str()
-           % it->second.Min() // / 1000.0
-           % it->second.Mean() // / 1000.0
-           % it->second.Max(); // / 1000.0;
+           % it->second.Min()  // / 1000.0
+           % it->second.Mean()  // / 1000.0
+           % it->second.Max();  // / 1000.0;
   }
 }
 

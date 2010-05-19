@@ -184,30 +184,13 @@ SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
 
 ###################################################################################################
-# Google Glog library (logging) search. Only on UNIX, since currently it cannot be compiled on    #
-# Windows with MinGW                                                                              #
+# Google Log library search - Glog can't currently be compiled on Windows with MinGW              #
 ###################################################################################################
-INCLUDE(CheckIncludeFileCXX)
-IF(UNIX)
-  UNSET(GLOG_LIB CACHE)
-  UNSET(GLOG_INCLUDE CACHE)
-  SET(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} "${GLOG_ROOT}/include")
-  FIND_LIBRARY(GLOG_LIB NAMES libglog.a glog
-               PATHS "${GLOG_ROOT}/lib"
-               DOC "Path to glog library${DOC_LIB_DIR}")
-  CHECK_INCLUDE_FILE_CXX(glog/logging.h GLOG_INCLUDE)
-  IF(GLOG_LIB AND GLOG_INCLUDE)
-    SET(HAVE_GLOG GLOG_LIB)
-    MESSAGE("Using GLOG")
-    IF(GLOG_ROOT)
-      SET(INCLUDE_DIRS ${INCLUDE_DIRS} "${GLOG_ROOT}/include")
-      SET(LIBS_DIRS ${LIBS_DIRS} "${GLOG_ROOT}/lib")
-    ENDIF()
-  ELSE()
-    SET(GLOG_LIB "")
-    MESSAGE("Not using GLOG")
-    MESSAGE("If installed run ${ERROR_MESSAGE_CMAKE_PATH} -DGLOG_ROOT=<The root directory of glog install prefix>")
-    MESSAGE(" You can download it at http://code.google.com/p/google-glog\n")
+IF((NOT WIN32) OR MSVC)
+  INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGlog.cmake)
+  IF(Glog_FOUND)
+    SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Glog_INCLUDE_DIR})
+    SET(LIBS_DIRS ${LIBS_DIRS} ${Glog_LIBRARY_DIR} ${Glog_LIBRARY_DIR_DEBUG})
   ENDIF()
 ENDIF()
 
@@ -218,14 +201,6 @@ INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGtest.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gtest_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR} ${Gtest_LIBRARY_DIR_DEBUG})
 
-
-#  IF(APPLE)
-#    GET_FILENAME_COMPONENT(LIB_PATH ${Gtest_LIBRARY} PATH)
-#    SET(LIBS_DIRS ${LIBS_DIRS} ${LIB_PATH})
-#    SET(Gtest_LIBRARY "gtest")
-#  ENDIF()
-
-
 ###################################################################################################
 # Protocol Buffers library search                                                                 #
 ###################################################################################################
@@ -235,10 +210,6 @@ SET(PROTO_FILES ${PROTO_FILES} ${TEST_PROTO_FILES})
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindProtobuf.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Protobuf_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Protobuf_LIBRARY_DIR} ${Protobuf_LIBRARY_DIR_DEBUG})
-
-#  IF(APPLE)
-#    SET(Protobuf_LIBRARY protobuf)
-#  ENDIF()
 
 ###################################################################################################
 # Python library search                                                                           #
@@ -283,9 +254,9 @@ FOREACH(library ${SYS_LIB})
 ENDFOREACH()
 
 IF(MSVC)
-  SET(SYS_LIB ${SYS_LIB} ${GLOG_LIB})
+  SET(SYS_LIB ${SYS_LIB})
 ELSE()
-  SET(SYS_LIB ${SYS_LIB} ${GLOG_LIB} ${Protobuf_LIBRARY})
+  SET(SYS_LIB ${SYS_LIB} ${Glog_LIBRARY} ${Protobuf_LIBRARY})
 ENDIF()
 
 SET(LIBS_DIRS ${LIBS_DIRS} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
@@ -441,7 +412,7 @@ ADD_LIBRARY(maidsafe_dht_static STATIC ${DHT_SOURCE_FILES})
 # Builds                                                                                          #
 ###################################################################################################
 ADD_DEFINITIONS(-DSTATICLIB)
-IF(HAVE_GLOG)
+IF(Glog_FOUND)
   ADD_DEFINITIONS(-DHAVE_GLOG)
 ENDIF()
 #Ensure we pick up correct libs and not some older installed one
@@ -501,20 +472,37 @@ IF(WIN32)
 ENDIF()
 
 IF(MSVC)
-  ADD_DEFINITIONS(-D__MSVC__ -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x501)
+  ADD_DEFINITIONS(-D__MSVC__ -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x501 -DUDT_STATIC)
   ADD_DEFINITIONS(-D_CONSOLE -D_UNICODE -DUNICODE -D_BIND_TO_CURRENT_VCLIBS_VERSION=1)
 
   # prevents std::min() and std::max() to be overwritten
   ADD_DEFINITIONS(-DNOMINMAX)
 
+  # prevents inclusion of WinGDI.h which conflicts with Google Logging library and sets
+  # flag to link to static version of Google Glog
+  IF(Glog_FOUND)
+    ADD_DEFINITIONS(-DNOGDI -DGOOGLE_GLOG_DLL_DECL=)
+  ENDIF()
+
   # prevents from automatic linking of boost libraries
   ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
 
-  # warning 4503 disabled due to excessive generation through use of Boost multi_index
-  SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /D \"NDEBUG\" /EHsc /MD /Gy /W3 /Zi /wd4503")
-  SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D \"_DEBUG\" /EHsc /MDd  /c /ZI /TP /wd4503")
+  SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /D \"NDEBUG\" /EHsc /MD /Gy /W3 /Zi")
+  SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D \"_DEBUG\" /EHsc /MDd  /c /ZI /TP")
   SET(CMAKE_CXX_FLAGS_MINSIZEREL "/EHsc /MD")
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/EHsc /MD")
+
+  # warning 4503 disabled due to excessive generation through use of Boost multi_index
+  SET_SOURCE_FILES_PROPERTIES(${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/kademlia/knode.cc
+                              ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/kademlia/knode.h
+                              ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/kademlia/routingtable.cc
+                              ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/routingtable.cc
+                              ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/routingtable.h
+                              ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/testcontact.cc
+                              ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/testknode.cc
+                              ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/nat-pmp/testnatpmp.cc
+                              ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/transport/testtransport.cc
+                                PROPERTIES COMPILE_FLAGS "/wd4503")
 
   # CMake defaults stack size to 10MB.  Set this to windows default of 1MB
   STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
@@ -522,13 +510,14 @@ IF(MSVC)
 
   # defining UDT_STATIC prevents declaring __declspec for UDT API functions
   SET_TARGET_PROPERTIES(maidsafe_dht_static TESTbase TESTkademlia TESTknode TESTnatpmp TESTrpcprotocol TESTtransport TESTupnp kaddemo_static benchmark_static PROPERTIES
-      COMPILE_FLAGS "-DUDT_STATIC"
       LINK_FLAGS "/STACK:1048576"
-      LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG")
+      LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG"
+      LINK_FLAGS_RELWITHDEBINFO "/LTCG"
+      LINK_FLAGS_MINSIZEREL "/LTCG")
 
-  SET(DEBUG_LIBS ${Protobuf_LIBRARY_DEBUG} ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
+  SET(DEBUG_LIBS ${Glog_LIBRARY_DEBUG} ${Protobuf_LIBRARY_DEBUG} ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
       ${Boost_PROGRAM_OPTIONS_LIBRARY_DEBUG} ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG})
-  SET(RELEASE_LIBS ${Protobuf_LIBRARY} ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE}
+  SET(RELEASE_LIBS ${Glog_LIBRARY} ${Protobuf_LIBRARY} ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE}
       ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE} ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE})
 
   TARGET_LINK_LIBRARIES(TESTbase maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})

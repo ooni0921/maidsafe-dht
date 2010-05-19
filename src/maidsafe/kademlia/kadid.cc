@@ -183,7 +183,7 @@ KadId::KadId(const KadId &min, const KadId &max)
   } else {
     id_size_type min_non_zero_indx(0);
     id_container::const_iterator it = min.raw_id_.begin();
-    while (it != min.raw_id_.end() && (*it) == 0) {
+    while (it != --min.raw_id_.end() && (*it) == 0) {
       ++min_non_zero_indx;
       ++it;
     }
