@@ -365,12 +365,8 @@ bool TransportTCP::GetPeerAddr(const boost::uint32_t &connection_id,
   it = connections_.find(connection_id);
   if (it != connections_.end()) {
     boost::system::error_code error;
-    peer_address = reinterpret_cast<sockaddr*>(
-      it->second->RemoteEndPoint(error).data());
-    if (error)
-      return false;
-    else
-      return true;
+    *peer_address = *it->second->RemoteEndPoint(error).data();
+    return !error;
   }
   return false;
 }
