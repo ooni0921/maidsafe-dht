@@ -318,6 +318,7 @@ bool TransportHandler::peer_address(const boost::int16_t &transport_id,
   if (it == transports_.end()) {
     DLOG(ERROR) << "peer_address: Couldn't find Transport matching ID: " <<
         transport_id << "\n";
+    peer_addr = NULL;
     return false;
   }
 

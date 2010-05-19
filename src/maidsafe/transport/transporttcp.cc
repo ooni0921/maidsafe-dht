@@ -489,11 +489,8 @@ int TransportTCP::Send(const std::string &data,
 }
 
 bool TransportTCP::peer_address(struct sockaddr *peer_addr) {
-  struct sockaddr *pa = reinterpret_cast<sockaddr*>(peer_addr_.data());
-  *peer_addr = *pa;
-  boost::asio::ip::address addr = base::NetworkInterface::SockaddrToAddress(
-    peer_addr);
-  return peer_addr != NULL;
+  *peer_addr = *peer_addr_.data();
+  return true;
 }
 
 void TransportTCP::HandleStopIOService() {
