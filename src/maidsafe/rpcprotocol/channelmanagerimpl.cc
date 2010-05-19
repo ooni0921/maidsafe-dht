@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <list>
 #include "maidsafe/base/log.h"
 #include "maidsafe/base/online.h"
+#include "maidsafe/base/network_interface.h"
 #include "maidsafe/protobuf/general_messages.pb.h"
 #include "maidsafe/protobuf/kademlia_service_messages.pb.h"
 #include "maidsafe/protobuf/rpcmessage.pb.h"
@@ -230,10 +231,10 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
       if (!transport_handler_->GetPeerAddr(connection_id, transport_id,
           &peer_addr))
         return;
-      std::string peer_ip = inet_ntoa(reinterpret_cast<struct sockaddr_in*>(
-          &peer_addr)->sin_addr);
+      std::string peer_ip = base::NetworkInterface::SockaddrToAddress(
+                            &peer_addr).to_string();
       boost::uint16_t peer_port = ntohs(reinterpret_cast<struct sockaddr_in*>(
-          &peer_addr)->sin_port);
+                                        &peer_addr)->sin_port);
       decoded_bootstrap.set_newcomer_ext_ip(peer_ip);
       decoded_bootstrap.set_newcomer_ext_port(peer_port);
       std::string encoded_bootstrap;
