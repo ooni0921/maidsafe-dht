@@ -95,10 +95,8 @@ IF(MSVC)
   FILE(COPY ${cryptopp_TEST_DATA} DESTINATION TestData)
   FILE(COPY ${cryptopp_TEST_VECTORS} DESTINATION TestVectors)
 ELSE(MSVC)
-  FILE(COPY ${cryptopp_TEST_DATA} DESTINATION
-${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TestData)
-  FILE(COPY ${cryptopp_TEST_VECTORS} DESTINATION
-${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TestVectors)
+  FILE(COPY ${cryptopp_TEST_DATA} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TestData)
+  FILE(COPY ${cryptopp_TEST_VECTORS} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TestVectors)
 ENDIF()
 
 #ADD_LIBRARY(cryptopp SHARED ${cryptopp_SOURCES} ${cryptopp_HEADERS})
@@ -180,8 +178,7 @@ ELSEIF(WIN32 AND MSVC)
   SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp PROPERTIES
                                COMPILE_FLAGS "/Yc\"pch.h\"")
 
-  TARGET_LINK_LIBRARIES(cryptest cryptopp_static odbc32.lib odbccp32.lib
-Ws2_32.lib)
+  TARGET_LINK_LIBRARIES(cryptest cryptopp_static odbc32.lib odbccp32.lib Ws2_32.lib)
 
   ADD_TEST(cryptest cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest.exe v)
   ADD_TEST(cryptest_aes cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest.exe tv aes)
