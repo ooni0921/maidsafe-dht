@@ -39,10 +39,58 @@
 SET_DIRECTORY_PROPERTIES(PROPERTIES INCLUDE_DIRECTORIES "")
 
 FILE(GLOB cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
-IF(MSVC)
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/eprecomp.cpp")
-ENDIF()
 FILE(GLOB cryptopp_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+
+IF(MSVC)
+  # Not used
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/eccrypto.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/eprecomp.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/cryptlib_bds.cpp")
+ENDIF()
+
+# Set up test
+IF(MSVC)
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/adhoc.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/bench.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/bench2.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/datatest.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/dlltest.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/fipsalgt.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/regtest.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/validat1.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/validat2.cpp")
+  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/validat3.cpp")
+
+  SET(cryptopp_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/adhoc.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/bench.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/bench2.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/datatest.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/dlltest.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/fipsalgt.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/regtest.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/validat1.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/validat2.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/validat3.cpp)
+
+  LIST(REMOVE_ITEM cryptopp_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/bench.h")
+  LIST(REMOVE_ITEM cryptopp_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/factory.h")
+  LIST(REMOVE_ITEM cryptopp_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/validate.h")
+
+  SET(cryptopp_TEST_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/bench.h
+                            ${CMAKE_CURRENT_SOURCE_DIR}/factory.h
+                            ${CMAKE_CURRENT_SOURCE_DIR}/validate.h)
+
+  ADD_EXECUTABLE(cryptest ${cryptopp_TEST_SOURCES} ${cryptopp_TEST_HEADERS})
+  
+  # Need to copy test data to correct location
+  FILE(GLOB cryptopp_TEST_DATA "${CMAKE_CURRENT_SOURCE_DIR}/TestData/*.dat")
+  FILE(GLOB cryptopp_TEST_VECTORS "${CMAKE_CURRENT_SOURCE_DIR}/TestVectors/*.txt")
+  FILE(MAKE_DIRECTORY cryptopp)
+  FILE(COPY ${cryptopp_TEST_DATA} DESTINATION TestData)
+  FILE(COPY ${cryptopp_TEST_VECTORS} DESTINATION TestVectors)
+ENDIF()
 
 #ADD_LIBRARY(cryptopp SHARED ${cryptopp_SOURCES} ${cryptopp_HEADERS})
 ADD_LIBRARY(cryptopp_static STATIC ${cryptopp_SOURCES} ${cryptopp_HEADERS})
@@ -85,24 +133,26 @@ ELSEIF(WIN32 AND NOT MSVC)
 #  SET_TARGET_PROPERTIES(cryptopp PROPERTIES COMPILE_FLAGS "-mthreads -w -finline-functions ${OPT_FLAG} -D_WIN32_WINNT=0x0501")
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "-mthreads -w -finline-functions ${OPT_FLAG} -D_WIN32_WINNT=0x0501")
 ELSEIF(WIN32 AND MSVC)
+
   CMAKE_POLICY(SET CMP0008 NEW)
+
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "/D_WINDOWS /DUSE_PRECOMPILED_HEADERS /DWIN32 /D_VC80_UPGRADE=0x0710 /EHsc /W3")
+  SET_TARGET_PROPERTIES(cryptest PROPERTIES COMPILE_FLAGS "/D_CONSOLE /DWIN32 /D_VC80_UPGRADE=0x0710 /D_MBCS /EHsc /W3 /Zm400"
+                                            LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG"
+                                            LINK_FLAGS_RELWITHDEBINFO "/LTCG"
+                                            LINK_FLAGS_MINSIZEREL "/LTCG")
+
   SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Oi /Oy /GL /DNDEBUG /GF /MD /Gy /Zi")
   SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Oi /D_DEBUG /MDd /arch:SSE /ZI")
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/adhoc.cpp") # this file doesn't use precompiled headers
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/bench.cpp") # this file doesn't use precompiled headers
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/bench2.cpp") # this file doesn't use precompiled headers
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/cryptlib_bds.cpp") # this file doesn't use precompiled headers
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/datatest.cpp") # this file doesn't use precompiled headers
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/dll.cpp") # this file doesn't use precompiled headers
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/dlltest.cpp") # this file doesn't use precompiled headers
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/fipsalgt.cpp") # this file doesn't use precompiled headers
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/iterhash.cpp") # this file doesn't use precompiled headers
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/regtest.cpp") # this file doesn't use precompiled headers
-  LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test.cpp") # this file doesn't use precompiled headers
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp") # this file is used to create precompiled headers
   SET_SOURCE_FILES_PROPERTIES(${cryptopp_SOURCES} PROPERTIES
                                COMPILE_FLAGS "/Yu\"pch.h\"")
   SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp PROPERTIES
                                COMPILE_FLAGS "/Yc\"pch.h\"")
+
+  TARGET_LINK_LIBRARIES(cryptest cryptopp_static odbc32.lib odbccp32.lib Ws2_32.lib)
+
+  ADD_TEST(cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest.exe v)
 ENDIF()
