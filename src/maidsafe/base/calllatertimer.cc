@@ -32,83 +32,97 @@ namespace base {
 
 void dummy_timeout_func() {}
 
-CallLaterTimer::CallLaterTimer() : timers_mutex_(), is_started_(true),
-      worker_(), timers_(), io_(), strand_(io_), timer_(io_), calllater_id_(0) {
-  timer_.expires_at(boost::posix_time::pos_infin);
-  timer_.async_wait(boost::bind(&dummy_timeout_func));
-  try {
-    worker_.reset(new boost::thread(boost::bind(&boost::asio::io_service::run,
-                                    &io_)));
-  } catch(const std::exception &e) {
-    DLOG(ERROR) << e.what() << std::endl;
-  }
+CallLaterTimer::CallLaterTimer()
+    : timers_mutex_(),
+      is_started_(true),
+      timers_(),
+      io_service_(),
+      strand_(io_service_),
+      work_(new boost::asio::io_service::work(io_service_)),
+      worker_thread_(),
+      call_later_id_(0) {
+  worker_thread_.reset(new boost::thread(&CallLaterTimer::Run, this));
 }
 
 CallLaterTimer::~CallLaterTimer() {
+  CancelAll();
   {
     boost::mutex::scoped_lock guard(timers_mutex_);
     is_started_ = false;
-    timers_.clear();
   }
-  io_.stop();
-  worker_->join();
+  // Allow io_service_.run() to exit.
+  work_.reset();
+  worker_thread_->join();
 }
 
-void CallLaterTimer::ExecuteFunc(calllater_func callback, boost::uint32_t id,
-      const boost::system::error_code &ec) {
-  if (!ec) {
-    callback();
-    boost::mutex::scoped_lock guard(timers_mutex_);
-    timers_map::iterator it = timers_.find(id);
-    if (it != timers_.end()) {
-      timers_.erase(it);
+void CallLaterTimer::Run() {
+  while (true) {
+    try {
+      io_service_.run();
+      break;
+    } catch(const std::exception &e) {
+      DLOG(ERROR) << e.what() << std::endl;
     }
   }
 }
 
-int CallLaterTimer::AddCallLater(const boost::uint64_t &msecs,
-      calllater_func callback) {
-  {
-    boost::mutex::scoped_lock guard(timers_mutex_);
-    if ((msecs == 0) || (!is_started_))
-      return -1;
-
-    calllater_id_ = (calllater_id_ + 1) % 32768;
-    boost::shared_ptr<boost::asio::deadline_timer> timer(
-        new boost::asio::deadline_timer(io_,
-        boost::posix_time::milliseconds(msecs)));
-    std::pair<timers_map::iterator, bool> p = timers_.insert(timer_pair(
-        calllater_id_, timer));
-    if (p.second) {
-      timer->async_wait(boost::bind(&CallLaterTimer::ExecuteFunc, this,
-                        callback, calllater_id_, _1));
-      return calllater_id_;
+void CallLaterTimer::ExecuteFunctor(
+    const VoidFunctorEmpty &callback,
+    const boost::uint32_t &call_later_id,
+    const boost::system::error_code &error_code) {
+  if (error_code) {
+    if (error_code != boost::asio::error::operation_aborted) {
+      DLOG(ERROR) << error_code.message() << std::endl;
+      boost::mutex::scoped_lock guard(timers_mutex_);
+      timers_.erase(call_later_id);
     }
+  } else {
+    strand_.dispatch(callback);
+    boost::mutex::scoped_lock guard(timers_mutex_);
+    timers_.erase(call_later_id);
   }
-  return -1;
 }
 
-bool CallLaterTimer::CancelOne(const boost::uint32_t &calllater_id) {
-  timers_map::iterator it = timers_.find(calllater_id);
+boost::uint32_t CallLaterTimer::AddCallLater(const boost::uint64_t &msecs,
+                                             VoidFunctorEmpty callback) {
+  boost::mutex::scoped_lock guard(timers_mutex_);
+  if ((msecs == 0) || (!is_started_))
+    return std::numeric_limits<boost::uint32_t>::max();
+  call_later_id_ = (call_later_id_ + 1) % 32768;
+  boost::shared_ptr<boost::asio::deadline_timer> timer(
+      new boost::asio::deadline_timer(io_service_,
+      boost::posix_time::milliseconds(msecs)));
+  std::pair<TimersMap::iterator, bool> p =
+      timers_.insert(TimersMap::value_type(call_later_id_, timer));
+  if (p.second) {
+    timer->async_wait(boost::bind(&CallLaterTimer::ExecuteFunctor, this,
+                                  callback, call_later_id_, _1));
+    return call_later_id_;
+  }
+  return std::numeric_limits<boost::uint32_t>::max();
+}
+
+bool CallLaterTimer::CancelOne(const boost::uint32_t &call_later_id) {
+  boost::mutex::scoped_lock guard(timers_mutex_);
+  TimersMap::iterator it = timers_.find(call_later_id);
   if (it == timers_.end())
     return false;
-  boost::mutex::scoped_lock guard(timers_mutex_);
   it->second->cancel();
-  timers_.erase(it);
+  timers_.erase(call_later_id);
   return true;
 }
 
 int CallLaterTimer::CancelAll() {
   boost::mutex::scoped_lock guard(timers_mutex_);
   int n = timers_.size();
-  for (timers_map::iterator it = timers_.begin(); it != timers_.end(); ++it) {
+  for (TimersMap::iterator it = timers_.begin(); it != timers_.end(); ++it) {
     it->second->cancel();
   }
   timers_.clear();
   return n;
 }
 
-size_t CallLaterTimer::list_size() {
+size_t CallLaterTimer::TimersMapSize() {
   boost::mutex::scoped_lock guard(timers_mutex_);
   return timers_.size();
 }

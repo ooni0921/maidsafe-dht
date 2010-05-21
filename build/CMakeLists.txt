@@ -156,6 +156,14 @@ SET(CMAKE_DEBUG_POSTFIX _d)
 SET(CMAKE_RELWITHDEBINFO_POSTFIX _rwdi)
 SET(CMAKE_MINSIZEREL_POSTFIX _msr)
 
+IF(CMAKE_BUILD_TYPE MATCHES "Debug")
+  SET(TEST_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+ELSEIF(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
+  SET(TEST_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
+ELSEIF(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
+  SET(TEST_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})
+ENDIF()
+
 ###################################################################################################
 # Set default directories to be searched for included files and libs                              #
 ###################################################################################################
@@ -612,7 +620,7 @@ ELSEIF(UNIX AND NOT APPLE)
   SET(SILENT_BUILD "-w -fPIC -DNDEBUG  -march=native -mtune=native -pipe")
 #######WINDOWS##############
 ELSEIF(WIN32 AND NOT MSVC)
-  ADD_DEFINITIONS(-D__MINGW__ -DWIN32_LEAN_AND_MEAN -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE)
+  ADD_DEFINITIONS(-D__MINGW__ -DWIN32_LEAN_AND_MEAN -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0501)
   SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized -O")
   SET(MAIDSAFE_DHT_CXX_FLAGS "-Wall -finline-functions -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wunused-function -Wunused-parameter -Wunused-label -Wunused-value -Wunused-variable -Wwrite-strings -Wno-deprecated -Woverloaded-virtual -D_WIN32_WINNT=0x0501 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__  -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501")
@@ -675,13 +683,6 @@ IF(PYTHONINTERP_FOUND)
   ENDIF()
 ENDIF()
 SET(FOUNDALLTESTS true)
-IF(CMAKE_BUILD_TYPE MATCHES "Debug")
-  SET(TEST_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-ELSEIF(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
-  SET(TEST_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
-ELSEIF(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
-  SET(TEST_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})
-ENDIF()
 
 SET(TEST_EXES TESTupnp TESTnatpmp TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol)
 FOREACH(TEST_EXE ${TEST_EXES})

@@ -35,56 +35,46 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 #include <map>
-#include "gtest/gtest_prod.h"
 
 namespace base {
 
-typedef boost::function<void()> calllater_func;
-typedef std::map< boost::uint32_t,
-    boost::shared_ptr<boost::asio::deadline_timer> > timers_map;
-typedef std::pair< boost::uint32_t,
-    boost::shared_ptr<boost::asio::deadline_timer> > timer_pair;
+typedef boost::function<void()> VoidFunctorEmpty;
 
 struct CallLaterMap {
-  CallLaterMap() : time_to_execute(0), callback(), calllater_id(0) {}
+  CallLaterMap() : time_to_execute(0), callback(), call_later_id(0) {}
   boost::uint64_t time_to_execute;
-  calllater_func callback;
-  boost::uint32_t calllater_id;
+  VoidFunctorEmpty callback;
+  boost::uint32_t call_later_id;
 };
 
 class CallLaterTimer {
  public:
+  typedef std::map<boost::uint32_t,
+                   boost::shared_ptr<boost::asio::deadline_timer> > TimersMap;
   CallLaterTimer();
   ~CallLaterTimer();
   inline bool IsStarted() { return is_started_; }
   int CancelAll();
-  bool CancelOne(const boost::uint32_t &calllater_id);
-  size_t list_size();
+  bool CancelOne(const boost::uint32_t &call_later_id);
+  size_t TimersMapSize();
   // Delay msecs milliseconds to call the function specified by callback
-  int AddCallLater(const boost::uint64_t &msecs, calllater_func callback);
-  friend class CallLaterTest;
-
+  boost::uint32_t AddCallLater(const boost::uint64_t &msecs,
+                               VoidFunctorEmpty callback);
  private:
-  FRIEND_TEST(CallLaterTest, BEH_BASE_AddCallLater);
-  FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyCallLater);
-  FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyAgainCallLater);
-  FRIEND_TEST(CallLaterTest, BEH_BASE_AddManyCallLaters);
-  FRIEND_TEST(CallLaterTest, BEH_BASE_AddRemoveCallLaters);
-  FRIEND_TEST(CallLaterTest, BEH_BASE_AddPtrCallLater);
-  FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyPtrCallLater);
-  FRIEND_TEST(CallLaterTest, BEH_BASE_AddDestroyAgainPtrCallLater);
-  void ExecuteFunc(calllater_func callback, boost::uint32_t id,
-      const boost::system::error_code &ec);
+  void Run();
+  void ExecuteFunctor(const VoidFunctorEmpty &callback,
+                      const boost::uint32_t &call_later_id,
+                      const boost::system::error_code &ec);
   CallLaterTimer(const CallLaterTimer&);
   CallLaterTimer& operator=(const CallLaterTimer&);
   boost::mutex timers_mutex_;
   bool is_started_;
-  boost::shared_ptr<boost::thread> worker_;
-  timers_map timers_;
-  boost::asio::io_service io_;
+  TimersMap timers_;
+  boost::asio::io_service io_service_;
   boost::asio::strand strand_;
-  boost::asio::deadline_timer timer_;
-  boost::uint32_t calllater_id_;
+  boost::shared_ptr<boost::asio::io_service::work> work_;
+  boost::shared_ptr<boost::thread> worker_thread_;
+  boost::uint32_t call_later_id_;
 };
 
 }  // namespace base
