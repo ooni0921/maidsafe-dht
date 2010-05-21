@@ -25,9 +25,9 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <limits>
 #include "maidsafe/base/calllatertimer.h"
 #include "maidsafe/base/log.h"
-
 namespace base {
 
 void dummy_timeout_func() {}
