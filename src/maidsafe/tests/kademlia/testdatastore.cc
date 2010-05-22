@@ -692,7 +692,7 @@ TEST_F(DataStoreTest, FUNC_KAD_CheckDelStatusValuesToRefresh) {
   }
 }
 
-TEST_F(DataStoreTest, BEH_KAD_CompareTTLWhenStoringMarkedFotDelValues) {
+TEST_F(DataStoreTest, BEH_KAD_CompareTTLWhenStoringMarkedForDelValues) {
   std::string value1(base::RandomString(50)), value2(base::RandomString(50));
   std::string key1(cry_obj_.Hash(base::RandomString(5), "",
       crypto::STRING_STRING, false));

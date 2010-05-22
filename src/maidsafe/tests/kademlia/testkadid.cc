@@ -73,7 +73,7 @@ TEST(TestKadId, BEH_KAD_ToBinary) {
   ASSERT_EQ(binid2, kadid2.ToStringBinary());
 }
 
-TEST(TestKadId, BEH_KAD_ToHexEncoded_Decoded) {
+TEST(TestKadId, BEH_KAD_ToHexEncodedDecoded) {
   std::string id1;
   for (kad::id_size_type i = 0; i < kad::bitToByteCount(kad::ID_BITS_SIZE) * 2;
        ++i) {

@@ -218,7 +218,7 @@ TEST_F(TestKbucket, BEH_KAD_SetLastAccessed) {
   ASSERT_EQ(time_accessed, kbucket.last_accessed());
 }
 
-TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContet) {
+TEST_F(TestKbucket, BEH_KAD_FillKbucketUpdateContent) {
   KadId min_value;
   std::string hex_max_val;
   for (boost::int16_t i = 0; i < kKeySizeBytes * 2; ++i)

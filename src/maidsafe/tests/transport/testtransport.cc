@@ -246,7 +246,8 @@ class MessageHandlerEchoResp {
 class TransportTest: public testing::Test {
  protected:
   virtual ~TransportTest() {
-    UDT::cleanup();  }
+//    UDT::cleanup();
+  }
 };
 
 TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnother) {

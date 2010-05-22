@@ -40,7 +40,7 @@ class TestContact : public testing::Test {
   crypto::Crypto cry_obj;
 };
 
-TEST_F(TestContact, BEH_KAD_GetIp_Port_NodeId) {
+TEST_F(TestContact, BEH_KAD_GetIpPortNodeId) {
   std::string ip("192.168.1.55");
   std::string local_ip(ip);
   boost::uint16_t port(8888), local_port(port);

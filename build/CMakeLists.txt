@@ -302,26 +302,59 @@ LIST(APPEND M_LIBUPNP_DIR
        ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/upnperrors.c
        ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/miniupnpc.c
        ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/libupnp/minissdpc.c)
-FILE(GLOB M_NATPMP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/nat-pmp/*.c*"
-                       "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/nat-pmp/*.h*")
-FILE(GLOB M_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/*.c*"
-                     "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/*.h*")
-LIST(REMOVE_ITEM M_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/upnpclientimpl.cc")
-LIST(REMOVE_ITEM M_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/upnpclientimpl.h")
-FILE(GLOB M_PROTOBUF_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/protobuf/*.c*"
-                         "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/protobuf/*.h*")
-FILE(GLOB M_BASE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/*.c*"
-                     "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/*.h*")
-FILE(GLOB M_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/kademlia/*.c*"
-                         "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/kademlia/*.h*")
+SOURCE_GROUP("libupnp Source Files" FILES ${M_LIBUPNP_DIR})
+
+FILE(GLOB M_NATPMP_C "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/nat-pmp/*.c*")
+FILE(GLOB M_NATPMP_H "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/nat-pmp/*.h*")
+SET(M_NATPMP_DIR ${M_NATPMP_C} ${M_NATPMP_H})
+SOURCE_GROUP("nat-pnp Source Files" FILES ${M_NATPMP_C})
+SOURCE_GROUP("nat-pnp Header Files" FILES ${M_NATPMP_H})
+
+FILE(GLOB M_UPNP_C "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/*.c*")
+FILE(GLOB M_UPNP_H "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/*.h*")
+LIST(REMOVE_ITEM M_UPNP_C "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/upnpclientimpl.cc")
+LIST(REMOVE_ITEM M_UPNP_H "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/upnpclientimpl.h")
+SET(M_UPNP_DIR ${M_UPNP_C} ${M_UPNP_H})
+SOURCE_GROUP("upnp Source Files" FILES ${M_UPNP_C})
+SOURCE_GROUP("upnp Header Files" FILES ${M_UPNP_H})
+
+FILE(GLOB M_PROTOBUF_C "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/protobuf/*.c*")
+FILE(GLOB M_PROTOBUF_H "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/protobuf/*.h*")
+SET(M_PROTOBUF_DIR ${M_PROTOBUF_C} ${M_PROTOBUF_H})
+SOURCE_GROUP("protobuf Source Files" FILES ${M_PROTOBUF_C})
+SOURCE_GROUP("protobuf Header Files" FILES ${M_PROTOBUF_H})
+
+FILE(GLOB M_BASE_C "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/*.c*")
+FILE(GLOB M_BASE_H "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/*.h*")
+SET(M_BASE_DIR ${M_BASE_C} ${M_BASE_H})
+SOURCE_GROUP("base Source Files" FILES ${M_BASE_C})
+SOURCE_GROUP("base Header Files" FILES ${M_BASE_H})
+
+FILE(GLOB M_KADEMLIA_C "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/kademlia/*.c*")
+FILE(GLOB M_KADEMLIA_H "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/kademlia/*.h*")
+SET(M_KADEMLIA_DIR ${M_KADEMLIA_C} ${M_KADEMLIA_H})
 SET(STYLE_KADEMLIA ${M_KADEMLIA_DIR})
-FILE(GLOB M_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/rpcprotocol/*.c*"
-                         "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/rpcprotocol/*.h*")
-SET(STYLE_RPCPROTO ${M_RPCPROTO_DIR})
-FILE(GLOB M_TRANSPORT_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/transport/*.c*"
-                          "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/transport/*.h*")
-FILE(GLOB MAIDSAFE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/*.c*"
-                       "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/*.h*")
+SOURCE_GROUP("kademlia Source Files" FILES ${M_KADEMLIA_C})
+SOURCE_GROUP("kademlia Header Files" FILES ${M_KADEMLIA_H})
+
+FILE(GLOB M_RPCPROTO_C "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/rpcprotocol/*.c*")
+FILE(GLOB M_RPCPROTO_H "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/rpcprotocol/*.h*")
+SET(M_RPCPROTO_DIR ${M_RPCPROTO_C} ${M_RPCPROTO_H})
+SOURCE_GROUP("rpcprotocol Source Files" FILES ${M_RPCPROTO_C})
+SOURCE_GROUP("rpcprotocol Header Files" FILES ${M_RPCPROTO_H})
+
+FILE(GLOB M_TRANSPORT_C "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/transport/*.c*")
+FILE(GLOB M_TRANSPORT_H "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/transport/*.h*")
+SET(M_TRANSPORT_DIR ${M_TRANSPORT_C} ${M_TRANSPORT_H})
+SOURCE_GROUP("transport Source Files" FILES ${M_TRANSPORT_C})
+SOURCE_GROUP("transport Header Files" FILES ${M_TRANSPORT_H})
+
+FILE(GLOB MAIDSAFE_C "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/*.c*")
+FILE(GLOB MAIDSAFE_H "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/*.h*")
+SET(MAIDSAFE_DIR ${MAIDSAFE_C} ${MAIDSAFE_H})
+SOURCE_GROUP("maidsafe Source Files" FILES ${MAIDSAFE_C})
+SOURCE_GROUP("maidsafe Header Files" FILES ${MAIDSAFE_H})
+
 ####    TESTS    ####
 FILE(GLOB T_BASE_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/base/*.c*"
                      "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/base/*.h*")
@@ -349,6 +382,7 @@ FILE(GLOB T_DEMO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/demo/*.c*"
 FILE(GLOB T_BENCHMARK_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/benchmark/*.c*"
                           "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/benchmark/*.h*")
 LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${M_NATPMP_DIR} ${MAIDSAFE_DIR})
+
 ###################################################################################################
 # Traverse subdirs for imported 3rd party libs                                                    #
 ###################################################################################################
@@ -372,42 +406,44 @@ ADD_EXECUTABLE(kaddemo_static ${T_DEMO_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(benchmark_static ${T_BENCHMARK_DIR} ${MAIDSAFE_H})
 
 # Force renaming of exes to match standard CMake library renaming policy
-SET_TARGET_PROPERTIES(TESTbase PROPERTIES
-                        DEBUG_OUTPUT_NAME TESTbase${CMAKE_DEBUG_POSTFIX}
-                        RELWITHDEBINFO_OUTPUT_NAME TESTbase${CMAKE_RELWITHDEBINFO_POSTFIX}
-                        MINSIZEREL_OUTPUT_NAME TESTbase${CMAKE_MINSIZEREL_POSTFIX})
-SET_TARGET_PROPERTIES(TESTkademlia PROPERTIES
-                        DEBUG_OUTPUT_NAME TESTkademlia${CMAKE_DEBUG_POSTFIX}
-                        RELWITHDEBINFO_OUTPUT_NAME TESTkademlia${CMAKE_RELWITHDEBINFO_POSTFIX}
-                        MINSIZEREL_OUTPUT_NAME TESTkademlia${CMAKE_MINSIZEREL_POSTFIX})
-SET_TARGET_PROPERTIES(TESTknode PROPERTIES
-                        DEBUG_OUTPUT_NAME TESTknode${CMAKE_DEBUG_POSTFIX}
-                        RELWITHDEBINFO_OUTPUT_NAME TESTknode${CMAKE_RELWITHDEBINFO_POSTFIX}
-                        MINSIZEREL_OUTPUT_NAME TESTknode${CMAKE_MINSIZEREL_POSTFIX})
-SET_TARGET_PROPERTIES(TESTtransport PROPERTIES
-                        DEBUG_OUTPUT_NAME TESTtransport${CMAKE_DEBUG_POSTFIX}
-                        RELWITHDEBINFO_OUTPUT_NAME TESTtransport${CMAKE_RELWITHDEBINFO_POSTFIX}
-                        MINSIZEREL_OUTPUT_NAME TESTtransport${CMAKE_MINSIZEREL_POSTFIX})
-SET_TARGET_PROPERTIES(TESTrpcprotocol PROPERTIES
-                        DEBUG_OUTPUT_NAME TESTrpcprotocol${CMAKE_DEBUG_POSTFIX}
-                        RELWITHDEBINFO_OUTPUT_NAME TESTrpcprotocol${CMAKE_RELWITHDEBINFO_POSTFIX}
-                        MINSIZEREL_OUTPUT_NAME TESTrpcprotocol${CMAKE_MINSIZEREL_POSTFIX})
-SET_TARGET_PROPERTIES(TESTnatpmp PROPERTIES
-                        DEBUG_OUTPUT_NAME TESTnatpmp${CMAKE_DEBUG_POSTFIX}
-                        RELWITHDEBINFO_OUTPUT_NAME TESTnatpmp${CMAKE_RELWITHDEBINFO_POSTFIX}
-                        MINSIZEREL_OUTPUT_NAME TESTnatpmp${CMAKE_MINSIZEREL_POSTFIX})
-SET_TARGET_PROPERTIES(TESTupnp PROPERTIES
-                        DEBUG_OUTPUT_NAME TESTupnp${CMAKE_DEBUG_POSTFIX}
-                        RELWITHDEBINFO_OUTPUT_NAME TESTupnp${CMAKE_RELWITHDEBINFO_POSTFIX}
-                        MINSIZEREL_OUTPUT_NAME TESTupnp${CMAKE_MINSIZEREL_POSTFIX})
-SET_TARGET_PROPERTIES(kaddemo_static PROPERTIES
-                        DEBUG_OUTPUT_NAME kaddemo_static${CMAKE_DEBUG_POSTFIX}
-                        RELWITHDEBINFO_OUTPUT_NAME kaddemo_static${CMAKE_RELWITHDEBINFO_POSTFIX}
-                        MINSIZEREL_OUTPUT_NAME kaddemo_static${CMAKE_MINSIZEREL_POSTFIX})
-SET_TARGET_PROPERTIES(benchmark_static PROPERTIES
-                        DEBUG_OUTPUT_NAME benchmark_static${CMAKE_DEBUG_POSTFIX}
-                        RELWITHDEBINFO_OUTPUT_NAME benchmark_static${CMAKE_RELWITHDEBINFO_POSTFIX}
-                        MINSIZEREL_OUTPUT_NAME benchmark_static${CMAKE_MINSIZEREL_POSTFIX})
+IF(NOT MSVC)
+  SET_TARGET_PROPERTIES(TESTbase PROPERTIES
+                          DEBUG_OUTPUT_NAME TESTbase${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME TESTbase${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME TESTbase${CMAKE_MINSIZEREL_POSTFIX})
+  SET_TARGET_PROPERTIES(TESTkademlia PROPERTIES
+                          DEBUG_OUTPUT_NAME TESTkademlia${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME TESTkademlia${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME TESTkademlia${CMAKE_MINSIZEREL_POSTFIX})
+  SET_TARGET_PROPERTIES(TESTknode PROPERTIES
+                          DEBUG_OUTPUT_NAME TESTknode${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME TESTknode${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME TESTknode${CMAKE_MINSIZEREL_POSTFIX})
+  SET_TARGET_PROPERTIES(TESTtransport PROPERTIES
+                          DEBUG_OUTPUT_NAME TESTtransport${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME TESTtransport${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME TESTtransport${CMAKE_MINSIZEREL_POSTFIX})
+  SET_TARGET_PROPERTIES(TESTrpcprotocol PROPERTIES
+                          DEBUG_OUTPUT_NAME TESTrpcprotocol${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME TESTrpcprotocol${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME TESTrpcprotocol${CMAKE_MINSIZEREL_POSTFIX})
+  SET_TARGET_PROPERTIES(TESTnatpmp PROPERTIES
+                          DEBUG_OUTPUT_NAME TESTnatpmp${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME TESTnatpmp${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME TESTnatpmp${CMAKE_MINSIZEREL_POSTFIX})
+  SET_TARGET_PROPERTIES(TESTupnp PROPERTIES
+                          DEBUG_OUTPUT_NAME TESTupnp${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME TESTupnp${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME TESTupnp${CMAKE_MINSIZEREL_POSTFIX})
+  SET_TARGET_PROPERTIES(kaddemo_static PROPERTIES
+                          DEBUG_OUTPUT_NAME kaddemo_static${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME kaddemo_static${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME kaddemo_static${CMAKE_MINSIZEREL_POSTFIX})
+  SET_TARGET_PROPERTIES(benchmark_static PROPERTIES
+                          DEBUG_OUTPUT_NAME benchmark_static${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME benchmark_static${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME benchmark_static${CMAKE_MINSIZEREL_POSTFIX})
+ENDIF()
 
 # Need to use __declspec(dllexport) in all API header files before adding SHARED library target
 #ADD_LIBRARY(maidsafe_dht SHARED ${DHT_SOURCE_FILES})
@@ -682,86 +718,82 @@ IF(PYTHONINTERP_FOUND)
     SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
   ENDIF()
 ENDIF()
-SET(FOUNDALLTESTS true)
 
-SET(TEST_EXES TESTupnp TESTnatpmp TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol)
-FOREACH(TEST_EXE ${TEST_EXES})
-  IF(MSVC)
-    SET(TEST_EXECUTABLES ${TEST_EXECUTABLES} ${CMAKE_BUILD_TYPE}/${TEST_EXE}${TEST_POSTFIX}.exe)
-  ELSEIF(WIN32)
-    SET(TEST_EXECUTABLES ${TEST_EXECUTABLES} ${TEST_EXE}${TEST_POSTFIX}.exe)
-  ELSE()
-    SET(TEST_EXECUTABLES ${TEST_EXECUTABLES} ${TEST_EXE}${TEST_POSTFIX})
-  ENDIF()
-ENDFOREACH()
-
+SET(TEST_EXECUTABLES TESTupnp TESTnatpmp TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol)
 FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
-  IF(NOT EXISTS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_EXECUTABLE})
-    IF(FOUNDALLTESTS)
-      SET(FOUNDALLTESTS false)
-      MESSAGE("")
-      MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-      MESSAGE("")
-    ENDIF()
-    MESSAGE(WARNING "Cannot find ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_EXECUTABLE}")
-  ELSE()
-    EXECUTE_PROCESS(COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_EXECUTABLE} --gtest_list_tests OUTPUT_VARIABLE maid_tests)
-    STRING(REPLACE "\n" ";" maid_tests "${maid_tests}")
-    STRING(REPLACE " " "" maid_tests "${maid_tests}")
-    IF(NOT WIN32)
-      STRING(REPLACE " " ";" TEST_EXECUTABLE "${TEST_EXECUTABLE}")
-    ENDIF()
-    FOREACH(tst ${maid_tests})
-      IF(NOT "${tst}" MATCHES [_])
-        STRING(REGEX REPLACE "Test" "" label_name ${tst})
-        STRING(REPLACE "." "" label_name ${label_name})
-      ENDIF()
-      IF(NOT "${tst}" MATCHES "(profiling).+" AND NOT "${tst}" MATCHES "Mergemismatchforsummaries+")
-        IF(NOT "${tst}" MATCHES "(\\.$)")
-          IF("${tst}" MATCHES "(${MAIDSAFE_TEST_TYPE}).+")
-            SET(all_tests ${all_tests} ${tst})
-            ADD_TEST(${tst} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_EXECUTABLE} --gtest_filter=*${tst}*)
-            IF("${tst}" MATCHES "^FUNC_" OR "${tst}" MATCHES "^DISABLED_FUNC_")
-              SET_PROPERTY(TEST ${tst} PROPERTY LABELS Functional ${label_name} ${CMAKE_BUILD_TYPE})
-              SET_PROPERTY(TEST ${tst} PROPERTY TIMEOUT 600)
-            ELSEIF("${tst}" MATCHES "^BEH_" OR "${tst}" MATCHES "^DISABLED_BEH_")
-              SET_PROPERTY(TEST ${tst} PROPERTY LABELS Behavioural ${label_name} ${CMAKE_BUILD_TYPE})
-              SET_PROPERTY(TEST ${tst} PROPERTY TIMEOUT 60)
-            ELSE()
-              MESSAGE("")
-              MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-              MESSAGE("")
-              MESSAGE(AUTHOR_WARNING "${tst} should be named \"BEH_...\" or \"FUNC_...\" (with an optional \"DISABLED_\" prepended).")
-              MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            ENDIF()
-            EXECUTE_PROCESS(COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_EXECUTABLE} --gtest_list_tests --gtest_filter=*${tst}* OUTPUT_VARIABLE repeateds)
-            STRING(REGEX MATCHALL "\n" repeats ${repeateds})
-            LIST(LENGTH repeats count)
-            IF(count GREATER 2)
-              SET(repeated_tests ${repeated_tests} ${tst})
-            ENDIF()
-          ENDIF()
-        ENDIF()
-      ENDIF()
-    ENDFOREACH()
+  IF(TEST_EXECUTABLE STREQUAL "TESTupnp")
+    SET(GTEST_SOURCE_FILES ${T_UPNP_DIR})
+  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTnatpmp")
+    SET(GTEST_SOURCE_FILES ${T_NATPMP_DIR})
+  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTbase")
+    SET(GTEST_SOURCE_FILES ${T_BASE_DIR})
+  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTknode")
+    SET(GTEST_SOURCE_FILES ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/testknode.cc)
+  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTkademlia")
+    SET(GTEST_SOURCE_FILES ${T_KADEMLIA_DIR})
+  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTtransport")
+    SET(GTEST_SOURCE_FILES ${T_TRANSPORT_DIR})
+  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTrpcprotocol")
+    SET(GTEST_SOURCE_FILES ${T_RPCPROTO_DIR})
   ENDIF()
-ENDFOREACH()
-IF(NOT FOUNDALLTESTS)
-  MESSAGE("Run cmake again after make to pick up tests.\n")
-  MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-ENDIF()
-
-IF(NOT CMAKE_SUPPRESS_DEVELOPER_WARNINGS AND DEFINED repeated_tests)
-  SET(WARNING_MESSAGE "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-  FOREACH(var ${repeated_tests})
-    SET(WARNING_MESSAGE "${WARNING_MESSAGE}\nRepeated test name - ${var}")
+  FOREACH(GTEST_SOURCE_FILE ${GTEST_SOURCE_FILES})
+    FILE(STRINGS ${GTEST_SOURCE_FILE} GTEST_NAMES REGEX ^TEST)
+    FOREACH(GTEST_NAME ${GTEST_NAMES})
+      STRING(REGEX REPLACE ["\) \(,"] ";" GTEST_NAME ${GTEST_NAME})
+      LIST(GET GTEST_NAME 1 GTEST_GROUP_NAME)
+      LIST(GET GTEST_NAME 3 GTEST_NAME)
+      ADD_TEST(${GTEST_NAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_EXECUTABLE}${TEST_POSTFIX} --gtest_filter=*${GTEST_NAME}*)
+      IF("${GTEST_NAME}" MATCHES "^FUNC_" OR "${GTEST_NAME}" MATCHES "^DISABLED_FUNC_")
+        SET_PROPERTY(TEST ${GTEST_NAME} PROPERTY LABELS Functional ${GTEST_GROUP_NAME})
+        SET_PROPERTY(TEST ${GTEST_NAME} PROPERTY TIMEOUT 600)
+      ELSEIF("${GTEST_NAME}" MATCHES "^BEH_" OR "${GTEST_NAME}" MATCHES "^DISABLED_BEH_")
+        SET_PROPERTY(TEST ${GTEST_NAME} PROPERTY LABELS Behavioural ${GTEST_GROUP_NAME})
+        SET_PROPERTY(TEST ${GTEST_NAME} PROPERTY TIMEOUT 60)
+      ELSE()
+        MESSAGE("")
+        MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        MESSAGE("")
+        MESSAGE(AUTHOR_WARNING "${GTEST_NAME} should be named \"BEH_...\" or \"FUNC_...\" (with an optional \"DISABLED_\" prepended).")
+        MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+      ENDIF()
+      SET(GTESTS ${GTESTS} ${GTEST_NAME})
+    ENDFOREACH()
   ENDFOREACH()
-  SET(WARNING_MESSAGE "${WARNING_MESSAGE}\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-  MESSAGE(AUTHOR_WARNING ${WARNING_MESSAGE})
-  MESSAGE("================================================================================")
+ENDFOREACH()
+
+# Check for repeated test names
+IF(NOT CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
+  SET(GTEST_NAMES ${GTESTS})
+  LIST(LENGTH GTEST_NAMES GTESTS_COUNT)
+  WHILE(GTESTS_COUNT GREATER 1)
+    LIST(GET GTEST_NAMES 0 GTEST_NAME)
+    LIST(REMOVE_AT GTEST_NAMES 0)
+    STRING(REGEX MATCH ${GTEST_NAME} REPEATED_NAME ${GTEST_NAMES})
+    IF(REPEATED_NAME)
+      IF(NOT WARNING_MESSAGE)
+        MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+      ENDIF()
+      FOREACH(GTEST_TEST_NAME ${GTEST_NAMES})
+        STRING(REGEX MATCH ${GTEST_NAME} OTHER_REPEATED_NAME ${GTEST_TEST_NAME})
+        IF(OTHER_REPEATED_NAME)
+          SET(REPEATED_IN "${REPEATED_IN};${GTEST_TEST_NAME}")
+        ENDIF()
+      ENDFOREACH()
+      SET(WARNING_MESSAGE "${WARNING_MESSAGE}\n\"${REPEATED_NAME}\" repeated in tests\n")
+      SET(WARNING_MESSAGE "${WARNING_MESSAGE}  -- ${REPEATED_NAME}\n")
+      FOREACH(REPEATED_IN_TEST ${REPEATED_IN})
+        SET(WARNING_MESSAGE "${WARNING_MESSAGE}  -- ${REPEATED_IN_TEST}\n")
+      ENDFOREACH()
+    ENDIF()
+    LIST(LENGTH GTEST_NAMES GTESTS_COUNT)
+  ENDWHILE()
+  IF(WARNING_MESSAGE)
+    MESSAGE(AUTHOR_WARNING ${WARNING_MESSAGE})
+    MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    MESSAGE("================================================================================")
+  ENDIF()
 ENDIF()
 
-SET(DART_TESTING_TIMEOUT 2400 CACHE INTERNAL "Maximum time allowed before CTest will kill the test.")
 IF(UNIX)
   SET(MEMORYCHECK_COMMAND "/usr/bin/valgrind --show-reachable=no")
 ENDIF()
