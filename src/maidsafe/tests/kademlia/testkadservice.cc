@@ -91,12 +91,10 @@ class KadServicesTest: public testing::Test {
     crypto_.set_symm_algorithm(crypto::AES_256);
     std::string priv_key, pub_key;
     CreateRSAKeys(&pub_key, &priv_key);
-    std::string hex_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        "aaa01";
+    std::string hex_id(126, 'a');
+    hex_id += "01";
     node_id_ = kad::KadId(hex_id, true);
-    hex_id = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-             "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    hex_id.assign(128, 'e');
     contact_.set_node_id(base::DecodeFromHex(hex_id));
     contact_.set_ip("127.0.0.1");
     contact_.set_port(1234);
@@ -130,8 +128,10 @@ class KadServicesTest: public testing::Test {
   }
 
   virtual void TearDown() {
+    trans_handler_.StopAll();
     delete trans_handler_.Get(transport_id_);
     trans_handler_.Remove(transport_id_);
+    channel_manager_.Stop();
   }
 
   transport::TransportHandler trans_handler_;

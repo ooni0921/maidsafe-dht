@@ -59,18 +59,7 @@ ChannelManagerImpl::ChannelManagerImpl(
           online_status_id_(0) {}
 
 ChannelManagerImpl::~ChannelManagerImpl() {
-  if (is_started_) {
-    Stop();
-  }
-  channels_.clear();
-  std::map<boost::uint32_t, PendingReq>::iterator it;
-  for (it = pending_req_.begin(); it != pending_req_.end(); it++) {
-    delete it->second.args;
-    delete it->second.callback;
-    delete it->second.ctrl;
-  }
-  pending_req_.clear();
-  pending_timeout_.clear();
+  Stop();
 }
 
 void ChannelManagerImpl::AddChannelId(boost::uint32_t *id) {
@@ -195,7 +184,10 @@ int ChannelManagerImpl::Stop() {
   }
   is_started_ = false;
   base::OnlineController::Instance()->UnregisterObserver(online_status_id_);
-  pending_timeout_.clear();
+  {
+    boost::mutex::scoped_lock guard(pend_timeout_mutex_);
+    pending_timeout_.clear();
+  }
   ClearCallLaters();
   {
     boost::mutex::scoped_lock lock(channels_ids_mutex_);
@@ -206,6 +198,7 @@ int ChannelManagerImpl::Stop() {
         channels_ids_.clear();
     }
   }
+  ClearChannels();
   return 1;
 }
 

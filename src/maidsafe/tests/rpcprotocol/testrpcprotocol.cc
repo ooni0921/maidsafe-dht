@@ -222,8 +222,6 @@ class RpcProtocolTest : public testing::Test {
     server_transport_handler->StopAll();
     client_chann_manager->Stop();
     server_chann_manager->Stop();
-    server_chann_manager->ClearChannels();
-    client_chann_manager->ClearChannels();
   }
   static rpcprotocol::ChannelManager *server_chann_manager,
       *client_chann_manager;
@@ -246,17 +244,17 @@ TEST_F(RpcProtocolTest, BEH_RPC_RegisterAChannel) {
   PingTestService service;
   // creating a channel for the service
   rpcprotocol::Channel service_channel(server_chann_manager,
-    server_transport_handler);
+                                       server_transport_handler);
   service_channel.SetService(&service);
   server_chann_manager->RegisterChannel(service.GetDescriptor()->name(),
-      &service_channel);
+                                        &service_channel);
   // creating a channel for the client to send a request to the service
   rpcprotocol::Controller controller;
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel(client_chann_manager,
-    client_transport_handler, client_transport_id, "127.0.0.1",
-    server_transport_handler->listening_port(server_transport_id), "", 0, "",
-    0);
+      client_transport_handler, client_transport_id, "127.0.0.1",
+      server_transport_handler->listening_port(server_transport_id), "", 0, "",
+      0);
   tests::PingTest::Stub stubservice(&out_channel);
   tests::PingRequest req;
   tests::PingResponse resp;
@@ -287,33 +285,33 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
 
   // creating a channel for the service
   rpcprotocol::Channel service_channel1(server_chann_manager,
-    server_transport_handler);
+                                        server_transport_handler);
   service_channel1.SetService(&service1);
   server_chann_manager->RegisterChannel(service1.GetDescriptor()->name(),
-      &service_channel1);
+                                        &service_channel1);
   rpcprotocol::Channel service_channel2(server_chann_manager,
-    server_transport_handler);
+                                        server_transport_handler);
   service_channel2.SetService(&service2);
   server_chann_manager->RegisterChannel(service2.GetDescriptor()->name(),
-      &service_channel2);
+                                        &service_channel2);
   rpcprotocol::Channel service_channel3(server_chann_manager,
-    server_transport_handler);
+                                        server_transport_handler);
   service_channel3.SetService(&service3);
   server_chann_manager->RegisterChannel(service3.GetDescriptor()->name(),
-      &service_channel3);
+                                        &service_channel3);
   rpcprotocol::Channel service_channel4(server_chann_manager,
-    server_transport_handler);
+                                        server_transport_handler);
   service_channel4.SetService(&service4);
   server_chann_manager->RegisterChannel(service4.GetDescriptor()->name(),
-      &service_channel4);
+                                        &service_channel4);
 
   // creating a channel for the client to send a request to the service
   rpcprotocol::Controller controller;
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel(client_chann_manager,
-    client_transport_handler, client_transport_id, "127.0.0.1",
-    server_transport_handler->listening_port(server_transport_id), "", 0, "",
-    0);
+      client_transport_handler, client_transport_id, "127.0.0.1",
+      server_transport_handler->listening_port(server_transport_id), "", 0, "",
+      0);
   tests::PingTest::Stub stubservice1(&out_channel);
   tests::PingRequest req1;
   tests::PingResponse resp1;
@@ -325,9 +323,8 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
       &ResultHolder::GetPingRes, &resp1, &controller);
   stubservice1.Ping(&controller, &req1, &resp1, done1);
-  while (resultholder.ping_res.result() == "") {
+  while (resultholder.ping_res.result().empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  }
   ASSERT_EQ("S", resultholder.ping_res.result());
   ASSERT_TRUE(resultholder.ping_res.has_pong());
   ASSERT_EQ("pong", resultholder.ping_res.pong());
@@ -348,9 +345,8 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
       &ResultHolder::GetOpResult, &resp2, &controller2);
   controller2.set_timeout(6);
   stubservice2.Add(&controller2, &req2, &resp2, done2);
-  while (resultholder.op_res.result() == -1) {
+  while (resultholder.op_res.result() == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  }
   ASSERT_EQ(5, resultholder.op_res.result());
   ASSERT_FALSE(controller2.Failed());
   controller2.Reset();
@@ -372,13 +368,12 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
       &resultholder, &ResultHolder::GetMirrorResult, &resp3, &controller3);
   controller3.set_timeout(1);
   stubservice3.Mirror(&controller3, &req3, &resp3, done3);
-  while (resultholder.mirror_res.mirrored_string() == "-") {
+  while (resultholder.mirror_res.mirrored_string() == "-")
     boost::this_thread::sleep(boost::posix_time::seconds(1));
-  }
   if ("+" != resultholder.mirror_res.mirrored_string()) {
     RpcProtocolTest::server_chann_manager->ClearCallLaters();
     RpcProtocolTest::client_chann_manager->ClearCallLaters();
-    FAIL() << "Operation did not time out";
+    FAIL() << "Operation did not time out.";
   }
   ASSERT_TRUE(controller3.Failed());
   ASSERT_EQ(rpcprotocol::kTimeOut, controller3.ErrorText());
@@ -398,16 +393,15 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
   controller4.set_timeout(70);
   stubservice4.Mirror(&controller4, &req4, &resp4, done4);
 
-  while (resultholder.mirror_res.mirrored_string() == "-") {
+  while (resultholder.mirror_res.mirrored_string() == "-")
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  }
   if ("+" == resultholder.mirror_res.mirrored_string()) {
     RpcProtocolTest::server_chann_manager->ClearCallLaters();
     RpcProtocolTest::client_chann_manager->ClearCallLaters();
-    FAIL() << "Result of mirror Rpc is incorrect";
+    FAIL() << "Result of mirror RPC is incorrect.";
   }
   ASSERT_EQ("9876543210",
-      resultholder.mirror_res.mirrored_string().substr(0, 10));
+            resultholder.mirror_res.mirrored_string().substr(0, 10));
   ASSERT_FALSE(controller4.Failed());
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
   RpcProtocolTest::client_chann_manager->ClearCallLaters();
@@ -416,29 +410,29 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
 TEST_F(RpcProtocolTest, BEH_RPC_ServerAndClientAtSameTime) {
   TestOpService service1;
   rpcprotocol::Channel service_channel1(server_chann_manager,
-    server_transport_handler);
+                                        server_transport_handler);
   service_channel1.SetService(&service1);
   server_chann_manager->RegisterChannel(service1.GetDescriptor()->name(),
-      &service_channel1);
+                                        &service_channel1);
   TestOpService service2;
   rpcprotocol::Channel service_channel2(client_chann_manager,
-    client_transport_handler);
+                                        client_transport_handler);
   service_channel2.SetService(&service2);
   client_chann_manager->RegisterChannel(service2.GetDescriptor()->name(),
-      &service_channel2);
+                                        &service_channel2);
   rpcprotocol::Controller controller1;
   controller1.set_timeout(5);
   rpcprotocol::Controller controller2;
   controller2.set_timeout(5);
 
   rpcprotocol::Channel out_channel1(server_chann_manager,
-    server_transport_handler, server_transport_id, "127.0.0.1",
-    client_transport_handler->listening_port(client_transport_id), "", 0, "",
-    0);
+      server_transport_handler, server_transport_id, "127.0.0.1",
+      client_transport_handler->listening_port(client_transport_id), "", 0, "",
+      0);
   rpcprotocol::Channel out_channel2(client_chann_manager,
-    client_transport_handler, client_transport_id, "127.0.0.1",
-    server_transport_handler->listening_port(server_transport_id), "", 0, "",
-    0);
+      client_transport_handler, client_transport_id, "127.0.0.1",
+      server_transport_handler->listening_port(server_transport_id), "", 0, "",
+      0);
   tests::TestOp::Stub stubservice1(&out_channel1);
 
   tests::BinaryOpRequest req1;
@@ -484,9 +478,9 @@ TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
   boost::uint32_t timeout = 3;
   controller.set_timeout(timeout);
   rpcprotocol::Channel out_channel(client_chann_manager,
-    client_transport_handler, client_transport_id, "127.0.0.1",
-    server_transport_handler->listening_port(server_transport_id) - 1, "", 0,
-    "", 0);
+      client_transport_handler, client_transport_id, "127.0.0.1",
+      server_transport_handler->listening_port(server_transport_id) - 1, "", 0,
+      "", 0);
   tests::PingTest::Stub stubservice(&out_channel);
   tests::PingRequest req;
   tests::PingResponse resp;
@@ -498,7 +492,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
       &ResultHolder::GetPingRes, &resp, &controller);
   stubservice.Ping(&controller, &req, &resp, done);
-  boost::this_thread::sleep(boost::posix_time::seconds(timeout+1));
+  boost::this_thread::sleep(boost::posix_time::seconds(timeout + 1));
   ASSERT_EQ("F", resultholder.ping_res.result());
   ASSERT_FALSE(resultholder.ping_res.has_pong());
   ASSERT_TRUE(controller.Failed());
@@ -510,17 +504,17 @@ TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
 TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   MirrorTestService mirrorservice;
   rpcprotocol::Channel service_channel(server_chann_manager,
-    server_transport_handler);
+                                       server_transport_handler);
   service_channel.SetService(&mirrorservice);
   server_chann_manager->RegisterChannel(mirrorservice.GetDescriptor()->name(),
-      &service_channel);
+                                        &service_channel);
   // Sending rpc to an existing server, but deleting it before response arrives
   rpcprotocol::Controller controller;
   controller.set_timeout(10);
   rpcprotocol::Channel out_channel1(client_chann_manager,
-    client_transport_handler, client_transport_id, "127.0.0.1",
-    server_transport_handler->listening_port(server_transport_id), "", 0, "",
-    0);
+      client_transport_handler, client_transport_id, "127.0.0.1",
+      server_transport_handler->listening_port(server_transport_id), "", 0, "",
+      0);
   std::string test_string(base::RandomString(500 * 1024));
   tests::MirrorTest::Stub stubservice1(&out_channel1);
   tests::StringMirrorRequest req1, req2;
@@ -534,19 +528,19 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
       &resultholder, &ResultHolder::GetMirrorResult, &resp1, &controller);
   stubservice1.Mirror(&controller, &req1, &resp1, done1);
   ASSERT_TRUE(client_chann_manager->DeletePendingRequest(
-              controller.request_id()));
+      controller.request_id()));
   boost::this_thread::sleep(boost::posix_time::seconds(11));
   ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
   ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
   controller.Reset();
-  ASSERT_EQ(std::string(""), controller.ErrorText());
+  ASSERT_TRUE(controller.ErrorText().empty());
 
   // Sending a request to a non-existent server and deleting before it
   // times out
   controller.set_timeout(3);
   rpcprotocol::Channel out_channel2(client_chann_manager,
-    client_transport_handler, client_transport_id, "2.2.2.1", 5555, "", 0, "",
-    0);
+      client_transport_handler, client_transport_id, "2.2.2.1", 5555, "", 0, "",
+      0);
   req2.set_message(test_string);
   req2.set_ip("2.2.2.1");
   req2.set_port(5555);
@@ -626,17 +620,17 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
   MirrorTestService service;
   // creating a channel for the service
   rpcprotocol::Channel service_channel(server_chann_manager,
-    server_transport_handler);
+                                       server_transport_handler);
   service_channel.SetService(&service);
   server_chann_manager->RegisterChannel(service.GetDescriptor()->name(),
-      &service_channel);
+                                        &service_channel);
   // creating a channel for the client to send a request to the service
   rpcprotocol::Controller controller;
   controller.set_timeout(20);
   rpcprotocol::Channel out_channel(client_chann_manager,
-    client_transport_handler, client_transport_id, "127.0.0.1",
-    server_transport_handler->listening_port(server_transport_id), "", 0, "",
-    0);
+      client_transport_handler, client_transport_id, "127.0.0.1",
+      server_transport_handler->listening_port(server_transport_id), "", 0, "",
+      0);
   tests::MirrorTest::Stub stubservice(&out_channel);
   tests::StringMirrorRequest req;
   tests::StringMirrorResponse resp;
@@ -649,13 +643,12 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
       const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
       &resultholder, &ResultHolder::GetMirrorResult, &resp, &controller);
   stubservice.Mirror(&controller, &req, &resp, done);
-  while (resultholder.mirror_res.mirrored_string() == "-") {
+  while (resultholder.mirror_res.mirrored_string() == "-")
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  }
   if ("+" == resultholder.mirror_res.mirrored_string()) {
     RpcProtocolTest::server_chann_manager->ClearCallLaters();
     RpcProtocolTest::client_chann_manager->ClearCallLaters();
-    FAIL() << "Result of mirror Rpc is incorrect";
+    FAIL() << "Result of mirror RPC is incorrect.";
   }
   ASSERT_FALSE(controller.Failed());
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
@@ -666,8 +659,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_ChannelManagerLocalTransport) {
   transport::TransportHandler local_transport_handler;
   transport::TransportUDT local_udt_transport;
   boost::int16_t local_transport_id;
-  local_transport_handler.Register(&local_udt_transport,
-    &local_transport_id);
+  local_transport_handler.Register(&local_udt_transport, &local_transport_id);
   rpcprotocol::ChannelManager chman(&local_transport_handler);
   ASSERT_TRUE(chman.RegisterNotifiersToTransport());
   std::string local_ip;
@@ -676,7 +668,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_ChannelManagerLocalTransport) {
   if (base::GetLocalAddress(&local_address)) {
     local_ip = local_address.to_string();
   } else {
-    FAIL() << "Can not get local address";
+    FAIL() << "Can not get local address.";
   }
   ASSERT_NE(loop_back, local_ip);
   ASSERT_EQ(1, chman.Start());
@@ -686,14 +678,13 @@ TEST_F(RpcProtocolTest, FUNC_RPC_ChannelManagerLocalTransport) {
   // creating a channel for the service
   rpcprotocol::Channel service_channel(&chman, &local_transport_handler);
   service_channel.SetService(&service);
-  chman.RegisterChannel(service.GetDescriptor()->name(),
-      &service_channel);
+  chman.RegisterChannel(service.GetDescriptor()->name(), &service_channel);
   // creating a channel for the client to send a request to the service
   rpcprotocol::Controller controller;
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel1(client_chann_manager,
-    client_transport_handler, client_transport_id, loop_back,
-    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
+      client_transport_handler, client_transport_id, loop_back,
+      local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice1(&out_channel1);
   tests::PingRequest req;
   tests::PingResponse resp1;
@@ -705,7 +696,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_ChannelManagerLocalTransport) {
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
       &ResultHolder::GetPingRes, &resp1, &controller);
   stubservice1.Ping(&controller, &req, &resp1, done1);
-  while (resultholder.ping_res.result() == "")
+  while (resultholder.ping_res.result().empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
   ASSERT_EQ("S", resultholder.ping_res.result());
@@ -717,8 +708,8 @@ TEST_F(RpcProtocolTest, FUNC_RPC_ChannelManagerLocalTransport) {
 
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel2(client_chann_manager,
-    client_transport_handler, client_transport_id, local_ip,
-    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
+      client_transport_handler, client_transport_id, local_ip,
+      local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice2(&out_channel2);
   tests::PingResponse resp2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
@@ -742,7 +733,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   transport::TransportHandler local_transport_handler;
   boost::int16_t local_transport_id;
   local_transport_handler.Register(new transport::TransportUDT,
-    &local_transport_id);
+                                   &local_transport_id);
   rpcprotocol::ChannelManager chman(&local_transport_handler);
   ASSERT_EQ(1, chman.Start());
   ASSERT_TRUE(chman.RegisterNotifiersToTransport());
@@ -752,7 +743,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   if (base::GetLocalAddress(&local_address)) {
     local_ip = local_address.to_string();
   } else {
-    FAIL() << "Can not get local address";
+    FAIL() << "Can not get local address.";
   }
   ASSERT_NE(loop_back, local_ip);
   ASSERT_EQ(1, chman.Start());
@@ -764,14 +755,13 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   // creating a channel for the service
   rpcprotocol::Channel service_channel(&chman, &local_transport_handler);
   service_channel.SetService(&service);
-  chman.RegisterChannel(service.GetDescriptor()->name(),
-      &service_channel);
+  chman.RegisterChannel(service.GetDescriptor()->name(), &service_channel);
   // creating a channel for the client to send a request to the service
   rpcprotocol::Controller controller;
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel1(client_chann_manager,
-    client_transport_handler, client_transport_id, loop_back,
-    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
+      client_transport_handler, client_transport_id, loop_back,
+      local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice1(&out_channel1);
   tests::PingRequest req;
   tests::PingResponse resp1;
@@ -783,7 +773,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
       &ResultHolder::GetPingRes, &resp1, &controller);
   stubservice1.Ping(&controller, &req, &resp1, done1);
-  while (resultholder.ping_res.result() == "")
+  while (resultholder.ping_res.result().empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
   ASSERT_EQ("S", resultholder.ping_res.result());
@@ -795,15 +785,15 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
 
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel2(client_chann_manager,
-    client_transport_handler, client_transport_id, local_ip,
-    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
+      client_transport_handler, client_transport_id, local_ip,
+      local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice2(&out_channel2);
   tests::PingResponse resp2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
       &ResultHolder::GetPingRes, &resp2, &controller);
   stubservice2.Ping(&controller, &req, &resp2, done2);
-  while (resultholder.ping_res.result() == "")
+  while (resultholder.ping_res.result().empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ("F", resultholder.ping_res.result());
   ASSERT_FALSE(resultholder.ping_res.has_pong());
@@ -814,8 +804,9 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   chman.Stop();
   // starting transport
   ASSERT_TRUE(chman.RegisterNotifiersToTransport());
+  chman.RegisterChannel(service.GetDescriptor()->name(), &service_channel);
   ASSERT_TRUE(local_transport_handler.RegisterOnServerDown(boost::bind(
-    &HandleDeadServer, _1, _2, _3)));
+      &HandleDeadServer, _1, _2, _3)));
   ASSERT_EQ(0, local_transport_handler.Start(0, local_transport_id));
   ASSERT_EQ(0, chman.Start());
   local_transport_handler.StartPingRendezvous(true, "", 0, local_transport_id);
@@ -823,8 +814,8 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   resultholder.Reset();
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel3(client_chann_manager,
-    client_transport_handler, client_transport_id, loop_back,
-    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
+      client_transport_handler, client_transport_id, loop_back,
+      local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice3(&out_channel3);
   tests::PingResponse resp3;
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<ResultHolder,
@@ -843,8 +834,8 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
 
   controller.set_timeout(5);
   rpcprotocol::Channel out_channel4(client_chann_manager,
-    client_transport_handler, client_transport_id, local_ip,
-    local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
+      client_transport_handler, client_transport_id, local_ip,
+      local_transport_handler.listening_port(local_transport_id), "", 0, "", 0);
   tests::PingTest::Stub stubservice4(&out_channel4);
   tests::PingResponse resp4;
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<ResultHolder,
