@@ -325,11 +325,10 @@ TEST(CryptoTest, BEH_BASE_SymmEncrypt) {
   std::string result4("result4");
   result4 += boost::lexical_cast<std::string>(base::RandomUint32()) +
             std::string(".txt");
-
-//  ASSERT_EQ(ct.SymmEncrypt(data, "", crypto::STRING_STRING, key), "") <<
-//              "Output data empty";
-//  ASSERT_EQ(ct.SymmDecrypt(data, "", crypto::STRING_STRING, key), "") <<
-//              "Output data empty";
+  /*ASSERT_EQ(ct.SymmEncrypt(data, "", crypto::STRING_STRING, key), "") <<
+              "Output data empty";
+  ASSERT_EQ(ct.SymmDecrypt(data, "", crypto::STRING_STRING, key), "") <<
+              "Output data empty"; */
   ct.set_symm_algorithm(crypto::AES_256);
   EXPECT_EQ(ct.symm_algorithm(), crypto::AES_256);
   std::string cipher_data = ct.SymmEncrypt(data, "",

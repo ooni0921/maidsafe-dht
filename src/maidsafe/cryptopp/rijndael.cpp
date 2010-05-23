@@ -71,7 +71,14 @@ being unloaded from L1 cache, until that round is finished.
 
 #ifdef __sun
 #include <alloca.h>
+#else
+  #ifdef __APPLE__
+   #include <stdlib.h>
+  #endif
+#include <malloc.h>
 #endif
+
+
 
 #ifdef __MINGW32__
 #include <malloc.h>
