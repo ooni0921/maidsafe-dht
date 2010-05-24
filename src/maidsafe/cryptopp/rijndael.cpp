@@ -74,8 +74,10 @@ being unloaded from L1 cache, until that round is finished.
 #else
   #ifdef __APPLE__
    #include <stdlib.h>
+   #include <malloc/malloc.h>
+  #else 
+   #include <malloc.h>
   #endif
-#include <malloc.h>
 #endif
 
 
