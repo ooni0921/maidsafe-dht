@@ -5,15 +5,15 @@
 // use "cl /EP /P /DCRYPTOPP_GENERATE_X64_MASM rijndael.cpp" to generate MASM code
 
 /*
-Feb 2009: The x86/x64 assembly code was rewritten in by Wei Dai to do counter mode 
-caching, which was invented by Hongjun Wu and popularized by Daniel J. Bernstein 
-and Peter Schwabe in their paper "New AES software speed records". The round 
-function was also modified to include a trick similar to one in Brian Gladman's 
-x86 assembly code, doing an 8-bit register move to minimize the number of 
-register spills. Also switched to compressed tables and copying round keys to 
+Feb 2009: The x86/x64 assembly code was rewritten in by Wei Dai to do counter mode
+caching, which was invented by Hongjun Wu and popularized by Daniel J. Bernstein
+and Peter Schwabe in their paper "New AES software speed records". The round
+function was also modified to include a trick similar to one in Brian Gladman's
+x86 assembly code, doing an 8-bit register move to minimize the number of
+register spills. Also switched to compressed tables and copying round keys to
 the stack.
 
-The C++ implementation now uses compressed tables if 
+The C++ implementation now uses compressed tables if
 CRYPTOPP_ALLOW_UNALIGNED_DATA_ACCESS is defined.
 */
 
@@ -21,15 +21,15 @@ CRYPTOPP_ALLOW_UNALIGNED_DATA_ACCESS is defined.
 July 2006: Defense against timing attacks was added in by Wei Dai.
 
 The code now uses smaller tables in the first and last rounds,
-and preloads them into L1 cache before usage (by loading at least 
-one element in each cache line). 
+and preloads them into L1 cache before usage (by loading at least
+one element in each cache line).
 
-We try to delay subsequent accesses to each table (used in the first 
+We try to delay subsequent accesses to each table (used in the first
 and last rounds) until all of the table has been preloaded. Hopefully
 the compiler isn't smart enough to optimize that code away.
 
 After preloading the table, we also try not to access any memory location
-other than the table and the stack, in order to prevent table entries from 
+other than the table and the stack, in order to prevent table entries from
 being unloaded from L1 cache, until that round is finished.
 (Some popular CPUs have 2-way associative caches.)
 */
@@ -75,8 +75,6 @@ being unloaded from L1 cache, until that round is finished.
   #ifdef __APPLE__
    #include <stdlib.h>
    #include <malloc/malloc.h>
-  #else 
-   #include <malloc.h>
   #endif
 #endif
 
@@ -428,7 +426,7 @@ void Rijndael::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock
 
 #ifndef CRYPTOPP_ALLOW_UNALIGNED_DATA_ACCESS
 	// timing attack countermeasure. see comments at top for more details
-	// If CRYPTOPP_ALLOW_UNALIGNED_DATA_ACCESS is defined, 
+	// If CRYPTOPP_ALLOW_UNALIGNED_DATA_ACCESS is defined,
 	// QUARTER_ROUND_LD will use Td, which is already preloaded.
 	u = 0;
 	for (i=0; i<256; i+=cacheLineSize)
@@ -898,7 +896,7 @@ CRYPTOPP_NAKED void CRYPTOPP_FASTCALL Rijndael_Enc_AdvancedProcessBlocks(void *l
 #endif
 #ifdef __GNUC__
 	".att_syntax prefix;"
-	: 
+	:
 	: "c" (locals), "d" (k), "S" (Te), "D" (g_cacheLineSize)
 	: "memory", "cc", "%eax"
 	#if CRYPTOPP_BOOL_X64

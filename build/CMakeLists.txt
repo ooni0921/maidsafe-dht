@@ -79,6 +79,7 @@ SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR})
 
 GET_FILENAME_COMPONENT(${PROJECT_NAME}_ROOT ${${PROJECT_NAME}_SOURCE_DIR} PATH)
 SET(${PROJECT_NAME}_SOURCE_DIR ${${PROJECT_NAME}_ROOT}/src)
+SET(SOURCE_DIR ${${PROJECT_NAME}_ROOT}/src)
 
 IF(NOT MAIDSAFE_TEST_TYPE)
   SET(MAIDSAFE_TEST_TYPE "BEH" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
@@ -188,7 +189,7 @@ ENDIF()
 ###################################################################################################
 # Boost libraries search                                                                          #
 ###################################################################################################
-SET(REQUIRED_BOOST_COMPONENTS date_time filesystem program_options regex system thread)
+SET(REQUIRED_BOOST_COMPONENTS date_time filesystem program_options regex system thread unit_test_framework)
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindBoost.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
@@ -383,6 +384,10 @@ FILE(GLOB T_BENCHMARK_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/benchmar
                           "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/benchmark/*.h*")
 LIST(APPEND DHT_SOURCE_FILES ${M_BASE_DIR} ${M_KADEMLIA_DIR} ${M_TRANSPORT_DIR} ${M_PROTOBUF_DIR} ${M_RPCPROTO_DIR} ${M_LIBUPNP_DIR} ${M_UPNP_DIR} ${M_NATPMP_DIR} ${MAIDSAFE_DIR})
 
+FILE(GLOB T_BOOST_DIR  "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/boost/*.c*")
+
+
+
 ###################################################################################################
 # Traverse subdirs for imported 3rd party libs                                                    #
 ###################################################################################################
@@ -392,6 +397,7 @@ ADD_SUBDIRECTORY(${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/cryptopp ${CMAKE_BINARY_
 ###################################################################################################
 # All Platforms:  Add Test Exes and Create all maidsafe_dht libs                                  #
 ###################################################################################################
+
 ADD_EXECUTABLE(TESTbase ${T_MAIN} ${T_BASE_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTknode "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/testknode.cc" ${MAIDSAFE_H})
@@ -399,6 +405,7 @@ ADD_EXECUTABLE(TESTtransport ${T_MAIN} ${T_TRANSPORT_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTrpcprotocol ${T_MAIN} ${T_RPCPROTO_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTnatpmp ${T_MAIN} ${T_NATPMP_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTupnp ${T_MAIN} ${T_UPNP_DIR} ${MAIDSAFE_H})
+ADD_EXECUTABLE(TESTboost ${T_MAIN} ${T_BOOST_DIR})
 # Need to use __declspec(dllimport) in all API header files before linking to SHARED library target
 #ADD_EXECUTABLE(kaddemo ${T_DEMO_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(kaddemo_static ${T_DEMO_DIR} ${MAIDSAFE_H})
@@ -443,6 +450,10 @@ IF(NOT MSVC)
                           DEBUG_OUTPUT_NAME benchmark_static${CMAKE_DEBUG_POSTFIX}
                           RELWITHDEBINFO_OUTPUT_NAME benchmark_static${CMAKE_RELWITHDEBINFO_POSTFIX}
                           MINSIZEREL_OUTPUT_NAME benchmark_static${CMAKE_MINSIZEREL_POSTFIX})
+  SET_TARGET_PROPERTIES(TESTboost PROPERTIES
+                          DEBUG_OUTPUT_NAME TESTboost${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME TESTboost${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME TESTboost${CMAKE_MINSIZEREL_POSTFIX})
 ENDIF()
 
 # Need to use __declspec(dllexport) in all API header files before adding SHARED library target
@@ -493,6 +504,7 @@ IF(NOT MSVC)
   TARGET_LINK_LIBRARIES(TESTknode maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARY} ${SYS_LIB})
   TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARY} ${SYS_LIB})
   TARGET_LINK_LIBRARIES(TESTupnp maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARY} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTboost  ${Gtest_LIBRARY} ${SYS_LIB})
 #  IF(WIN32)
 #    TARGET_LINK_LIBRARIES(maidsafe_dht "-Wl,--enable-auto-import" udt cryptopp ${SYS_LIB})
 #    TARGET_LINK_LIBRARIES(kaddemo "-Wl,--enable-auto-import" maidsafe_dht udt cryptopp)
@@ -575,6 +587,7 @@ IF(MSVC)
   TARGET_LINK_LIBRARIES(TESTupnp maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
   TARGET_LINK_LIBRARIES(kaddemo_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
   TARGET_LINK_LIBRARIES(benchmark_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTboost  ${Gtest_LIBRARY} ${SYS_LIB})
 
 #  TARGET_LINK_LIBRARIES(maidsafe_dht udt_static cryptopp_static iphlpapi.lib)
 #  TARGET_LINK_LIBRARIES(kaddemo maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
@@ -590,6 +603,7 @@ IF(MSVC)
     TARGET_LINK_LIBRARIES(TESTupnp debug ${DLIB})
     TARGET_LINK_LIBRARIES(kaddemo_static debug ${DLIB})
     TARGET_LINK_LIBRARIES(benchmark_static debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTboost debug ${DLIB})
 #    TARGET_LINK_LIBRARIES(maidsafe_dht debug ${DLIB})
 #    TARGET_LINK_LIBRARIES(kaddemo debug ${DLIB})
 #    TARGET_LINK_LIBRARIES(benchmark debug ${DLIB})
@@ -601,6 +615,7 @@ IF(MSVC)
   TARGET_LINK_LIBRARIES(TESTrpcprotocol debug ${Gtest_LIBRARY_DEBUG})
   TARGET_LINK_LIBRARIES(TESTtransport debug ${Gtest_LIBRARY_DEBUG})
   TARGET_LINK_LIBRARIES(TESTupnp debug ${Gtest_LIBRARY_DEBUG})
+  TARGET_LINK_LIBRARIES(TESTboost debug ${Gtest_LIBRARY_DEBUG})
 
   FOREACH(RLIB ${RELEASE_LIBS})
     TARGET_LINK_LIBRARIES(TESTbase optimized ${RLIB})
@@ -612,6 +627,7 @@ IF(MSVC)
     TARGET_LINK_LIBRARIES(TESTupnp optimized ${RLIB})
     TARGET_LINK_LIBRARIES(kaddemo_static optimized ${RLIB})
     TARGET_LINK_LIBRARIES(benchmark_static optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTboost optimized ${RLIB})
 #    TARGET_LINK_LIBRARIES(maidsafe_dht optimized ${RLIB})
 #    TARGET_LINK_LIBRARIES(kaddemo optimized ${RLIB})
 #    TARGET_LINK_LIBRARIES(benchmark optimized ${RLIB})
@@ -623,6 +639,7 @@ IF(MSVC)
   TARGET_LINK_LIBRARIES(TESTrpcprotocol optimized ${Gtest_LIBRARY})
   TARGET_LINK_LIBRARIES(TESTtransport optimized ${Gtest_LIBRARY})
   TARGET_LINK_LIBRARIES(TESTupnp optimized ${Gtest_LIBRARY})
+  TARGET_LINK_LIBRARIES(TESTboost optimized ${Gtest_LIBRARY})
 ENDIF()
 
 ####APPLE##############################
@@ -632,10 +649,10 @@ IF(APPLE)
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_DARWIN_C_SOURCE")
   ADD_DEFINITIONS(-DMAIDSAFE_APPLE -DBSD)
   SET(MAIDSAFE_DHT_CXX_FLAGS "${CMAKE_CXX_FLAGS} -finline-functions -funswitch-loops -fgcse-after-reload -ftree-vectorize -D_FORTIFY_SOURCE=2 -D__FreeBSD__=10 -D_FILE_OFFSET_BITS=64")
-  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized -O")
+  SET(MAIDSAFE_DHT_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wuninitialized -O2")
   SET(MAIDSAFE_DHT_CXX_FLAGS "-Wall -Wextra -pedantic ")
   IF(CMAKE_BUILD_TYPE MATCHES "Debug")
-    SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES LINK_FLAGS "-pg -fprofile-arcs -ftest-coverage")
+    SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES LINK_FLAGS " -ggdb  -pg -fprofile-arcs -ftest-coverage")
   ENDIF()
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}" CACHE INTERNAL "" FORCE)
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -lgcov" CACHE INTERNAL "" FORCE)
@@ -699,6 +716,7 @@ ENDIF()
 # Tests                                                                                           #
 ###################################################################################################
 INCLUDE(CTest)
+
 SET(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 50000)
 SET(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 50000)
 SET(CTEST_CONTINUOUS_DURATION 600)
@@ -719,7 +737,7 @@ IF(PYTHONINTERP_FOUND)
   ENDIF()
 ENDIF()
 
-SET(TEST_EXECUTABLES TESTupnp TESTnatpmp TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol)
+SET(TEST_EXECUTABLES TESTupnp TESTnatpmp TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol TESTboost)
 FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
   IF(TEST_EXECUTABLE STREQUAL "TESTupnp")
     SET(GTEST_SOURCE_FILES ${T_UPNP_DIR})
@@ -735,6 +753,8 @@ FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
     SET(GTEST_SOURCE_FILES ${T_TRANSPORT_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTrpcprotocol")
     SET(GTEST_SOURCE_FILES ${T_RPCPROTO_DIR})
+  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTboost")
+    SET(GTEST_SOURCE_FILES ${T_BOOST_DIR})
   ENDIF()
   FOREACH(GTEST_SOURCE_FILE ${GTEST_SOURCE_FILES})
     FILE(STRINGS ${GTEST_SOURCE_FILE} GTEST_NAMES REGEX ^TEST)
