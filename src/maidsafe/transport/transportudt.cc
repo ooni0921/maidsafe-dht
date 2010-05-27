@@ -271,7 +271,7 @@ void TransportUDT::Stop() {
     UDT::close((*it).second.udt_socket);
   incoming_sockets_.clear();
   std::map<boost::uint32_t, UDTSOCKET>::iterator it1;
-  for (it1 = send_sockets_.begin(); it1 != send_sockets_.end(); it1++) {
+  for (it1 = send_sockets_.begin(); it1 != send_sockets_.end(); ++it1) {
     UDT::close((*it1).second);
   }
   send_sockets_.clear();
@@ -311,8 +311,7 @@ void TransportUDT::ReceiveHandler() {
     {
     boost::mutex::scoped_lock guard(recv_mutex_);
     UD_ZERO(&readfds);
-    for (it = incoming_sockets_.begin(); it != incoming_sockets_.end();
-        it++) {
+    for (it = incoming_sockets_.begin(); it != incoming_sockets_.end(); ++it) {
       int res = UDT::send((*it).second.udt_socket, NULL, 0, 0);
       if (res == 0) {
         UD_SET((*it).second.udt_socket, &readfds);
@@ -379,7 +378,7 @@ void TransportUDT::ReceiveHandler() {
                   UDT::getlasterror().getErrorMessage() << std::endl;
             } else {
               (*it).second.cumulative_rtt += perf.msRTT;
-              (*it).second.observations++;
+              ++(*it).second.observations;
             }
             if ((*it).second.expect_size <= (*it).second.received_size) {
               ++last_id_;
@@ -555,7 +554,7 @@ void TransportUDT::SendHandle() {
     std::list<OutgoingData>::iterator it;
     {
       boost::mutex::scoped_lock guard(send_mutex_);
-      for (it = outgoing_queue_.begin(); it != outgoing_queue_.end(); it++) {
+      for (it = outgoing_queue_.begin(); it != outgoing_queue_.end(); ++it) {
         if (!it->sent_size) {
           if (UDT::ERROR == UDT::send(it->udt_socket,
               reinterpret_cast<char*>(&it->data_size), sizeof(int64_t), 0)) {
@@ -598,7 +597,7 @@ void TransportUDT::SendHandle() {
           if (it->is_rpc)
             send_notifier_(it->connection_id, true);
           outgoing_queue_.erase(it);
-          msgs_sent_++;
+          ++msgs_sent_;
           break;
         }
       }
@@ -722,7 +721,7 @@ void TransportUDT::PingHandle() {
       // retrying two more times to connect to make sure
       // two seconds between each ping
       bool alive = false;
-      for (int i = 0; i < 2 && !alive; i++) {
+      for (int i = 0; i < 2 && !alive; ++i) {
         boost::this_thread::sleep(boost::posix_time::seconds(2));
         if (Connect(my_rendezvous_ip_, my_rendezvous_port_, &skt) == 0) {
           UDT::close(skt);
@@ -786,7 +785,7 @@ void TransportUDT::AcceptConnHandler() {
     sockaddr peer_addr;
     int peer_addr_size = sizeof(struct sockaddr);
     if (UDT::ERROR != UDT::getpeername(recver, &peer_addr, &peer_addr_size)) {
-      accepted_connections_++;
+      ++accepted_connections_;
       AddIncomingConnection(recver);
     } else {
       UDT::close(recver);
@@ -1010,7 +1009,7 @@ int TransportUDT::ConnectToSend(const std::string &remote_ip,
     // way to avoid blocking in the upper layers
     int retries = 4;
     bool connected = false;
-    for (int i = 0; i < retries && !connected; i++) {
+    for (int i = 0; i < retries && !connected; ++i) {
       conn_result = Connect(remote_ip, remote_port, &skt);
       if (conn_result == 0)
         connected = true;

@@ -314,7 +314,7 @@ void KadService::Downlist(google::protobuf::RpcController *controller,
   if (!request->IsInitialized()) {
     response->set_result(kRpcResultFailure);
   } else if (GetSender(request->sender_info(), &sender)) {
-    for (int i = 0; i < request->downlist_size(); i++) {
+    for (int i = 0; i < request->downlist_size(); ++i) {
       Contact dead_node;
       if (!dead_node.ParseFromString(request->downlist(i)))
         continue;
@@ -562,19 +562,29 @@ void KadService::StoreValueLocal(const std::string &key,
   bool result, hashable;
   std::string ser_value(value.SerializeAsString());
   if (publish) {
-    if (CanStoreSignedValueHashable(key, ser_value, &hashable))
+    if (CanStoreSignedValueHashable(key, ser_value, &hashable)) {
       result = pdatastore_->StoreItem(key, ser_value, ttl, hashable);
-    else
+      if (!result)
+        DLOG(WARNING) << "pdatastore_->StoreItem 1 Failed.";
+    } else {
+      DLOG(WARNING) << "CanStoreSignedValueHashable Failed.";
       result = false;
+    }
   } else {
     std::string ser_del_request;
     result = pdatastore_->RefreshItem(key, ser_value, &ser_del_request);
+
     if (!result && CanStoreSignedValueHashable(key, ser_value, &hashable) &&
         ser_del_request.empty()) {
       result = pdatastore_->StoreItem(key, ser_value, ttl, hashable);
+      if (!result)
+        DLOG(WARNING) << "pdatastore_->StoreItem 2 Failed.";
     } else if (!result && !ser_del_request.empty()) {
       SignedRequest *req = response->mutable_signed_request();
       req->ParseFromString(ser_del_request);
+        DLOG(WARNING) << "Weird Failed. - adding signed req to resp.";
+    } else if (!result) {
+        DLOG(WARNING) << "pdatastore_->RefreshItem Failed.";
     }
   }
   if (result) {

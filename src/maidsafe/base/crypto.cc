@@ -51,7 +51,7 @@ CryptoPP::RandomNumberGenerator & GlobalRNG() {
 std::string Crypto::XOROperation(const std::string &first,
                                  const std::string &second) {
   std::string result(first);
-  for (unsigned int i = 0; i < result.length(); i++) {
+  for (size_t i = 0; i < result.length(); ++i) {
     result[i] = first[i] ^ second[i];
   }
   return result;

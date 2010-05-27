@@ -310,8 +310,8 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &request_id) {
       it->second.size_rec = size_rec;
       req_mutex_.unlock();
       DLOG(INFO) << transport_handler_->listening_port(transport_id) <<
-        " -- Reseting timeout for RPC ID: " << request_id << ". Connection ID: "
-            << connection_id << std::endl;
+          " -- Reseting timeout for RPC ID: " << request_id <<
+          ". Connection ID: " << connection_id << ". Received: " << size_rec;
       AddReqToTimer(request_id, timeout);
     } else {
       DLOG(INFO) << transport_handler_->listening_port(transport_id) <<
@@ -345,11 +345,8 @@ void ChannelManagerImpl::ClearCallLaters() {
   {
     boost::mutex::scoped_lock guard(req_mutex_);
     std::map<boost::uint32_t, PendingReq>::iterator it;
-    for (it = pending_req_.begin(); it != pending_req_.end(); it++) {
-      delete it->second.args;
+    for (it = pending_req_.begin(); it != pending_req_.end(); ++it)
       delete it->second.callback;
-      delete it->second.ctrl;
-    }
     pending_req_.clear();
   }
   ptimer_->CancelAll();

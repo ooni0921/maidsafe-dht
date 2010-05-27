@@ -91,7 +91,7 @@ getDevicesFromMiniSSDPD(const char * devtype, const char * socketpath)
 		return NULL;
 	}
 	p = buffer + 1;
-	for(i = 0; i < buffer[0]; i++)
+	for(i = 0; i < buffer[0]; ++i)
 	{
 		if(p+2>=buffer+sizeof(buffer))
 			break;

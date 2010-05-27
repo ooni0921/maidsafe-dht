@@ -219,7 +219,7 @@ boost::uint32_t IpAsciiToNet(const char *buffer) {
       shift -= 8;
     }
     startQuad = (*buffer == '.');
-    buffer++;
+    ++buffer;
   }
   return ret;
 }

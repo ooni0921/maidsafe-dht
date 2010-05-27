@@ -58,11 +58,11 @@ KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
   // Check if the contact is already in the kbucket to remove it from
   // it and adding it at the top of it
   for (std::list<Contact>::const_iterator it = contacts_.begin();
-      it != contacts_.end() && position == -1; it++) {
+      it != contacts_.end() && position == -1; ++it) {
     Contact current_element = *it;
     if (new_contact_local.Equals(current_element))
       position = i;
-    i++;
+    ++i;
   }
   if (position != -1) {
     std::list<Contact>::iterator it = contacts_.begin();
@@ -81,11 +81,11 @@ void KBucket::RemoveContact(const KadId &node_id, const bool &force) {
   int position = -1;
   int i = 0;
   for (std::list<Contact>::const_iterator it = contacts_.begin();
-    it != contacts_.end(); it++) {
+    it != contacts_.end(); ++it) {
     if (it->node_id() == node_id) {
       position = i;
     }
-    i++;
+    ++i;
   }
 
   if (position != -1) {
@@ -105,7 +105,7 @@ void KBucket::RemoveContact(const KadId &node_id, const bool &force) {
 bool KBucket::GetContact(const KadId &node_id, Contact *contact) {
   bool result = false;
   for (std::list<Contact>::const_iterator it = contacts_.begin();
-    it != contacts_.end() && !result; it++) {
+    it != contacts_.end() && !result; ++it) {
     if (it->node_id() == node_id) {
       *contact = (*it);
       result = true;
@@ -120,7 +120,7 @@ void KBucket::GetContacts(const boost::uint16_t &count,
     bool insert;
     boost::uint16_t i(0);
     for (std::list<Contact>::const_iterator it = contacts_.begin();
-      it != contacts_.end() && i < count; it++) {
+      it != contacts_.end() && i < count; ++it) {
       insert = true;
       for (std::vector<Contact>::const_iterator it1 = exclude_contacts.begin();
            it1 != exclude_contacts.end() && insert; ++it1) {

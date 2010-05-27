@@ -390,7 +390,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     boost::bind(&FindCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(1, cb_2.signed_values().size());
+  ASSERT_LE(1U, cb_2.signed_values().size());
   bool got_value = false;
   for (size_t i = 0; i < cb_2.signed_values().size(); i++) {
     if (value == cb_2.signed_values()[i].value()) {
@@ -407,7 +407,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(1, cb_2.signed_values().size());
+  ASSERT_LE(1U, cb_2.signed_values().size());
   got_value = false;
   for (size_t i = 0; i < cb_2.signed_values().size(); i++) {
     if (value == cb_2.signed_values()[i].value()) {
@@ -424,7 +424,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
     &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(1, cb_2.signed_values().size());
+  ASSERT_LE(1U, cb_2.signed_values().size());
   got_value = false;
   for (size_t i = 0; i < cb_2.signed_values().size(); i++) {
     if (value == cb_2.signed_values()[i].value()) {
@@ -584,7 +584,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
     &FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(1, cb_1.signed_values().size());
+  ASSERT_LE(1U, cb_1.signed_values().size());
   bool got_value = false;
   for (size_t i = 0; i < cb_1.signed_values().size(); i++) {
     if (value == cb_1.signed_values()[i].value()) {
@@ -602,7 +602,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadSmallValue) {
     &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(1, cb_1.signed_values().size());
+  ASSERT_LE(1U, cb_1.signed_values().size());
   got_value = false;
   for (size_t i = 0; i < cb_1.signed_values().size(); i++) {
     if (value == cb_1.signed_values()[i].value()) {
@@ -665,7 +665,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
       boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(1, cb_1.signed_values().size());
+  ASSERT_LE(1U, cb_1.signed_values().size());
   bool got_value = false;
   for (size_t i = 0; i < cb_1.signed_values().size(); i++) {
     if (value == cb_1.signed_values()[i].value()) {
@@ -681,7 +681,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoadBigValue) {
       boost::bind(&FindCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(1, cb_2.signed_values().size());
+  ASSERT_LE(1U, cb_2.signed_values().size());
   got_value = false;
   for (size_t i = 0; i < cb_1.signed_values().size(); i++) {
     if (value == cb_1.signed_values()[i].value()) {
@@ -734,7 +734,7 @@ TEST_F(KNodeTest, FUNC_KAD_StoreAndLoad100Values) {
     wait_result(&cb_1);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result())
         << "No copies of the " << p <<"th value where stored.";
-    ASSERT_EQ(1, cb_1.signed_values().size());
+    ASSERT_EQ(1U, cb_1.signed_values().size());
     ASSERT_EQ(values[p].value(), cb_1.signed_values()[0].value());
     if (!(p % 5))
       printf(".");
@@ -880,7 +880,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
       boost::bind(&FakeCallback::CallbackFunc, &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
-  ASSERT_LE(1, cb_2.signed_values().size());
+  ASSERT_LE(1U, cb_2.signed_values().size());
   bool got_value = false;
   for (size_t i = 0; i < cb_2.signed_values().size(); ++i) {
     if (value == cb_2.signed_values()[i].value()) {
@@ -1242,7 +1242,7 @@ TEST_F(KNodeTest, FUNC_KAD_DeleteValue) {
     &FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(1, cb_1.signed_values().size());
+  ASSERT_LE(1U, cb_1.signed_values().size());
   bool got_value = false;
   for (size_t i = 0; i < cb_1.signed_values().size(); i++) {
     if (value == cb_1.signed_values()[i].value()) {
@@ -1311,7 +1311,7 @@ TEST_F(KNodeTest, FUNC_KAD_InvalidRequestDeleteValue) {
     &FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(size_t(1), cb_1.signed_values().size());
+  ASSERT_LE(1U, cb_1.signed_values().size());
   bool got_value = false;
   for (size_t i = 0; i < cb_1.signed_values().size(); i++) {
     if (value == cb_1.signed_values()[i].value()) {
@@ -1364,7 +1364,7 @@ TEST_F(KNodeTest, FUNC_KAD_InvalidRequestDeleteValue) {
     boost::bind(&FakeCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(1, cb_1.signed_values().size());
+  ASSERT_LE(1U, cb_1.signed_values().size());
   got_value = false;
   for (size_t i = 0; i < cb_1.signed_values().size(); i++) {
     if (value == cb_1.signed_values()[i].value()) {
@@ -1431,7 +1431,7 @@ TEST_F(KNodeTest, FUNC_KAD_UpdateValue) {
                                        &FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
-  ASSERT_LE(1, cb_1.signed_values().size());
+  ASSERT_LE(1U, cb_1.signed_values().size());
   bool got_value = false;
   for (size_t i = 0; i < cb_1.signed_values().size() && !got_value; i++)
     if (value == cb_1.signed_values()[i].value())
@@ -1480,7 +1480,7 @@ TEST_F(KNodeTest, FUNC_KAD_UpdateValue) {
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_TRUE(cb_1.values().empty());
-  ASSERT_EQ(size_t(1), cb_1.signed_values().size());
+  ASSERT_EQ(1U, cb_1.signed_values().size());
   kad::SignedValue el_valiu = cb_1.signed_values()[0];
   ASSERT_EQ(new_sig_value.SerializeAsString(), el_valiu.SerializeAsString());
   cb_1.Reset();

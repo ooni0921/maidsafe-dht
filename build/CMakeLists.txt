@@ -504,7 +504,7 @@ IF(NOT MSVC)
   TARGET_LINK_LIBRARIES(TESTknode maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARY} ${SYS_LIB})
   TARGET_LINK_LIBRARIES(TESTnatpmp maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARY} ${SYS_LIB})
   TARGET_LINK_LIBRARIES(TESTupnp maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARY} ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTboost  ${Gtest_LIBRARY} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTboost ${Gtest_LIBRARY} ${SYS_LIB})
 #  IF(WIN32)
 #    TARGET_LINK_LIBRARIES(maidsafe_dht "-Wl,--enable-auto-import" udt cryptopp ${SYS_LIB})
 #    TARGET_LINK_LIBRARIES(kaddemo "-Wl,--enable-auto-import" maidsafe_dht udt cryptopp)
@@ -567,12 +567,13 @@ IF(MSVC)
   STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
 
   # defining UDT_STATIC prevents declaring __declspec for UDT API functions
-  SET_TARGET_PROPERTIES(maidsafe_dht_static TESTbase TESTkademlia TESTknode TESTnatpmp TESTrpcprotocol TESTtransport TESTupnp kaddemo_static benchmark_static PROPERTIES
+  SET_TARGET_PROPERTIES(TESTbase TESTkademlia TESTknode TESTnatpmp TESTrpcprotocol TESTtransport TESTupnp kaddemo_static benchmark_static TESTboost PROPERTIES
       LINK_FLAGS "/STACK:1048576"
-      LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG"
-      LINK_FLAGS_RELWITHDEBINFO "/LTCG"
-      LINK_FLAGS_MINSIZEREL "/LTCG")
+      LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG")
 
+  # When/if CMake accommodates per-build-type STATIC_LIBRARY_FLAGS, we can use the following line to add /LTCG to the Release build of maidsafe_dht_static
+  # SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+  
   SET(DEBUG_LIBS ${Glog_LIBRARY_DEBUG} ${Protobuf_LIBRARY_DEBUG} ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
       ${Boost_PROGRAM_OPTIONS_LIBRARY_DEBUG} ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG})
   SET(RELEASE_LIBS ${Glog_LIBRARY} ${Protobuf_LIBRARY} ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE}
@@ -587,7 +588,7 @@ IF(MSVC)
   TARGET_LINK_LIBRARIES(TESTupnp maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
   TARGET_LINK_LIBRARIES(kaddemo_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
   TARGET_LINK_LIBRARIES(benchmark_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
-  TARGET_LINK_LIBRARIES(TESTboost  ${Gtest_LIBRARY} ${SYS_LIB})
+  TARGET_LINK_LIBRARIES(TESTboost ${SYS_LIB})
 
 #  TARGET_LINK_LIBRARIES(maidsafe_dht udt_static cryptopp_static iphlpapi.lib)
 #  TARGET_LINK_LIBRARIES(kaddemo maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
@@ -615,7 +616,7 @@ IF(MSVC)
   TARGET_LINK_LIBRARIES(TESTrpcprotocol debug ${Gtest_LIBRARY_DEBUG})
   TARGET_LINK_LIBRARIES(TESTtransport debug ${Gtest_LIBRARY_DEBUG})
   TARGET_LINK_LIBRARIES(TESTupnp debug ${Gtest_LIBRARY_DEBUG})
-  TARGET_LINK_LIBRARIES(TESTboost debug ${Gtest_LIBRARY_DEBUG})
+  TARGET_LINK_LIBRARIES(TESTboost debug ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY_DEBUG} debug ${Gtest_LIBRARY_DEBUG})
 
   FOREACH(RLIB ${RELEASE_LIBS})
     TARGET_LINK_LIBRARIES(TESTbase optimized ${RLIB})
@@ -639,7 +640,7 @@ IF(MSVC)
   TARGET_LINK_LIBRARIES(TESTrpcprotocol optimized ${Gtest_LIBRARY})
   TARGET_LINK_LIBRARIES(TESTtransport optimized ${Gtest_LIBRARY})
   TARGET_LINK_LIBRARIES(TESTupnp optimized ${Gtest_LIBRARY})
-  TARGET_LINK_LIBRARIES(TESTboost optimized ${Gtest_LIBRARY})
+  TARGET_LINK_LIBRARIES(TESTboost optimized ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY_RELEASE} optimized ${Gtest_LIBRARY})
 ENDIF()
 
 ####APPLE##############################
@@ -793,6 +794,7 @@ IF(NOT CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
       IF(NOT WARNING_MESSAGE)
         MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
       ENDIF()
+      SET(REPEATED_IN)
       FOREACH(GTEST_TEST_NAME ${GTEST_NAMES})
         STRING(REGEX MATCH ${GTEST_NAME} OTHER_REPEATED_NAME ${GTEST_TEST_NAME})
         IF(OTHER_REPEATED_NAME)

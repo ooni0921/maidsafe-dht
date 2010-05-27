@@ -156,7 +156,7 @@ void fv_9(long a, long b, long c, long d, long e, long f, long g, long h, long i
     global_result = a + 10 * b + 100 * c + 1000 * d + 10000 * e + 100000 * f + 1000000 * g + 10000000 * h + 100000000 * i;
 }
 
-TEST(boost, BEH_BOOST_bind_function) {
+TEST(boost, BEH_BOOST_bind_function_simple) {
 //Simple check that bound functions are executing with correct results
     int const i = 1;
 
@@ -193,7 +193,7 @@ struct Y
     void operator() (long a, long b, long c, long d) const { global_result = a + 10 * b + 100 * c + 1000 * d; }
 };
 
-TEST(boost, BEH_BOOST_bind_function_object) {
+TEST(boost, BEH_BOOST_bind_function_object1) {
 //Test boost::binding a function object (struct Y in this case)
 //Doc
 //The expression boost::ref(x) returns a boost::reference_wrapper<X>(x)
@@ -322,7 +322,7 @@ struct V
 };
 
 
-TEST(boost, BEH_BOOST_bind_member_function) {
+TEST(boost, BEH_BOOST_bind_member_function_non_void) {
 
     X x;
 

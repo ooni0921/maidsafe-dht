@@ -138,7 +138,7 @@ void KadRpcs::Downlist(const std::vector<std::string> downlist,
       DownlistResponse *resp, rpcprotocol::Controller *ctler,
       google::protobuf::Closure *callback) {
   DownlistRequest args;
-  for (unsigned int i = 0; i < downlist.size(); i++)
+  for (unsigned int i = 0; i < downlist.size(); ++i)
     args.add_downlist(downlist[i]);
   rpcprotocol::Controller controller;
   ContactInfo *sender_info = args.mutable_sender_info();

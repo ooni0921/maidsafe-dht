@@ -127,7 +127,7 @@ boost::uint16_t OnlineController::ObserversInGroupCount(
   for (std::map<boost::uint16_t, GroupedObserver>::iterator it =
        observers_.begin(); it != observers_.end(); ++it) {
     if ((*it).second.first == group)
-      n++;
+      ++n;
   }
   return n;
 }

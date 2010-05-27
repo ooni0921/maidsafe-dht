@@ -20,7 +20,7 @@ void IGDstartelt(void * d, const char * name, int l)
 	struct IGDdatas * datas = (struct IGDdatas *)d;
 	memcpy( datas->cureltname, name, l);
 	datas->cureltname[l] = '\0';
-	datas->level++;
+	++datas->level;
 	if( (l==7) && !memcmp(name, "service", l) ) {
 		datas->controlurl_tmp[0] = '\0';
 		datas->eventsuburl_tmp[0] = '\0';
@@ -44,7 +44,7 @@ void IGDendelt(void * d, const char * name, int l)
 			&& !strcmp(datas->servicetype,
 				//	"urn:schemas-upnp-org:service:WANIPConnection:1") )
 				"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1"))
-			datas->state ++;
+			++datas->state;
 		*/
 		if(0==strcmp(datas->servicetype_tmp,
 				"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1")) {

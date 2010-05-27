@@ -1641,7 +1641,7 @@ void KNodeImpl::SearchIteration(boost::shared_ptr<IterativeLookUpData> data) {
     ContactAndTargetKey last_active;
     last_active.contact = data->active_contacts.back();
     last_active.target_key = data->key;
-    for (it = data->short_list.begin(); it != data->short_list.end(); ++it)
+    for (it = data->short_list.begin(); it != data->short_list.end(); ++it) {
       if (!it->contacted) {
         ContactAndTargetKey notcontated;
         notcontated.contact = it->kad_contact;
@@ -1651,6 +1651,7 @@ void KNodeImpl::SearchIteration(boost::shared_ptr<IterativeLookUpData> data) {
           break;
         }
       }
+    }
   }
   if (!closer_nodes) {
     // waiting for all the rpc's sent in the iteration
@@ -2072,13 +2073,13 @@ void KNodeImpl::SearchIteration_Callback(
       }
     } else {
       for (it1 = data->active_contacts.begin(), count = 0;
-         it1 != data->active_contacts.end() && count < K_; ++it1, ++count) {
-      std::string ser_contact;
-      // Adding contact info of nodes contacted in the iterative search
-      // the nodes are ordered from closest to furthest away from the key/node
-      // id searched
-      if (it1->SerialiseToString(&ser_contact))
-        result.add_closest_nodes(ser_contact);
+           it1 != data->active_contacts.end() && count < K_; ++it1, ++count) {
+        std::string ser_contact;
+        // Adding contact info of nodes contacted in the iterative search
+        // the nodes are ordered from closest to furthest away from the key/node
+        // id searched
+        if (it1->SerialiseToString(&ser_contact))
+          result.add_closest_nodes(ser_contact);
       }
       if (result.closest_nodes_size() > 0 && data->method == FIND_NODE)
         result.set_result(kRpcResultSuccess);

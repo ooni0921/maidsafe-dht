@@ -216,7 +216,7 @@ void RoutingTable::FindCloseNodes(const KadId &key, int count,
 void RoutingTable::GetRefreshList(std::vector<KadId> *ids,
   const boost::uint16_t &start_kbucket, const bool &force) {
   boost::uint32_t curr_time = base::GetEpochTime();
-  for (size_t i = start_kbucket; i < k_buckets_.size(); i++)
+  for (size_t i = start_kbucket; i < k_buckets_.size(); ++i)
     if (force || curr_time-k_buckets_[i]->last_accessed() > kRefreshTime) {
       ids->push_back(KadId(k_buckets_[i]->range_min(),
           k_buckets_[i]->range_max()));
@@ -298,16 +298,16 @@ bool get_least_useful_contact(std::list<ContactWithTargetPeer> l,
   std::list<ForceKEntry> l_score;
   int d = 1;
   for (std::list<ContactWithTargetPeer>::iterator it = l.begin();
-      it != l.end(); it++) {
+      it != l.end(); ++it) {
     ForceKEntry entry = {it->contact, d++};
     l_score.push_back(entry);
   }
   l.sort(compare_time);
   int t = 1;
   for (std::list<ContactWithTargetPeer>::iterator it = l.begin();
-      it != l.end(); it++) {
+      it != l.end(); ++it) {
     for (std::list<ForceKEntry>::iterator it1 = l_score.begin();
-        it1 != l_score.end(); it1++) {
+        it1 != l_score.end(); ++it1) {
       if (it->contact.Equals(it1->contact))
         it1->score += t++;
     }
@@ -354,7 +354,7 @@ int RoutingTable::ForceKAcceptNewPeer(const Contact &new_contact) {
   // put all entries of Bp , which are not among the k closest peers into a
   // list l and drop the peer which is the least useful
   std::list<detail::ContactWithTargetPeer> l;
-  for (; it != candidates_for_l.end(); it++)
+  for (; it != candidates_for_l.end(); ++it)
     l.push_back(*it);
   Contact least_useful_contact;
   if (detail::get_least_useful_contact(l, &least_useful_contact)) {

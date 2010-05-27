@@ -45,7 +45,7 @@ bool DataStore::Keys(std::set<std::string> *keys) {
   keys->clear();
   boost::mutex::scoped_lock guard(mutex_);
   for (datastore::iterator it = datastore_.begin();
-       it !=  datastore_.end(); it++)
+       it != datastore_.end(); ++it)
     keys->insert(it->key_);
   return true;
 }
@@ -88,7 +88,7 @@ bool DataStore::LoadItem(const std::string &key,
     if ((ttl_remaining > 0 || p.first->ttl_ == -1) &&
         (p.first->del_status_ == NOT_DELETED))
       values->push_back(p.first->value_);
-    p.first++;
+    ++p.first;
   }
   if (values->empty())
     return false;
@@ -141,7 +141,7 @@ std::vector<refresh_value> DataStore::ValuesToRefresh() {
   boost::uint32_t now = base::GetEpochTime();
   boost::uint32_t time_limit = now - t_refresh_;
   up_limit = indx.upper_bound(time_limit);
-  for (it = indx.begin(); it != up_limit; it++) {
+  for (it = indx.begin(); it != up_limit; ++it) {
     if (it->ttl_ == -1 && it->del_status_ == NOT_DELETED) {
       values.push_back(refresh_value(it->key_, it->value_, it->ttl_));
     } else {
@@ -193,7 +193,7 @@ std::vector<std::pair<std::string, bool> > DataStore::LoadKeyAppendableAttr(
   while (p.first != p.second) {
     result.push_back(std::pair<std::string, bool>(p.first->value_,
         p.first->appendable_key_));
-    p.first++;
+    ++p.first;
   }
   return result;
 }
