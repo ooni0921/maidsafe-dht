@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2010, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 10/10/2009
+   Yunhong Gu, last updated 04/08/2010
 *****************************************************************************/
 
 #include <cstring>
@@ -192,9 +192,9 @@ int CSndBuffer::addBufferFromFile(fstream& ifs, const int& len)
 
       total += pktlen;
    }
-   m_pLastBlock = s;
 
    CGuard::enterCS(m_BufLock);
+   m_pLastBlock = s;
    m_iCount += size;
    CGuard::leaveCS(m_BufLock);
 

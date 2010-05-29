@@ -83,11 +83,7 @@ written by
       #ifdef UDT_EXPORTS
          #define UDT_API __declspec(dllexport)
       #else
-         #ifdef UDT_STATIC
-           #define UDT_API
-         #else
-           #define UDT_API __declspec(dllimport)
-         #endif
+         #define UDT_API __declspec(dllimport)
       #endif
    #else
       #define UDT_API
@@ -206,7 +202,7 @@ public:
       // Returned value:
       //    errno.
 
-   virtual int getErrorCode() const;
+   virtual const int getErrorCode() const;
 
       // Functionality:
       //    Clear the error code.
@@ -231,6 +227,9 @@ private:
    int m_iMinor;		// for specific error reasons
    int m_iErrno;		// errno returned by the system if there is any
    std::string m_strMsg;	// text error message
+
+   std::string m_strAPI;	// the name of UDT function that returns the error
+   std::string m_strDebug;	// debug information, set to the original place that causes the error
 
 public: // Error Code
    static const int SUCCESS;
