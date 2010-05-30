@@ -6,7 +6,7 @@ want to use Microsoft Visual Studio instead, move to build/Win_MSVC and see the 
 
 #  Open a Windows command terminal
 #  cd to build dir for Windows matching the build type required (build\Win_MinGW\Debug, build\Win_MinGW\Release, etc.)
-#  Run cmake ..\.. -G"CodeBlocks - MinGW Makefiles".  This will create a CodeBlocks project
+#  Run cmake ..\..\.. -G"CodeBlocks - MinGW Makefiles".  This will create a CodeBlocks project
    e.g. build\Win_MinGW\Debug\maidsafe-dht.cbp which will allow you to make and install all the targets from within
    the CodeBlocks IDE.
 

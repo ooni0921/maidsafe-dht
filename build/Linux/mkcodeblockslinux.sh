@@ -1,2 +1,2 @@
 #!/bin/bash
-cmake ../.. -G"CodeBlocks - Unix Makefiles"
+cmake ../../.. -G"CodeBlocks - Unix Makefiles"

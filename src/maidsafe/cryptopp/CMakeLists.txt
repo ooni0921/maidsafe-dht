@@ -94,24 +94,21 @@ ADD_LIBRARY(cryptopp_static STATIC ${cryptopp_SOURCES} ${cryptopp_HEADERS})
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES OUTPUT_NAME cryptopp)
 #ENDIF()
 
-SET_TARGET_PROPERTIES(cryptest PROPERTIES
-                        DEBUG_OUTPUT_NAME cryptest${CMAKE_DEBUG_POSTFIX}
-                        RELWITHDEBINFO_OUTPUT_NAME cryptest${CMAKE_RELWITHDEBINFO_POSTFIX}
-                        MINSIZEREL_OUTPUT_NAME cryptest${CMAKE_MINSIZEREL_POSTFIX})
-
 IF(MSVC)
   INSTALL(TARGETS cryptopp_static # cryptopp
             RUNTIME DESTINATION bin
             LIBRARY DESTINATION bin
-            ARCHIVE DESTINATION lib
-          )
+            ARCHIVE DESTINATION lib)
 
 ELSE()
+  SET_TARGET_PROPERTIES(cryptest PROPERTIES
+                          DEBUG_OUTPUT_NAME cryptest${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME cryptest${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME cryptest${CMAKE_MINSIZEREL_POSTFIX})
   INSTALL(TARGETS cryptopp_static # cryptopp
             RUNTIME DESTINATION bin
             LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-          )
+            ARCHIVE DESTINATION lib)
 ENDIF()
 
 IF(NOT WIN32)
@@ -128,45 +125,21 @@ IF(APPLE)
 #  SET_TARGET_PROPERTIES(cryptopp PROPERTIES COMPILE_FLAGS "-w -finline-functions ${OPT_FLAG}")
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "-fPIC -w -finline-functions ${OPT_FLAG}")
   TARGET_LINK_LIBRARIES(cryptest cryptopp_static)
-  ADD_TEST(cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} v)
-  ADD_TEST(cryptest_aes ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv aes)
-  ADD_TEST(cryptest_sha ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv sha)
-  ADD_TEST(cryptest_rsa_pss ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv rsa_pss)
-  ADD_TEST(cryptest_rsa_oaep ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv rsa_oaep)
-  ADD_TEST(cryptest_rsa_pkcs1_1_5 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv rsa_pkcs1_1_5)
-
 ELSEIF(UNIX AND NOT APPLE)
 #  SET_TARGET_PROPERTIES(cryptopp PROPERTIES COMPILE_FLAGS "-w -pipe -finline-functions ${OPT_FLAG}")
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "-fPIC -w -pipe -finline-functions ${OPT_FLAG}")
   TARGET_LINK_LIBRARIES(cryptest cryptopp_static)
-  ADD_TEST(cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} v)
-  ADD_TEST(cryptest_aes ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv aes)
-  ADD_TEST(cryptest_sha ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv sha)
-  ADD_TEST(cryptest_rsa_pss ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv rsa_pss)
-  ADD_TEST(cryptest_rsa_oaep ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv rsa_oaep)
-  ADD_TEST(cryptest_rsa_pkcs1_1_5 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv rsa_pkcs1_1_5)
-
 ELSEIF(WIN32 AND NOT MSVC)
 #  SET_TARGET_PROPERTIES(cryptopp PROPERTIES COMPILE_FLAGS "-mthreads -w -finline-functions ${OPT_FLAG} -D_WIN32_WINNT=0x0501")
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "-mthreads -w -finline-functions ${OPT_FLAG} -D_WIN32_WINNT=0x0501")
   TARGET_LINK_LIBRARIES(cryptest cryptopp_static odbc32 odbccp32 Ws2_32)
-  ADD_TEST(cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX}.exe v)
-  ADD_TEST(cryptest_aes ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX}.exe tv aes)
-  ADD_TEST(cryptest_sha ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX}.exe tv sha)
-  ADD_TEST(cryptest_rsa_pss ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX}.exe tv rsa_pss)
-  ADD_TEST(cryptest_rsa_oaep ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX}.exe tv rsa_oaep)
-  ADD_TEST(cryptest_rsa_pkcs1_1_5 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX}.exe tv rsa_pkcs1_1_5)
-
 ELSEIF(WIN32 AND MSVC)
-
   CMAKE_POLICY(SET CMP0008 NEW)
-
   SET_TARGET_PROPERTIES(cryptopp_static PROPERTIES COMPILE_FLAGS "/D_WINDOWS /DUSE_PRECOMPILED_HEADERS /DWIN32 /D_VC80_UPGRADE=0x0710 /EHsc /W3")
   SET_TARGET_PROPERTIES(cryptest PROPERTIES COMPILE_FLAGS "/D_CONSOLE /DWIN32 /D_VC80_UPGRADE=0x0710 /D_MBCS /EHsc /W3 /Zm400"
                                             LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG"
                                             LINK_FLAGS_RELWITHDEBINFO "/LTCG"
                                             LINK_FLAGS_MINSIZEREL "/LTCG")
-
   SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Oi /Oy /GL /DNDEBUG /GF /MD /Gy /Zi")
   SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Oi /D_DEBUG /MDd /arch:SSE /ZI")
   LIST(REMOVE_ITEM cryptopp_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/dll.cpp") # this file doesn't use precompiled headers
@@ -176,16 +149,15 @@ ELSEIF(WIN32 AND MSVC)
                                COMPILE_FLAGS "/Yu\"pch.h\"")
   SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp PROPERTIES
                                COMPILE_FLAGS "/Yc\"pch.h\"")
-
   TARGET_LINK_LIBRARIES(cryptest cryptopp_static odbc32.lib odbccp32.lib Ws2_32.lib)
-
-  ADD_TEST(cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/cryptest${TEST_POSTFIX}.exe v)
-  ADD_TEST(cryptest_aes ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/cryptest${TEST_POSTFIX}.exe tv aes)
-  ADD_TEST(cryptest_sha ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/cryptest${TEST_POSTFIX}.exe tv sha)
-  ADD_TEST(cryptest_rsa_pss ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/cryptest${TEST_POSTFIX}.exe tv rsa_pss)
-  ADD_TEST(cryptest_rsa_oaep ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/cryptest${TEST_POSTFIX}.exe tv rsa_oaep)
-  ADD_TEST(cryptest_rsa_pkcs1_1_5 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/cryptest${TEST_POSTFIX}.exe tv rsa_pkcs1_1_5)
 ENDIF()
+
+ADD_TEST(cryptest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} v)
+ADD_TEST(cryptest_aes ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv aes)
+ADD_TEST(cryptest_sha ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv sha)
+ADD_TEST(cryptest_rsa_pss ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv rsa_pss)
+ADD_TEST(cryptest_rsa_oaep ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv rsa_oaep)
+ADD_TEST(cryptest_rsa_pkcs1_1_5 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cryptest${TEST_POSTFIX} tv rsa_pkcs1_1_5)
 
 SET_PROPERTY(TEST cryptest PROPERTY LABELS Behavioural crypto ${CMAKE_BUILD_TYPE})
 SET_PROPERTY(TEST cryptest PROPERTY TIMEOUT 60)

@@ -2,7 +2,7 @@ OSX Build Instructions
 ======================
 
 #  cd to build dir for OSX matching the build type required (build/OSX/Debug, build/OSX/Release, etc.)
-#  Run cmake ../.. -G"CodeBlocks - Unix Makefiles"
+#  Run cmake ../../.. -G"CodeBlocks - Unix Makefiles"
 #  Run make (this will make all). Other options:
 
     *  Run make Experimental to configure, build, test and upload to our dashboard.
