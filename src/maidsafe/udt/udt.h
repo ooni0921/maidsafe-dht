@@ -83,7 +83,11 @@ written by
       #ifdef UDT_EXPORTS
          #define UDT_API __declspec(dllexport)
       #else
-         #define UDT_API __declspec(dllimport)
+         #ifdef UDT_STATIC
+           #define UDT_API
+         #else
+           #define UDT_API __declspec(dllimport)
+         #endif
       #endif
    #else
       #define UDT_API

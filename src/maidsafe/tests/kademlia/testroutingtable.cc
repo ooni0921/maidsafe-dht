@@ -29,7 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/lexical_cast.hpp>
 #include "maidsafe/base/log.h"
 #include "maidsafe/kademlia/kbucket.h"
-#include "maidsafe/kademlia/routingtable.h"
+#include "maidsafe/kademlia/kadroutingtable.h"
 #include "maidsafe/base/crypto.h"
 #include "maidsafe/maidsafe-dht.h"
 

@@ -562,17 +562,17 @@ IF(MSVC)
                               ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/transport/testtransport.cc
                                 PROPERTIES COMPILE_FLAGS "/wd4503")
 
-  # CMake defaults stack size to 10MB.  Set this to windows default of 1MB
+  # CMake defaults to passing stack size in LINKER_FLAGS of 10MB.  Set this to windows default of 1MB
   STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
   STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+  SET(CMAKE_CXX_STACK_SIZE 1048576)
 
   # defining UDT_STATIC prevents declaring __declspec for UDT API functions
   SET_TARGET_PROPERTIES(TESTbase TESTkademlia TESTknode TESTnatpmp TESTrpcprotocol TESTtransport TESTupnp kaddemo_static benchmark_static TESTboost PROPERTIES
-      LINK_FLAGS "/STACK:1048576"
       LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG")
 
-  # When/if CMake accommodates per-build-type STATIC_LIBRARY_FLAGS, we can use the following line to add /LTCG to the Release build of maidsafe_dht_static
-  # SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+  # Next version of CMake accommodates per-build-type STATIC_LIBRARY_FLAGS.  Until then, this has no effect.
+  SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
   
   SET(DEBUG_LIBS ${Glog_LIBRARY_DEBUG} ${Protobuf_LIBRARY_DEBUG} ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
       ${Boost_PROGRAM_OPTIONS_LIBRARY_DEBUG} ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG})

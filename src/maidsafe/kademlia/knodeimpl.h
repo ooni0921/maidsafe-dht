@@ -44,7 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/kademlia/datastore.h"
 #include "maidsafe/kademlia/kadrpc.h"
 #include "maidsafe/kademlia/natrpc.h"
-#include "maidsafe/kademlia/routingtable.h"
+#include "maidsafe/kademlia/kadroutingtable.h"
 #include "maidsafe/kademlia/kadservice.h"
 #include "maidsafe/rpcprotocol/channel-api.h"
 #include "maidsafe/protobuf/general_messages.pb.h"

@@ -285,7 +285,7 @@ int CChannel::sendto(const sockaddr* addr, CPacket& packet) const
 int CChannel::recvfrom(sockaddr* addr, CPacket& packet) const
 {
    #ifndef WIN32
-      msghdr mh;   
+      msghdr mh;
       mh.msg_name = addr;
       mh.msg_namelen = (AF_INET == m_iIPversion) ? sizeof(sockaddr_in) : sizeof(sockaddr_in6);
       mh.msg_iov = packet.m_PacketVector;

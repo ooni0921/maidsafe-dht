@@ -33,42 +33,44 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/weak_ptr.hpp>
 #include <cstddef>
 
-class X
-{
-private:
+class X {
+ public:
+  explicit X(int a1,
+             int a2,
+             int a3,
+             int a4,
+             int a5,
+             int a6,
+             int a7,
+             int a8,
+             int a9)
+      : v(a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9) {
+    ++instances;
+  }
 
-    X( X const & );
-    X & operator=( X const & );
+  ~X() {
+    --instances;
+  }
 
-    void * operator new( std::size_t n )
-    {
-        // lack of this definition causes link errors on Comeau C++
-        BOOST_ERROR( "private X::new called" );
-        return ::operator new( n );
-    }
+  static int instances;
+  int v;
 
-    void operator delete( void * p )
-    {
-        // lack of this definition causes link errors on MSVC
-        BOOST_ERROR( "private X::delete called" );
-        ::operator delete( p );
-    }
+ private:
+  X(X const &);  // NOLINT
 
-public:
+  X & operator=(X const &);
 
-    static int instances;
+  void * operator new(std::size_t n) {
+    // lack of this definition causes link errors on Comeau C++
+    BOOST_ERROR("private X::new called");
+    return ::operator new(n);
+  }
 
-    int v;
-
-    explicit X( int a1 = 0, int a2 = 0, int a3 = 0, int a4 = 0, int a5 = 0, int a6 = 0, int a7 = 0, int a8 = 0, int a9 = 0 ): v( a1+a2+a3+a4+a5+a6+a7+a8+a9 )
-    {
-        ++instances;
-    }
-
-    ~X()
-    {
-        --instances;
-    }
+  void operator delete(void * p) {
+    // lack of this definition causes link errors on MSVC
+    BOOST_ERROR("private X::delete called");
+    ::operator delete(p);
+  }
 };
 
 int X::instances = 0;
@@ -76,192 +78,162 @@ int X::instances = 0;
 
 
 TEST(boost, BEH_BOOST_smart_ptr_AtomicCount1) {
-
-boost::detail::atomic_count n( 4 );
-    ASSERT_EQ( n , 4L );
-    ++n;
-    ASSERT_EQ( n , 5L );
-    ASSERT_NE( --n , 0L );
-    boost::detail::atomic_count m( 0 );
-    ASSERT_EQ( m , 0 );
-    ++m;
-    ASSERT_EQ( m , 1 );
-    ++m;
-    ASSERT_EQ( m , 2 );
-    ASSERT_NE( --m , 0 );
-    ASSERT_EQ( --m , 0 );
+  boost::detail::atomic_count n(4);
+  ASSERT_EQ(n, 4L);
+  ++n;
+  ASSERT_EQ(n, 5L);
+  ASSERT_NE(--n, 0L);
+  boost::detail::atomic_count m(0);
+  ASSERT_EQ(m, 0);
+  ++m;
+  ASSERT_EQ(m, 1);
+  ++m;
+  ASSERT_EQ(m, 2);
+  ASSERT_NE(--m, 0);
+  ASSERT_EQ(--m, 0);
 }
 
 TEST(boost, BEH_BOOST_smart_ptr_AtomicCount2) {
-
-boost::detail::atomic_count n( 4 );
-    ASSERT_EQ( n , 4 );
-    ASSERT_EQ( ++n , 5 );
-    ASSERT_EQ( ++n , 6 );
-    ASSERT_EQ( n , 6 );
-    ASSERT_EQ( --n , 5 );
-    ASSERT_EQ( --n , 4 );
-    ASSERT_EQ( --n , 3 );
-    boost::detail::atomic_count m( 0 );
-    ASSERT_EQ( m , 0 );
-    ASSERT_EQ( ++m , 1 );
-    ASSERT_EQ( ++m , 2 );
-    ASSERT_EQ( m , 2 );
-    ASSERT_EQ( --m , 1 );
-    ASSERT_EQ( --m , 0 );
-    ASSERT_EQ( --m , -1 );
-    ASSERT_EQ( --m , -2 );
-    ASSERT_EQ( --m , -3 );
-    ASSERT_EQ( --m , -4 );
-    ASSERT_EQ( ++m , -3 );
-    ASSERT_EQ( --m , -4 );
+  boost::detail::atomic_count n(4);
+  ASSERT_EQ(n, 4);
+  ASSERT_EQ(++n, 5);
+  ASSERT_EQ(++n, 6);
+  ASSERT_EQ(n, 6);
+  ASSERT_EQ(--n, 5);
+  ASSERT_EQ(--n, 4);
+  ASSERT_EQ(--n, 3);
+  boost::detail::atomic_count m(0);
+  ASSERT_EQ(m, 0);
+  ASSERT_EQ(++m, 1);
+  ASSERT_EQ(++m, 2);
+  ASSERT_EQ(m, 2);
+  ASSERT_EQ(--m, 1);
+  ASSERT_EQ(--m, 0);
+  ASSERT_EQ(--m, -1);
+  ASSERT_EQ(--m, -2);
+  ASSERT_EQ(--m, -3);
+  ASSERT_EQ(--m, -4);
+  ASSERT_EQ(++m, -3);
+  ASSERT_EQ(--m, -4);
 }
 
 TEST(boost, BEH_BOOST_smart_ptr_make_shared) {
+  {
+    boost::shared_ptr<int> pi = boost::make_shared<int>();
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    ASSERT_EQ(*pi, 0);
+  }
 
- {
-        boost::shared_ptr< int > pi = boost::make_shared< int >();
+  {
+    boost::shared_ptr<int> pi = boost::make_shared<int>(5);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    ASSERT_EQ(*pi, 5);
+  }
+  ASSERT_EQ(X::instances, 0);
+  {
+    boost::shared_ptr<X> pi = boost::make_shared<X>(0, 0, 0, 0, 0, 0, 0, 0, 0);
+    boost::weak_ptr<X> wp(pi);
+    ASSERT_EQ(X::instances, 1);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    result = pi->v == 0;
+    ASSERT_TRUE(result);
+    pi.reset();
+    ASSERT_EQ(X::instances, 0);
+  }
 
-        //ASSERT_NE( pi.get() , 0 );
-        ASSERT_EQ( *pi , 0 );
-    }
-
-    {
-        boost::shared_ptr< int > pi = boost::make_shared< int >( 5 );
-
-       // ASSERT_NE( pi.get() , 0 );
-        ASSERT_EQ( *pi , 5 );
-    }
-
-    ASSERT_EQ( X::instances , 0 );
-
-    {
-        boost::shared_ptr< X > pi = boost::make_shared< X >();
-        boost::weak_ptr<X> wp( pi );
-
-        ASSERT_EQ( X::instances , 1 );
-        // ASSERT_NE( pi.get() , 0 );
-  //      ASSERT_EQ( pi->v , 0 );
-
-        pi.reset();
-
-        ASSERT_EQ( X::instances , 0 );
-    }
-
-    {
-        boost::shared_ptr< X > pi = boost::make_shared< X >( 1 );
-        boost::weak_ptr<X> wp( pi );
-
-        ASSERT_EQ( X::instances , 1 );
- //       ASSERT_NE( pi.get() , 0 );
-//        ASSERT_EQ( pi->v , 1 );
-
-        pi.reset();
-
-        ASSERT_EQ( X::instances , 0 );
-    }
-   {
-        boost::shared_ptr< X > pi = boost::make_shared< X >( 1, 2 );
-        boost::weak_ptr<X> wp( pi );
-
-        ASSERT_EQ( X::instances , 1 );
-//        ASSERT_NE( pi.get() , 0 );
-//        ASSERT_EQ( pi->v , 1+2 );
-
-        pi.reset();
-
-        ASSERT_EQ( X::instances , 0 );
-    }
-
-    {
-        boost::shared_ptr< X > pi = boost::make_shared< X >( 1, 2, 3 );
-        boost::weak_ptr<X> wp( pi );
-
-        ASSERT_EQ( X::instances , 1 );
-       // ASSERT_NE( pi.get() , 0 );
-        ASSERT_EQ( pi->v , 1+2+3 );
-
-        pi.reset();
-
-        ASSERT_EQ( X::instances , 0 );
-    }
-
-    {
-        boost::shared_ptr< X > pi = boost::make_shared< X >( 1, 2, 3, 4 );
-        boost::weak_ptr<X> wp( pi );
-
-        ASSERT_EQ( X::instances , 1 );
-       // ASSERT_NE( pi.get() , 0 );
-        ASSERT_EQ( pi->v , 1+2+3+4 );
-
-        pi.reset();
-
-        ASSERT_EQ( X::instances , 0 );
-    }
- {
-        boost::shared_ptr< X > pi = boost::make_shared< X >( 1, 2, 3, 4, 5 );
-        boost::weak_ptr<X> wp( pi );
-
-        ASSERT_EQ( X::instances , 1 );
-       // ASSERT_NE( pi.get() , 0 );
-        ASSERT_EQ( pi->v , 1+2+3+4+5 );
-
-        pi.reset();
-
-        ASSERT_EQ( X::instances , 0 );
-    }
-
-    {
-        boost::shared_ptr< X > pi = boost::make_shared< X >( 1, 2, 3, 4, 5, 6 );
-        boost::weak_ptr<X> wp( pi );
-
-        ASSERT_EQ( X::instances , 1 );
-       // ASSERT_NE( pi.get() , 0 );
-        ASSERT_EQ( pi->v , 1+2+3+4+5+6 );
-
-        pi.reset();
-
-        ASSERT_EQ( X::instances , 0 );
-    }
-    {
-        boost::shared_ptr< X > pi = boost::make_shared< X >( 1, 2, 3, 4, 5, 6, 7 );
-        boost::weak_ptr<X> wp( pi );
-
-        ASSERT_EQ( X::instances , 1 );
-       // ASSERT_NE( pi.get() , 0 );
-        ASSERT_EQ( pi->v , 1+2+3+4+5+6+7 );
-
-        pi.reset();
-
-        ASSERT_EQ( X::instances , 0 );
-    }
-
-    {
-        boost::shared_ptr< X > pi = boost::make_shared< X >( 1, 2, 3, 4, 5, 6, 7, 8 );
-        boost::weak_ptr<X> wp( pi );
-
-        ASSERT_EQ( X::instances , 1 );
-       // ASSERT_NE( pi.get() , 0 );
-        ASSERT_EQ( pi->v , 1+2+3+4+5+6+7+8 );
-
-        pi.reset();
-
-        ASSERT_EQ( X::instances , 0 );
-    }
-
-    {
-        boost::shared_ptr< X > pi = boost::make_shared< X >( 1, 2, 3, 4, 5, 6, 7, 8, 9 );
-        boost::weak_ptr<X> wp( pi );
-
-        ASSERT_EQ( X::instances , 1 );
-       // ASSERT_NE( pi.get() , 0 );
-        ASSERT_EQ( pi->v , 1+2+3+4+5+6+7+8+9 );
-
-        pi.reset();
-
-        ASSERT_EQ( X::instances , 0 );
-    }
-
+  {
+    boost::shared_ptr<X> pi = boost::make_shared<X>(1, 0, 0, 0, 0, 0, 0, 0, 0);
+    boost::weak_ptr<X> wp(pi);
+    ASSERT_EQ(X::instances, 1);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    result = pi->v == 1;
+    ASSERT_TRUE(result);
+    pi.reset();
+    ASSERT_EQ(X::instances, 0);
+  }
+  {
+    boost::shared_ptr<X> pi = boost::make_shared<X>(1, 2, 0, 0, 0, 0, 0, 0, 0);
+    boost::weak_ptr<X> wp(pi);
+    ASSERT_EQ(X::instances, 1);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    result = pi->v == 1 + 2;
+    ASSERT_TRUE(result);
+    pi.reset();
+    ASSERT_EQ(X::instances, 0);
+  }
+  {
+    boost::shared_ptr<X> pi = boost::make_shared<X>(1, 2, 3, 0, 0, 0, 0, 0, 0);
+    boost::weak_ptr<X> wp(pi);
+    ASSERT_EQ(X::instances, 1);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    ASSERT_EQ(pi->v, 1+2+3);
+    pi.reset();
+    ASSERT_EQ(X::instances, 0);
+  }
+  {
+    boost::shared_ptr<X> pi = boost::make_shared<X>(1, 2, 3, 4, 0, 0, 0, 0, 0);
+    boost::weak_ptr<X> wp(pi);
+    ASSERT_EQ(X::instances, 1);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    ASSERT_EQ(pi->v, 1+2+3+4);
+    pi.reset();
+    ASSERT_EQ(X::instances, 0);
+  }
+  {
+    boost::shared_ptr<X> pi = boost::make_shared<X>(1, 2, 3, 4, 5, 0, 0, 0, 0);
+    boost::weak_ptr<X> wp(pi);
+    ASSERT_EQ(X::instances, 1);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    ASSERT_EQ(pi->v, 1+2+3+4+5);
+    pi.reset();
+    ASSERT_EQ(X::instances, 0);
+  }
+  {
+    boost::shared_ptr<X> pi = boost::make_shared<X>(1, 2, 3, 4, 5, 6, 0, 0, 0);
+    boost::weak_ptr<X> wp(pi);
+    ASSERT_EQ(X::instances, 1);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    ASSERT_EQ(pi->v, 1+2+3+4+5+6);
+    pi.reset();
+    ASSERT_EQ(X::instances, 0);
+  }
+  {
+    boost::shared_ptr<X> pi = boost::make_shared<X>(1, 2, 3, 4, 5, 6, 7, 0, 0);
+    boost::weak_ptr<X> wp(pi);
+    ASSERT_EQ(X::instances, 1);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    ASSERT_EQ(pi->v, 1+2+3+4+5+6+7);
+    pi.reset();
+    ASSERT_EQ(X::instances, 0);
+  }
+  {
+    boost::shared_ptr<X> pi = boost::make_shared<X>(1, 2, 3, 4, 5, 6, 7, 8, 0);
+    boost::weak_ptr<X> wp(pi);
+    ASSERT_EQ(X::instances, 1);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    ASSERT_EQ(pi->v, 1+2+3+4+5+6+7+8);
+    pi.reset();
+    ASSERT_EQ(X::instances, 0);
+  }
+  {
+    boost::shared_ptr<X> pi = boost::make_shared<X>(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    boost::weak_ptr<X> wp(pi);
+    ASSERT_EQ(X::instances, 1);
+    bool result = pi.get() != 0;
+    ASSERT_TRUE(result);
+    ASSERT_EQ(pi->v, 1+2+3+4+5+6+7+8+9);
+    pi.reset();
+    ASSERT_EQ(X::instances, 0);
+  }
 }
-
-
