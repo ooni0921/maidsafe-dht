@@ -192,7 +192,7 @@ std::vector<std::pair<std::string, bool> > DataStore::LoadKeyAppendableAttr(
       datastore_.equal_range(boost::make_tuple(key));
   while (p.first != p.second) {
     result.push_back(std::pair<std::string, bool>(p.first->value_,
-        p.first->appendable_key_));
+        p.first->hashable_));
     ++p.first;
   }
   return result;
@@ -214,7 +214,7 @@ bool DataStore::RefreshItem(const std::string &key,
   key_value_tuple tuple(key, value, time_stamp);
   tuple.ttl_ = it->ttl_;
   tuple.expire_time_ = it->expire_time_;
-  tuple.appendable_key_ = it->appendable_key_;
+  tuple.hashable_ = it->hashable_;
 
   return datastore_.replace(it, tuple);
 }
@@ -232,7 +232,7 @@ bool DataStore::MarkForDeletion(const std::string &key,
   key_value_tuple tuple(key, value, 0);
   tuple.ttl_ = it->ttl_;
   tuple.expire_time_ = it->expire_time_;
-  tuple.appendable_key_ = it->appendable_key_;
+  tuple.hashable_ = it->hashable_;
   tuple.last_refresh_time_ = it->last_refresh_time_;
   tuple.ser_delete_req_ = ser_del_request;
   tuple.del_status_ = MARKED_FOR_DELETION;
@@ -249,7 +249,7 @@ bool DataStore::MarkAsDeleted(const std::string &key,
   key_value_tuple tuple(key, value, 0);
   tuple.ttl_ = it->ttl_;
   tuple.expire_time_ = it->expire_time_;
-  tuple.appendable_key_ = it->appendable_key_;
+  tuple.hashable_ = it->hashable_;
   tuple.last_refresh_time_ = it->last_refresh_time_;
   tuple.ser_delete_req_ = it->ser_delete_req_;
   tuple.del_status_ = DELETED;
@@ -274,7 +274,7 @@ bool DataStore::UpdateItem(const std::string &key,
   tuple.expire_time_ = now + time_to_live;
   tuple.last_refresh_time_ = now;
   tuple.del_status_ = NOT_DELETED;
-  tuple.appendable_key_ = !hashable;
+  tuple.hashable_ = hashable;
 
   return datastore_.replace(it, tuple);
 }

@@ -170,10 +170,10 @@ struct IterativeDelValueData {
 struct UpdateValueData {
   UpdateValueData(const KadId &key, const SignedValue &old_value,
                   const SignedValue &new_value, const SignedRequest &sreq,
-                  VoidFunctorOneString callback)
+                  VoidFunctorOneString callback, boost::uint8_t foundnodes)
       : uvd_key(key), uvd_old_value(old_value), uvd_new_value(new_value),
         uvd_request_signature(sreq), uvd_callback(callback), uvd_calledback(0),
-        uvd_succeeded(0), retries(0), mutex() {}
+        uvd_succeeded(0), retries(0), found_nodes(foundnodes), mutex() {}
   KadId uvd_key;
   SignedValue uvd_old_value;
   SignedValue uvd_new_value;
@@ -182,6 +182,7 @@ struct UpdateValueData {
   boost::uint8_t uvd_calledback;
   boost::uint8_t uvd_succeeded;
   boost::uint8_t retries;
+  boost::uint8_t found_nodes;
   boost::uint32_t ttl;
   boost::mutex mutex;
 };

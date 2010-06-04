@@ -189,7 +189,7 @@ class Env: public testing::Environment {
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
     ASSERT_TRUE(knodes_[0]->is_joined());
     knodes_[0]->set_signature_validator(&validator);
-    LOG(INFO) << "Node 0 joined" << std::endl;
+    LOG(INFO) << "Node 0 joined " << knodes_[0]->node_id().ToStringEncoded().substr(0, 12).c_str() << std::endl;
     node_ids_.push_back(knodes_[0]->node_id());
     base::KadConfig kad_config;
     base::KadConfig::Contact *kad_contact = kad_config.add_contact();
@@ -217,7 +217,7 @@ class Env: public testing::Environment {
       ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
       ASSERT_TRUE(knodes_[i]->is_joined());
       knodes_[i]->set_signature_validator(&validator);
-      LOG(INFO) << "Node " << i << " joined" << std::endl;
+      LOG(INFO) << "Node " << i << " joined " << knodes_[i]->node_id().ToStringEncoded().substr(0, 12).c_str() << std::endl;
       node_ids_.push_back(knodes_[i]->node_id());
     }
     cb_.Reset();
@@ -1406,6 +1406,7 @@ TEST_F(KNodeTest, FUNC_KAD_UpdateValue) {
 
   // calculate number of nodes which hold this key/value pair
   boost::uint16_t number(0);
+  boost::int16_t no_value_node(-1);
   for (boost::uint16_t i = 0; i < kNetworkSize; i++) {
     std::vector<std::string> values;
     bool b(false);
@@ -1419,16 +1420,20 @@ TEST_F(KNodeTest, FUNC_KAD_UpdateValue) {
           b = true;
         }
       }
+    } else {
+      no_value_node = i;
     }
   }
+  ASSERT_NE(-1, no_value_node);
   boost::uint16_t d(static_cast<boost::uint16_t>
                     (kTestK * kad::kMinSuccessfulPecentageStore));
   ASSERT_LE(d, number);
 
   // load the value from no.kNetworkSize-1 node
   FindCallback cb_1;
-  knodes_[kNetworkSize - 2]->FindValue(key, false, boost::bind(
-                                       &FindCallback::CallbackFunc, &cb_1, _1));
+  knodes_[no_value_node]->FindValue(key, false,
+                                    boost::bind(&FindCallback::CallbackFunc,
+                                                &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_LE(1U, cb_1.signed_values().size());
@@ -1448,14 +1453,14 @@ TEST_F(KNodeTest, FUNC_KAD_UpdateValue) {
   new_sig_value.set_value(new_value);
   new_sig_value.set_value_signature(cry_obj_.AsymSign(new_value, "", priv_key,
                                                       crypto::STRING_STRING));
-  knodes_[kTestK / 2]->UpdateValue(key, sig_value, new_sig_value, req, 86400,
-                                   boost::bind(
-                                      &UpdateValueCallback::CallbackFunc,
-                                      &update_cb, _1));
+  knodes_[no_value_node]->UpdateValue(key, sig_value, new_sig_value, req, 86400,
+                                      boost::bind(
+                                          &UpdateValueCallback::CallbackFunc,
+                                          &update_cb, _1));
   wait_result(&update_cb);
   ASSERT_EQ(kad::kRpcResultSuccess, update_cb.result());
   number = 0;
-  for (boost::uint16_t i = 0; i < kNetworkSize; i++) {
+  for (boost::uint16_t i = 0; i < kNetworkSize; ++i) {
     std::vector<std::string> values;
     bool b(false);
     knodes_[i]->FindValueLocal(key, &values);
@@ -1483,7 +1488,6 @@ TEST_F(KNodeTest, FUNC_KAD_UpdateValue) {
   ASSERT_EQ(1U, cb_1.signed_values().size());
   kad::SignedValue el_valiu = cb_1.signed_values()[0];
   ASSERT_EQ(new_sig_value.SerializeAsString(), el_valiu.SerializeAsString());
-  cb_1.Reset();
 }
 
 int main(int argc, char **argv) {

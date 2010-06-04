@@ -66,16 +66,16 @@ struct key_value_tuple {
   std::string key_, value_, ser_delete_req_;
   boost::uint32_t last_refresh_time_, expire_time_;
   boost::int32_t ttl_;
-  bool appendable_key_;
+  bool hashable_;
   delete_status del_status_;
 
   key_value_tuple(const std::string &key, const std::string &value,
                   const boost::uint32_t &last_refresh_time,
                   const boost::uint32_t &expire_time, const boost::int32_t &ttl,
-                  const bool &appendable_key)
+                  const bool &hashable)
       : key_(key), value_(value), ser_delete_req_(),
         last_refresh_time_(last_refresh_time), expire_time_(expire_time),
-        ttl_(ttl), appendable_key_(appendable_key), del_status_(NOT_DELETED) {
+        ttl_(ttl), hashable_(hashable), del_status_(NOT_DELETED) {
     if (ttl < 0)
       expire_time_ = 0;
   }
@@ -83,7 +83,7 @@ struct key_value_tuple {
                   const boost::uint32_t &last_refresh_time)
       : key_(key), value_(value), ser_delete_req_(),
         last_refresh_time_(last_refresh_time), expire_time_(0), ttl_(0),
-        appendable_key_(false), del_status_(NOT_DELETED) {}
+        hashable_(true), del_status_(NOT_DELETED) {}
 };
 
 /* Tags */

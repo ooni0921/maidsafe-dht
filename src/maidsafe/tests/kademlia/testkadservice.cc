@@ -1149,17 +1149,17 @@ TEST_F(KadServicesTest, FUNC_KAD_RefreshDeletedValue) {
   std::string value("Value");
   std::string public_key, private_key, signed_public_key, signed_request;
   std::string key = crypto_.Hash(base::RandomString(5), "",
-    crypto::STRING_STRING, false);
+                                 crypto::STRING_STRING, false);
 
   SignedValue svalue;
   svalue.set_value(value);
   svalue.set_value_signature(crypto_.AsymSign(value, "", private_key,
-      crypto::STRING_STRING));
+                                              crypto::STRING_STRING));
   std::string ser_svalue(svalue.SerializeAsString());
   ASSERT_TRUE(datastore_->StoreItem(key, ser_svalue, -1, false));
   CreateRSAKeys(&public_key, &private_key);
   CreateSignedRequest(public_key, private_key, key, &signed_public_key,
-    &signed_request);
+                      &signed_request);
   SignedRequest sreq;
   sreq.set_signer_id("id1");
   sreq.set_public_key(public_key);
@@ -1177,7 +1177,7 @@ TEST_F(KadServicesTest, FUNC_KAD_RefreshDeletedValue) {
 
   CreateRSAKeys(&public_key, &private_key);
   CreateSignedRequest(public_key, private_key, key, &signed_public_key,
-    &signed_request);
+                      &signed_request);
   SignedRequest *sig_req = request.mutable_signed_request();
   sig_req->set_signer_id("id2");
   sig_req->set_public_key(public_key);
@@ -1192,8 +1192,8 @@ TEST_F(KadServicesTest, FUNC_KAD_RefreshDeletedValue) {
   StoreResponse response;
   Callback cb_obj;
   google::protobuf::Closure *done =
-    google::protobuf::NewPermanentCallback<Callback>(&cb_obj,
-    &Callback::CallbackFunction);
+      google::protobuf::NewPermanentCallback<Callback>
+          (&cb_obj, &Callback::CallbackFunction);
   service_->Store(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kRpcResultFailure, response.result());
@@ -1201,7 +1201,7 @@ TEST_F(KadServicesTest, FUNC_KAD_RefreshDeletedValue) {
   EXPECT_EQ(sreq.signer_id(), response.signed_request().signer_id());
   EXPECT_EQ(sreq.public_key(), response.signed_request().public_key());
   EXPECT_EQ(sreq.signed_public_key(),
-    response.signed_request().signed_public_key());
+            response.signed_request().signed_public_key());
   EXPECT_EQ(sreq.signed_request(), response.signed_request().signed_request());
 
   response.Clear();
@@ -1213,7 +1213,7 @@ TEST_F(KadServicesTest, FUNC_KAD_RefreshDeletedValue) {
   EXPECT_EQ(sreq.signer_id(), response.signed_request().signer_id());
   EXPECT_EQ(sreq.public_key(), response.signed_request().public_key());
   EXPECT_EQ(sreq.signed_public_key(),
-    response.signed_request().signed_public_key());
+            response.signed_request().signed_public_key());
   EXPECT_EQ(sreq.signed_request(), response.signed_request().signed_request());
   delete done;
 }

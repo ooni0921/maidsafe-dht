@@ -2529,9 +2529,11 @@ void KNodeImpl::ExecuteUpdateRPCs(const std::string &result,
     return;
   }
 
+  boost::uint8_t nodes(closest_nodes.size());
   boost::shared_ptr<UpdateValueData> uvd(new UpdateValueData(key, old_value,
                                                              new_value, sig_req,
-                                                             callback));
+                                                             callback, nodes));
+
   for (size_t n = 0; n < closest_nodes.size(); ++n) {
     boost::shared_ptr<UpdateCallbackArgs> uca(new UpdateCallbackArgs());
     uca->uvd = uvd;
@@ -2607,7 +2609,7 @@ void KNodeImpl::UpdateValueResponses(
   delete uca->response;
   delete uca->controller;
 
-  if (uca->uvd->uvd_calledback == K) {
+  if (uca->uvd->uvd_calledback == uca->uvd->found_nodes) {
     UpdateResponse update_result;
     if (uca->uvd->uvd_succeeded <
         boost::uint8_t(K * kMinSuccessfulPecentageStore)) {

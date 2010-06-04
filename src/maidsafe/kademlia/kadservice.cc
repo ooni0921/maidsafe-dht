@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/kademlia/datastore.h"
 #include "maidsafe/base/alternativestore.h"
 #include "maidsafe/base/crypto.h"
+#include "maidsafe/base/utils.h"
 #include "maidsafe/kademlia/knode-api.h"
 #include "maidsafe/rpcprotocol/channel-api.h"
 #include "maidsafe/protobuf/signed_kadvalue.pb.h"
@@ -59,7 +60,7 @@ KadService::KadService(const NatRpcs &nat_rpcs,
       signature_validator_(NULL) {}
 
 void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
-      struct NatDetectionData data) {
+                                          struct NatDetectionData data) {
   Contact sender(data.newcomer.node_id(), data.newcomer.host_ip(),
       data.newcomer.host_port(), node_info_.ip(), node_info_.port());
   if (response->IsInitialized()) {
@@ -89,7 +90,7 @@ void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
 }
 
 void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
-      struct NatDetectionData data) {
+                                        struct NatDetectionData data) {
   if (response->IsInitialized()) {
     if (response->result() == kRpcResultSuccess) {
       // If true - node B replies to node A - DIRECT connected - END
@@ -129,8 +130,8 @@ void KadService::Bootstrap_NatDetection(const NatDetectionResponse *response,
 }
 
 void KadService::Ping(google::protobuf::RpcController *controller,
-      const PingRequest *request, PingResponse *response,
-      google::protobuf::Closure *done) {
+                      const PingRequest *request, PingResponse *response,
+                      google::protobuf::Closure *done) {
   if (!node_joined_) {
     response->set_result(kRpcResultFailure);
     done->Run();
@@ -158,8 +159,8 @@ void KadService::Ping(google::protobuf::RpcController *controller,
 }
 
 void KadService::FindNode(google::protobuf::RpcController *controller,
-      const FindRequest *request, FindResponse *response,
-      google::protobuf::Closure *done) {
+                          const FindRequest *request, FindResponse *response,
+                          google::protobuf::Closure *done) {
   if (!node_joined_) {
     response->set_result(kRpcResultFailure);
     done->Run();
@@ -210,8 +211,8 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
 }
 
 void KadService::FindValue(google::protobuf::RpcController *controller,
-      const FindRequest *request, FindResponse *response,
-      google::protobuf::Closure *done) {
+                           const FindRequest *request, FindResponse *response,
+                           google::protobuf::Closure *done) {
   if (!node_joined_) {
     response->set_result(kRpcResultFailure);
     done->Run();
@@ -265,8 +266,8 @@ void KadService::FindValue(google::protobuf::RpcController *controller,
 }
 
 void KadService::Store(google::protobuf::RpcController *controller,
-      const StoreRequest *request, StoreResponse *response,
-      google::protobuf::Closure *done) {
+                       const StoreRequest *request, StoreResponse *response,
+                       google::protobuf::Closure *done) {
   if (!node_joined_) {
     response->set_result(kRpcResultFailure);
     done->Run();
@@ -274,37 +275,38 @@ void KadService::Store(google::protobuf::RpcController *controller,
   }
   Contact sender;
   rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
-        (controller);
+                                  (controller);
   if (!CheckStoreRequest(request, &sender)) {
     response->set_result(kRpcResultFailure);
   } else if (node_hasRSAkeys_) {
     if (signature_validator_ == NULL ||
         !signature_validator_->ValidateSignerId(
-          request->signed_request().signer_id(),
-          request->signed_request().public_key(),
-          request->signed_request().signed_public_key()) ||
+            request->signed_request().signer_id(),
+            request->signed_request().public_key(),
+            request->signed_request().signed_public_key()) ||
         !signature_validator_->ValidateRequest(
-          request->signed_request().signed_request(),
-          request->signed_request().public_key(),
-          request->signed_request().signed_public_key(), request->key())) {
+            request->signed_request().signed_request(),
+            request->signed_request().public_key(),
+            request->signed_request().signed_public_key(), request->key())) {
       DLOG(WARNING) << "Failed to validate Store request for kad value"
-           << std::endl;
+                    << std::endl;
       response->set_result(kRpcResultFailure);
     } else {
       StoreValueLocal(request->key(), request->sig_value(), sender,
-          request->ttl(), request->publish(), response, ctrl);
+                      request->ttl(), request->publish(), response, ctrl);
     }
   } else {
     StoreValueLocal(request->key(), request->value(), sender, request->ttl(),
-        request->publish(), response, ctrl);
+                    request->publish(), response, ctrl);
   }
   response->set_node_id(node_info_.node_id());
   done->Run();
 }
 
 void KadService::Downlist(google::protobuf::RpcController *controller,
-      const DownlistRequest *request, DownlistResponse *response,
-      google::protobuf::Closure *done) {
+                          const DownlistRequest *request,
+                          DownlistResponse *response,
+                          google::protobuf::Closure *done) {
   if (!node_joined_) {
     response->set_result(kRpcResultFailure);
     done->Run();
@@ -365,8 +367,9 @@ void KadService::Bootstrap_NatDetectionRzPing(
 }
 
 void KadService::NatDetection(google::protobuf::RpcController *controller,
-      const NatDetectionRequest *request, NatDetectionResponse *response,
-      google::protobuf::Closure *done) {
+                              const NatDetectionRequest *request,
+                              NatDetectionResponse *response,
+                              google::protobuf::Closure *done) {
   if (request->IsInitialized()) {
     if (request->type() == 1) {
       // C tries to ping A
@@ -437,8 +440,9 @@ void KadService::NatDetectionPing(google::protobuf::RpcController *,
 }
 
 void KadService::Bootstrap(google::protobuf::RpcController *controller,
-      const BootstrapRequest *request, BootstrapResponse *response,
-      google::protobuf::Closure *done) {
+                           const BootstrapRequest *request,
+                           BootstrapResponse *response,
+                           google::protobuf::Closure *done) {
   if (!request->IsInitialized() || !node_joined_) {
     response->set_result(kRpcResultFailure);
     done->Run();
@@ -513,7 +517,7 @@ void KadService::SendNatDetection(NatDetectionData data) {
 }
 
 bool KadService::CheckStoreRequest(const StoreRequest *request,
-      Contact *sender) {
+                                   Contact *sender) {
   if (!request->IsInitialized())
     return false;
   if (node_hasRSAkeys_) {
@@ -527,9 +531,10 @@ bool KadService::CheckStoreRequest(const StoreRequest *request,
 }
 
 void KadService::StoreValueLocal(const std::string &key,
-      const std::string &value, Contact sender, const boost::int32_t &ttl,
-      const bool &publish, StoreResponse *response,
-      rpcprotocol::Controller *ctrl) {
+                                 const std::string &value, Contact sender,
+                                 const boost::int32_t &ttl,
+                                 const bool &publish, StoreResponse *response,
+                                 rpcprotocol::Controller *ctrl) {
   bool result;
   if (publish) {
     result = pdatastore_->StoreItem(key, value, ttl, false);
@@ -556,27 +561,32 @@ void KadService::StoreValueLocal(const std::string &key,
 }
 
 void KadService::StoreValueLocal(const std::string &key,
-      const SignedValue &value, Contact sender, const boost::int32_t &ttl,
-      const bool &publish, StoreResponse *response,
-      rpcprotocol::Controller *ctrl) {
+                                 const SignedValue &value, Contact sender,
+                                 const boost::int32_t &ttl, const bool &publish,
+                                 StoreResponse *response,
+                                 rpcprotocol::Controller *ctrl) {
   bool result, hashable;
-  std::string ser_value(value.SerializeAsString());
+  std::string ser_value(value.value() + value.value_signature());
   if (publish) {
     if (CanStoreSignedValueHashable(key, ser_value, &hashable)) {
-      result = pdatastore_->StoreItem(key, ser_value, ttl, hashable);
-      if (!result)
+      result = pdatastore_->StoreItem(key, value.SerializeAsString(), ttl,
+                                      hashable);
+      if (!result) {
         DLOG(WARNING) << "pdatastore_->StoreItem 1 Failed.";
+      }
     } else {
       DLOG(WARNING) << "CanStoreSignedValueHashable Failed.";
       result = false;
     }
   } else {
     std::string ser_del_request;
-    result = pdatastore_->RefreshItem(key, ser_value, &ser_del_request);
+    result = pdatastore_->RefreshItem(key, value.SerializeAsString(),
+                                      &ser_del_request);
 
     if (!result && CanStoreSignedValueHashable(key, ser_value, &hashable) &&
         ser_del_request.empty()) {
-      result = pdatastore_->StoreItem(key, ser_value, ttl, hashable);
+      result = pdatastore_->StoreItem(key, value.SerializeAsString(), ttl,
+                                      hashable);
       if (!result)
         DLOG(WARNING) << "pdatastore_->StoreItem 2 Failed.";
     } else if (!result && !ser_del_request.empty()) {
@@ -600,7 +610,8 @@ void KadService::StoreValueLocal(const std::string &key,
 }
 
 bool KadService::CanStoreSignedValueHashable(const std::string &key,
-      const std::string &value, bool *hashable) {
+                                             const std::string &value,
+                                             bool *hashable) {
   std::vector< std::pair<std::string, bool> > attr;
   attr = pdatastore_->LoadKeyAppendableAttr(key);
   *hashable = false;
@@ -611,15 +622,16 @@ bool KadService::CanStoreSignedValueHashable(const std::string &key,
       *hashable = true;
   } else if (attr.size() == 1) {
     *hashable = attr[0].second;
-    if (*hashable && value != attr[0].first)
+    if (*hashable && value != attr[0].first) {
       return false;
+    }
   }
   return true;
 }
 
 void KadService::Delete(google::protobuf::RpcController *controller,
-      const DeleteRequest *request, DeleteResponse *response,
-      google::protobuf::Closure *done) {
+                        const DeleteRequest *request, DeleteResponse *response,
+                        google::protobuf::Closure *done) {
   // only node with RSAkeys can delete values
   if (!node_joined_ || !node_hasRSAkeys_ || signature_validator_ == NULL ||
       !request->IsInitialized()) {
