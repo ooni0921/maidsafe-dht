@@ -39,14 +39,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/protobuf/rpcmessage.pb.h"
 #include "maidsafe/transport/transporthandler-api.h"
 
+namespace test_add_knode {
+  static const boost::uint16_t K = 16;
+}  // namespace test_add_knode
+
 namespace kad {
 
 class MessageHandler {
  public:
   MessageHandler(): msgs(), ids(), dead_server_(true), server_ip_(),
-    server_port_(0), node_(NULL), msgs_sent_(0) {}
+                    server_port_(0), node_(NULL), msgs_sent_(0) {}
   void OnMessage(const rpcprotocol::RpcMessage &msg,
-      const boost::uint32_t connection_id) {
+                 const boost::uint32_t connection_id) {
     std::string message;
     msg.SerializeToString(&message);
     msgs.push_back(message);
@@ -55,7 +59,7 @@ class MessageHandler {
       node_->CloseConnection(connection_id, id_);
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
-    const boost::uint16_t &port) {
+                              const boost::uint16_t &port) {
     dead_server_ = dead_server;
     server_ip_ = ip;
     server_port_ = port;
@@ -84,13 +88,13 @@ class MessageHandler {
 class TestKnodes : public testing::Test {
  public:
   TestKnodes() : nodes_(), ch_managers_(), trans_handlers_(), transports_(),
-    msg_handlers_(), datastore_dir_(2), test_dir_("") {}
+                 msg_handlers_(), datastore_dir_(2), test_dir_("") {}
   virtual ~TestKnodes() {}
  protected:
   void SetUp() {
     transports_.clear();
-    test_dir_ = std::string("TestKnodes") + boost::lexical_cast<std::string>(
-        base::RandomUint32());
+    test_dir_ = std::string("TestKnodes") +
+                boost::lexical_cast<std::string>(base::RandomUint32());
     try {
       if (boost::filesystem::exists(test_dir_))
         boost::filesystem::remove_all(test_dir_);
@@ -109,19 +113,19 @@ class TestKnodes : public testing::Test {
         rpcprotocol::ChannelManager(trans_handlers_[i]));
       ASSERT_TRUE(ch_managers_[i]->RegisterNotifiersToTransport());
       ASSERT_TRUE(trans_handlers_[i]->RegisterOnServerDown(
-        boost::bind(&MessageHandler::OnDeadRendezvousServer, msg_handlers_[i],
-        _1, _2, _3)));
+                  boost::bind(&MessageHandler::OnDeadRendezvousServer,
+                              msg_handlers_[i], _1, _2, _3)));
       ASSERT_EQ(0, trans_handlers_[i]->Start(0, transports_[i]));
       printf("Listening port for Transport %d: %d\n", transports_[i],
-        trans_handlers_[i]->listening_port(transports_[i]));
+             trans_handlers_[i]->listening_port(transports_[i]));
       ASSERT_EQ(0, ch_managers_[i]->Start());
       datastore_dir_[i] = test_dir_ + "/Datastore" +
-          boost::lexical_cast<std::string>(trans_handlers_[i]->
-          listening_port(transports_[i]));
+                          boost::lexical_cast<std::string>(trans_handlers_[i]->
+                              listening_port(transports_[i]));
       boost::filesystem::create_directories(
           boost::filesystem::path(datastore_dir_[i]));
       nodes_.push_back(KNode(ch_managers_[i], trans_handlers_[i], VAULT, "",
-          "", false, false));
+                             "", false, false, test_add_knode::K));
       nodes_[i].set_transport_id(transports_[i]);
     }
   }
@@ -161,7 +165,7 @@ class TestKnodes : public testing::Test {
 };
 
 TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
-  if (kad::K <= 2) {
+  if (test_add_knode::K <= 2) {
     SUCCEED();
     return;
   }
@@ -175,17 +179,18 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   ASSERT_TRUE(base::GetLocalAddress(&local_ip));
   kad::KadId kadid(id, true);
   nodes_[0].Join(kadid, kconfig_file,
-    local_ip.to_string(), trans_handlers_[0]->listening_port(transports_[0]),
-    boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
+                 local_ip.to_string(),
+                 trans_handlers_[0]->listening_port(transports_[0]),
+                 boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
   wait_result(&callback);
   ASSERT_EQ(kRpcResultSuccess, callback.result());
   callback.Reset();
   ASSERT_TRUE(nodes_[0].is_joined());
 
   // Adding Contacts until kbucket splits and filling kbuckets
-  std::vector<std::string> bucket2ids(K+1), bucket1ids(3);
-  for (int i = 0; i < K+1; i++) {
-    for (int j = 0; j < kKeySizeBytes*2; ++j)
+  std::vector<std::string> bucket2ids(test_add_knode::K + 1), bucket1ids(3);
+  for (int i = 0; i < test_add_knode::K + 1; i++) {
+    for (int j = 0; j < kKeySizeBytes * 2; ++j)
       bucket2ids[i] += "f";
     std::string rep;
     int k;
@@ -205,7 +210,7 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   int port = 7000;
   Contact last_seen;
   std::string ip = "127.0.0.1";
-  for (int i = 1 ; i < K-2; ++i) {
+  for (int i = 1 ; i < test_add_knode::K - 2; ++i) {
     kad::KadId id(bucket2ids[i], true);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
@@ -219,7 +224,7 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
     ++port;
   }
-  for (int i = K-2; i < K+1; ++i) {
+  for (int i = test_add_knode::K - 2; i < test_add_knode::K + 1; ++i) {
     std::string id = base::DecodeFromHex(bucket2ids[i]);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
@@ -242,16 +247,16 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   nodes_[0].Leave();
   base::KadConfig kad_config;
   std::ifstream inputfile(kconfig_file.c_str(),
-    std::ios::in | std::ios::binary);
+                          std::ios::in | std::ios::binary);
   ASSERT_TRUE(kad_config.ParseFromIstream(&inputfile));
   inputfile.close();
-  ASSERT_EQ(K+3, kad_config.contact_size());
+  ASSERT_EQ(test_add_knode::K + 3, kad_config.contact_size());
 
   ASSERT_FALSE(nodes_[0].is_joined());
 }
 
 TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
-  if (kad::K <= 2) {
+  if (test_add_knode::K <= 2) {
     SUCCEED();
     return;
   }
@@ -268,8 +273,9 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   ASSERT_TRUE(base::GetLocalAddress(&local_ip));
   kad::KadId kid(id, true), kid2(id2, true);
   nodes_[0].Join(kid, kconfig_file,
-    local_ip.to_string(), trans_handlers_[0]->listening_port(transports_[0]),
-    boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
+                 local_ip.to_string(),
+                 trans_handlers_[0]->listening_port(transports_[0]),
+                 boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
   wait_result(&callback);
   ASSERT_EQ(kRpcResultSuccess, callback.result());
   callback.Reset();
@@ -284,12 +290,12 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   kad_contact->set_local_ip(nodes_[0].local_host_ip());
   kad_contact->set_local_port(nodes_[0].local_host_port());
   std::fstream output1(kconfig_file1.c_str(),
-    std::ios::out | std::ios::trunc | std::ios::binary);
+                       std::ios::out | std::ios::trunc | std::ios::binary);
   EXPECT_TRUE(kad_config1.SerializeToOstream(&output1));
   output1.close();
 
   nodes_[1].Join(kid2, kconfig_file1,
-    boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
+                 boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
   wait_result(&callback);
   ASSERT_EQ(kRpcResultSuccess, callback.result());
   callback.Reset();
@@ -298,9 +304,9 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   ASSERT_TRUE(nodes_[0].GetContact(nodes_[1].node_id(), &last_seen));
 
   // Adding Contacts until kbucket splits and filling kbuckets
-  std::vector<std::string> bucket2ids(K), bucket1ids(3);
-  for (int i = 0; i < K; ++i) {
-    for (int j = 0; j < kKeySizeBytes*2; ++j)
+  std::vector<std::string> bucket2ids(test_add_knode::K), bucket1ids(3);
+  for (int i = 0; i < test_add_knode::K; ++i) {
+    for (int j = 0; j < kKeySizeBytes * 2; ++j)
       bucket2ids[i] += "f";
     std::string rep;
     int k;
@@ -320,7 +326,7 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   int port = 7000;
 
   std::string ip = "127.0.0.1";
-  for (int i = 1 ; i < K-3; ++i) {
+  for (int i = 1 ; i < test_add_knode::K - 3; ++i) {
     kad::KadId id(bucket2ids[i], true);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
@@ -332,7 +338,7 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
     ++port;
   }
-  for (int i = K-3; i < K; ++i) {
+  for (int i = test_add_knode::K - 3; i < test_add_knode::K; ++i) {
     kad::KadId id(bucket2ids[i], true);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
@@ -360,8 +366,8 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   // Getting info from base routing table to check rtt
   base::PublicRoutingTableTuple tuple;
   ASSERT_EQ(0, (*base::PublicRoutingTable::GetInstance())[base::IntToString(
-      nodes_[0].host_port())]->GetTupleInfo(
-          nodes_[1].node_id().ToStringDecoded(), &tuple));
+                nodes_[0].host_port())]->GetTupleInfo(
+                nodes_[1].node_id().ToStringDecoded(), &tuple));
   ASSERT_EQ(nodes_[1].node_id().ToStringDecoded(), tuple.kademlia_id);
   ASSERT_EQ(nodes_[1].host_ip(), tuple.host_ip);
   ASSERT_EQ(nodes_[1].host_port(), tuple.host_port);
@@ -373,12 +379,13 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   nodes_[0].Leave();
   base::KadConfig kad_config;
   std::ifstream inputfile(kconfig_file.c_str(),
-    std::ios::in | std::ios::binary);
+                          std::ios::in | std::ios::binary);
   ASSERT_TRUE(kad_config.ParseFromIstream(&inputfile));
   inputfile.close();
-  ASSERT_EQ(K+3, kad_config.contact_size());
+  ASSERT_EQ(test_add_knode::K + 3, kad_config.contact_size());
 
   ASSERT_FALSE(nodes_[0].is_joined());
   ASSERT_FALSE(nodes_[1].is_joined());
 }
+
 }  // namespace kad

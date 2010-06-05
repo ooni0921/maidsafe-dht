@@ -253,7 +253,8 @@ class KNodeImpl {
   KNodeImpl(rpcprotocol::ChannelManager* channel_manager,
             transport::TransportHandler *transport_handler, NodeType type,
             const std::string &private_key, const std::string &public_key,
-            const bool &port_forwarded, const bool &use_upnp);
+            const bool &port_forwarded, const bool &use_upnp,
+            const boost::uint16_t &k);
   // constructor used to set up parameters k, alpha, and beta for kademlia
   KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
             transport::TransportHandler *transport_handler, NodeType type,

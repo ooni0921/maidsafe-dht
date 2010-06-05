@@ -75,6 +75,10 @@ class DummyAltStore : public base::AlternativeStore {
   std::set<std::string> keys_;
 };
 
+namespace test_kadservice {
+  static const boost::uint16_t K = 16;
+}  // namespace test_kadservice
+
 namespace kad {
 
 class Callback {
@@ -108,7 +112,7 @@ class KadServicesTest: public testing::Test {
 
   virtual void SetUp() {
     datastore_.reset(new DataStore(kRefreshTime));
-    routingtable_.reset(new RoutingTable(node_id_, K));
+    routingtable_.reset(new RoutingTable(node_id_, test_kadservice::K));
     service_.reset(new KadService(NatRpcs(&channel_manager_, &trans_handler_),
         datastore_, true,
         boost::bind(&KadServicesTest::AddCtc, this, _1, _2, _3),
@@ -170,7 +174,7 @@ class KadServicesTest: public testing::Test {
   }
   void GetKCtcs(const kad::KadId &key, const std::vector<Contact> &ex_ctcs,
                 std::vector<Contact> *ctcs) {
-    routingtable_->FindCloseNodes(key, K, ctcs, ex_ctcs);
+    routingtable_->FindCloseNodes(key, test_kadservice::K, ctcs, ex_ctcs);
   }
   void Ping(const Contact &ctc, VoidFunctorOneString callback) {
     boost::thread thrd(boost::bind(&KadServicesTest::ExePingCb, this,
@@ -253,13 +257,13 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   for (int i = 0; i < 50; ++i) {
     std::string character = "1";
     std::string hex_id = "";
-    if (i < K)
+    if (i < test_kadservice::K)
       character = "a";
     for (int j = 0; j < 126; ++j)
       hex_id += character;
     hex_id += boost::lexical_cast<std::string>(i+10);
     std::string id = base::DecodeFromHex(hex_id);
-    if (i < K)
+    if (i < test_kadservice::K)
       ids.push_back(id);
     std::string ip = "127.0.0.6";
     boost::uint16_t port = 9000+i;
@@ -268,7 +272,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
     Contact contact(id, ip, port + i, ip, port + i);
     EXPECT_GE(routingtable_->AddContact(contact), 0);
   }
-  EXPECT_GE(routingtable_->Size(), static_cast<size_t>(2*K));
+  EXPECT_GE(routingtable_->Size(), static_cast<size_t>(2*test_kadservice::K));
   std::string wrong_hex_key;
   for (int i = 0; i < 128; ++i)
     wrong_hex_key += "b";
@@ -281,10 +285,10 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
                       done2);
   EXPECT_TRUE(find_value_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_value_response.result());
-  EXPECT_EQ(K, find_value_response.closest_nodes_size());
+  EXPECT_EQ(test_kadservice::K, find_value_response.closest_nodes_size());
 
   std::vector<std::string>::iterator itr;
-  for (int i = 0; i < K; ++i) {
+  for (int i = 0; i < test_kadservice::K; ++i) {
     Contact contact;
     contact.ParseFromString(find_value_response.closest_nodes(i));
     for (itr = ids.begin(); itr < ids.end(); ++itr) {
@@ -368,7 +372,8 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   // returned from the search.  Use one of these to search for later.
   std::string later_key;
   std::vector<std::string> rand_ids;
-  for (int i = 0; i < (K > 1 ? K/2 : 1); ++i) {
+  for (int i = 0; i < (test_kadservice::K > 1 ? test_kadservice::K/2 : 1);
+       ++i) {
     bool unique(false);
     std::string hex_id;
     while (!unique) {
@@ -400,7 +405,8 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
     EXPECT_TRUE(routingtable_->GetContact(kad::KadId(id, false), &contactback));
     EXPECT_EQ(id, contactback.node_id().ToStringDecoded());
   }
-  EXPECT_EQ((K > 1 ? K/2 : 1) + 1, routingtable_->Size());
+  EXPECT_EQ((test_kadservice::K > 1 ? test_kadservice::K/2 : 1) + 1,
+             routingtable_->Size());
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
   find_node_response.Clear();
@@ -408,7 +414,8 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
                      done2);
   EXPECT_TRUE(find_node_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_node_response.result());
-  EXPECT_EQ(K > 1 ? K/2 : 1, find_node_response.closest_nodes_size());
+  EXPECT_EQ(test_kadservice::K > 1 ? test_kadservice::K/2 : 1,
+            find_node_response.closest_nodes_size());
   EXPECT_EQ(0, find_node_response.values_size());
   EXPECT_FALSE(find_node_response.has_requester_ext_addr());
   EXPECT_EQ(node_id_.ToStringDecoded(), find_node_response.node_id());
@@ -419,7 +426,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   for (int i = 0; i < 50; ++i) {
     std::string character("1");
     std::string hex_id;
-    if (i < K)
+    if (i < test_kadservice::K)
       character = "a";
     for (int j = 0; j < 126; ++j)
       hex_id += character;
@@ -428,11 +435,11 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
     std::string ip("127.0.0.6");
     boost::uint16_t port = 9000+i;
     Contact contact(id, ip, port + i, ip, port + i);
-    if (i < K)
+    if (i < test_kadservice::K)
       close_contacts.push_back(contact);
     EXPECT_GE(routingtable_->AddContact(contact), 0);
   }
-  EXPECT_GE(routingtable_->Size(), static_cast<size_t>(2*K));
+  EXPECT_GE(routingtable_->Size(), static_cast<size_t>(2*test_kadservice::K));
   std::string value("Value");
   ASSERT_TRUE(datastore_->StoreItem(key, value, 24*3600, true));
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
@@ -442,10 +449,10 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
                      done3);
   EXPECT_TRUE(find_node_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_node_response.result());
-  EXPECT_EQ(K, find_node_response.closest_nodes_size());
+  EXPECT_EQ(test_kadservice::K, find_node_response.closest_nodes_size());
   std::vector<Contact> close_contacts_copy(close_contacts);
   std::vector<Contact>::iterator itr;
-  for (int i = 0; i < K; ++i) {
+  for (int i = 0; i < test_kadservice::K; ++i) {
     Contact contact;
     contact.ParseFromString(find_node_response.closest_nodes(i));
     for (itr = close_contacts_copy.begin(); itr < close_contacts_copy.end();
@@ -471,11 +478,11 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
                      done4);
   EXPECT_TRUE(find_node_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_node_response.result());
-  EXPECT_EQ(K, find_node_response.closest_nodes_size());
+  EXPECT_EQ(test_kadservice::K, find_node_response.closest_nodes_size());
   // Check the results aren't the same as the first set and that we got the
   // actual id requested
   bool found = false;
-  for (int i = 0; i < K; ++i) {
+  for (int i = 0; i < test_kadservice::K; ++i) {
     Contact contact;
     contact.ParseFromString(find_node_response.closest_nodes(i));
     if (contact.node_id().ToStringDecoded() == later_key)
@@ -880,13 +887,13 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
   for (int i = 0; i < 50; ++i) {
     std::string character = "1";
     std::string hex_id = "";
-    if (i < K)
+    if (i < test_kadservice::K)
       character = "a";
     for (int j = 0; j < 126; ++j)
       hex_id += character;
     hex_id += boost::lexical_cast<std::string>(i+10);
     std::string id = base::DecodeFromHex(hex_id);
-    if (i < K)
+    if (i < test_kadservice::K)
       ids.push_back(id);
     std::string ip = "127.0.0.6";
     boost::uint16_t port = 9000+i;
@@ -895,7 +902,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
     Contact contact(id, ip, port + i, ip, port + i);
     EXPECT_GE(routingtable_->AddContact(contact), 0);
   }
-  EXPECT_GE(routingtable_->Size(), static_cast<size_t>(2*K));
+  EXPECT_GE(routingtable_->Size(), static_cast<size_t>(2*test_kadservice::K));
   std::string wrong_hex_key(128, 'b');
   std::string wrong_key = base::DecodeFromHex(wrong_hex_key);
   EXPECT_TRUE(datastore_->StoreItem(wrong_key, "X", 24*3600, false));
@@ -906,10 +913,10 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
                       done2);
   EXPECT_TRUE(find_value_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, find_value_response.result());
-  EXPECT_EQ(K, find_value_response.closest_nodes_size());
+  EXPECT_EQ(test_kadservice::K, find_value_response.closest_nodes_size());
 
   std::vector<std::string>::iterator itr;
-  for (int i = 0; i < K; ++i) {
+  for (int i = 0; i < test_kadservice::K; ++i) {
     Contact contact;
     contact.ParseFromString(find_value_response.closest_nodes(i));
     for (itr = ids.begin(); itr < ids.end(); ++itr) {

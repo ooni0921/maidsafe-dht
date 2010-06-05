@@ -42,6 +42,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace fs = boost::filesystem;
 
+namespace test_nat_detection {
+  static const boost::uint16_t K = 16;
+}  // namespace test_nat_detection
+
 namespace kad {
 
 class Callback {
@@ -107,7 +111,8 @@ class NatDetectionTest: public testing::Test {
     contactA_.SerialiseToString(&contact_strA_);
 
     datastoreA_.reset(new DataStore(kRefreshTime));
-    routingtableA_.reset(new RoutingTable(contactA_.node_id(), K));
+    routingtableA_.reset(new RoutingTable(contactA_.node_id(),
+                                          test_nat_detection::K));
     serviceA_.reset(new KadService(NatRpcs(&channel_managerA_,
       trans_handlers_[0]), datastoreA_, false,
         boost::bind(&NatDetectionTest::AddCtc, this, _1, _2, _3, 1),
@@ -146,7 +151,8 @@ class NatDetectionTest: public testing::Test {
     contactB_.SerialiseToString(&contact_strB_);
 
     datastoreB_.reset(new DataStore(kRefreshTime));
-    routingtableB_.reset(new RoutingTable(contactB_.node_id(), K));
+    routingtableB_.reset(new RoutingTable(contactB_.node_id(),
+                                          test_nat_detection::K));
     serviceB_.reset(new KadService(NatRpcs(&channel_managerB_,
       trans_handlers_[1]), datastoreB_, false,
         boost::bind(&NatDetectionTest::AddCtc, this, _1, _2, _3, 2),
@@ -183,7 +189,8 @@ class NatDetectionTest: public testing::Test {
     contactC_.SerialiseToString(&contact_strC_);
 
     datastoreC_.reset(new DataStore(kRefreshTime));
-    routingtableC_.reset(new RoutingTable(contactC_.node_id(), K));
+    routingtableC_.reset(new RoutingTable(contactC_.node_id(),
+                                          test_nat_detection::K));
     serviceC_.reset(new KadService(NatRpcs(&channel_managerC_,
         trans_handlers_[2]), datastoreC_, false,
         boost::bind(&NatDetectionTest::AddCtc, this, _1, _2, _3, 3),
@@ -316,11 +323,14 @@ class NatDetectionTest: public testing::Test {
   void GetKCtcs(const KadId &key, const std::vector<Contact> &ex_ctcs,
                 std::vector<Contact> *ctcs, const boost::uint16_t &rt_id) {
     switch (rt_id) {
-      case 1: routingtableA_->FindCloseNodes(key, K, ctcs, ex_ctcs);
+      case 1: routingtableA_->FindCloseNodes(key, test_nat_detection::K, ctcs,
+                                             ex_ctcs);
               break;
-      case 2: routingtableB_->FindCloseNodes(key, K, ctcs, ex_ctcs);
+      case 2: routingtableB_->FindCloseNodes(key, test_nat_detection::K, ctcs,
+                                             ex_ctcs);
               break;
-      case 3: routingtableC_->FindCloseNodes(key, K, ctcs, ex_ctcs);
+      case 3: routingtableC_->FindCloseNodes(key, test_nat_detection::K, ctcs,
+                                             ex_ctcs);
               break;
     }
   }

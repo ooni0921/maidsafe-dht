@@ -140,26 +140,27 @@ void InsertKadContact(const KadId &key,
 }
 
 KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
-  transport::TransportHandler *transport_handler,
-  NodeType type, const std::string &private_key, const std::string
-  &public_key, const bool &port_forwarded, const bool &use_upnp)
-  : routingtable_mutex_(), kadconfig_mutex_(),
-  extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
-  activeprobes_mutex_(), pendingcts_mutex_(),
-  ptimer_(new base::CallLaterTimer), pchannel_manager_(channel_manager),
-  transport_handler_(transport_handler), transport_id_(0),
-  pservice_channel_(), pdata_store_(new DataStore(kRefreshTime)),
-  alternative_store_(NULL), premote_service_(), kadrpcs_(channel_manager,
-  transport_handler), natrpcs_(channel_manager, transport_handler),
-  is_joined_(false), prouting_table_(), node_id_(), fake_client_node_id_(),
-  host_ip_(""), type_(type), host_port_(0), rv_ip_(""),
-  rv_port_(0), bootstrapping_nodes_(), K_(K), alpha_(kAlpha), beta_(kBeta),
-  refresh_routine_started_(false), kad_config_path_(""), local_host_ip_(""),
-  local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
-  use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
-  add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
-  host_nat_type_(NONE), upnp_(), upnp_mapped_port_(0),
-  signature_validator_(NULL) {}
+                     transport::TransportHandler *transport_handler,
+                     NodeType type, const std::string &private_key,
+                     const std::string &public_key, const bool &port_forwarded,
+                     const bool &use_upnp, const boost::uint16_t &k)
+    : routingtable_mutex_(), kadconfig_mutex_(),
+      extendshortlist_mutex_(), joinbootstrapping_mutex_(), leave_mutex_(),
+      activeprobes_mutex_(), pendingcts_mutex_(),
+      ptimer_(new base::CallLaterTimer), pchannel_manager_(channel_manager),
+      transport_handler_(transport_handler), transport_id_(0),
+      pservice_channel_(), pdata_store_(new DataStore(kRefreshTime)),
+      alternative_store_(NULL), premote_service_(), kadrpcs_(channel_manager,
+      transport_handler), natrpcs_(channel_manager, transport_handler),
+      is_joined_(false), prouting_table_(), node_id_(), fake_client_node_id_(),
+      host_ip_(), type_(type), host_port_(0), rv_ip_(),
+      rv_port_(0), bootstrapping_nodes_(), K_(k), alpha_(kAlpha), beta_(kBeta),
+      refresh_routine_started_(false), kad_config_path_(), local_host_ip_(),
+      local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
+      use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
+      add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
+      host_nat_type_(NONE), upnp_(), upnp_mapped_port_(0),
+      signature_validator_(NULL) {}
 
 KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
   transport::TransportHandler *transport_handler,
@@ -2519,7 +2520,7 @@ void KNodeImpl::ExecuteUpdateRPCs(const std::string &result,
       closest_nodes.push_back(node);
   }
 
-  if (closest_nodes.size() < size_t(kMinSuccessfulPecentageStore * K)) {
+  if (closest_nodes.size() < size_t(kMinSuccessfulPecentageStore * K_)) {
     DeleteResponse resp;
     resp.set_result(kad::kRpcResultFailure);
     std::string ser_resp(resp.SerializeAsString());
@@ -2612,7 +2613,7 @@ void KNodeImpl::UpdateValueResponses(
   if (uca->uvd->uvd_calledback == uca->uvd->found_nodes) {
     UpdateResponse update_result;
     if (uca->uvd->uvd_succeeded <
-        boost::uint8_t(K * kMinSuccessfulPecentageStore)) {
+        boost::uint8_t(K_ * kMinSuccessfulPecentageStore)) {
       // Sadly, we didn't gather the numbers to ensure success
       update_result.set_result(kRpcResultFailure);
 

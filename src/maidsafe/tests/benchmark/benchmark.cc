@@ -43,6 +43,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace po = boost::program_options;
 
+namespace test_benchmark {
+  static const boost::uint16_t K = 16;
+}  // namespace test_benchmark
+
 class JoinCallback {
  public:
   JoinCallback() : result_arrived_(false), success_(false) {}
@@ -232,9 +236,9 @@ int main(int argc, char **argv) {
     boost::int16_t transport_id;
     trans_handler.Register(new transport::TransportUDT, &transport_id);
     rpcprotocol::ChannelManager chmanager(&trans_handler);
-    kad::KNode node(&chmanager, &trans_handler, kad::CLIENT, kad::K,
-      kad::kAlpha, kad::kBeta, kad::kRefreshTime, "", "",
-      vm["port_fw"].as<bool>(), vm["upnp"].as<bool>());
+    kad::KNode node(&chmanager, &trans_handler, kad::CLIENT, test_benchmark::K,
+                    kad::kAlpha, kad::kBeta, kad::kRefreshTime, "", "",
+                    vm["port_fw"].as<bool>(), vm["upnp"].as<bool>());
     node.set_transport_id(transport_id);
     if (!chmanager.RegisterNotifiersToTransport() ||
         !trans_handler.RegisterOnServerDown(boost::bind(
@@ -301,7 +305,7 @@ int main(int argc, char **argv) {
     printf("\n[ Testing GetNodeContactDetails and Ping ]\n");
     ops.TestFindAndPing(nodes, iterations);
 
-    if (nodes_count >= kad::K * kad::kMinSuccessfulPecentageStore) {
+    if (nodes_count >= test_benchmark::K * kad::kMinSuccessfulPecentageStore) {
       printf("\n[ Testing StoreValue and FindValue (unsigned) ]\n");
       ops.TestStoreAndFind(nodes, iterations, false);
       printf("\n[ Testing StoreValue and FindValue (signed) ]\n");

@@ -56,8 +56,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace fs = boost::filesystem;
 
-const boost::int16_t kNetworkSize = kad::K + 1;
-const boost::int16_t kTestK = kad::K;
+namespace test_knode {
+  static const boost::uint16_t K = 16;
+}  // namespace test_knode
+
+const boost::int16_t kNetworkSize = test_knode::K + 1;
+const boost::int16_t kTestK = test_knode::K;
 
 inline void create_rsakeys(std::string *pub_key, std::string *priv_key) {
   crypto::RsaKeyPair kp;
@@ -67,7 +71,8 @@ inline void create_rsakeys(std::string *pub_key, std::string *priv_key) {
 }
 
 inline void create_req(const std::string &pub_key, const std::string &priv_key,
-    const std::string &key, std::string *sig_pub_key, std::string *sig_req) {
+                       const std::string &key, std::string *sig_pub_key,
+                       std::string *sig_req) {
   crypto::Crypto cobj;
   cobj.set_symm_algorithm(crypto::AES_256);
   cobj.set_hash_algorithm(crypto::SHA_512);
@@ -189,7 +194,9 @@ class Env: public testing::Environment {
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
     ASSERT_TRUE(knodes_[0]->is_joined());
     knodes_[0]->set_signature_validator(&validator);
-    LOG(INFO) << "Node 0 joined " << knodes_[0]->node_id().ToStringEncoded().substr(0, 12).c_str() << std::endl;
+    LOG(INFO) << "Node 0 joined "
+              << knodes_[0]->node_id().ToStringEncoded().substr(0, 12).c_str()
+              << std::endl;
     node_ids_.push_back(knodes_[0]->node_id());
     base::KadConfig kad_config;
     base::KadConfig::Contact *kad_contact = kad_config.add_contact();
@@ -217,7 +224,9 @@ class Env: public testing::Environment {
       ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
       ASSERT_TRUE(knodes_[i]->is_joined());
       knodes_[i]->set_signature_validator(&validator);
-      LOG(INFO) << "Node " << i << " joined " << knodes_[i]->node_id().ToStringEncoded().substr(0, 12).c_str() << std::endl;
+      LOG(INFO) << "Node " << i << " joined "
+                << knodes_[i]->node_id().ToStringEncoded().substr(0, 12).c_str()
+                << std::endl;
       node_ids_.push_back(knodes_[i]->node_id());
     }
     cb_.Reset();

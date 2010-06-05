@@ -3,7 +3,7 @@ echo  "checking please wait (3mins) ....."
  find ../../src/$1 -name "*.cc" -exec python ./cpplint.py {} \;   > code_style_errors 2>&1
  find ../../src$1 -name "*.h" -exec python ./cpplint.py {} \;   >> code_style_errors 2>&1
 
-for k in ../../src/protobuf/ Done Total ../../src/tests/ *\.pb\.* cryptopp udt libupnp
+for k in ../../src/maidsafe/protobuf/ Done Total  *\.pb\.* cryptopp udt libupnp
 do
   egrep -v $k code_style_errors > code_style_errors2
   cat code_style_errors2 > code_style_errors

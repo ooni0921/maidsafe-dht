@@ -94,11 +94,13 @@ class KNode {
   * listening has been manually forwarded in the router
   * @param use_upnp indicate if UPnP is going to be used as the first option
   * for NAT traversal
+  * @param k Maximum number of elements in the node's kbuckets
   */
   KNode(rpcprotocol::ChannelManager *channel_manager,
         transport::TransportHandler *transport_handler, NodeType type,
         const std::string &private_key, const std::string &public_key,
-        const bool &port_forwarded, const bool &use_upnp);
+        const bool &port_forwarded, const bool &use_upnp,
+        const boost::uint16_t &k);
   /**
   * Constructor where the kaemlia values for k, alpha, beta, and
   * refresh time are set by the user.

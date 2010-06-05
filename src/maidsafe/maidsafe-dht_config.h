@@ -120,10 +120,6 @@ enum ConnectionType { LOCAL, REMOTE, UNKNOWN };
 // The size of DHT keys and node IDs in bytes.
 const boost::uint16_t kKeySizeBytes = 64;
 
-// Kademlia constant k which defines the size of each "k-bucket" and the number
-// of nodes upon which a given <key,value> is stored.
-const boost::uint16_t K = 16;
-
 // The parallel level of search iterations.
 const boost::uint16_t kAlpha = 3;
 

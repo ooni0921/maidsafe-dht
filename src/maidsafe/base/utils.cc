@@ -45,13 +45,16 @@ boost::int32_t RandomInt32() {
   boost::int32_t result(0);
   bool success = false;
   while (!success) {
-    CryptoPP::AutoSeededRandomPool rng;
-    CryptoPP::Integer rand_num(rng, 32);
-    if (rand_num.IsConvertableToLong()) {
-      result =  static_cast<boost::int32_t>(
-          rand_num.AbsoluteValue().ConvertToLong());
-      success = true;
+    try {
+      CryptoPP::AutoSeededRandomPool rng;
+      CryptoPP::Integer rand_num(rng, 32);
+      if (rand_num.IsConvertableToLong()) {
+        result =  static_cast<boost::int32_t>(
+            rand_num.AbsoluteValue().ConvertToLong());
+        success = true;
+      }
     }
+    catch(...) {}
   }
   return result;
 }
@@ -60,13 +63,16 @@ boost::uint32_t RandomUint32() {
   boost::uint32_t result(0);
   bool success = false;
   while (!success) {
-    CryptoPP::AutoSeededRandomPool rng;
-    CryptoPP::Integer rand_num(rng, 32);
-    if (rand_num.IsConvertableToLong()) {
-      result = static_cast<boost::uint32_t>(
-          rand_num.AbsoluteValue().ConvertToLong());
-      success = true;
+    try {
+      CryptoPP::AutoSeededRandomPool rng;
+      CryptoPP::Integer rand_num(rng, 32);
+      if (rand_num.IsConvertableToLong()) {
+        result = static_cast<boost::uint32_t>(
+            rand_num.AbsoluteValue().ConvertToLong());
+        success = true;
+      }
     }
+    catch(...) {}
   }
   return result;
 }
@@ -79,28 +85,32 @@ std::string IntToString(const int &value) {
 std::string RandomString(const boost::uint32_t &length) {
   std::string random_string;
   random_string.reserve(length);
-  while (random_string.size() < length) {
-    boost::uint32_t iter_length =
-      std::min(static_cast<boost::uint32_t>(length - random_string.size()),
-              boost::uint32_t(65536));
+  try {
     CryptoPP::AutoSeededRandomPool random_number_generator;
-    boost::scoped_array<byte> random_bytes(new byte[iter_length]);
-    random_number_generator.GenerateBlock(random_bytes.get(), iter_length);
-    std::string random_substring(random_bytes.get(),
-                                 random_bytes.get() + iter_length);
-    for (boost::uint32_t i = 0; i < iter_length; ++i) {
-      boost::uint8_t *random_char =
-          reinterpret_cast<boost::uint8_t*>(&random_substring.at(i));
-      *random_char = *random_char % 122;
-      if (48 > *random_char)
-        *random_char += 48;
-      if ((57 < *random_char) && (65 > *random_char))
-        *random_char += 7;
-      if ((90 < *random_char) && (97 > *random_char))
-        *random_char += 6;
+    while (random_string.size() < length) {
+      boost::uint32_t iter_length =
+        std::min(static_cast<boost::uint32_t>(length - random_string.size()),
+                 boost::uint32_t(65536));
+      boost::scoped_array<byte> random_bytes(new byte[iter_length]);
+      random_number_generator.GenerateBlock(random_bytes.get(), iter_length);
+      std::string random_substring(random_bytes.get(),
+                                   random_bytes.get() + iter_length);
+      for (boost::uint32_t i = 0; i < iter_length; ++i) {
+        boost::uint8_t *random_char =
+            reinterpret_cast<boost::uint8_t*>(&random_substring.at(i));
+        *random_char = *random_char % 122;
+        if (48 > *random_char)
+          *random_char += 48;
+        if ((57 < *random_char) && (65 > *random_char))
+          *random_char += 7;
+        if ((90 < *random_char) && (97 > *random_char))
+          *random_char += 6;
+      }
+      random_string += random_substring;
     }
-    random_string += random_substring;
   }
+  catch(...) {}
+
   return random_string;
 }
 
@@ -120,23 +130,23 @@ std::string DecodeFromHex(const std::string &hex_input) {
 
 boost::uint32_t GetEpochTime() {
   boost::posix_time::ptime
-    t(boost::posix_time::microsec_clock::universal_time());
+      t(boost::posix_time::microsec_clock::universal_time());
   boost::posix_time::ptime start(boost::gregorian::date(2000, 1, 1));
   return static_cast<boost::uint32_t>((t-start).total_seconds());
 }
 
 boost::uint64_t GetEpochMilliseconds() {
   boost::posix_time::ptime
-    t(boost::posix_time::microsec_clock::universal_time());
+      t(boost::posix_time::microsec_clock::universal_time());
   boost::posix_time::ptime start(boost::gregorian::date(2000, 1, 1));
-  return static_cast<boost::uint64_t>((t-start).total_milliseconds());
+  return static_cast<boost::uint64_t>((t - start).total_milliseconds());
 }
 
 boost::uint64_t GetEpochNanoseconds() {
   boost::posix_time::ptime
-    t(boost::posix_time::microsec_clock::universal_time());
+      t(boost::posix_time::microsec_clock::universal_time());
   boost::posix_time::ptime start(boost::gregorian::date(2000, 1, 1));
-  return static_cast<boost::uint64_t>((t-start).total_nanoseconds());
+  return static_cast<boost::uint64_t>((t - start).total_nanoseconds());
 }
 
 boost::uint32_t GenerateNextTransactionId(const boost::uint32_t &id) {
@@ -191,7 +201,9 @@ std::string IpBytesToAscii(const std::string &bytes_ip) {
       return address.to_string();
     }
   }
-  catch(const std::exception&) {}
+  catch(const std::exception &e) {
+     DLOG(ERROR) << e.what() << std::endl;
+  }
   return "";
 }
 
@@ -212,7 +224,7 @@ boost::uint32_t IpAsciiToNet(const char *buffer) {
   boost::uint32_t ret = 0;
   int shift = 24;  //  fill out the MSB first
   bool startQuad = true;
-  while ((shift >= 0)&&(*buffer)) {
+  while ((shift >= 0) && (*buffer)) {
     if (startQuad) {
       unsigned char quad = (unsigned char) atoi(buffer);
       ret |= (((boost::uint32_t)quad) << shift);
@@ -229,7 +241,7 @@ boost::uint32_t IpAsciiToNet(const char *buffer) {
 // || defined (__MINGW__)
 static boost::uint32_t SockAddrToUint32(struct sockaddr * a) {
   return ((a)&&(a->sa_family == AF_INET)) ?
-      ntohl(((struct sockaddr_in *)a)->sin_addr.s_addr) : 0;
+         ntohl(((struct sockaddr_in *)a)->sin_addr.s_addr) : 0;
 }
 #endif
 

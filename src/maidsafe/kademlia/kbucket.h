@@ -44,7 +44,7 @@ class KBucket {
   // The lower and upper boundary for the range in the 512-bit ID
   // space covered by this k-bucket
   KBucket(const KadId &min, const KadId &max,
-      const boost::uint16_t &kb_K = kad::K);
+          const boost::uint16_t &kb_K);
   ~KBucket();
   // add a new contact to the k-bucket
   KBucketExitCode AddContact(const Contact &new_contact);

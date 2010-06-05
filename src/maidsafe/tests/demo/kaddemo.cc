@@ -44,6 +44,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace po = boost::program_options;
 
+namespace test_kaddemo {
+  static const boost::uint16_t K = 16;
+}  // namespace test_kaddemo
+
 class JoinCallback {
  public:
   JoinCallback() : result_arrived_(false), success_(false) {}
@@ -278,9 +282,9 @@ int main(int argc, char **argv) {
       type = kad::CLIENT;
     else
       type = kad::VAULT;
-    kad::KNode node(&chmanager, &trans_handler, type, kad::K,
-      kad::kAlpha, kad::kBeta, refresh_time, "", "", vm["port_fw"].as<bool>(),
-      vm["upnp"].as<bool>());
+    kad::KNode node(&chmanager, &trans_handler, type, test_kaddemo::K,
+                    kad::kAlpha, kad::kBeta, refresh_time, "", "",
+                    vm["port_fw"].as<bool>(), vm["upnp"].as<bool>());
     node.set_transport_id(transport_id);
     if (!chmanager.RegisterNotifiersToTransport() ||
         !trans_handler.RegisterOnServerDown(boost::bind(
@@ -369,7 +373,7 @@ int main(int argc, char **argv) {
     }
 
     if (!vm["noconsole"].as<bool>()) {
-      kaddemo::Commands cmds(&node, &chmanager, kad::K);
+      kaddemo::Commands cmds(&node, &chmanager, test_kaddemo::K);
       cmds.Run();
     } else {
       printf("=====================================\n");
