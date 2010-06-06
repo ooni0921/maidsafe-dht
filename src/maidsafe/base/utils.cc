@@ -52,7 +52,6 @@ boost::int32_t RandomInt32() {
           rand_num.AbsoluteValue().ConvertToLong());
       success = true;
     }
-    catch(...) {}
   }
   return result;
 }
@@ -68,7 +67,6 @@ boost::uint32_t RandomUint32() {
           rand_num.AbsoluteValue().ConvertToLong());
       success = true;
     }
-    catch(...) {}
   }
   return result;
 }
@@ -103,8 +101,6 @@ std::string RandomString(const boost::uint32_t &length) {
         *random_char += 6;
     }
   }
-  catch(...) {}
-
   return random_string;
 }
 

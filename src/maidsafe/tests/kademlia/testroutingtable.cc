@@ -67,10 +67,10 @@ class TestRoutingTable : public testing::Test {
 TEST_F(TestRoutingTable, BEH_KAD_AddContact) {
 //   std::string enc_id = base::EncodeToHex(base::RandomString(512));
   kad::KadId holder_id(kad::RANDOM_ID);
-  kad::RoutingTable routingtable(holder_id, kad::K);
+  kad::RoutingTable routingtable(holder_id, test_routing_table::K);
   std::string ip("127.0.0.1");
   boost::uint16_t port = 5001;
-  for (int  i = 1; i <= kad::K ;++i) {
+  for (int  i = 1; i <= test_routing_table::K ;++i) {
     kad::KadId contact_id(kad::RANDOM_ID);
     kad::Contact contact(contact_id, ip, port + i, ip, port + i);
      kad::Contact empty;
@@ -82,12 +82,12 @@ TEST_F(TestRoutingTable, BEH_KAD_AddContact) {
 
 TEST_F(TestRoutingTable, FUNC_KAD_PartFilltable) {
   kad::KadId holder_id(kad::RANDOM_ID);
-  kad::RoutingTable routingtable(holder_id, kad::K);
+  kad::RoutingTable routingtable(holder_id, test_routing_table::K);
   std::string ip("127.0.0.1");
   static boost::uint16_t port = 5003;
 
   std::list<kad::KadId>contacts;
-  for (int i = 0; contacts.size() <=511 * kad::K ; ++i) {
+  for (int i = 0; contacts.size() <=511 * test_routing_table::K ; ++i) {
     kad::KadId contact_id(kad::RANDOM_ID);
     // seems inefficient but it is very fast so leaving like this
     contacts.push_back(contact_id);
@@ -112,7 +112,7 @@ TEST_F(TestRoutingTable, FUNC_KAD_PartFilltable) {
 
 TEST_F(TestRoutingTable, BEH_KAD_Add_Get_Contact) {
   kad::KadId holder_id(kad::RANDOM_ID);
-  kad::RoutingTable routingtable(holder_id, kad::K);
+  kad::RoutingTable routingtable(holder_id, test_routing_table::K);
   int id = base::RandomInt32();
   kad::KadId contact_id(cry_obj.Hash(boost::lexical_cast<std::string>(id),
                                      "", crypto::STRING_STRING, false),
@@ -129,7 +129,7 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Get_Contact) {
 
 TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Contact) {
   kad::KadId holder_id(kad::RANDOM_ID);
-  kad::RoutingTable routingtable(holder_id, kad::K);
+  kad::RoutingTable routingtable(holder_id, test_routing_table::K);
   int id = base::RandomInt32();
   kad::KadId contact_id(kad::RANDOM_ID);
   std::string ip("127.0.0.1");
@@ -151,7 +151,7 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Contact) {
 
 TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Add_Contact) {
   kad::KadId holder_id(kad::RANDOM_ID);
-  kad::RoutingTable routingtable(holder_id, kad::K);
+  kad::RoutingTable routingtable(holder_id, test_routing_table::K);
   int id = base::RandomInt32();
   kad::KadId contact_id(kad::RANDOM_ID);
   std::string ip("127.0.0.1");

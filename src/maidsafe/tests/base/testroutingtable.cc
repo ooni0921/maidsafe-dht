@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/base/utils.h"
 #include "maidsafe/base/routingtable.h"
 
+
 TEST(PublicRoutingTableHandlerTest, BEH_BASE_AddTuple) {
   std::string kademlia_id = base::RandomString(64);
   std::string host_ip("192.168.1.188");
