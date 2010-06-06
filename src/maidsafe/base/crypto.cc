@@ -44,7 +44,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace crypto {
 
 CryptoPP::RandomNumberGenerator & GlobalRNG() {
-  static CryptoPP::AutoSeededRandomPool rand_pool;
+  // static CryptoPP::AutoSeededRandomPool rand_pool;
+  static CryptoPP::AutoSeededX917RNG< CryptoPP::AES > rand_pool;
   return rand_pool;
 }
 
