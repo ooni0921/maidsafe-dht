@@ -45,7 +45,6 @@ boost::int32_t RandomInt32() {
   boost::int32_t result(0);
   bool success = false;
   while (!success) {
-    // CryptoPP::AutoSeededRandomPool rng;
     static CryptoPP::AutoSeededX917RNG< CryptoPP::AES > rng;
     CryptoPP::Integer rand_num(rng, 32);
     if (rand_num.IsConvertableToLong()) {
@@ -62,10 +61,8 @@ boost::uint32_t RandomUint32() {
   boost::uint32_t result(0);
   bool success = false;
   while (!success) {
-//     CryptoPP::AutoSeededRandomPool rng;
     static CryptoPP::AutoSeededX917RNG< CryptoPP::AES > rng;
     CryptoPP::Integer rand_num(rng, 32);
-//     CryptoPP::LC_RNG(GetEpochNanoseconds()) rng;
     if (rand_num.IsConvertableToLong()) {
       result = static_cast<boost::uint32_t>(
           rand_num.AbsoluteValue().ConvertToLong());
