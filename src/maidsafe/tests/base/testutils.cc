@@ -30,6 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/lexical_cast.hpp>
 #include <boost/progress.hpp>
 #include <cstdlib>
+#include <algorithm>
+#include <list>
 #include "maidsafe/base/utils.h"
 
 
@@ -194,22 +196,27 @@ TEST(UtilsTest, BEH_BASE_NetworkInterfaces) {
 }
 
 TEST(UtilsTest, BEH_BASE_RandomNumberGen) {
-  int i = 1;
-  while (i < 10) {
-    boost::uint32_t urandnum1 = base::RandomUint32();
-    boost::uint32_t urandnum2 = base::RandomUint32();
-    ASSERT_NE(urandnum1, urandnum2);
-    ASSERT_NE(urandnum1, boost::uint32_t(0));
-    ASSERT_NE(urandnum2, boost::uint32_t(0));
-    ++i;
+  std::list<boost::uint32_t>uall_nums;
+  std::list<boost::uint32_t>all_nums;
+  int uall = 0;
+  int uwith_random_removed = 0;
+  int all = 0;
+  int with_random_removed = 0;
+
+  double finish = 1000;
+  for (int i = 0;i < finish; ++i) {
+    all_nums.push_front(base::RandomUint32());
+    uall_nums.push_front(base::RandomInt32());
   }
-  int j = 1;
-  while (j < 10) {
-    boost::int32_t randnum1 = base::RandomInt32();
-    boost::int32_t randnum2 = base::RandomInt32();
-    ASSERT_NE(randnum1, randnum2);
-    ASSERT_NE(randnum1, 0);
-    ASSERT_NE(randnum2, 0);
-    ++j;
-  }
+  all = all_nums.size();
+  uall = all_nums.size();
+  all_nums.unique();
+  with_random_removed = all_nums.size();
+  uall_nums.unique();
+  uwith_random_removed = uall_nums.size();
+  // look for less than 1% duplicates
+  ASSERT_EQ(finish, all);
+  ASSERT_GT(finish * 0.01, all - with_random_removed);
+  ASSERT_EQ(finish, uall);
+  ASSERT_GT(finish * 0.01, uall - uwith_random_removed);
 }
