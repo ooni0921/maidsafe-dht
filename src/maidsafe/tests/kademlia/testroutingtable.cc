@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/kademlia/kbucket.h"
 #include "maidsafe/kademlia/kadroutingtable.h"
 #include "maidsafe/base/crypto.h"
+#include "maidsafe/base/utils.h"
 #include "maidsafe/maidsafe-dht.h"
 
 namespace test_routing_table {
@@ -64,57 +65,55 @@ class TestRoutingTable : public testing::Test {
 };
 
 TEST_F(TestRoutingTable, BEH_KAD_AddContact) {
-  std::string enc_id("ef420cd03b20acc07f79441c6560b8e8953f0b601a968d71311abe6f1"
-                     "f5feb2611692309c66f77f93ffdac4adbeddb3a28fe3b0b92d1d23592"
-                     "ad9847f49580df");
-  kad::KadId holder_id(enc_id, true);
-  kad::RoutingTable routingtable(holder_id, test_routing_table::K);
+//   std::string enc_id = base::EncodeToHex(base::RandomString(512));
+  kad::KadId holder_id(kad::RANDOM_ID);
+  kad::RoutingTable routingtable(holder_id, kad::K);
   std::string ip("127.0.0.1");
-  boost::uint16_t port = 8888;
-  std::string ids[16];
-  ids[0] = "461b69b40db1800f0b9a6cc13c257c6a06043b57841149fbbbca4dea3bcbf9119ff"
-           "7cd13be0e752cf65c57b1d5abe05e5f936c9bbe1fd04fed50e97482918bae";
-  ids[1] = "9e4ac275d0c0fc00fa106d9aa9db0db4e687ae2044cfbf8fcb3f371c3cb8c0d9e72"
-           "583a68dc8a3ed8909b9e757d58485f654d596fd334902ca00d5ead44a87d5";
-  ids[2] = "b13b8119e8d71d161b8c8e51e98326c5b82732c62f7e24be38deac1cc52ef184d78"
-           "df907ff69a958a4810d7dfe22185c1798738dfee47cc194e7ca4a02d06e65";
-  ids[3] = "1168eb6f58212ae41fe12fc69feb72463411754a57b83fdc7d296fcd75bdfceb539"
-           "3469bf720ab0ed9f90cd10394991dcdaa133aa44a4e83b29dde66c0b716cb";
-  ids[4] = "279a0166dba744ae67afff262f243e835acd795a25a122fa1c1c22a63030e013abf"
-           "532fbeb4c9289e06bd478df22e255970b21f40c300bdf416b9ebcc1c8bf11";
-  ids[5] = "e1f923b3defffeb6984c7c4570c99065432bd04bc0dc14fcc856bcc7472ef50a9eb"
-           "15dc961e995e990f2621c43aaa259f8adfc65f74cef33a07045711073b1a1";
-  ids[6] = "833b754224a2e351e40fc929d97b342f3468c0cfbea72e091370cf1a2fef7ccd4c2"
-           "a0319ed0b1d808c071cc9671aa3eccafd4953c32d099b76bd2477ab9dd421";
-  ids[7] = "6d5b6b3b10eebc0dfa9116059e30bf05e028fd6e4d4dfc80a3d56ce914f0d465f27"
-           "baeb73d58f231530d7e72b15d2b5a59e6a2a746177d155d4e65b3a98f502c";
-  ids[8] = "b9226326f7cb561e3a96e16989a1132d278a9443704c9da7b2925906d3ec80d4a21"
-           "d84d5f8c52ea32626a5725cabd487bee4ded843388d65adb43112bf9b3bfa";
-  ids[9] = "1f5630997a272e79d1e7091d275e5b9e115c1e2c34a5626954fba571c51b2ca29e1"
-           "1dc56d60481cdf96bfdca6d0ddca016479b5ef27bba55504069e694ead957";
-  ids[10] = "c05074e15f4ce0621b400d1d3da43061089294812431aaf36cab4089262eddc606"
-            "bbffcd9505c277b568de4bac3e6140ce56c5e5a51b162b18127b50faa83bd7";
-  ids[11] = "3dfa8a4321609f53acb492b725d9bbca32a23b14b55da092768b1d42bb36049c24"
-            "7ba90ca77fa254c04e5d32be101face6285617adc32e5c92255579487f9b73";
-  ids[12] = "2e6338ae33ec9a3dccc453591bc3ae3faf9ef568c66a9531d2911426d05cfe9cc8"
-            "7d0922652b7d0c8544800952cc4c7669ac2eac6cd63c2da46072583b9ca835";
-  ids[13] = "914aed585420dea515780906a5222e7d3848945708d497d598a41c0732a7427e75"
-            "dedd698081d5ac7c09f3e2cbd5c58f466865752fac961e89e731b2c4f59c09";
-  ids[14] = "b18bc05200319ce0339a68881cca8672af639ee11945188608553885330428850a"
-            "4f81c8f289dd080e1f929c029810cf1ffdc82cdfd4331238f0e6a940862f1c";
-  ids[15] = "a27b24b72c37e7862613b29e86502dae6f863170eb1621a04a06f909588348427b"
-            "2c3bc623d7ef1bf59bd3efa010c69b19a1d8732c8512ff8510ea46176ad383";
-  for (boost::uint16_t i = 0; i < 16 && i < test_routing_table::K; ++i) {
-    std::string id = base::DecodeFromHex(ids[i]);
-    kad::Contact contact(id, ip, port + i, ip, port + i);
-    ASSERT_EQ(0, routingtable.AddContact(contact));
+  boost::uint16_t port = 5001;
+  for (int  i = 1; i <= kad::K ;++i) {
+    kad::KadId contact_id(kad::RANDOM_ID);
+    kad::Contact contact(contact_id, ip, port + i, ip, port + i);
+     kad::Contact empty;
+     if (!routingtable.GetContact(contact_id, &empty)) {
+    EXPECT_EQ(0, routingtable.AddContact(contact));
+     }
+  }
 }
+
+TEST_F(TestRoutingTable, FUNC_KAD_PartFilltable) {
+  kad::KadId holder_id(kad::RANDOM_ID);
+  kad::RoutingTable routingtable(holder_id, kad::K);
+  std::string ip("127.0.0.1");
+  static boost::uint16_t port = 5003;
+
+  std::list<kad::KadId>contacts;
+  for (int i = 0; contacts.size() <=511 * kad::K ; ++i) {
+    kad::KadId contact_id(kad::RANDOM_ID);
+    // seems inefficient but it is very fast so leaving like this
+    contacts.push_back(contact_id);
+    contacts.unique();
+  }
+  for (std::list<kad::KadId>::iterator j = contacts.begin();
+      j!= contacts.end() ; ++j) {
+    kad::Contact contact(*j, ip, ++port , ip, ++port);
+    // table will not be full but should only fail on full bucket [2] or
+    // works [0]
+    ASSERT_TRUE(routingtable.AddContact(contact) == 0 ||
+                routingtable.AddContact(contact) == 2);
+  }
+  // One more wafer thin mint, well will be after we iterate and fill all
+  // buckets TODO(dirvine)
+  kad::KadId contact_id(kad::RANDOM_ID);
+  kad::Contact contact(contact_id, ip, 7777, ip, 7777);
+  ASSERT_TRUE(routingtable.AddContact(contact) == 0 ||
+              routingtable.AddContact(contact) == 2);
 }
+
 
 TEST_F(TestRoutingTable, BEH_KAD_Add_Get_Contact) {
   kad::KadId holder_id(kad::RANDOM_ID);
-  kad::RoutingTable routingtable(holder_id, test_routing_table::K);
-  int id = rand();  // NOLINT
+  kad::RoutingTable routingtable(holder_id, kad::K);
+  int id = base::RandomInt32();
   kad::KadId contact_id(cry_obj.Hash(boost::lexical_cast<std::string>(id),
                                      "", crypto::STRING_STRING, false),
                         false);
@@ -130,11 +129,9 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Get_Contact) {
 
 TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Contact) {
   kad::KadId holder_id(kad::RANDOM_ID);
-  kad::RoutingTable routingtable(holder_id, test_routing_table::K);
-  int id = rand();  // NOLINT
-  kad::KadId contact_id(cry_obj.Hash(boost::lexical_cast<std::string>(id),
-                                     "", crypto::STRING_STRING, false),
-                        false);
+  kad::RoutingTable routingtable(holder_id, kad::K);
+  int id = base::RandomInt32();
+  kad::KadId contact_id(kad::RANDOM_ID);
   std::string ip("127.0.0.1");
   boost::uint16_t port(8888);
   kad::Contact contact(contact_id, ip, port, ip, port);
@@ -154,11 +151,9 @@ TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Contact) {
 
 TEST_F(TestRoutingTable, BEH_KAD_Add_Remove_Add_Contact) {
   kad::KadId holder_id(kad::RANDOM_ID);
-  kad::RoutingTable routingtable(holder_id, test_routing_table::K);
-  int id = rand();  // NOLINT
-  kad::KadId contact_id(cry_obj.Hash(boost::lexical_cast<std::string>(id),
-                                     "", crypto::STRING_STRING, false),
-                        false);
+  kad::RoutingTable routingtable(holder_id, kad::K);
+  int id = base::RandomInt32();
+  kad::KadId contact_id(kad::RANDOM_ID);
   std::string ip("127.0.0.1");
   boost::uint16_t port(8888);
   kad::Contact contact(contact_id, ip, port, ip, port);

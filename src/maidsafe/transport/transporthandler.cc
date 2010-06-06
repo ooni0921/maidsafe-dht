@@ -286,7 +286,7 @@ int TransportHandler::StartLocal(const boost::uint16_t &port,
   ++started_count_;
   return (*it).second->StartLocal(port);
 }
-
+// TODO(dirvine): FIXREFRESH Do not close a connection to a 1st kbucket node
 void TransportHandler::CloseConnection(const boost::uint32_t &connection_id,
                                        const boost::int16_t &transport_id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
@@ -296,8 +296,11 @@ void TransportHandler::CloseConnection(const boost::uint32_t &connection_id,
       << transport_id << "\n";
     return;
   }
+// get peer_address's from routing table
+// if in our K bucket do not close.
 
   (*it).second->CloseConnection(connection_id);
+
 }
 
 bool TransportHandler::is_stopped(const boost::int16_t &transport_id) {

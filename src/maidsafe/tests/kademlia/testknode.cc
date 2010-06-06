@@ -957,7 +957,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindValueWithDeadNodes) {
 TEST_F(KNodeTest, FUNC_KAD_Downlist) {
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   // select a random node from node 1 to node kNetworkSize
-  int r_node = 1 + rand() % (kNetworkSize - 1);  // NOLINT (Fraser)
+  int r_node = 1 + base::RandomInt32() % (kNetworkSize - 1);
   boost::uint16_t r_port = knodes_[r_node]->host_port();
   kad::KadId r_node_id(knodes_[r_node]->node_id());
   // Compute the sum of the nodes whose routing table contain r_node

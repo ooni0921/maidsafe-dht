@@ -236,9 +236,10 @@ KadId::KadId(const KadId &min, const KadId &max)
 }
 
 void KadId::GenerateRandomId() {
-  for (id_container::iterator it = raw_id_.begin(); it != raw_id_.end(); ++it) {
+for (id_container::iterator it = raw_id_.begin(); it != raw_id_.end(); ++it) {
     (*it) = base::RandomInt32();
   }
+  // return base::RandomString(raw_id_.size());
 }
 
 const std::string KadId::ToStringEncoded() const {

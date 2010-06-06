@@ -273,6 +273,8 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
         decoded_msg.message_id() << " -- RTT: " << rtt << " ms, duration: " <<
             duration << " ms" << std::endl;
         done->Run();
+        // TODO(dirvine) FIXREFRESH Check this is not connected to a node in
+        // our first kbucketkbucket
         transport_handler_->CloseConnection(connection_id, transport_id);
       } else {
         req_mutex_.unlock();

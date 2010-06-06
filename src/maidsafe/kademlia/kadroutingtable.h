@@ -50,7 +50,7 @@ class RoutingTable {
   ~RoutingTable();
   // Add the given contact to the correct k-bucket; if it already
   // exists, its status will be updated
-  int AddContact(const Contact &new_contact);
+  int  AddContact(const Contact &new_contact);
   // Returns true and the contact if it is stored in one Kbucket
   // otherwise it returns false
   bool GetContact(const KadId &node_id, Contact *contact);
@@ -79,6 +79,7 @@ class RoutingTable {
   // key (or ID)
   boost::uint16_t KBucketIndex(const KadId &key);
   Contact GetLastSeenContact(const boost::uint16_t &kbucket_index);
+
 
  private:
 // Calculate the index of the k-bucket which is responsible for the specified
