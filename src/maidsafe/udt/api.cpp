@@ -471,7 +471,7 @@ CUDTSocket::UDTSTATUS CUDTUnited::getStatus(const UDTSOCKET u)
    if (i->second->m_pUDT->m_bBroken)
       return CUDTSocket::BROKEN;
 
-   return i->second->m_Status;
+   return i->second->m_Status;   
 }
 
 int CUDTUnited::bind(const UDTSOCKET u, const sockaddr* name, const int& namelen)
