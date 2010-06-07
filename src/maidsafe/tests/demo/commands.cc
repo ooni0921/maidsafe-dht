@@ -257,7 +257,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
     } else {
       boost::int32_t ttl = boost::lexical_cast<boost::int32_t>(args[2]);
-      kad::KadId key(std::string(args[0]), kad::KadId::kHex);
+      kad::KadId key(std::string(args.at(0)), kad::KadId::kHex);
       if (!key.IsValid()) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
             false));
@@ -276,7 +276,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       printf("Invalid number of arguments for storevalue command\n");
     } else {
       boost::int32_t ttl = boost::lexical_cast<boost::int32_t>(args[2]);
-      kad::KadId key(std::string(args[0]), kad::KadId::kHex);
+      kad::KadId key(std::string(args.at(0)), kad::KadId::kHex);
       if (!key.IsValid()) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
                                       false));
@@ -294,7 +294,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for findvalue command\n");
     } else {
-      kad::KadId key(std::string(args[0]), kad::KadId::kHex);
+      kad::KadId key(std::string(args.at(0)), kad::KadId::kHex);
       if (!key.IsValid()) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
             false));
@@ -308,7 +308,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for findfile command\n");
     } else {
-      kad::KadId key(std::string(args[0]), kad::KadId::kHex);
+      kad::KadId key(std::string(args.at(0)), kad::KadId::kHex);
       if (!key.IsValid()) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
             false));
