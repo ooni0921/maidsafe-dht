@@ -48,7 +48,7 @@ Contact::Contact(const std::string &node_id, const std::string &host_ip,
                  const boost::uint16_t &local_port,
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port)
-    : node_id_(node_id, false), host_ip_(host_ip), host_port_(host_port),
+    : node_id_(node_id), host_ip_(host_ip), host_port_(host_port),
       failed_rpc_(0), rendezvous_ip_(rendezvous_ip),
       rendezvous_port_(rendezvous_port),
       last_seen_(base::GetEpochMilliseconds()), local_ip_(local_ip),
@@ -63,7 +63,7 @@ Contact::Contact(const std::string &node_id, const std::string &host_ip,
 
 Contact::Contact(const std::string &node_id, const std::string &host_ip,
                  const boost::uint16_t &host_port)
-    : node_id_(node_id, false), host_ip_(host_ip), host_port_(host_port),
+    : node_id_(node_id), host_ip_(host_ip), host_port_(host_port),
       failed_rpc_(0), rendezvous_ip_(), rendezvous_port_(0),
       last_seen_(base::GetEpochMilliseconds()), local_ip_(), local_port_(0) {
   if (host_ip.size() > 4)
@@ -73,7 +73,7 @@ Contact::Contact(const std::string &node_id, const std::string &host_ip,
 Contact::Contact(const std::string &node_id, const std::string &host_ip,
                  const boost::uint16_t &host_port, const std::string &local_ip,
                  const boost::uint16_t &local_port)
-    : node_id_(node_id, false), host_ip_(host_ip), host_port_(host_port),
+    : node_id_(node_id), host_ip_(host_ip), host_port_(host_port),
       failed_rpc_(0), rendezvous_ip_(), rendezvous_port_(0),
       last_seen_(base::GetEpochMilliseconds()), local_ip_(local_ip),
       local_port_(local_port) {
@@ -124,7 +124,7 @@ Contact::Contact(const KadId &node_id, const std::string &host_ip,
 }
 
 Contact::Contact(const ContactInfo &contact_info)
-    : node_id_(contact_info.node_id(), false), host_ip_(contact_info.ip()),
+    : node_id_(contact_info.node_id()), host_ip_(contact_info.ip()),
       host_port_(contact_info.port()), failed_rpc_(0),
       rendezvous_ip_(contact_info.rendezvous_ip()),
       rendezvous_port_(contact_info.rendezvous_port()),
@@ -171,7 +171,7 @@ bool Contact::SerialiseToString(std::string *serialised_output) {
     return false;
   }
   ContactInfo info;
-  info.set_node_id(node_id_.ToStringDecoded());
+  info.set_node_id(node_id_.String());
   info.set_ip(host_ip_);
   info.set_port(host_port_);
   info.set_rendezvous_ip(rendezvous_ip_);
@@ -186,12 +186,9 @@ bool Contact::ParseFromString(const std::string &data) {
   kad::ContactInfo info;
   if (!info.ParseFromString(data))
     return false;
-  try {
-    node_id_ = KadId(info.node_id(), false);
-  }
-  catch(const KadIdException&) {
+  node_id_ = KadId(info.node_id());
+  if (!node_id_.IsValid())
     return false;
-  }
   if (info.ip().size() > 4)
     host_ip_ = base::IpAsciiToBytes(info.ip());
   else
@@ -226,7 +223,8 @@ std::string Contact::DebugString() const {
     return "Empty contact.\n";
   }
   std::string port(boost::lexical_cast<std::string>(host_port_));
-  std::string debug_string = "Node_id: " + node_id_.ToStringEncoded() + "\n";
+  std::string debug_string = "Node_id: " + node_id_.ToStringEncoded(KadId::kHex)
+                             + "\n";
   std::string dec_ip(base::IpBytesToAscii(host_ip_));
   debug_string += ("IP address: " + dec_ip + ":" + port + "\n");
 

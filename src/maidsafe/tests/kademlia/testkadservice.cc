@@ -97,7 +97,7 @@ class KadServicesTest: public testing::Test {
     CreateRSAKeys(&pub_key, &priv_key);
     std::string hex_id(126, 'a');
     hex_id += "01";
-    node_id_ = kad::KadId(hex_id, true);
+    node_id_ = kad::KadId(hex_id, kad::KadId::kHex);
     hex_id.assign(128, 'e');
     contact_.set_node_id(base::DecodeFromHex(hex_id));
     contact_.set_ip("127.0.0.1");
@@ -122,7 +122,7 @@ class KadServicesTest: public testing::Test {
         boost::bind(&KadServicesTest::Ping, this, _1, _2)));
     service_->set_signature_validator(&validator_);
     ContactInfo node_info;
-    node_info.set_node_id(node_id_.ToStringDecoded());
+    node_info.set_node_id(node_id_.String());
     node_info.set_ip("127.0.0.1");
     node_info.set_port(1234);
     node_info.set_local_ip("127.0.0.1");
@@ -204,9 +204,9 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesPing) {
   EXPECT_TRUE(ping_response.IsInitialized());
   EXPECT_EQ(kRpcResultFailure, ping_response.result());
   EXPECT_FALSE(ping_response.has_echo());
-  EXPECT_EQ(node_id_.ToStringDecoded(), ping_response.node_id());
+  EXPECT_EQ(node_id_.String(), ping_response.node_id());
   Contact contactback;
-  EXPECT_FALSE(routingtable_->GetContact(kad::KadId(contact_.node_id(), false),
+  EXPECT_FALSE(routingtable_->GetContact(kad::KadId(contact_.node_id()),
       &contactback));
   // Check success.
   ping_request.set_ping("ping");
@@ -217,8 +217,8 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesPing) {
   EXPECT_TRUE(ping_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, ping_response.result());
   EXPECT_EQ("pong", ping_response.echo());
-  EXPECT_EQ(node_id_.ToStringDecoded(), ping_response.node_id());
-  EXPECT_TRUE(routingtable_->GetContact(kad::KadId(contact_.node_id(), false),
+  EXPECT_EQ(node_id_.String(), ping_response.node_id());
+  EXPECT_TRUE(routingtable_->GetContact(kad::KadId(contact_.node_id()),
       &contactback));
 }
 
@@ -247,9 +247,9 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   EXPECT_EQ(0, find_value_response.values_size());
   EXPECT_EQ(0, find_value_response.signed_values_size());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_value_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_value_response.node_id());
   Contact contactback;
-  EXPECT_TRUE(routingtable_->GetContact(kad::KadId(contact_.node_id(), false),
+  EXPECT_TRUE(routingtable_->GetContact(kad::KadId(contact_.node_id()),
       &contactback));
   // Populate routing table & datastore & search for non-existant key.  Ensure k
   // contacts have IDs close to key being searched for.
@@ -292,7 +292,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
     Contact contact;
     contact.ParseFromString(find_value_response.closest_nodes(i));
     for (itr = ids.begin(); itr < ids.end(); ++itr) {
-      if (*itr == contact.node_id().ToStringDecoded()) {
+      if (*itr == contact.node_id().String()) {
         ids.erase(itr);
         break;
       }
@@ -302,7 +302,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
   EXPECT_EQ(0, find_value_response.values_size());
   EXPECT_EQ(0, find_value_response.values_size());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_value_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_value_response.node_id());
 
   // Populate datastore & search for existing key
   std::vector<std::string> values;
@@ -337,7 +337,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValue) {
       FAIL() << "value " << values[i] << " not in response";
   }
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_value_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_value_response.node_id());
 }
 
 TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
@@ -363,9 +363,9 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   EXPECT_EQ(0, find_node_response.closest_nodes_size());
   EXPECT_EQ(0, find_node_response.values_size());
   EXPECT_FALSE(find_node_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_node_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_node_response.node_id());
   Contact contactback;
-  EXPECT_TRUE(routingtable_->GetContact(kad::KadId(contact_.node_id(), false),
+  EXPECT_TRUE(routingtable_->GetContact(kad::KadId(contact_.node_id()),
       &contactback));
   // Populate routing table with a few random contacts (< K), ensure they are
   // not close to id to be searched for later, and ensure they are all
@@ -399,11 +399,10 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
     boost::uint16_t port = 10101+i;
     Contact contact(id, ip, port, ip, port);
     Contact contactback;
-    EXPECT_FALSE(routingtable_->GetContact(kad::KadId(id, false),
-        &contactback));
+    EXPECT_FALSE(routingtable_->GetContact(kad::KadId(id), &contactback));
     EXPECT_EQ(routingtable_->AddContact(contact), 0);
-    EXPECT_TRUE(routingtable_->GetContact(kad::KadId(id, false), &contactback));
-    EXPECT_EQ(id, contactback.node_id().ToStringDecoded());
+    EXPECT_TRUE(routingtable_->GetContact(kad::KadId(id), &contactback));
+    EXPECT_EQ(id, contactback.node_id().String());
   }
   EXPECT_EQ((test_kadservice::K > 1 ? test_kadservice::K/2 : 1) + 1,
              routingtable_->Size());
@@ -418,7 +417,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
             find_node_response.closest_nodes_size());
   EXPECT_EQ(0, find_node_response.values_size());
   EXPECT_FALSE(find_node_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_node_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_node_response.node_id());
 
   // Further populate routing table & datastore & search for non-existant node.
   // Ensure k-1 contacts have IDs close to id being searched for later.
@@ -466,7 +465,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   EXPECT_EQ(static_cast<unsigned int>(0), close_contacts_copy.size());
   EXPECT_EQ(0, find_node_response.values_size());
   EXPECT_FALSE(find_node_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_node_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_node_response.node_id());
 
   // Search for different existing node id which is far from original one
   find_node_request.set_key(later_key);
@@ -485,7 +484,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   for (int i = 0; i < test_kadservice::K; ++i) {
     Contact contact;
     contact.ParseFromString(find_node_response.closest_nodes(i));
-    if (contact.node_id().ToStringDecoded() == later_key)
+    if (contact.node_id().String() == later_key)
       found = true;
     for (itr = close_contacts.begin(); itr < close_contacts.end(); ++itr) {
       if (itr->Equals(contact)) {
@@ -498,7 +497,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindNode) {
   EXPECT_GT(close_contacts.size(), static_cast<unsigned int>(0));
   EXPECT_EQ(0, find_node_response.values_size());
   EXPECT_FALSE(find_node_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_node_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_node_response.node_id());
 }
 
 TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
@@ -546,12 +545,12 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   service_->Store(&controller, &store_request, &store_response, done4);
   EXPECT_TRUE(store_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, store_response.result());
-  EXPECT_EQ(node_id_.ToStringDecoded(), store_response.node_id());
+  EXPECT_EQ(node_id_.String(), store_response.node_id());
   std::vector<std::string> values;
   ASSERT_TRUE(datastore_->LoadItem(key, &values));
   EXPECT_EQ(ser_sig_value1, values[0]);
   Contact contactback;
-  EXPECT_TRUE(routingtable_->GetContact(kad::KadId(contact_.node_id(), false),
+  EXPECT_TRUE(routingtable_->GetContact(kad::KadId(contact_.node_id()),
       &contactback));
 
   // Store value2
@@ -569,7 +568,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   service_->Store(&controller, &store_request, &store_response, done2);
   EXPECT_TRUE(store_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, store_response.result());
-  EXPECT_EQ(node_id_.ToStringDecoded(), store_response.node_id());
+  EXPECT_EQ(node_id_.String(), store_response.node_id());
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key, &values));
   EXPECT_EQ(ser_sig_value1, values[0]);
@@ -589,7 +588,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesStore) {
   service_->Store(&controller, &store_request, &store_response, done3);
   EXPECT_TRUE(store_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, store_response.result());
-  EXPECT_EQ(node_id_.ToStringDecoded(), store_response.node_id());
+  EXPECT_EQ(node_id_.String(), store_response.node_id());
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key, &values));
   ASSERT_EQ(3, values.size());
@@ -633,7 +632,7 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   service_->Store(&controller, &store_request, &store_response, done1);
   EXPECT_TRUE(store_response.IsInitialized());
   EXPECT_EQ(kRpcResultFailure, store_response.result());
-  EXPECT_EQ(node_id_.ToStringDecoded(), store_response.node_id());
+  EXPECT_EQ(node_id_.String(), store_response.node_id());
   store_response.Clear();
   std::vector<std::string> values;
   EXPECT_FALSE(datastore_->LoadItem(key, &values));
@@ -660,7 +659,7 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
       (&cb_obj, &Callback::CallbackFunction);
   service_->Store(&controller, &store_request, &store_response, done6);
   EXPECT_EQ(kRpcResultFailure, store_response.result());
-  EXPECT_EQ(node_id_.ToStringDecoded(), store_response.node_id());
+  EXPECT_EQ(node_id_.String(), store_response.node_id());
   store_response.Clear();
   values.clear();
   EXPECT_FALSE(datastore_->LoadItem(key, &values));
@@ -671,7 +670,7 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   service_->Store(&controller, &store_request, &store_response, done2);
   EXPECT_TRUE(store_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, store_response.result());
-  EXPECT_EQ(node_id_.ToStringDecoded(), store_response.node_id());
+  EXPECT_EQ(node_id_.String(), store_response.node_id());
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key, &values));
   ASSERT_EQ(1, values.size());
@@ -685,7 +684,7 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   service_->Store(&controller, &store_request, &store_response, done3);
   EXPECT_TRUE(store_response.IsInitialized());
   EXPECT_EQ(kRpcResultFailure, store_response.result());
-  EXPECT_EQ(node_id_.ToStringDecoded(), store_response.node_id());
+  EXPECT_EQ(node_id_.String(), store_response.node_id());
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key, &values));
   ASSERT_EQ(1, values.size());
@@ -721,7 +720,7 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   service_->Store(&controller, &store_request, &store_response, done4);
   EXPECT_TRUE(store_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, store_response.result());
-  EXPECT_EQ(node_id_.ToStringDecoded(), store_response.node_id());
+  EXPECT_EQ(node_id_.String(), store_response.node_id());
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key1, &values));
   ASSERT_EQ(1, values.size());
@@ -738,7 +737,7 @@ TEST_F(KadServicesTest, BEH_KAD_InvalidStoreValue) {
   service_->Store(&controller, &store_request, &store_response, done5);
   EXPECT_TRUE(store_response.IsInitialized());
   EXPECT_EQ(kRpcResultFailure, store_response.result());
-  EXPECT_EQ(node_id_.ToStringDecoded(), store_response.node_id());
+  EXPECT_EQ(node_id_.String(), store_response.node_id());
   values.clear();
   EXPECT_TRUE(datastore_->LoadItem(key1, &values));
   ASSERT_EQ(1, values.size());
@@ -877,9 +876,9 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
   EXPECT_EQ(0, find_value_response.closest_nodes_size());
   EXPECT_EQ(0, find_value_response.values_size());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_value_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_value_response.node_id());
   Contact contactback;
-  EXPECT_TRUE(routingtable_->GetContact(kad::KadId(contact_.node_id(), false),
+  EXPECT_TRUE(routingtable_->GetContact(kad::KadId(contact_.node_id()),
       &contactback));
   // Populate routing table & datastore & search for non-existant key.  Ensure k
   // contacts have IDs close to key being searched for.
@@ -920,7 +919,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
     Contact contact;
     contact.ParseFromString(find_value_response.closest_nodes(i));
     for (itr = ids.begin(); itr < ids.end(); ++itr) {
-      if (*itr == contact.node_id().ToStringDecoded()) {
+      if (*itr == contact.node_id().String()) {
         ids.erase(itr);
         break;
       }
@@ -932,7 +931,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
   EXPECT_FALSE(find_value_response.has_alternative_value_holder());
   EXPECT_FALSE(find_value_response.has_needs_cache_copy());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_value_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_value_response.node_id());
 
   // Populate datastore & search for existing key
   std::vector<std::string> values;
@@ -969,7 +968,7 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
   EXPECT_FALSE(find_value_response.has_alternative_value_holder());
   EXPECT_FALSE(find_value_response.has_needs_cache_copy());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_value_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_value_response.node_id());
 
   // Populate alt store & search for existing key
   dummy_alt_store.Store(key);
@@ -987,11 +986,11 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
   EXPECT_EQ(0, find_value_response.closest_nodes_size());
   EXPECT_EQ(0, find_value_response.values_size());
   EXPECT_TRUE(find_value_response.has_alternative_value_holder());
-  EXPECT_EQ(node_id_.ToStringDecoded(),
+  EXPECT_EQ(node_id_.String(),
       find_value_response.alternative_value_holder().node_id());
   EXPECT_FALSE(find_value_response.has_needs_cache_copy());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_value_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_value_response.node_id());
 
   find_value_request.set_key(wrong_key);
   google::protobuf::Closure *done5 = google::protobuf::NewCallback<Callback>
@@ -1004,11 +1003,11 @@ TEST_F(KadServicesTest, BEH_KAD_ServicesFindValAltStore) {
   EXPECT_EQ(0, find_value_response.closest_nodes_size());
   EXPECT_EQ(0, find_value_response.values_size());
   EXPECT_TRUE(find_value_response.has_alternative_value_holder());
-  EXPECT_EQ(node_id_.ToStringDecoded(),
+  EXPECT_EQ(node_id_.String(),
       find_value_response.alternative_value_holder().node_id());
   EXPECT_FALSE(find_value_response.has_needs_cache_copy());
   EXPECT_FALSE(find_value_response.has_requester_ext_addr());
-  EXPECT_EQ(node_id_.ToStringDecoded(), find_value_response.node_id());
+  EXPECT_EQ(node_id_.String(), find_value_response.node_id());
 }
 
 TEST_F(KadServicesTest, FUNC_KAD_ServiceDelete) {
@@ -1243,7 +1242,7 @@ TEST_F(KadServicesTest, BEH_KAD_UpdateValue) {
   service_->Update(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kRpcResultFailure, response.result());
-  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+  ASSERT_EQ(node_id_.String(), response.node_id());
 
   // Fail: Request not properly initialised
   request.set_key(key);
@@ -1258,7 +1257,7 @@ TEST_F(KadServicesTest, BEH_KAD_UpdateValue) {
   service_->Update(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kRpcResultFailure, response.result());
-  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+  ASSERT_EQ(node_id_.String(), response.node_id());
 
   // Fail: trying to update non-existent value
   crypto::Crypto co;
@@ -1284,7 +1283,7 @@ TEST_F(KadServicesTest, BEH_KAD_UpdateValue) {
   service_->Update(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kRpcResultFailure, response.result());
-  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+  ASSERT_EQ(node_id_.String(), response.node_id());
 
   // Fail: Value to update doesn't exist
   size_t total_values(5);
@@ -1302,7 +1301,7 @@ TEST_F(KadServicesTest, BEH_KAD_UpdateValue) {
   service_->Update(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kRpcResultFailure, response.result());
-  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+  ASSERT_EQ(node_id_.String(), response.node_id());
 
   // Fail: New value doesn't validate
   old_value = request.mutable_old_value();
@@ -1319,7 +1318,7 @@ TEST_F(KadServicesTest, BEH_KAD_UpdateValue) {
   service_->Update(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kRpcResultFailure, response.result());
-  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+  ASSERT_EQ(node_id_.String(), response.node_id());
 
   // Fail: Old value doesn't validate
   std::string wrong_public, wrong_private, wrong_publickey_signature,
@@ -1348,7 +1347,7 @@ TEST_F(KadServicesTest, BEH_KAD_UpdateValue) {
   service_->Update(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kRpcResultFailure, response.result());
-  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+  ASSERT_EQ(node_id_.String(), response.node_id());
 
   // Fail: Update fails
   old_value = request.mutable_old_value();
@@ -1372,7 +1371,7 @@ TEST_F(KadServicesTest, BEH_KAD_UpdateValue) {
   service_->Update(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
   ASSERT_EQ(kRpcResultFailure, response.result());
-  ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+  ASSERT_EQ(node_id_.String(), response.node_id());
 
   // Successful updates
   for (size_t a = 0; a < total_values; ++a) {
@@ -1392,7 +1391,7 @@ TEST_F(KadServicesTest, BEH_KAD_UpdateValue) {
     service_->Update(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
     ASSERT_EQ(kRpcResultSuccess, response.result());
-    ASSERT_EQ(node_id_.ToStringDecoded(), response.node_id());
+    ASSERT_EQ(node_id_.String(), response.node_id());
   }
 }
 

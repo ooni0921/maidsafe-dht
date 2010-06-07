@@ -30,7 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/foreach.hpp>
 #include <algorithm>
 #include <vector>
-#include "maidsafe/kademlia/kadutils.h"
 #include "maidsafe/kademlia/kadid.h"
 
 namespace base {
@@ -97,8 +96,8 @@ int PublicRoutingTableHandler::GetClosestRtt(
 bool PublicRoutingTableHandler::KadCloser(const PublicRoutingTableTuple &pdrtt1,
                                           const PublicRoutingTableTuple &pdrtt2,
                                           const std::string &target_key) const {
-  kad::KadId id1(pdrtt1.kademlia_id, false), id2(pdrtt2.kademlia_id, false),
-      target_id(target_key, false);
+  kad::KadId id1(pdrtt1.kademlia_id), id2(pdrtt2.kademlia_id),
+      target_id(target_key);
   return kad::KadId::CloserToTarget(id1, id2, target_id);
 }
 

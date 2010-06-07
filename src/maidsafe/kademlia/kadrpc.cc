@@ -53,7 +53,7 @@ void KadRpcs::FindNode(const KadId &key, const std::string &ip,
     args.set_is_boostrap(true);  // Set flag
     ctler->set_timeout(kRpcBootstrapTimeout);  // Longer timeout
   }
-  args.set_key(key.ToStringDecoded());
+  args.set_key(key.String());
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   rpcprotocol::Channel channel(pchannel_manager_, transport_handler_,
@@ -67,7 +67,7 @@ void KadRpcs::FindValue(const KadId &key, const std::string &ip,
       const boost::uint16_t &rendezvous_port, FindResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *callback) {
   FindRequest args;
-  args.set_key(key.ToStringDecoded());
+  args.set_key(key.String());
   ContactInfo *sender_info = args.mutable_sender_info();
   *sender_info = info_;
   rpcprotocol::Channel channel(pchannel_manager_, transport_handler_,
@@ -98,7 +98,7 @@ void KadRpcs::Store(const KadId &key, const SignedValue &value,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *callback,
       const boost::int32_t &ttl, const bool &publish) {
   StoreRequest args;
-  args.set_key(key.ToStringDecoded());
+  args.set_key(key.String());
   SignedValue *svalue = args.mutable_sig_value();
   *svalue = value;
   args.set_ttl(ttl);
@@ -120,7 +120,7 @@ void KadRpcs::Store(const KadId &key, const std::string &value,
       google::protobuf::Closure *callback, const boost::int32_t &ttl,
       const bool &publish) {
   StoreRequest args;
-  args.set_key(key.ToStringDecoded());
+  args.set_key(key.String());
   args.set_value(value);
   args.set_ttl(ttl);
   args.set_publish(publish);
@@ -155,7 +155,7 @@ void KadRpcs::Bootstrap(const KadId &local_id,
     const NodeType &type, BootstrapResponse *resp,
     rpcprotocol::Controller *ctler, google::protobuf::Closure *callback) {
   BootstrapRequest args;
-  args.set_newcomer_id(local_id.ToStringDecoded());
+  args.set_newcomer_id(local_id.String());
   args.set_newcomer_local_ip(local_ip);
   args.set_newcomer_local_port(local_port);
   args.set_node_type(type);
@@ -172,7 +172,7 @@ void KadRpcs::Delete(const KadId &key, const SignedValue &value,
       const boost::uint16_t &rendezvous_port, DeleteResponse *resp,
       rpcprotocol::Controller *ctler, google::protobuf::Closure *callback) {
   DeleteRequest args;
-  args.set_key(key.ToStringDecoded());
+  args.set_key(key.String());
   SignedValue *svalue = args.mutable_value();
   *svalue = value;
   SignedRequest *sreq = args.mutable_signed_request();
@@ -192,7 +192,7 @@ void KadRpcs::Update(const KadId &key, const SignedValue &new_value,
     const boost::uint16_t &rendezvous_port, UpdateResponse *resp,
     rpcprotocol::Controller *ctler, google::protobuf::Closure *callback) {
   UpdateRequest args;
-  args.set_key(key.ToStringDecoded());
+  args.set_key(key.String());
   SignedValue *newvalue = args.mutable_new_value();
   *newvalue = new_value;
   SignedValue *oldvalue = args.mutable_old_value();

@@ -177,7 +177,7 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   GeneralKadCallback callback;
   boost::asio::ip::address local_ip;
   ASSERT_TRUE(base::GetLocalAddress(&local_ip));
-  kad::KadId kadid(id, true);
+  kad::KadId kadid(id, kad::KadId::kHex);
   nodes_[0].Join(kadid, kconfig_file,
                  local_ip.to_string(),
                  trans_handlers_[0]->listening_port(transports_[0]),
@@ -211,7 +211,7 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
   Contact last_seen;
   std::string ip = "127.0.0.1";
   for (int i = 1 ; i < test_add_knode::K - 2; ++i) {
-    kad::KadId id(bucket2ids[i], true);
+    kad::KadId id(bucket2ids[i], kad::KadId::kHex);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
     if (i == 1)
@@ -219,7 +219,7 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
     ++port;
   }
   for (int i = 0; i < 3; ++i) {
-    kad::KadId id(bucket1ids[i], true);
+    kad::KadId id(bucket1ids[i], kad::KadId::kHex);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
     ++port;
@@ -271,7 +271,7 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   GeneralKadCallback callback;
   boost::asio::ip::address local_ip;
   ASSERT_TRUE(base::GetLocalAddress(&local_ip));
-  kad::KadId kid(id, true), kid2(id2, true);
+  kad::KadId kid(id, kad::KadId::kHex), kid2(id2, kad::KadId::kHex);
   nodes_[0].Join(kid, kconfig_file,
                  local_ip.to_string(),
                  trans_handlers_[0]->listening_port(transports_[0]),
@@ -284,7 +284,7 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   // routing table
   base::KadConfig kad_config1;
   base::KadConfig::Contact *kad_contact = kad_config1.add_contact();
-  kad_contact->set_node_id(nodes_[0].node_id().ToStringEncoded());
+  kad_contact->set_node_id(nodes_[0].node_id().ToStringEncoded(KadId::kHex));
   kad_contact->set_ip(nodes_[0].host_ip());
   kad_contact->set_port(nodes_[0].host_port());
   kad_contact->set_local_ip(nodes_[0].local_host_ip());
@@ -327,25 +327,26 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
 
   std::string ip = "127.0.0.1";
   for (int i = 1 ; i < test_add_knode::K - 3; ++i) {
-    kad::KadId id(bucket2ids[i], true);
+    kad::KadId id(bucket2ids[i], kad::KadId::kHex);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
     ++port;
   }
   for (int i = 0; i < 3; ++i) {
-    kad::KadId id(bucket1ids[i], true);
+    kad::KadId id(bucket1ids[i], kad::KadId::kHex);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
     ++port;
   }
   for (int i = test_add_knode::K - 3; i < test_add_knode::K; ++i) {
-    kad::KadId id(bucket2ids[i], true);
+    kad::KadId id(bucket2ids[i], kad::KadId::kHex);
     Contact contact(id, ip, port, ip, port);
     ASSERT_EQ(0, nodes_[0].AddContact(contact, 0.0, false));
     ++port;
   }
   ++port;
-  Contact contact(kad::KadId(bucket2ids[0], true), ip, port, ip, port);
+  Contact contact(kad::KadId(bucket2ids[0], kad::KadId::kHex), ip, port, ip,
+                  port);
   ASSERT_EQ(2, nodes_[0].AddContact(contact, 0.0, false));
 
   Contact rec_contact;
@@ -367,8 +368,8 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   base::PublicRoutingTableTuple tuple;
   ASSERT_EQ(0, (*base::PublicRoutingTable::GetInstance())[base::IntToString(
                 nodes_[0].host_port())]->GetTupleInfo(
-                nodes_[1].node_id().ToStringDecoded(), &tuple));
-  ASSERT_EQ(nodes_[1].node_id().ToStringDecoded(), tuple.kademlia_id);
+                nodes_[1].node_id().String(), &tuple));
+  ASSERT_EQ(nodes_[1].node_id().String(), tuple.kademlia_id);
   ASSERT_EQ(nodes_[1].host_ip(), tuple.host_ip);
   ASSERT_EQ(nodes_[1].host_port(), tuple.host_port);
   ASSERT_EQ(nodes_[1].rendezvous_ip(), tuple.rendezvous_ip);

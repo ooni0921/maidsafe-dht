@@ -76,17 +76,17 @@ void Commands::StoreCallback(const std::string &result,
   kad::StoreResponse msg;
   if (!msg.ParseFromString(result)) {
     printf("ERROR. Invalid response. Kademlia Store Value key %s\n",
-        key.ToStringEncoded().c_str());
+        key.ToStringEncoded(kad::KadId::kHex).c_str());
     result_arrived_ = true;
     return;
   }
   if (msg.result() != kad::kRpcResultSuccess) {
     printf("Failed to store %f copies of values for key %s.\n",
-        min_succ_stores_, key.ToStringEncoded().c_str());
+        min_succ_stores_, key.ToStringEncoded(kad::KadId::kHex).c_str());
     printf("Some copies might have been stored\n");
   } else {
     printf("Successfully stored key %s with ttl %d\n",
-        key.ToStringEncoded().c_str(), ttl);
+        key.ToStringEncoded(kad::KadId::kHex).c_str(), ttl);
   }
   result_arrived_ = true;
 }
@@ -95,14 +95,16 @@ void Commands::PingCallback(const std::string &result, const kad::KadId &id) {
   kad::PingResponse msg;
   if (!msg.ParseFromString(result)) {
     printf("ERROR. Invalid response. Kademlia Ping Node to node with id %s\n",
-        id.ToStringEncoded().c_str());
+        id.ToStringEncoded(kad::KadId::kHex).c_str());
     result_arrived_ = true;
     return;
   }
   if (msg.result() != kad::kRpcResultSuccess) {
-    printf("Node with id %s is down.\n", id.ToStringEncoded().c_str());
+    printf("Node with id %s is down.\n",
+           id.ToStringEncoded(kad::KadId::kHex).c_str());
   } else {
-    printf("Node with id %s is up.\n", id.ToStringEncoded().c_str());
+    printf("Node with id %s is up.\n",
+           id.ToStringEncoded(kad::KadId::kHex).c_str());
   }
   result_arrived_ = true;
 }
@@ -112,19 +114,22 @@ void Commands::GetNodeContactDetailsCallback(const std::string &result,
   kad::FindNodeResult msg;
   if (!msg.ParseFromString(result)) {
     printf("ERROR. Invalid Response. Kademlia Find Node to node with id %s\n",
-        id.ToStringEncoded().c_str());
+        id.ToStringEncoded(kad::KadId::kHex).c_str());
     result_arrived_ = true;
     return;
   }
   if (msg.result() != kad::kRpcResultSuccess) {
-    printf("Could not find node with id %s.\n", id.ToStringEncoded().c_str());
+    printf("Could not find node with id %s.\n",
+           id.ToStringEncoded(kad::KadId::kHex).c_str());
   } else {
     kad::Contact ctc;
     if (!msg.has_contact() || !ctc.ParseFromString(msg.contact()))
-      printf("Could not find node with id %s.\n", id.ToStringEncoded().c_str());
+      printf("Could not find node with id %s.\n",
+             id.ToStringEncoded(kad::KadId::kHex).c_str());
     else
       printf("Node with id %s found. Node info:\n=%s",
-          id.ToStringEncoded().c_str(), ctc.DebugString().c_str());
+             id.ToStringEncoded(kad::KadId::kHex).c_str(),
+             ctc.DebugString().c_str());
   }
   result_arrived_ = true;
 }
@@ -135,21 +140,22 @@ void Commands::FindValueCallback(const std::string &result,
   kad::FindResponse msg;
   if (!msg.ParseFromString(result)) {
     printf("ERROR.  Invalid response. Kademlia Load Value key %s\n",
-        key.ToStringEncoded().c_str());
+        key.ToStringEncoded(kad::KadId::kHex).c_str());
     result_arrived_ = true;
     return;
   }
   if (msg.result() != kad::kRpcResultSuccess || msg.values_size() == 0) {
     printf("There is no value stored under key %s\n",
-        key.ToStringEncoded().c_str());
+        key.ToStringEncoded(kad::KadId::kHex).c_str());
   } else {
     printf("Successfully retrieved value(s) for key %s\n",
-        key.ToStringEncoded().c_str());
+        key.ToStringEncoded(kad::KadId::kHex).c_str());
     if (write_to_file) {
       // we only write to file the first value
       WriteToFile(path, msg.values(0));
     } else {
-      printf("Values found for key %s\n", key.ToStringEncoded().c_str());
+      printf("Values found for key %s\n",
+             key.ToStringEncoded(kad::KadId::kHex).c_str());
       for (int i = 0; i < msg.values_size(); ++i)
         printf("%d.  %s\n", i+1, msg.values(i).c_str());
     }
@@ -251,13 +257,10 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
     } else {
       boost::int32_t ttl = boost::lexical_cast<boost::int32_t>(args[2]);
-      kad::KadId key;
-      try {
-        key = kad::KadId(std::string(args[0]), true);
-      }
-      catch(const kad::KadIdException&) {
+      kad::KadId key(std::string(args[0]), kad::KadId::kHex);
+      if (!key.IsValid()) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
-            false), false);
+            false));
       }
       if (ttl == -1)
         node_->StoreValue(key, content, ttl, boost::bind(
@@ -273,13 +276,10 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       printf("Invalid number of arguments for storevalue command\n");
     } else {
       boost::int32_t ttl = boost::lexical_cast<boost::int32_t>(args[2]);
-      kad::KadId key;
-      try {
-        key = kad::KadId(std::string(args[0]), true);
-      }
-      catch(const kad::KadIdException&) {
+      kad::KadId key(std::string(args[0]), kad::KadId::kHex);
+      if (!key.IsValid()) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
-            false), false);
+                                      false));
       }
       if (ttl == -1)
         node_->StoreValue(key, args[1], ttl, boost::bind(
@@ -294,13 +294,10 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for findvalue command\n");
     } else {
-      kad::KadId key;
-      try {
-        key = kad::KadId(std::string(args[0]), true);
-      }
-      catch(const kad::KadIdException&) {
+      kad::KadId key(std::string(args[0]), kad::KadId::kHex);
+      if (!key.IsValid()) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
-            false), false);
+            false));
       }
       node_->FindValue(key, false,
           boost::bind(&Commands::FindValueCallback, this, _1, key, false, ""));
@@ -311,13 +308,10 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for findfile command\n");
     } else {
-      kad::KadId key;
-      try {
-        key = kad::KadId(std::string(args[0]), true);
-      }
-      catch(const kad::KadIdException&) {
+      kad::KadId key(std::string(args[0]), kad::KadId::kHex);
+      if (!key.IsValid()) {
         key = kad::KadId(cryobj_.Hash(args[0], "", crypto::STRING_STRING,
-            false), false);
+            false));
       }
       node_->FindValue(key, false,
           boost::bind(&Commands::FindValueCallback, this, _1, key, true,
@@ -329,13 +323,12 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for findnode command\n");
     } else {
-      try {
-        kad::KadId key(std::string(args.at(0)), true);
+      kad::KadId key(std::string(args.at(0)), kad::KadId::kHex);
+      if (key.IsValid()) {
         node_->GetNodeContactDetails(key, boost::bind(
             &Commands::GetNodeContactDetailsCallback, this, _1, key), false);
         *wait_for_cb = true;
-      }
-      catch(const kad::KadIdException&) {
+      } else {
          printf("Invalid Node id\n");
          *wait_for_cb = false;
       }
@@ -345,13 +338,12 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
       *wait_for_cb = false;
       printf("Invalid number of arguments for pingnode command\n");
     } else {
-      try {
-        kad::KadId key(std::string(args.at(0)), true);
+      kad::KadId key(std::string(args.at(0)), kad::KadId::kHex);
+      if (key.IsValid()) {
         node_->Ping(key, boost::bind(&Commands::PingCallback, this, _1,
             key));
         *wait_for_cb = true;
-      }
-      catch(const kad::KadIdException&) {
+      } else {
         printf("Invalid Node id\n");
         *wait_for_cb = false;
       }
@@ -390,7 +382,7 @@ void Commands::Store50Values(const std::string &prefix) {
   for (boost::uint16_t i = 0; i < 50; ++i) {
     arrived = false;
     kad::KadId key(cryobj_.Hash(prefix + boost::lexical_cast<std::string>(i),
-        "", crypto::STRING_STRING, false), false);
+        "", crypto::STRING_STRING, false));
     value.clear();
     for (int j = 0; j < 1024 * 100; ++j) {
       value += prefix + boost::lexical_cast<std::string>(i);

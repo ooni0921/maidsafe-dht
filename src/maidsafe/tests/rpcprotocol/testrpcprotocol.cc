@@ -153,7 +153,10 @@ class ResultHolder {
       return;
     }
     if (response->IsInitialized()) {
-      mirror_res.set_mirrored_string(response->mirrored_string());
+      if (response->has_mirrored_string())
+        mirror_res.set_mirrored_string(response->mirrored_string());
+      else
+        mirror_res.set_mirrored_string("+");
     } else {
       mirror_res.set_mirrored_string("+");
     }

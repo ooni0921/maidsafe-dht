@@ -31,7 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <list>
 #include <vector>
 #include <string>
-#include "maidsafe/kademlia/kadutils.h"
 #include "maidsafe/kademlia/kadid.h"
 #include "maidsafe/maidsafe-dht_config.h"
 

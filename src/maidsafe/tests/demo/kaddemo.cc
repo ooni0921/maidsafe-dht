@@ -343,7 +343,7 @@ int main(int argc, char **argv) {
       try {
         boost::filesystem::ofstream of(vm["append_id"].as<std::string>(),
                                        std::ios::out | std::ios::app);
-        of << node.node_id().ToStringEncoded() << "\n";
+        of << node.node_id().ToStringEncoded(kad::KadId::kHex) << "\n";
         of.close();
       }
       catch(const std::exception &) {
@@ -359,7 +359,7 @@ int main(int argc, char **argv) {
           boost::filesystem::create_directories(thisconfig);
           thisconfig /= ".kadconfig";
           write_to_kadconfig(thisconfig.string(),
-              node.node_id().ToStringEncoded(), node.host_ip(),
+              node.node_id().ToStringEncoded(kad::KadId::kHex), node.host_ip(),
               node.host_port(), node.local_host_ip(), node.local_host_port());
         }
         catch(const std::exception &e) {
@@ -367,7 +367,7 @@ int main(int argc, char **argv) {
       } else {
         thisconfig /= ".kadconfig";
         write_to_kadconfig(thisconfig.string(),
-            node.node_id().ToStringEncoded(), node.host_ip(),
+            node.node_id().ToStringEncoded(kad::KadId::kHex), node.host_ip(),
             node.host_port(), node.local_host_ip(), node.local_host_port());
       }
     }

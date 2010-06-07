@@ -29,9 +29,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/timer.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/progress.hpp>
-#include <cstdlib>
 #include <algorithm>
+#include <cstdlib>
 #include <list>
+#include "maidsafe/base/crypto.h"
 #include "maidsafe/base/utils.h"
 
 
@@ -122,12 +123,42 @@ TEST(UtilsTest, BEH_BASE_RandomString) {
 }
 
 TEST(UtilsTest, BEH_BASE_HexEncodeDecode) {
-  const std::string str("Hello world! And hello nurse!!");
-  std::string encoded = base::EncodeToHex(str);
-  ASSERT_EQ(str.size() * 2, encoded.size()) << "Encoding failed.";
-  std::string decoded = base::DecodeFromHex(encoded);
-  ASSERT_EQ(encoded.size(), decoded.size() * 2) << "Decoding failed.";
-  ASSERT_EQ(str, decoded) << "encoded -> decoded failed.";
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  for (int i = 0; i < 1000; ++i) {
+    std::string original = co.Hash(base::RandomString(200), "",
+                                   crypto::STRING_STRING, false);
+    std::string encoded = base::EncodeToHex(original);
+    ASSERT_EQ(128U, encoded.size()) << "Encoding failed.";
+    std::string decoded = base::DecodeFromHex(encoded);
+    ASSERT_EQ(original, decoded) << "encoded -> decoded failed.";
+  }
+}
+
+TEST(UtilsTest, BEH_BASE_Base64EncodeDecode) {
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  for (int i = 0; i < 1000; ++i) {
+    std::string original = co.Hash(base::RandomString(200), "",
+                                   crypto::STRING_STRING, false);
+    std::string encoded = base::EncodeToBase64(original);
+    ASSERT_EQ(88U, encoded.size()) << "Encoding failed.";
+    std::string decoded = base::DecodeFromBase64(encoded);
+    ASSERT_EQ(original, decoded) << "encoded -> decoded failed.";
+  }
+}
+
+TEST(UtilsTest, BEH_BASE_Base32EncodeDecode) {
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  for (int i = 0; i < 1000; ++i) {
+    std::string original = co.Hash(base::RandomString(200), "",
+                                   crypto::STRING_STRING, false);
+    std::string encoded = base::EncodeToBase32(original);
+    ASSERT_EQ(103U, encoded.size()) << "Encoding failed.";
+    std::string decoded = base::DecodeFromBase32(encoded);
+    ASSERT_EQ(original, decoded) << "encoded -> decoded failed.";
+  }
 }
 
 TEST(UtilsTest, BEH_BASE_BytesAndAscii) {

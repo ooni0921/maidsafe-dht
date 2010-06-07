@@ -161,14 +161,14 @@ void Operations::TestStoreAndFind(const std::vector<kad::KadId> &nodes,
         if (sign) {
           std::string req_sig, ser_sig_val;
           req_sig = cryobj_.AsymSign(cryobj_.Hash(public_key_ +
-              public_key_signature_ + key.ToStringDecoded(), "",
+              public_key_signature_ + key.String(), "",
               crypto::STRING_STRING, false), "", private_key_,
               crypto::STRING_STRING);
           sig_val.set_value(value);
           sig_val.set_value_signature(cryobj_.AsymSign(value, "",
               private_key_, crypto::STRING_STRING));
           ser_sig_val = sig_val.SerializeAsString();
-          sig_req.set_signer_id(node_->node_id().ToStringDecoded());
+          sig_req.set_signer_id(node_->node_id().String());
           sig_req.set_public_key(public_key_);
           sig_req.set_signed_public_key(public_key_signature_);
           sig_req.set_signed_request(req_sig);
@@ -288,7 +288,7 @@ void Operations::FindValueCallback(const std::string &result,
  * with a unique value for each (positive) iteration number.
  */
 kad::KadId Operations::GetModId(int iteration) {
-  int bits = kad::ID_BITS_SIZE - 1;
+  int bits = kad::kKeySizeBits - 1;
   kad::KadId id;
   while (iteration > bits) {
     id = id ^ kad::KadId(bits);

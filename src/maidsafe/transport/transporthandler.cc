@@ -300,7 +300,6 @@ void TransportHandler::CloseConnection(const boost::uint32_t &connection_id,
 // if in our K bucket do not close.
 
   (*it).second->CloseConnection(connection_id);
-
 }
 
 bool TransportHandler::is_stopped(const boost::int16_t &transport_id) {

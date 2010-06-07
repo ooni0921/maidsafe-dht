@@ -331,7 +331,7 @@ class KNodeImpl {
   ContactInfo contact_info() const;
   inline KadId node_id() const {
     return (type_ == CLIENT || type_ == CLIENT_PORT_MAPPED)
-        ? fake_client_node_id_ : node_id_;
+        ? fake_kClientId_ : node_id_;
   }
   boost::uint32_t KeyLastRefreshTime(const KadId &key,
                                      const std::string &value);
@@ -460,7 +460,7 @@ class KNodeImpl {
   NatRpcs natrpcs_;
   volatile bool is_joined_;
   boost::shared_ptr<RoutingTable> prouting_table_;
-  KadId node_id_, fake_client_node_id_;
+  KadId node_id_, fake_kClientId_;
   std::string host_ip_;
   NodeType type_;
   boost::uint16_t host_port_;

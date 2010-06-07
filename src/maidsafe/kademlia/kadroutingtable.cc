@@ -36,7 +36,7 @@ namespace kad {
 RoutingTable::RoutingTable(const KadId &holder_id, const boost::uint16_t &rt_K)
     : k_buckets_(), bucket_upper_address_(), holder_id_(holder_id),
       bucket_of_holder_(0), brother_bucket_of_holder_(-1),
-      address_space_upper_address_(MAX_ID), K_(rt_K) {
+      address_space_upper_address_(KadId::kMaxId), K_(rt_K) {
   KadId min_range;
   boost::shared_ptr<KBucket> kbucket(new KBucket(min_range,
       address_space_upper_address_, K_));

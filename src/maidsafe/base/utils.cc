@@ -32,6 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ctype.h>
 #include <maidsafe/cryptopp/integer.h>
 #include <maidsafe/cryptopp/osrng.h>
+#include <maidsafe/cryptopp/base32.h>
+#include <maidsafe/cryptopp/base64.h>
 #include <maidsafe/cryptopp/hex.h>
 #include <algorithm>
 #include <limits>
@@ -57,18 +59,7 @@ boost::int32_t RandomInt32() {
 }
 
 boost::uint32_t RandomUint32() {
-  boost::uint32_t result(0);
-  bool success = false;
-  while (!success) {
-    static CryptoPP::AutoSeededX917RNG< CryptoPP::AES > rng;
-    CryptoPP::Integer rand_num(rng, 32);
-    if (rand_num.IsConvertableToLong()) {
-      result = static_cast<boost::uint32_t>(
-          rand_num.AbsoluteValue().ConvertToLong());
-      success = true;
-    }
-  }
-  return result;
+  return static_cast<boost::uint32_t>(RandomInt32());
 }
 
 std::string IntToString(const int &value) {
@@ -76,19 +67,17 @@ std::string IntToString(const int &value) {
   return str_value;
 }
 
-std::string RandomString(const boost::uint32_t &length) {
+std::string RandomString(const size_t &length) {
   std::string random_string;
   random_string.reserve(length);
     static CryptoPP::AutoSeededX917RNG< CryptoPP::AES > random_number_generator;
     while (random_string.size() < length) {
-      boost::uint32_t iter_length =
-        std::min(static_cast<boost::uint32_t>(length - random_string.size()),
-                 boost::uint32_t(65536));
+      size_t iter_length = std::min(length - random_string.size(), 65536U);
       boost::scoped_array<byte> random_bytes(new byte[iter_length]);
       random_number_generator.GenerateBlock(random_bytes.get(), iter_length);
       std::string random_substring(random_bytes.get(),
                                    random_bytes.get() + iter_length);
-      for (boost::uint32_t i = 0; i < iter_length; ++i) {
+      for (size_t i = 0; i < iter_length; ++i) {
         boost::uint8_t *random_char =
             reinterpret_cast<boost::uint8_t*>(&random_substring.at(i));
         *random_char = *random_char % 122;
@@ -112,11 +101,39 @@ std::string EncodeToHex(const std::string &non_hex_input) {
   return hex_output;
 }
 
+std::string EncodeToBase64(const std::string &non_base64_input) {
+  std::string base64_output;
+  CryptoPP::StringSource(non_base64_input, true, new CryptoPP::Base64Encoder(
+      new CryptoPP::StringSink(base64_output), false, 255));
+  return base64_output;
+}
+
+std::string EncodeToBase32(const std::string &non_base32_input) {
+  std::string base32_output;
+  CryptoPP::StringSource(non_base32_input, true, new CryptoPP::Base32Encoder(
+      new CryptoPP::StringSink(base32_output), false));
+  return base32_output;
+}
+
 std::string DecodeFromHex(const std::string &hex_input) {
   std::string non_hex_output;
   CryptoPP::StringSource(hex_input, true,
       new CryptoPP::HexDecoder(new CryptoPP::StringSink(non_hex_output)));
   return non_hex_output;
+}
+
+std::string DecodeFromBase64(const std::string &base64_input) {
+  std::string non_base64_output;
+  CryptoPP::StringSource(base64_input, true,
+      new CryptoPP::Base64Decoder(new CryptoPP::StringSink(non_base64_output)));
+  return non_base64_output;
+}
+
+std::string DecodeFromBase32(const std::string &base32_input) {
+  std::string non_base32_output;
+  CryptoPP::StringSource(base32_input, true,
+      new CryptoPP::Base32Decoder(new CryptoPP::StringSink(non_base32_output)));
+  return non_base32_output;
 }
 
 boost::uint32_t GetEpochTime() {
@@ -142,13 +159,13 @@ boost::uint64_t GetEpochNanoseconds() {
 
 boost::uint32_t GenerateNextTransactionId(const boost::uint32_t &id) {
   boost::uint32_t next_id;
-  boost::uint32_t max_id = 2147483646;
+  boost::uint32_t kMaxId = 2147483646;
   if (id == 0) {
-    next_id = (RandomInt32() + GetEpochTime() % 10000) % max_id;
+    next_id = (RandomInt32() + GetEpochTime() % 10000) % kMaxId;
     if (next_id == 0)
       next_id = 1;
   } else {
-    next_id = (id + 1) % max_id;
+    next_id = (id + 1) % kMaxId;
     if (next_id == 0)
       next_id = 1;
   }

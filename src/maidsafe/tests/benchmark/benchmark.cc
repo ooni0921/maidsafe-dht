@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
           char line[150];
           idf.getline(line, sizeof(line));
           try {
-            kad::KadId id(line, true);
+            kad::KadId id(line, kad::KadId::kHex);
             nodes.push_back(id);
           }
           catch(const std::exception &) {

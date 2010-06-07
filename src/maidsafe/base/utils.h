@@ -125,13 +125,25 @@ boost::uint32_t RandomUint32();
 std::string IntToString(const int &value);
 
 // Generate a random string.
-std::string RandomString(const boost::uint32_t &length);
+std::string RandomString(const size_t &length);
 
 // Encode a string to hex.
 std::string EncodeToHex(const std::string &non_hex_input);
 
+// Encode a string to Base64.
+std::string EncodeToBase64(const std::string &non_base64_input);
+
+// Encode a string to Base32.
+std::string EncodeToBase32(const std::string &non_base32_input);
+
 // Decode a string from hex.
 std::string DecodeFromHex(const std::string &hex_input);
+
+// Decode a string from Base64.
+std::string DecodeFromBase64(const std::string &base64_input);
+
+// Decode a string from Base32.
+std::string DecodeFromBase32(const std::string &base32_input);
 
 // Return the number of seconds since 1st January 2000.
 boost::uint32_t GetEpochTime();

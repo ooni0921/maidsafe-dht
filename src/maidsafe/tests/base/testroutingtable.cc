@@ -27,7 +27,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
-#include "maidsafe/kademlia/kadutils.h"
 #include "maidsafe/kademlia/kadid.h"
 #include "maidsafe/base/crypto.h"
 #include "maidsafe/base/utils.h"
@@ -298,13 +297,13 @@ TEST(PublicRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
   co.set_hash_algorithm(crypto::SHA_512);
   std::string target_key = co.Hash(base::RandomString(222), "",
                                    crypto::STRING_STRING, false);
-  kad::KadId target_id(target_key, false);
+  kad::KadId target_id(target_key);
   const int kTupleCount(177);
   base::PublicRoutingTableHandler rt_handler;
   for (int i = 0; i < kTupleCount; ++i) {
     std::string kad_id = co.Hash(base::RandomString(111), "",
                                  crypto::STRING_STRING, false);
-    kad::KadId id(kad_id, false);
+    kad::KadId id(kad_id);
     kad::KadId dist = id ^ target_id;
     result = tuples.insert(std::pair<kad::KadId, base::PublicRoutingTableTuple>(
         dist,
@@ -327,7 +326,7 @@ TEST(PublicRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
       returned_tuples.begin();
   kad::KadId dist, previous_dist;
   while (tuples_itr != returned_tuples.end()) {
-    kad::KadId id((*tuples_itr).kademlia_id, false);
+    kad::KadId id((*tuples_itr).kademlia_id);
     dist = id ^ target_id;
     ASSERT_TRUE((*tuples_map_itr).first == dist);
     ASSERT_TRUE(dist > previous_dist);
@@ -350,7 +349,7 @@ TEST(PublicRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
   kad::KadId zero_id;
   previous_dist = zero_id;
   while (tuples_itr != returned_tuples.end()) {
-    kad::KadId id((*tuples_itr).kademlia_id, false);
+    kad::KadId id((*tuples_itr).kademlia_id);
     dist = id ^ target_id;
     ASSERT_TRUE((*tuples_map_itr).first == dist);
     ASSERT_TRUE(dist > previous_dist);
@@ -372,7 +371,7 @@ TEST(PublicRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
   tuples_itr = returned_tuples.begin();
   previous_dist = zero_id;
   while (tuples_itr != returned_tuples.end()) {
-    kad::KadId id((*tuples_itr).kademlia_id, false);
+    kad::KadId id((*tuples_itr).kademlia_id);
     dist = id ^ target_id;
     ASSERT_TRUE((*tuples_map_itr).first == dist);
     ASSERT_TRUE(dist > previous_dist);
@@ -394,7 +393,7 @@ TEST(PublicRoutingTableHandlerTest, BEH_BASE_GetClosestContacts) {
   tuples_itr = returned_tuples.begin();
   previous_dist = zero_id;
   while (tuples_itr != returned_tuples.end()) {
-    kad::KadId id((*tuples_itr).kademlia_id, false);
+    kad::KadId id((*tuples_itr).kademlia_id);
     dist = id ^ target_id;
     ASSERT_TRUE((*tuples_map_itr).first == dist);
     ASSERT_TRUE(dist > previous_dist);

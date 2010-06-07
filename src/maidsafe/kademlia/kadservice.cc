@@ -30,7 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/base/log.h"
 #include "maidsafe/kademlia/kadservice.h"
 #include "maidsafe/kademlia/kadrpc.h"
-#include "maidsafe/kademlia/kadutils.h"
 #include "maidsafe/kademlia/knodeimpl.h"
 #include "maidsafe/kademlia/datastore.h"
 #include "maidsafe/base/alternativestore.h"
@@ -171,8 +170,8 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
     response->set_result(kRpcResultFailure);
   } else if (GetSender(request->sender_info(), &sender)) {
     std::vector<Contact> closest_contacts, exclude_contacts;
-    try {
-      KadId key(request->key(), false);
+    KadId key(request->key());
+    if (key.IsValid()) {
       exclude_contacts.push_back(sender);
       get_closestK_contacts_(key, exclude_contacts, &closest_contacts);
       bool found_node(false);
@@ -192,8 +191,7 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
         }
       }
       response->set_result(kRpcResultSuccess);
-    }
-    catch(const KadIdException&) {
+    } else {
       response->set_result(kRpcResultFailure);
     }
     rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
@@ -396,7 +394,7 @@ void KadService::NatDetection(google::protobuf::RpcController *controller,
       Contact node_a;
       if (node_a.ParseFromString(request->newcomer()) &&
           node_b.ParseFromString(request->bootstrap_node()) &&
-          node_a.node_id().ToStringDecoded() != client_node_id()) {
+          node_a.node_id().String() != kClientId) {
         NatDetectionPingResponse *resp = new NatDetectionPingResponse;
         struct NatDetectionPingData data =
           {request->sender_id(), response, done, NULL};

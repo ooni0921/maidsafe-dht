@@ -121,7 +121,7 @@ class NatDetectionTest: public testing::Test {
         boost::bind(&NatDetectionTest::GetKCtcs, this, _1, _2, _3, 1),
         boost::bind(&NatDetectionTest::Ping, this, _1, _2)));
     ContactInfo node_info;
-    node_info.set_node_id(contactA_.node_id().ToStringDecoded());
+    node_info.set_node_id(contactA_.node_id().String());
     node_info.set_ip(contactA_.host_ip());
     node_info.set_port(contactA_.host_port());
     node_info.set_local_ip(contactA_.local_ip());
@@ -160,7 +160,7 @@ class NatDetectionTest: public testing::Test {
         boost::bind(&NatDetectionTest::GetCtc, this, _1, _2, 2),
         boost::bind(&NatDetectionTest::GetKCtcs, this, _1, _2, _3, 2),
         boost::bind(&NatDetectionTest::Ping, this, _1, _2)));
-    node_info.set_node_id(contactB_.node_id().ToStringDecoded());
+    node_info.set_node_id(contactB_.node_id().String());
     node_info.set_ip(contactB_.host_ip());
     node_info.set_port(contactB_.host_port());
     node_info.set_local_ip(contactB_.local_ip());
@@ -198,7 +198,7 @@ class NatDetectionTest: public testing::Test {
         boost::bind(&NatDetectionTest::GetCtc, this, _1, _2, 3),
         boost::bind(&NatDetectionTest::GetKCtcs, this, _1, _2, _3, 3),
         boost::bind(&NatDetectionTest::Ping, this, _1, _2)));
-    node_info.set_node_id(contactC_.node_id().ToStringDecoded());
+    node_info.set_node_id(contactC_.node_id().String());
     node_info.set_ip(contactC_.host_ip());
     node_info.set_port(contactC_.host_port());
     node_info.set_local_ip(contactC_.local_ip());
@@ -218,8 +218,8 @@ class NatDetectionTest: public testing::Test {
     // Set up another contact
     hex_id = "22222222222222222222222222222222222222222222222222222222222222222"
              "222222222222222222222222222222222222222222222222222222222222222";
-    remote_node_id_ = kad::KadId(hex_id, true);
-    remote_contact_.set_node_id(remote_node_id_.ToStringDecoded());
+    remote_node_id_ = kad::KadId(hex_id, kad::KadId::kHex);
+    remote_contact_.set_node_id(remote_node_id_.String());
     remote_contact_.set_ip("127.0.0.5");
     remote_contact_.set_port(5555);
     remote_contact_.set_local_ip("127.0.0.6");
@@ -360,7 +360,7 @@ TEST_F(NatDetectionTest, BEH_KAD_NatDetPing) {
   EXPECT_TRUE(nd_ping_response.IsInitialized());
   EXPECT_EQ(kRpcResultFailure, nd_ping_response.result());
   EXPECT_FALSE(nd_ping_response.has_echo());
-  EXPECT_EQ(contactA_.node_id().ToStringDecoded(), nd_ping_response.node_id());
+  EXPECT_EQ(contactA_.node_id().String(), nd_ping_response.node_id());
   Contact contactback;
   EXPECT_FALSE(routingtableA_->GetContact(remote_node_id_, &contactback));
   // Check success.
@@ -375,7 +375,7 @@ TEST_F(NatDetectionTest, BEH_KAD_NatDetPing) {
   EXPECT_TRUE(nd_ping_response.IsInitialized());
   EXPECT_EQ(kRpcResultSuccess, nd_ping_response.result());
   EXPECT_EQ("pong", nd_ping_response.echo());
-  EXPECT_EQ(contactA_.node_id().ToStringDecoded(), nd_ping_response.node_id());
+  EXPECT_EQ(contactA_.node_id().String(), nd_ping_response.node_id());
   delete nd_ping_request;
 }
 
@@ -584,7 +584,7 @@ TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {
   nd_request.set_newcomer(contact_strA_);
   nd_request.set_bootstrap_node(contact_strB_);
   nd_request.set_type(11);
-  nd_request.set_sender_id(contactA_.node_id().ToStringDecoded());
+  nd_request.set_sender_id(contactA_.node_id().String());
   nd_response.Clear();
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -601,7 +601,7 @@ TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {
   nd_request.set_newcomer(contact_strA_);
   nd_request.set_bootstrap_node(contact_strB_);
   nd_request.set_type(1);
-  nd_request.set_sender_id(contactA_.node_id().ToStringDecoded());
+  nd_request.set_sender_id(contactA_.node_id().String());
   nd_response.Clear();
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -621,7 +621,7 @@ TEST_F(NatDetectionTest, BEH_KAD_CompleteNatDet) {
   nd_request.set_newcomer(contact_strA_);
   nd_request.set_bootstrap_node(contact_strB_);
   nd_request.set_type(2);
-  nd_request.set_sender_id(contactA_.node_id().ToStringDecoded());
+  nd_request.set_sender_id(contactA_.node_id().String());
   nd_response.Clear();
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -642,8 +642,8 @@ TEST_F(NatDetectionTest, BEH_KAD_FullBootstrap) {
   BootstrapResponse response;
   Callback cb_obj;
 
-  // Check for id == client_node_id
-  request.set_newcomer_id(client_node_id());
+  // Check for id == kClientId
+  request.set_newcomer_id(kClientId);
   request.set_newcomer_local_ip(contactA_.local_ip());
   request.set_newcomer_local_port(contactA_.local_port());
   request.set_newcomer_ext_ip(contactA_.host_ip());
@@ -651,7 +651,7 @@ TEST_F(NatDetectionTest, BEH_KAD_FullBootstrap) {
   request.set_node_type(VAULT);
 
   // Check for normal id
-  request.set_newcomer_id(contactA_.node_id().ToStringDecoded());
+  request.set_newcomer_id(contactA_.node_id().String());
   response.Clear();
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<Callback>
       (&cb_obj, &Callback::CallbackFunction);
@@ -660,7 +660,7 @@ TEST_F(NatDetectionTest, BEH_KAD_FullBootstrap) {
   while (!response.has_nat_type())
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   EXPECT_EQ(kRpcResultSuccess, response.result());
-  EXPECT_EQ(contactB_.node_id().ToStringDecoded(), response.bootstrap_id());
+  EXPECT_EQ(contactB_.node_id().String(), response.bootstrap_id());
   EXPECT_EQ(contactA_.host_ip(), response.newcomer_ext_ip());
   EXPECT_EQ(contactA_.host_port(), response.newcomer_ext_port());
   EXPECT_EQ(1, response.nat_type());

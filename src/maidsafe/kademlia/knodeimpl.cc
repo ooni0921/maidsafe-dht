@@ -35,7 +35,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>  // NOLINT
 #include <vector>
 #include "maidsafe/base/log.h"
-#include "maidsafe/kademlia/kadutils.h"
 #include "maidsafe/base/alternativestore.h"
 #include "maidsafe/base/crypto.h"
 #include "maidsafe/base/utils.h"
@@ -152,7 +151,7 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
       pservice_channel_(), pdata_store_(new DataStore(kRefreshTime)),
       alternative_store_(NULL), premote_service_(), kadrpcs_(channel_manager,
       transport_handler), natrpcs_(channel_manager, transport_handler),
-      is_joined_(false), prouting_table_(), node_id_(), fake_client_node_id_(),
+      is_joined_(false), prouting_table_(), node_id_(), fake_kClientId_(),
       host_ip_(), type_(type), host_port_(0), rv_ip_(),
       rv_port_(0), bootstrapping_nodes_(), K_(k), alpha_(kAlpha), beta_(kBeta),
       refresh_routine_started_(false), kad_config_path_(), local_host_ip_(),
@@ -175,7 +174,7 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
   pdata_store_(new DataStore(refresh_time)), alternative_store_(NULL),
   premote_service_(), kadrpcs_(channel_manager, transport_handler),
   natrpcs_(channel_manager, transport_handler), is_joined_(false),
-  prouting_table_(), node_id_(), fake_client_node_id_(), host_ip_(""),
+  prouting_table_(), node_id_(), fake_kClientId_(), host_ip_(""),
   type_(type), host_port_(0), rv_ip_(""), rv_port_(0),
   bootstrapping_nodes_(), K_(k), alpha_(alpha), beta_(beta),
   refresh_routine_started_(false), kad_config_path_(""), local_host_ip_(""),
@@ -227,7 +226,7 @@ void KNodeImpl::Bootstrap(const std::string &bootstrap_ip,
       KNodeImpl, const BootstrapResponse*, struct BootstrapData> (this,
       &KNodeImpl::Bootstrap_Callback, resp, data);
   if (dir_connected) {
-    kadrpcs_.Bootstrap(fake_client_node_id_, host_ip_, host_port_, bootstrap_ip,
+    kadrpcs_.Bootstrap(fake_kClientId_, host_ip_, host_port_, bootstrap_ip,
         bootstrap_port, type_, resp, data.rpc_ctrler, done);
   } else {
     kadrpcs_.Bootstrap(node_id(), host_ip_, host_port_, bootstrap_ip,
@@ -479,8 +478,12 @@ void KNodeImpl::Join_RefreshNode(VoidFunctorOneString callback,
 
 void KNodeImpl::Join(const KadId &node_id,
       const std::string &kad_config_file, VoidFunctorOneString callback) {
-  if (is_joined_) {
+  if (is_joined_ || !node_id.IsValid()) {
     base::GeneralResponse local_result;
+    if (is_joined_)
+      local_result.set_result(kRpcResultSuccess);
+    else
+      local_result.set_result(kRpcResultFailure);
     local_result.set_result(kRpcResultSuccess);
     std::string local_result_str(local_result.SerializeAsString());
     callback(local_result_str);
@@ -514,8 +517,7 @@ void KNodeImpl::Join(const KadId &node_id,
 
 void KNodeImpl::Join(const std::string &kad_config_file,
       VoidFunctorOneString callback) {
-  KadId id(vault_random_id(), false);
-  Join(id, kad_config_file, callback);
+  Join(KadId(KadId::kRandomId), kad_config_file, callback);
 }
 
 void KNodeImpl::Join(const KadId &node_id,
@@ -523,8 +525,11 @@ void KNodeImpl::Join(const KadId &node_id,
       const boost::uint16_t &external_port, VoidFunctorOneString callback) {
   base::GeneralResponse local_result;
   std::string local_result_str;
-  if (is_joined_) {
-    local_result.set_result(kRpcResultSuccess);
+  if (is_joined_ || !node_id.IsValid()) {
+    if (is_joined_)
+      local_result.set_result(kRpcResultSuccess);
+    else
+      local_result.set_result(kRpcResultFailure);
     local_result.SerializeToString(&local_result_str);
     callback(local_result_str);
     return;
@@ -596,8 +601,8 @@ void KNodeImpl::Join(const KadId &node_id,
 void KNodeImpl::Join(const std::string &kad_config_file,
       const std::string &external_ip, const boost::uint16_t &external_port,
       VoidFunctorOneString callback) {
-  KadId id(vault_random_id(), false);
-  Join(id, kad_config_file, external_ip, external_port, callback);
+  Join(KadId(KadId::kRandomId), kad_config_file, external_ip, external_port,
+       callback);
 }
 
 void KNodeImpl::Leave() {
@@ -656,7 +661,7 @@ void KNodeImpl::SaveBootstrapContacts() {
       node0_id = bootstrapping_nodes_[0].node_id();
       base::KadConfig::Contact *kad_contact = kad_config.add_contact();
       kad_contact->set_node_id(
-          bootstrapping_nodes_[0].node_id().ToStringEncoded());
+          bootstrapping_nodes_[0].node_id().ToStringEncoded(KadId::kHex));
       std::string dec_ext_ip(base::IpBytesToAscii(
           bootstrapping_nodes_[0].host_ip()));
       kad_contact->set_ip(dec_ext_ip);
@@ -672,7 +677,7 @@ void KNodeImpl::SaveBootstrapContacts() {
     for (it = bs_contacts.begin(); it < bs_contacts.end(); ++it) {
       if (it->node_id() != node0_id) {
         base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-        kad_contact->set_node_id(it->node_id().ToStringEncoded());
+        kad_contact->set_node_id(it->node_id().ToStringEncoded(KadId::kHex));
         std::string dec_ext_ip(base::IpBytesToAscii(it->host_ip()));
         kad_contact->set_ip(dec_ext_ip);
         kad_contact->set_port(it->host_port());
@@ -723,15 +728,10 @@ boost::int16_t KNodeImpl::LoadBootstrapContacts() {
   bootstrapping_nodes_.clear();
   for (int i = 0; i < kad_config.contact_size(); ++i) {
     std::string dec_id = base::DecodeFromHex(kad_config.contact(i).node_id());
-    try {
-      Contact bootstrap_contact(dec_id, kad_config.contact(i).ip(),
-          static_cast<boost::uint16_t>(kad_config.contact(i).port()),
-          kad_config.contact(i).local_ip(), kad_config.contact(i).local_port());
-      bootstrapping_nodes_.push_back(bootstrap_contact);
-    }
-    catch(const KadIdException&) {
-      continue;
-    }
+    Contact bootstrap_contact(dec_id, kad_config.contact(i).ip(),
+        static_cast<boost::uint16_t>(kad_config.contact(i).port()),
+        kad_config.contact(i).local_ip(), kad_config.contact(i).local_port());
+    bootstrapping_nodes_.push_back(bootstrap_contact);
   }
   return 0;
 }
@@ -761,7 +761,7 @@ void KNodeImpl::StoreValue_IterativeStoreValue(const StoreResponse *response,
   if (response != NULL) {
     if (response->IsInitialized() && response->has_node_id() &&
         response->node_id() !=
-            callback_data.remote_ctc.node_id().ToStringDecoded()) {
+            callback_data.remote_ctc.node_id().String()) {
       if (callback_data.retry) {
         delete response;
         StoreResponse *resp = new StoreResponse;
@@ -916,7 +916,7 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
       node.ParseFromString(result_msg.closest_nodes(i));
       closest_nodes.push_back(node);
     }
-    if (closest_nodes.size() > 0) {
+    if (!closest_nodes.empty()) {
       bool stored_local = false;
       if (type_ != CLIENT) {
         // If this node itself is closer to the key than the last (furthest)
@@ -957,7 +957,7 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
         parallel_size = alpha_;
       else
         parallel_size = data->closest_nodes.size();
-      for (int i = 0; i< parallel_size; ++i) {
+      for (int i = 0; i < parallel_size; ++i) {
         StoreCallbackArgs callback_args(data);
         StoreValue_IterativeStoreValue(NULL, callback_args);
       }
@@ -1000,7 +1000,7 @@ void KNodeImpl::FindValue(const KadId &key, const bool &check_alternative_store,
   // Search in own alternative store first if check_alternative_store == true
   kad::FindResponse result_msg;
   if (check_alternative_store && alternative_store_ != NULL) {
-    if (alternative_store_->Has(key.ToStringDecoded())) {
+    if (alternative_store_->Has(key.String())) {
       result_msg.set_result(kad::kRpcResultSuccess);
       *result_msg.mutable_alternative_value_holder() = contact_info();
       DLOG(INFO) << "In KNodeImpl::FindValue - node " <<
@@ -1016,12 +1016,12 @@ void KNodeImpl::FindValue(const KadId &key, const bool &check_alternative_store,
   if (FindValueLocal(key, &values)) {
     result_msg.set_result(kad::kRpcResultSuccess);
     if (HasRSAKeys()) {
-      for (boost::uint64_t n = 0; n < values.size(); ++n) {
+      for (size_t n = 0; n < values.size(); ++n) {
         SignedValue *sig_value = result_msg.add_signed_values();
         sig_value->ParseFromString(values[n]);
       }
     } else {
-      for (boost::uint64_t n = 0; n < values.size(); ++n)
+      for (size_t n = 0; n < values.size(); ++n)
         result_msg.add_values(values[n]);
     }
     std::string ser_find_result(result_msg.SerializeAsString());
@@ -1112,7 +1112,7 @@ void KNodeImpl::Ping_HandleResult(const PingResponse *response,
 
   if (response->IsInitialized() && response->has_node_id() &&
       response->node_id()
-          != callback_data.remote_ctc.node_id().ToStringDecoded()) {
+          != callback_data.remote_ctc.node_id().String()) {
     if (callback_data.retry) {
       delete response;
       PingResponse *resp = new PingResponse;
@@ -1213,7 +1213,7 @@ void KNodeImpl::Ping(const Contact &remote, VoidFunctorOneString callback) {
 int KNodeImpl::AddContact(Contact new_contact, const float & rtt,
       const bool &only_db) {
   int result = -1;
-  if (new_contact.node_id().ToStringDecoded() != client_node_id()
+  if (new_contact.node_id().String() != kClientId
       && new_contact.node_id() != node_id_) {
     if (!only_db) {
       boost::mutex::scoped_lock gaurd(routingtable_mutex_);
@@ -1228,12 +1228,12 @@ int KNodeImpl::AddContact(Contact new_contact, const float & rtt,
     if (new_contact.rendezvous_ip() != "") {
       rendezvous_ip = base::IpBytesToAscii(new_contact.rendezvous_ip());
     }
-    base::PublicRoutingTableTuple tuple(new_contact.node_id().ToStringDecoded(),
+    base::PublicRoutingTableTuple tuple(new_contact.node_id().String(),
                                     remote_ip,
                                     new_contact.host_port(),
                                     rendezvous_ip,
                                     new_contact.rendezvous_port(),
-                                    new_contact.node_id().ToStringDecoded(),
+                                    new_contact.node_id().String(),
                                     rtt,
                                     0,
                                     0);
@@ -1252,7 +1252,7 @@ int KNodeImpl::AddContact(Contact new_contact, const float & rtt,
 
 void KNodeImpl::RemoveContact(const KadId &node_id) {
   (*base::PublicRoutingTable::GetInstance())[boost::lexical_cast<std::string>
-      (host_port_)]->DeleteTupleByKadId(node_id.ToStringDecoded());
+      (host_port_)]->DeleteTupleByKadId(node_id.String());
   boost::mutex::scoped_lock gaurd(routingtable_mutex_);
   prouting_table_->RemoveContact(node_id, false);
 }
@@ -1264,20 +1264,20 @@ bool KNodeImpl::GetContact(const KadId &id, Contact *contact) {
 
 bool KNodeImpl::FindValueLocal(const KadId &key,
       std::vector<std::string> *values) {
-  return pdata_store_->LoadItem(key.ToStringDecoded(), values);
+  return pdata_store_->LoadItem(key.String(), values);
 }
 
 bool KNodeImpl::StoreValueLocal(const KadId &key,
       const std::string &value, const boost::int32_t &ttl) {
   bool hashable = false;
-  std::string str_key(key.ToStringDecoded());
+  std::string str_key(key.String());
   if (HasRSAKeys()) {
     std::vector< std::pair<std::string, bool> > attr;
     attr = pdata_store_->LoadKeyAppendableAttr(str_key);
     if (attr.empty()) {
       crypto::Crypto cobj;
       cobj.set_hash_algorithm(crypto::SHA_512);
-      if (key.ToStringDecoded() == cobj.Hash(value, "", crypto::STRING_STRING,
+      if (key.String() == cobj.Hash(value, "", crypto::STRING_STRING,
                                              false))
         hashable = true;
     } else if (attr.size() == 1) {
@@ -1292,7 +1292,7 @@ bool KNodeImpl::StoreValueLocal(const KadId &key,
 bool KNodeImpl::RefreshValueLocal(const KadId &key,
       const std::string &value, const boost::int32_t &ttl) {
   std::string ser_del_request;
-  if (pdata_store_->RefreshItem(key.ToStringDecoded(), value, &ser_del_request))
+  if (pdata_store_->RefreshItem(key.String(), value, &ser_del_request))
     return true;
   return StoreValueLocal(key, value, ttl);
 }
@@ -1407,7 +1407,7 @@ ConnectionType KNodeImpl::CheckContactLocalAddress(const KadId &id,
       const std::string &ext_ip) {
   if (ip == "" || port == 0)
     return REMOTE;
-  std::string str_id(id.ToStringDecoded());
+  std::string str_id(id.String());
   int result = (*base::PublicRoutingTable::GetInstance())[
       boost::lexical_cast<std::string>(host_port_)]->ContactLocal(str_id);
   ConnectionType conn_type(UNKNOWN);
@@ -1465,7 +1465,7 @@ void KNodeImpl::UnMapUPnP() {
 void KNodeImpl::UpdatePDRTContactToRemote(const KadId &node_id,
                                           const std::string &host_ip) {
   (*base::PublicRoutingTable::GetInstance())[base::IntToString(host_port_)]->
-      UpdateContactLocal(node_id.ToStringDecoded(), host_ip, REMOTE);
+      UpdateContactLocal(node_id.String(), host_ip, REMOTE);
 }
 
 ContactInfo KNodeImpl::contact_info() const {
@@ -1486,9 +1486,9 @@ ContactInfo KNodeImpl::contact_info() const {
     info.set_rendezvous_ip(rv_ip_);
   }
   if (type_ == CLIENT || type_ == CLIENT_PORT_MAPPED) {
-    info.set_node_id(fake_client_node_id_.ToStringDecoded());
+    info.set_node_id(fake_kClientId_.String());
   } else {
-    info.set_node_id(node_id_.ToStringDecoded());
+    info.set_node_id(node_id_.String());
   }
   info.set_port(host_port_);
   info.set_local_port(local_host_port_);
@@ -1731,14 +1731,14 @@ void KNodeImpl::SearchIteration_ExtendShortList(const FindResponse *response,
     RemoveContact(callback_data.remote_ctc.node_id());
     is_valid = false;
     callback_data.data->dead_ids.push_back(
-        callback_data.remote_ctc.node_id().ToStringDecoded());
+        callback_data.remote_ctc.node_id().String());
   }
 
   if (is_valid) {
     // Check id and retry if it was sent
     if (response->has_node_id() &&
         response->node_id() !=
-            callback_data.remote_ctc.node_id().ToStringDecoded()) {
+            callback_data.remote_ctc.node_id().String()) {
       if (callback_data.retry) {
         delete response;
         delete callback_data.rpc_ctrler;
@@ -2094,7 +2094,7 @@ void KNodeImpl::SearchIteration_Callback(
       boost::mutex::scoped_lock lock(activeprobes_mutex_);
       std::list<Contact>::iterator itr = data->current_alpha.begin();
       while (itr != data->current_alpha.end()) {
-        if (itr->node_id().ToStringDecoded()
+        if (itr->node_id().String()
             != data->alternative_value_holder.node_id()) {
           std::string ser_contact;
           if (itr->SerialiseToString(&ser_contact))
@@ -2135,7 +2135,7 @@ void KNodeImpl::SendDownlist(boost::shared_ptr<IterativeLookUpData> data) {
          ++it2) {
       std::list<std::string>::iterator it3;
       for (it3 = data->dead_ids.begin(); it3 != data->dead_ids.end(); ++it3) {
-        if (*it3 == it2->node.node_id().ToStringDecoded()) {
+        if (*it3 == it2->node.node_id().String()) {
           it2->is_down = true;
         }
       }
@@ -2175,12 +2175,12 @@ void KNodeImpl::SendDownlist(boost::shared_ptr<IterativeLookUpData> data) {
 
 boost::uint32_t KNodeImpl::KeyLastRefreshTime(const KadId &key,
     const std::string &value) {
-  return pdata_store_->LastRefreshTime(key.ToStringDecoded(), value);
+  return pdata_store_->LastRefreshTime(key.String(), value);
 }
 
 boost::uint32_t KNodeImpl::KeyExpireTime(const KadId &key,
     const std::string &value) {
-  return pdata_store_->ExpireTime(key.ToStringDecoded(), value);
+  return pdata_store_->ExpireTime(key.String(), value);
 }
 
 bool KNodeImpl::HasRSAKeys() {
@@ -2191,7 +2191,7 @@ bool KNodeImpl::HasRSAKeys() {
 
 boost::int32_t KNodeImpl::KeyValueTTL(const KadId &key,
       const std::string &value) const {
-  return pdata_store_->TimeToLive(key.ToStringDecoded(), value);
+  return pdata_store_->TimeToLive(key.String(), value);
 }
 
 void KNodeImpl::RefreshValue(const KadId &key,
@@ -2206,12 +2206,12 @@ void KNodeImpl::RefreshValue(const KadId &key,
     cobj.set_hash_algorithm(crypto::SHA_512);
     if (!svalue.ParseFromString(value))
       return;
-    sreq.set_signer_id(node_id_.ToStringDecoded());
+    sreq.set_signer_id(node_id_.String());
     sreq.set_public_key(public_key_);
     sreq.set_signed_public_key(cobj.AsymSign(public_key_, "", private_key_,
         crypto::STRING_STRING));
     sreq.set_signed_request(cobj.AsymSign(cobj.Hash(public_key_ +
-        sreq.signed_public_key() + key.ToStringDecoded(), "",
+        sreq.signed_public_key() + key.String(), "",
         crypto::STRING_STRING, true), "", private_key_, crypto::STRING_STRING));
     FindKClosestNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs,
       this, _1, key, "", svalue, sreq, false, ttl, callback));
@@ -2251,7 +2251,7 @@ void KNodeImpl::RefreshValuesRoutine() {
       for (size_t i = 0; i < values.size(); ++i) {
         KadId id_key;
         switch (values[i].del_status_) {
-          case NOT_DELETED: id_key = KadId(values[i].key_, false);
+          case NOT_DELETED: id_key = KadId(values[i].key_);
                             RefreshValue(id_key, values[i].value_,
                               values[i].ttl_,
                               boost::bind(&KNodeImpl::RefreshValueCallback,
@@ -2344,7 +2344,7 @@ bool KNodeImpl::DelValueLocal(const KadId &key, const SignedValue &value,
   if (signature_validator_ == NULL)
     return false;
   // validating request
-  std::string str_key(key.ToStringDecoded());
+  std::string str_key(key.String());
   if (!signature_validator_->ValidateSignerId(req.signer_id(),
       req.signed_public_key(), str_key) ||
       !signature_validator_->ValidateRequest(req.signed_request(),
@@ -2358,7 +2358,7 @@ bool KNodeImpl::DelValueLocal(const KadId &key, const SignedValue &value,
   crypto::Crypto cobj;
   if (cobj.AsymCheckSig(value.value(), value.value_signature(),
       req.public_key(), crypto::STRING_STRING)) {
-    if (pdata_store_->MarkForDeletion(key.ToStringDecoded(),
+    if (pdata_store_->MarkForDeletion(key.String(),
         value.SerializeAsString(), req.SerializeAsString()))
       return true;
   }
@@ -2376,7 +2376,7 @@ void KNodeImpl::DelValue_IterativeDeleteValue(const DeleteResponse *response,
   if (response != NULL) {
     if (response->IsInitialized() && response->has_node_id() &&
         response->node_id() !=
-          callback_data.remote_ctc.node_id().ToStringDecoded()) {
+          callback_data.remote_ctc.node_id().String()) {
       if (callback_data.retry) {
         delete response;
         DeleteResponse *resp = new DeleteResponse;
@@ -2576,7 +2576,7 @@ void KNodeImpl::UpdateValueResponses(
     boost::shared_ptr<UpdateCallbackArgs> uca) {
   if (uca->response->IsInitialized()) {
     if (!uca->response->has_node_id() ||
-        uca->response->node_id() != uca->contact.node_id().ToStringDecoded()) {
+        uca->response->node_id() != uca->contact.node_id().String()) {
       // Check if a retry is warranted
       if (uca->uvd->retries < 1) {
         ++uca->uvd->retries;
