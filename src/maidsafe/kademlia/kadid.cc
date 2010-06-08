@@ -41,7 +41,7 @@ KadId::KadId() : raw_id_(kZeroId) {}
 
 KadId::KadId(const KadId &other) : raw_id_(other.raw_id_) {}
 
-KadId::KadId(const KadIdType &type) : raw_id_(kKeySizeBytes, 0xff) {
+KadId::KadId(const KadIdType &type) : raw_id_(kKeySizeBytes, -1) {
   switch (type) {
     case kMaxId :
       break;  // already set
@@ -112,7 +112,6 @@ KadId::KadId(const KadId &id1, const KadId &id2) : raw_id_(kZeroId) {
   bool less_than_upper_limit(false);
   bool greater_than_lower_limit(false);
   unsigned char max_id_char(0), min_id_char(0), this_char(0);
-  size_t pos(0);
   for (size_t pos = 0; pos < kKeySizeBytes; ++pos) {
     if (!less_than_upper_limit) {
       max_id_char = max_id[pos];
