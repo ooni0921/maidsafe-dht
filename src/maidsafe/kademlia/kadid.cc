@@ -140,7 +140,7 @@ std::string KadId::EncodeToBinary() const {
   std::string binary;
   binary.reserve(kKeySizeBytes);
   for (size_t i = 0; i < kKeySizeBytes; ++i) {
-    std::bitset<8> temp(static_cast<unsigned long>(raw_id_[i]));  // NOLINT (Fraser)
+    std::bitset<8> temp(static_cast<int>(raw_id_[i]));
     binary += temp.to_string();
   }
   return binary;
