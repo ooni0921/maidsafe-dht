@@ -70,26 +70,24 @@ std::string IntToString(const int &value) {
 std::string RandomString(const size_t &length) {
   std::string random_string;
   random_string.reserve(length);
-    static CryptoPP::AutoSeededX917RNG< CryptoPP::AES > random_number_generator;
-    while (random_string.size() < length) {
-      size_t iter_length = std::min(length - random_string.size(), 65536U);
-      boost::scoped_array<byte> random_bytes(new byte[iter_length]);
-      random_number_generator.GenerateBlock(random_bytes.get(), iter_length);
-      std::string random_substring(random_bytes.get(),
-                                   random_bytes.get() + iter_length);
-      for (size_t i = 0; i < iter_length; ++i) {
-        boost::uint8_t *random_char =
-            reinterpret_cast<boost::uint8_t*>(&random_substring.at(i));
-        *random_char = *random_char % 122;
-        if (48 > *random_char)
-          *random_char += 48;
-        if ((57 < *random_char) && (65 > *random_char))
-          *random_char += 7;
-        if ((90 < *random_char) && (97 > *random_char))
-          *random_char += 6;
-      }
-      random_string += random_substring;
+  static CryptoPP::AutoSeededX917RNG< CryptoPP::AES > random_number_generator;
+  while (random_string.size() < length) {
+    size_t iter_length = std::min(length - random_string.size(), 65536U);
+    boost::scoped_array<byte> random_bytes(new byte[iter_length + 1]);
+    random_number_generator.GenerateBlock(random_bytes.get(), iter_length);
+    std::string random_substring(iter_length, 0);
+    for (size_t i = 0; i < iter_length; ++i) {
+      random_bytes[i] = random_bytes[i] % 122;
+      if (48 > random_bytes[i])
+        random_bytes[i] += 48;
+      if ((57 < random_bytes[i]) && (65 > random_bytes[i]))
+        random_bytes[i] += 7;
+      if ((90 < random_bytes[i]) && (97 > random_bytes[i]))
+        random_bytes[i] += 6;
+      random_substring[i] = random_bytes[i];
     }
+    random_string += random_substring;
+  }
   return random_string;
 }
 
