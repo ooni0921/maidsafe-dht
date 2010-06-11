@@ -833,6 +833,9 @@ ELSE()
   SET(CMAKE_INSTALL_PREFIX "${INSTALL_PREFIX}")
 ENDIF()
 
+  IF (MINGW)
+  	SET(CMAKE_INSTALL_PREFIX "c:/MinGW")
+  ENDIF()
 ###################################################################################################
 MESSAGE("")
 MESSAGE("Package version is set to \"${pddate}\"")
