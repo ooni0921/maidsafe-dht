@@ -30,6 +30,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAIDSAFE_BASE_LOG_H_
 
 #ifdef HAVE_GLOG
+// For M$VC, we need to include windows.h which in turn includes WinGDI.h
+// which defines ERROR (which conflicts with Glog's ERROR definition)
+#ifdef __MSVC__
+#include <windows.h>
+#undef ERROR
+#endif
 #include <glog/logging.h>
 
 #else

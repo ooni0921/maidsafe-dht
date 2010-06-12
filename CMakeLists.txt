@@ -536,10 +536,9 @@ IF(MSVC)
   # prevents std::min() and std::max() to be overwritten
   ADD_DEFINITIONS(-DNOMINMAX)
 
-  # prevents inclusion of WinGDI.h which conflicts with Google Logging library and sets
   # flag to link to static version of Google Glog
   IF(Glog_FOUND)
-    ADD_DEFINITIONS(-DNOGDI -DGOOGLE_GLOG_DLL_DECL=)
+    ADD_DEFINITIONS(-DGOOGLE_GLOG_DLL_DECL=)
   ENDIF()
 
   # prevents from automatic linking of boost libraries
