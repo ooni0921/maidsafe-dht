@@ -76,7 +76,7 @@ std::string Crypto::Obfuscate(const std::string &first,
 
 std::string Crypto::SecurePassword(const std::string &password,
                                    const boost::uint32_t &pin) {
-  if ((password == "") || (pin == 0))
+  if ((password.empty()) || (pin == 0))
     return "";
   byte purpose = 0;
   std::string derived_password;

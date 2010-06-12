@@ -558,7 +558,7 @@ void KNodeImpl::Join(const KadId &node_id,
       callback(local_result_str);
       return;
     }
-  } else if (external_ip == "" || external_port == 0) {
+  } else if (external_ip.empty() || external_port == 0) {
     local_result.set_result(kRpcResultFailure);
     local_result.SerializeToString(&local_result_str);
     callback(local_result_str);
@@ -645,7 +645,7 @@ void KNodeImpl::SaveBootstrapContacts() {
         prouting_table_->GetContacts(i, &contacts_i, exclude_contacts);
         for (size_t j = 0; j < contacts_i.size() && !reached_max; ++j) {
         // store only the nodes that are directly connected to bootstrap vector
-          if (contacts_i[j].rendezvous_ip() == "" &&
+          if (contacts_i[j].rendezvous_ip().empty() &&
               contacts_i[j].rendezvous_port() == 0) {
             bs_contacts.push_back(contacts_i[j]);
             ++added_nodes;
@@ -1322,7 +1322,7 @@ void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
     return;
   if (dead_server) {
     DLOG(WARNING) << "(" << local_host_port_ << ")--Failed to ping RV server\n";
-    if (rv_ip_ == "" && rv_port_ == 0) {
+    if (rv_ip_.empty() && rv_port_ == 0) {
       // node has no rendezvous server, it does not need to rejoin, just finding
       // out if it is offline by trying to connect with one of its contacts
       std::vector<Contact> ctcs, ex_ctcs;
@@ -1330,7 +1330,7 @@ void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
         std::vector<Contact> tmp_ctcs;
         prouting_table_->GetContacts(i, &tmp_ctcs, ex_ctcs);
         for (unsigned int j = 0; j < tmp_ctcs.size(); ++j)
-          if (tmp_ctcs[j].rendezvous_ip() == "" &&
+          if (tmp_ctcs[j].rendezvous_ip().empty() &&
               tmp_ctcs[j].rendezvous_port() == 0)
             ctcs.push_back(tmp_ctcs[j]);
       }
@@ -1405,7 +1405,7 @@ void KNodeImpl::UnRegisterKadService() {
 ConnectionType KNodeImpl::CheckContactLocalAddress(const KadId &id,
       const std::string &ip, const boost::uint16_t &port,
       const std::string &ext_ip) {
-  if (ip == "" || port == 0)
+  if (ip.empty() || port == 0)
     return REMOTE;
   std::string str_id(id.String());
   int result = (*base::PublicRoutingTable::GetInstance())[
@@ -2184,7 +2184,7 @@ boost::uint32_t KNodeImpl::KeyExpireTime(const KadId &key,
 }
 
 bool KNodeImpl::HasRSAKeys() {
-  if (private_key_ == "" || public_key_ == "")
+  if (private_key_.empty() || public_key_.empty())
     return false;
   return true;
 }

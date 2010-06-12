@@ -296,7 +296,7 @@ int main(int argc, char **argv) {
       return 1;
     }
     // setting kadconfig file if it was not in the options
-    if (kadconfigpath == "") {
+    if (kadconfigpath.empty()) {
       kadconfigpath = "KnodeInfo" + boost::lexical_cast<std::string>(
          trans_handler.listening_port(transport_id));
       boost::filesystem::create_directories(kadconfigpath);

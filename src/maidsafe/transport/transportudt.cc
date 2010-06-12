@@ -654,7 +654,7 @@ void TransportUDT::HandleRendezvousMsgs(const HolePunchingMsg &message) {
   if (message.type() == FORWARD_REQ) {
     TransportMessage t_msg;
     HolePunchingMsg *forward_msg = t_msg.mutable_hp_msg();
-    std::string peer_ip(inet_ntoa(((\
+    std::string peer_ip(inet_ntoa(((
       struct sockaddr_in *)&peer_address_)->sin_addr));
     boost::uint16_t peer_port =
       ntohs(((struct sockaddr_in *)&peer_address_)->sin_port);
@@ -949,8 +949,8 @@ int TransportUDT::ConnectToSend(const std::string &remote_ip,
                                 boost::uint32_t *connection_id) {
   UDTSOCKET skt;
   // the node receiver is directly connected, no rendezvous information
-  if (rendezvous_ip == "" && rendezvous_port == 0) {
-    bool remote(local_ip == "" || local_port == 0);
+  if (rendezvous_ip.empty() && rendezvous_port == 0) {
+    bool remote(local_ip.empty() || local_port == 0);
     // the node is believed to be local
     if (!remote) {
       int conn_result = Connect(local_ip, local_port, &skt);

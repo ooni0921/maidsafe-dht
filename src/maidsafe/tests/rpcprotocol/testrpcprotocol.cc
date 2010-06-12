@@ -269,7 +269,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_RegisterAChannel) {
       const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
       &ResultHolder::GetPingRes, &resp, &controller);
   stubservice.Ping(&controller, &req, &resp, done);
-  while (resultholder.ping_res.result() == "")
+  while (resultholder.ping_res.result().empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 
   ASSERT_EQ("S", resultholder.ping_res.result());
