@@ -74,7 +74,7 @@ IF(CMAKE_BUILD_TYPE_DIR MATCHES "Release" OR CMAKE_BUILD_TYPE_DIR MATCHES "kdev"
 ELSE()
   SET(PROJECT_NAME maidsafe_dht_${CMAKE_BUILD_TYPE_DIR})
 ENDIF()
-
+OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
 
 # This call resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
@@ -417,7 +417,7 @@ ADD_EXECUTABLE(kaddemo_static ${T_DEMO_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(benchmark_static ${T_BENCHMARK_DIR} ${MAIDSAFE_H})
 
 # Force renaming of exes to match standard CMake library renaming policy
-IF(NOT MSVC)
+IF((NOT MSVC) AND (${CMAKE_BUILD_TYPE_DIR} MATCHES "kdev"))
   SET_TARGET_PROPERTIES(TESTbase PROPERTIES
                           DEBUG_OUTPUT_NAME TESTbase${CMAKE_DEBUG_POSTFIX}
                           RELWITHDEBINFO_OUTPUT_NAME TESTbase${CMAKE_RELWITHDEBINFO_POSTFIX}
@@ -459,7 +459,6 @@ IF(NOT MSVC)
                           RELWITHDEBINFO_OUTPUT_NAME TESTboost${CMAKE_RELWITHDEBINFO_POSTFIX}
                           MINSIZEREL_OUTPUT_NAME TESTboost${CMAKE_MINSIZEREL_POSTFIX})
 ENDIF()
-
 # Need to use __declspec(dllexport) in all API header files before adding SHARED library target
 #ADD_LIBRARY(maidsafe_dht SHARED ${DHT_SOURCE_FILES})
 ADD_LIBRARY(maidsafe_dht_static STATIC ${DHT_SOURCE_FILES})
