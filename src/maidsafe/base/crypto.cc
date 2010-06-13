@@ -142,7 +142,7 @@ std::string Crypto::HashFunc(const std::string &input,
       }
       catch(const CryptoPP::Exception &e) {
         DLOG(ERROR) << e.what() << std::endl;
-		result.clear();
+      result.clear();
       }
       break;
     case FILE_FILE:
@@ -161,7 +161,7 @@ std::string Crypto::HashFunc(const std::string &input,
       }
       catch(const CryptoPP::Exception &e) {
         DLOG(ERROR) << e.what() << std::endl;
-		result.clear();
+      result.clear();
       }
       break;
   }
