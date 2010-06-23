@@ -78,7 +78,7 @@ class NatPmpClientImpl {
   * Set the port map success callback.
   */
   void SetMapPortSuccessCallback(
-      const NatPmpMapPortSuccessCbType & map_port_success_cb);
+      const NatPmpMapPortSuccessCbType &map_port_success_cb);
 
 /**
   * Sends a mapping request by posting it to the

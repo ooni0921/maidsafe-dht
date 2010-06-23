@@ -51,12 +51,13 @@ KadService::KadService(const NatRpcs &nat_rpcs,
                        GetRandomContactsFunctor rand_cts,
                        GetContactFunctor get_ctc,
                        GetKClosestFunctor get_kcts,
-                       PingFunctor ping)
+                       PingFunctor ping,
+                       RemoveContactFunctor remove_contact)
     : nat_rpcs_(nat_rpcs), pdatastore_(datastore), node_joined_(false),
       node_hasRSAkeys_(hasRSAkeys), node_info_(), alternative_store_(NULL),
       add_contact_(add_cts), get_random_contacts_(rand_cts),
       get_contact_(get_ctc), get_closestK_contacts_(get_kcts), ping_(ping),
-      signature_validator_(NULL) {}
+      remove_contact_(remove_contact), signature_validator_(NULL) {}
 
 void KadService::Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
                                           struct NatDetectionData data) {
@@ -195,7 +196,7 @@ void KadService::FindNode(google::protobuf::RpcController *controller,
       response->set_result(kRpcResultFailure);
     }
     rpcprotocol::Controller *ctrl = static_cast<rpcprotocol::Controller*>
-        (controller);
+                                    (controller);
     if (ctrl != NULL) {
       add_contact_(sender, ctrl->rtt(), false);
     } else {
@@ -479,8 +480,10 @@ void KadService::Bootstrap(google::protobuf::RpcController *controller,
   std::vector<Contact> ex_contacs;
   ex_contacs.push_back(newcomer);
   struct NatDetectionData data = {newcomer, this_node_str, node_c,
-      response, done, static_cast<rpcprotocol::Controller*>(controller),
-      ex_contacs};
+                                  response, done,
+                                  static_cast<rpcprotocol::Controller*>
+                                      (controller),
+                                  ex_contacs};
   SendNatDetection(data);
 }
 
@@ -491,7 +494,12 @@ void KadService::SendNatDetection(NatDetectionData data) {
     if (data.ex_contacts.size() > 1) {
       data.response->set_result(kRpcResultFailure);
     }
+    for (size_t n = 0; n < data.ex_contacts.size(); ++n) {
+      // remove contact from routing table
+      remove_contact_(data.ex_contacts[n].node_id());
+    }
     data.done->Run();
+    return;
   } else {
     Contact node_c = random_contacts.front();
     data.node_c = node_c;
@@ -500,17 +508,18 @@ void KadService::SendNatDetection(NatDetectionData data) {
     data.newcomer.SerialiseToString(&newcomer_str);
     rpcprotocol::Controller *temp_controller =
         static_cast<rpcprotocol::Controller*>(data.controller);
-    boost::int16_t temp_transport_id = temp_controller->transport_id();
+    boost::int16_t temp_transport_id(temp_controller->transport_id());
     data.controller = new rpcprotocol::Controller;
     data.controller->set_transport_id(temp_transport_id);
     NatDetectionResponse *resp = new NatDetectionResponse;
-    google::protobuf::Closure *done = google::protobuf::NewCallback<
-      KadService, const NatDetectionResponse*, struct NatDetectionData>(this,
-      &KadService::Bootstrap_NatDetection, resp, data);
+    google::protobuf::Closure *done = google::protobuf::NewCallback
+        <KadService, const NatDetectionResponse*, struct NatDetectionData>
+        (this, &KadService::Bootstrap_NatDetection, resp, data);
     nat_rpcs_.NatDetection(newcomer_str, data.bootstrap_node, 1,
-        node_info_.node_id(), node_c.host_ip(), node_c.host_port(),
-        node_c.rendezvous_ip(), node_c.rendezvous_port(), resp,
-        data.controller, done);
+                           node_info_.node_id(), node_c.host_ip(),
+                           node_c.host_port(), node_c.rendezvous_ip(),
+                           node_c.rendezvous_port(), resp, data.controller,
+                           done);
   }
 }
 

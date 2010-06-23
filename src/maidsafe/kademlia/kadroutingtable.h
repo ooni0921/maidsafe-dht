@@ -49,7 +49,7 @@ class RoutingTable {
   ~RoutingTable();
   // Add the given contact to the correct k-bucket; if it already
   // exists, its status will be updated
-  int  AddContact(const Contact &new_contact);
+  int AddContact(const Contact &new_contact);
   // Returns true and the contact if it is stored in one Kbucket
   // otherwise it returns false
   bool GetContact(const KadId &node_id, Contact *contact);
@@ -61,24 +61,27 @@ class RoutingTable {
   // Finds a number of known nodes closest to the node/value with the
   // specified key.
   void FindCloseNodes(const KadId &key, int count,
-      std::vector<Contact> *close_nodes,
-      const std::vector<Contact> &exclude_contacts);
+                      const std::vector<Contact> &exclude_contacts,
+                      std::vector<Contact> *close_nodes);
   // Finds all k-buckets that need refreshing, starting at the k-bucket with
   // the specified index, and returns IDs to be searched for in order to
   // refresh those k-buckets
-  void GetRefreshList(std::vector<KadId> *ids,
-      const boost::uint16_t &start_kbucket, const bool &force);
+  void GetRefreshList(const boost::uint16_t &start_kbucket, const bool &force,
+                      std::vector<KadId> *ids);
   // Get all contacts of a specified k_bucket
-  bool GetContacts(const boost::uint16_t &index, std::vector<Contact>
-    *contacts, const std::vector<Contact> &exclude_contacts);
+  bool GetContacts(const boost::uint16_t &index,
+                   const std::vector<Contact> &exclude_contacts,
+                   std::vector<Contact> *contacts);
   size_t KbucketSize() const;
   size_t Size() const;
   void Clear();
   // Calculate the index of the k-bucket which is responsible for the specified
   // key (or ID)
-  boost::uint16_t KBucketIndex(const KadId &key);
+  boost::int16_t KBucketIndex(const KadId &key);
   Contact GetLastSeenContact(const boost::uint16_t &kbucket_index);
-
+  void GetFurthestContacts(const KadId &key, const boost::int8_t count,
+                           const std::vector<Contact> &exclude_contacts,
+                           std::vector<Contact> *close_nodes);
 
  private:
 // Calculate the index of the k-bucket which is responsible for the specified
@@ -111,5 +114,6 @@ class RoutingTable {
   KadId address_space_upper_address_;
   boost::uint16_t K_;
 };
+
 }  // namespace kad
 #endif  // MAIDSAFE_KADEMLIA_KADROUTINGTABLE_H_

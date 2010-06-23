@@ -29,12 +29,36 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/timer.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/progress.hpp>
+#include <boost/thread.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <list>
 #include "maidsafe/base/crypto.h"
 #include "maidsafe/base/utils.h"
 
+namespace test_utils {
+
+void GenerateRandomStrings(const int &string_count,
+                           const size_t &string_size) {
+  for (int i = 0; i < string_count; ++i)
+    base::RandomString(string_size);
+}
+
+}  // namespace test_utils
+
+TEST(UtilsTest, BEH_BASE_RandomStringMultiThread) {
+  int thread_count(20);
+  int string_count(1000);
+  size_t string_size(4096);
+  std::vector< boost::shared_ptr<boost::thread> > test_threads;
+  for (int i = 0; i < thread_count; ++i) {
+    test_threads.push_back(boost::shared_ptr<boost::thread>(new boost::thread(
+        &test_utils::GenerateRandomStrings, string_count, string_size)));
+  }
+  for (int i = 0; i < thread_count; ++i) {
+    test_threads.at(i)->join();
+  }
+}
 
 TEST(UtilsTest, BEH_BASE_Stats) {
   {
@@ -94,7 +118,7 @@ TEST(UtilsTest, BEH_BASE_IntegersAndStrings) {
 }
 
 
-TEST(UtilsTest, BEH_BASE_RandomString) {
+TEST(UtilsTest, BEH_BASE_RandomStringSingleThread) {
   unsigned int length = 4096;
   std::string first = base::RandomString(length);
   std::string second = base::RandomString(length);

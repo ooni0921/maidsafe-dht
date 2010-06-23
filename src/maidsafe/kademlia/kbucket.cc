@@ -31,9 +31,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 
 KBucket::KBucket(const KadId &min, const KadId &max,
-      const boost::uint16_t &kb_K) : last_accessed_(0), contacts_(),
-      range_min_(min), range_max_(max), K_(kb_K) {
-}
+                 const boost::uint16_t &kb_K)
+    : last_accessed_(0), contacts_(), range_min_(min), range_max_(max),
+      K_(kb_K) {}
 
 KBucket::~KBucket() {
   contacts_.clear();
@@ -53,12 +53,11 @@ void KBucket::set_last_accessed(const boost::uint32_t &time_accessed) {
 
 KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
   Contact new_contact_local(new_contact);
-  int position = -1;
-  int i = 0;
+  int position(-1), i(0);
   // Check if the contact is already in the kbucket to remove it from
   // it and adding it at the top of it
   for (std::list<Contact>::const_iterator it = contacts_.begin();
-      it != contacts_.end() && position == -1; ++it) {
+       it != contacts_.end() && position == -1; ++it) {
     Contact current_element = *it;
     if (new_contact_local.Equals(current_element))
       position = i;
@@ -78,10 +77,9 @@ KBucketExitCode KBucket::AddContact(const Contact &new_contact) {
 }
 
 void KBucket::RemoveContact(const KadId &node_id, const bool &force) {
-  int position = -1;
-  int i = 0;
+  int position(-1), i(0);
   for (std::list<Contact>::const_iterator it = contacts_.begin();
-    it != contacts_.end(); ++it) {
+       it != contacts_.end(); ++it) {
     if (it->node_id() == node_id) {
       position = i;
     }
@@ -105,7 +103,7 @@ void KBucket::RemoveContact(const KadId &node_id, const bool &force) {
 bool KBucket::GetContact(const KadId &node_id, Contact *contact) {
   bool result = false;
   for (std::list<Contact>::const_iterator it = contacts_.begin();
-    it != contacts_.end() && !result; ++it) {
+       it != contacts_.end() && !result; ++it) {
     if (it->node_id() == node_id) {
       *contact = (*it);
       result = true;
@@ -115,23 +113,23 @@ bool KBucket::GetContact(const KadId &node_id, Contact *contact) {
 }
 
 void KBucket::GetContacts(const boost::uint16_t &count,
-      const std::vector<Contact> &exclude_contacts,
-      std::vector<Contact> *contacts) {
-    bool insert;
-    boost::uint16_t i(0);
-    for (std::list<Contact>::const_iterator it = contacts_.begin();
-      it != contacts_.end() && i < count; ++it) {
-      insert = true;
-      for (std::vector<Contact>::const_iterator it1 = exclude_contacts.begin();
-           it1 != exclude_contacts.end() && insert; ++it1) {
-        if (it->node_id() == it1->node_id())
-          insert = false;
-      }
-      if (insert) {
-        contacts->push_back((*it));
-        ++i;
-      }
+                          const std::vector<Contact> &exclude_contacts,
+                          std::vector<Contact> *contacts) {
+  bool insert;
+  boost::uint16_t i(0);
+  for (std::list<Contact>::iterator it = contacts_.begin();
+       it != contacts_.end() && i < count; ++it) {
+    insert = true;
+    for (std::vector<Contact>::const_iterator it1 = exclude_contacts.begin();
+         it1 != exclude_contacts.end() && insert; ++it1) {
+      if (it->node_id() == it1->node_id())
+        insert = false;
     }
+    if (insert) {
+      contacts->push_back(*it);
+      ++i;
+    }
+  }
 }
 
 KadId KBucket::range_min() const { return range_min_; }
@@ -145,4 +143,5 @@ Contact KBucket::LastSeenContact() {
   }
   return contacts_.back();
 }
+
 }  // namespace kad

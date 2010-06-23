@@ -78,7 +78,8 @@ inline void create_req(const std::string &pub_key, const std::string &priv_key,
   cobj.set_hash_algorithm(crypto::SHA_512);
   *sig_pub_key = cobj.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
   *sig_req = cobj.AsymSign(cobj.Hash(pub_key + *sig_pub_key + key, "",
-      crypto::STRING_STRING, true), "", priv_key, crypto::STRING_STRING);
+                                     crypto::STRING_STRING, true),
+                           "", priv_key, crypto::STRING_STRING);
 }
 
 std::string get_app_directory() {
@@ -113,8 +114,7 @@ class KNodeTest: public testing::Test {
 std::string kad_config_file_;
 std::vector< boost::shared_ptr< transport::TransportHandler > > trans_handlers_;
 std::vector< boost::int16_t > transport_ids_;
-std::vector< boost::shared_ptr<rpcprotocol::ChannelManager> >
-    channel_managers_;
+std::vector< boost::shared_ptr<rpcprotocol::ChannelManager> > channel_managers_;
 std::vector< boost::shared_ptr<kad::KNode> > knodes_;
 std::vector<std::string> dbs_;
 crypto::Crypto cry_obj_;
@@ -151,30 +151,32 @@ class Env: public testing::Environment {
     boost::int16_t transport_id;
     for (boost::int16_t  i = 0; i < kNetworkSize; ++i) {
       trans_handlers_.push_back(boost::shared_ptr<transport::TransportHandler>
-        (new transport::TransportHandler()));
+          (new transport::TransportHandler()));
       trans_handlers_.at(i).get()->Register(new transport::TransportUDT,
-        &transport_id);
+                                            &transport_id);
       transport_ids_.push_back(transport_id);
       boost::shared_ptr<rpcprotocol::ChannelManager>
           channel_manager_local_(new rpcprotocol::ChannelManager(
-          trans_handlers_[i].get()));
+              trans_handlers_[i].get()));
       channel_managers_.push_back(channel_manager_local_);
 
-      std::string db_local_ = test_dir_ + std::string("/datastore") +
-          boost::lexical_cast<std::string>(i);
-      boost::filesystem::create_directories(db_local_);
-      dbs_.push_back(db_local_);
+      std::string db_local(test_dir_ + std::string("/datastore") +
+                           boost::lexical_cast<std::string>(i));
+      boost::filesystem::create_directories(db_local);
+      dbs_.push_back(db_local);
 
       boost::shared_ptr<kad::KNode>
           knode_local_(new kad::KNode(channel_managers_[i].get(),
-          trans_handlers_[i].get(), kad::VAULT, kTestK,
-          kad::kAlpha, kad::kBeta, kad::kRefreshTime, priv_key, pub_key, false,
-          false));
+                                      trans_handlers_[i].get(), kad::VAULT,
+                                      kTestK, kad::kAlpha, kad::kBeta,
+                                      kad::kRefreshTime, priv_key, pub_key,
+                                      false, false));
       knode_local_->set_transport_id(transport_ids_[i]);
 
       EXPECT_TRUE(channel_managers_[i]->RegisterNotifiersToTransport());
-      EXPECT_TRUE(trans_handlers_[i]->RegisterOnServerDown(boost::bind(
-        &kad::KNode::HandleDeadRendezvousServer, knode_local_.get(), _1)));
+      EXPECT_TRUE(trans_handlers_[i]->RegisterOnServerDown(
+                      boost::bind(&kad::KNode::HandleDeadRendezvousServer,
+                                  knode_local_.get(), _1)));
 
       EXPECT_EQ(0, trans_handlers_[i]->Start(0, transport_ids_[i]));
       EXPECT_EQ(0, channel_managers_[i]->Start());
@@ -188,14 +190,16 @@ class Env: public testing::Environment {
     boost::asio::ip::address local_ip;
     ASSERT_TRUE(base::GetLocalAddress(&local_ip));
     knodes_[0]->Join(kad_config_file_, local_ip.to_string(),
-        trans_handlers_[0]->listening_port(transport_ids_[0]),
-        boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
+                     trans_handlers_[0]->listening_port(transport_ids_[0]),
+                     boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
     wait_result(&cb_);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
     ASSERT_TRUE(knodes_[0]->is_joined());
     knodes_[0]->set_signature_validator(&validator);
-    LOG(INFO) << "Node 0 joined " <<
-        knodes_[0]->node_id().ToStringEncoded(kad::KadId::kHex).substr(0, 12);
+    LOG(INFO) << "Node 0 joined "
+              << knodes_[0]->node_id().ToStringEncoded(kad::KadId::kHex)
+                 .substr(0, 12)
+              << std::endl;
     node_ids_.push_back(knodes_[0]->node_id());
     base::KadConfig kad_config;
     base::KadConfig::Contact *kad_contact = kad_config.add_contact();
@@ -209,7 +213,7 @@ class Env: public testing::Environment {
     for (boost::int16_t i = 1; i < kNetworkSize; i++) {
       kad_config_file_ = dbs_[i] + "/.kadconfig";
       std::fstream output2(kad_config_file_.c_str(),
-        std::ios::out | std::ios::trunc | std::ios::binary);
+                           std::ios::out | std::ios::trunc | std::ios::binary);
       ASSERT_TRUE(kad_config.SerializeToOstream(&output2));
       output2.close();
     }
@@ -219,13 +223,16 @@ class Env: public testing::Environment {
       cb_.Reset();
       kad_config_file_ = dbs_[i] + "/.kadconfig";
       knodes_[i]->Join(kad_config_file_,
-          boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
+                       boost::bind(&GeneralKadCallback::CallbackFunc,
+                                   &cb_, _1));
       wait_result(&cb_);
       ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
       ASSERT_TRUE(knodes_[i]->is_joined());
       knodes_[i]->set_signature_validator(&validator);
-      LOG(INFO) << "Node " << i << " joined " <<
-          knodes_[i]->node_id().ToStringEncoded(kad::KadId::kHex).substr(0, 12);
+      LOG(INFO) << "Node " << i << " joined "
+                << knodes_[i]->node_id().ToStringEncoded(kad::KadId::kHex)
+                   .substr(0, 12)
+                << std::endl;
       node_ids_.push_back(knodes_[i]->node_id());
     }
     cb_.Reset();
@@ -1496,6 +1503,200 @@ TEST_F(KNodeTest, FUNC_KAD_UpdateValue) {
   ASSERT_EQ(1U, cb_1.signed_values().size());
   kad::SignedValue el_valiu = cb_1.signed_values()[0];
   ASSERT_EQ(new_sig_value.SerializeAsString(), el_valiu.SerializeAsString());
+}
+
+/*******************************************************************************
+* Test to reproduce the bug reported on issue #13 on the maidsafe-dht website.
+* Node L starts, node M joins, node M leaves, node N joins. Bootstrap of node N
+* used to fail because node L thinks node M is still about. The answer now from
+* the bootstrapping node L should allow node N to join, but node N should have
+* flagged the fact that it needs to recheck it's NAT type again later.
+*******************************************************************************/
+TEST_F(KNodeTest, FUNC_KAD_Issue13Bootstrap) {
+  try {
+     boost::filesystem::create_directories(test_dir_ + std::string("KNodeL"));
+     boost::filesystem::create_directories(test_dir_ + std::string("KNodeM"));
+     boost::filesystem::create_directories(test_dir_ + std::string("KNodeN"));
+     boost::filesystem::create_directories(test_dir_ + std::string("KNodeP"));
+  }
+  catch(const std::exception &e) {
+    DLOG(INFO) << "Couldn't create directories for the test";
+    FAIL();
+  }
+
+  transport::TransportUDT trudtL;
+  boost::int16_t id_L;
+  transport::TransportHandler thandlerL;
+  thandlerL.Register(&trudtL, &id_L);
+  rpcprotocol::ChannelManager channel_managerL(&thandlerL);
+  kad::KNode nodeL(&channel_managerL, &thandlerL, kad::VAULT, kTestK,
+                   kad::kAlpha, kad::kBeta, kad::kRefreshTime, "", "", false,
+                   false);
+  EXPECT_TRUE(channel_managerL.RegisterNotifiersToTransport());
+  EXPECT_TRUE(thandlerL.RegisterOnServerDown(
+                  boost::bind(&kad::KNode::HandleDeadRendezvousServer,
+                              &nodeL, _1)));
+  EXPECT_EQ(0, thandlerL.Start(0, id_L));
+  EXPECT_EQ(0, channel_managerL.Start());
+
+  std::string kad_config_file(test_dir_ + std::string("KNodeL/.kadconfig"));
+  cb_.Reset();
+  boost::asio::ip::address local_ip;
+  EXPECT_TRUE(base::GetLocalAddress(&local_ip));
+  nodeL.Join(kad_config_file, local_ip.to_string(),
+             thandlerL.listening_port(transport_ids_[0]),
+             boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
+  wait_result(&cb_);
+  EXPECT_EQ(kad::kRpcResultSuccess, cb_.result());
+  EXPECT_TRUE(nodeL.is_joined());
+  LOG(INFO) << "Node L joined "
+            << nodeL.node_id().ToStringEncoded(kad::KadId::kHex).substr(0, 12)
+            << std::endl;
+
+  base::KadConfig kad_config;
+  base::KadConfig::Contact *kad_contact = kad_config.add_contact();
+  kad_contact->set_node_id(nodeL.node_id().ToStringEncoded(kad::KadId::kHex));
+  kad_contact->set_ip(nodeL.host_ip());
+  kad_contact->set_port(nodeL.host_port());
+  kad_contact->set_local_ip(nodeL.local_host_ip());
+  kad_contact->set_local_port(nodeL.local_host_port());
+
+  std::string kconfigM(test_dir_ + "KNodeM/.kadconfig");
+  std::fstream outputM(kconfigM.c_str(),
+                       std::ios::out | std::ios::trunc | std::ios::binary);
+  EXPECT_TRUE(kad_config.SerializeToOstream(&outputM));
+  outputM.close();
+  std::string kconfigN(test_dir_ + "KNodeN/.kadconfig");
+  std::fstream outputN(kconfigN.c_str(),
+                       std::ios::out | std::ios::trunc | std::ios::binary);
+  EXPECT_TRUE(kad_config.SerializeToOstream(&outputN));
+  outputN.close();
+  std::string kconfigP(test_dir_ + "KNodeP/.kadconfig");
+  std::fstream outputP(kconfigP.c_str(),
+                       std::ios::out | std::ios::trunc | std::ios::binary);
+  EXPECT_TRUE(kad_config.SerializeToOstream(&outputP));
+  outputP.close();
+
+  //  Node M
+  transport::TransportUDT trudtM;
+  boost::int16_t id_M;
+  transport::TransportHandler thandlerM;
+  thandlerM.Register(&trudtM, &id_M);
+  rpcprotocol::ChannelManager channel_managerM(&thandlerM);
+  kad::KNode nodeM(&channel_managerM, &thandlerM, kad::VAULT, kTestK,
+                   kad::kAlpha, kad::kBeta, kad::kRefreshTime, "", "", false,
+                   false);
+  EXPECT_TRUE(channel_managerM.RegisterNotifiersToTransport());
+  EXPECT_TRUE(thandlerM.RegisterOnServerDown(
+                  boost::bind(&kad::KNode::HandleDeadRendezvousServer,
+                              &nodeM, _1)));
+  EXPECT_EQ(0, thandlerM.Start(0, id_M));
+  EXPECT_EQ(0, channel_managerM.Start());
+  cb_.Reset();
+  nodeM.Join(kconfigM,
+             boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
+  wait_result(&cb_);
+  EXPECT_EQ(kad::kRpcResultSuccess, cb_.result());
+  EXPECT_TRUE(nodeM.is_joined());
+  LOG(INFO) << "Node M joined "
+            << nodeM.node_id().ToStringEncoded(kad::KadId::kHex).substr(0, 12)
+            << std::endl;
+  EXPECT_FALSE(nodeM.recheck_nat_type());
+  thandlerM.Stop(id_M);
+
+  //  Node N
+  transport::TransportUDT trudtN;
+  boost::int16_t id_N;
+  transport::TransportHandler thandlerN;
+  thandlerN.Register(&trudtN, &id_N);
+  rpcprotocol::ChannelManager channel_managerN(&thandlerN);
+  kad::KNode nodeN(&channel_managerN, &thandlerN, kad::VAULT, kTestK,
+                   kad::kAlpha, kad::kBeta, kad::kRefreshTime, "", "", false,
+                   false);
+  EXPECT_TRUE(channel_managerN.RegisterNotifiersToTransport());
+  EXPECT_TRUE(thandlerN.RegisterOnServerDown(
+                  boost::bind(&kad::KNode::HandleDeadRendezvousServer,
+                              &nodeN, _1)));
+  EXPECT_EQ(0, thandlerN.Start(0, id_N));
+  EXPECT_EQ(0, channel_managerN.Start());
+  cb_.Reset();
+  nodeN.Join(kconfigN,
+             boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
+  wait_result(&cb_);
+  EXPECT_EQ(kad::kRpcResultSuccess, cb_.result());
+  EXPECT_TRUE(nodeN.is_joined());
+  LOG(INFO) << "Node N joined "
+            << nodeN.node_id().ToStringEncoded(kad::KadId::kHex).substr(0, 12)
+            << " " << nodeN.host_ip() << ":" << nodeN.host_port() << std::endl;
+  EXPECT_TRUE(nodeN.recheck_nat_type());
+
+  // Check node M is not on node L's routing table anymore
+  kad::Contact c;
+  EXPECT_FALSE(nodeL.GetContact(nodeM.node_id(), &c));
+
+  //  Node P
+  transport::TransportUDT trudtP;
+  boost::int16_t id_P;
+  transport::TransportHandler thandlerP;
+  thandlerP.Register(&trudtP, &id_P);
+  rpcprotocol::ChannelManager channel_managerP(&thandlerP);
+  kad::KNode nodeP(&channel_managerP, &thandlerP, kad::VAULT, kTestK,
+                   kad::kAlpha, kad::kBeta, kad::kRefreshTime, "", "", false,
+                   false);
+  EXPECT_TRUE(channel_managerP.RegisterNotifiersToTransport());
+  EXPECT_TRUE(thandlerP.RegisterOnServerDown(
+                  boost::bind(&kad::KNode::HandleDeadRendezvousServer,
+                              &nodeP, _1)));
+  EXPECT_EQ(0, thandlerP.Start(0, id_P));
+  EXPECT_EQ(0, channel_managerP.Start());
+  cb_.Reset();
+  nodeP.Join(kconfigP,
+             boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
+  wait_result(&cb_);
+  EXPECT_EQ(kad::kRpcResultSuccess, cb_.result());
+  EXPECT_TRUE(nodeP.is_joined());
+  LOG(INFO) << "Node P joined "
+            << nodeP.node_id().ToStringEncoded(kad::KadId::kHex).substr(0, 12)
+            << std::endl;
+  EXPECT_FALSE(nodeP.recheck_nat_type());
+
+  // waiting to see if node N rechecks it's NAT type
+  printf("Before sleep 70\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(70));
+  printf("After sleep 70\n");
+  EXPECT_FALSE(nodeP.recheck_nat_type());
+  LOG(INFO) << "Node N "
+            << nodeN.node_id().ToStringEncoded(kad::KadId::kHex).substr(0, 12)
+            << " " << nodeN.host_ip() << ":" << nodeN.host_port() << std::endl;
+
+  thandlerP.StopPingRendezvous();
+  thandlerN.StopPingRendezvous();
+  thandlerM.StopPingRendezvous();
+  thandlerL.StopPingRendezvous();
+
+  nodeL.Leave();
+  EXPECT_FALSE(nodeL.is_joined());
+  thandlerL.Stop(id_L);
+  channel_managerL.Stop();
+  LOG(INFO) << "Node L left" << std::endl;
+
+  nodeM.Leave();
+  EXPECT_FALSE(nodeM.is_joined());
+  thandlerM.Stop(id_M);
+  channel_managerM.Stop();
+  LOG(INFO) << "Node M left" << std::endl;
+
+  nodeN.Leave();
+  EXPECT_FALSE(nodeN.is_joined());
+  thandlerN.Stop(id_N);
+  channel_managerN.Stop();
+  LOG(INFO) << "Node N left" << std::endl;
+
+  nodeP.Leave();
+  EXPECT_FALSE(nodeP.is_joined());
+  thandlerN.Stop(id_P);
+  channel_managerP.Stop();
+  LOG(INFO) << "Node P left" << std::endl;
 }
 
 int main(int argc, char **argv) {

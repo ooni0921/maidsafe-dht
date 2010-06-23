@@ -49,7 +49,7 @@ class NatPmpClient {
   * Constructor
   * @param ios The boost::asio::io_service object to use.
   */
-  explicit NatPmpClient(boost::asio::io_service & ios);
+  explicit NatPmpClient(boost::asio::io_service &ios);
 
 /**
   * Destructor
@@ -70,7 +70,7 @@ class NatPmpClient {
   * Set the port map success callback.
   */
   void SetMapPortSuccessCallback(
-      const NatPmpMapPortSuccessCbType & map_port_success_cb);
+      const NatPmpMapPortSuccessCbType &map_port_success_cb);
 
 /**
   * Maps a private port to a public port of the given protocol and

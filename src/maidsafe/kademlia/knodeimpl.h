@@ -359,9 +359,8 @@ class KNodeImpl {
     if (premote_service_ != 0)
       premote_service_->set_signature_validator(signature_validator_);
   }
-  inline NatType host_nat_type() {
-    return host_nat_type_;
-  }
+  inline NatType host_nat_type() { return host_nat_type_; }
+  inline bool recheck_nat_type() { return recheck_nat_type_; }
  private:
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
@@ -372,16 +371,17 @@ class KNodeImpl {
                  const boost::uint16_t &bootstrap_port,
                  VoidFunctorOneString callback,
                  const bool &dir_connected);
-  void Join_Bootstrapping_Iteration_Client(const std::string& result,
-      boost::shared_ptr<struct BootstrapArgs> args,
+  void Join_Bootstrapping_Iteration_Client(
+      const std::string &result, boost::shared_ptr<struct BootstrapArgs> args,
       const std::string bootstrap_ip, const boost::uint16_t bootstrap_port,
       const std::string local_bs_ip, const boost::uint16_t local_bs_port);
-  void Join_Bootstrapping_Iteration(const std::string& result,
-      boost::shared_ptr<struct BootstrapArgs> args,
+  void Join_Bootstrapping_Iteration(
+      const std::string &result, boost::shared_ptr<struct BootstrapArgs> args,
       const std::string bootstrap_ip, const boost::uint16_t bootstrap_port,
       const std::string local_bs_ip, const boost::uint16_t local_bs_port);
   void Join_Bootstrapping(VoidFunctorOneString callback,
-      std::vector<Contact> &cached_nodes, const bool &got_external_address);
+                          std::vector<Contact> &cached_nodes,
+                          const bool &got_external_address);
   void Join_RefreshNode(VoidFunctorOneString callback,
                         const bool &port_forwarded);
   void SaveBootstrapContacts();  // save the routing table into .kadconfig file
@@ -445,6 +445,8 @@ class KNodeImpl {
                             const std::string &value, const boost::int32_t &ttl,
                             boost::shared_ptr<boost::uint32_t> refreshes_done,
                             const boost::uint32_t &total_refreshes);
+  void RecheckNatRoutine();
+  void RecheckNatRoutineJoinCallback(const std::string &result);
   boost::mutex routingtable_mutex_, kadconfig_mutex_, extendshortlist_mutex_,
                joinbootstrapping_mutex_, leave_mutex_, activeprobes_mutex_,
                pendingcts_mutex_;
@@ -478,11 +480,13 @@ class KNodeImpl {
   boost::condition_variable add_ctc_cond_;
   std::string private_key_, public_key_;
   NatType host_nat_type_;
+  bool recheck_nat_type_;
   // for UPnP
   upnp::UpnpIgdClient upnp_;
   boost::uint16_t upnp_mapped_port_;
   //
   base::SignatureValidator *signature_validator_;
+  std::vector<Contact> exclude_bs_contacts_;
 };
 
 }  // namespace kad

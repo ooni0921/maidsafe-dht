@@ -89,8 +89,8 @@ class Callback {
 class KadServicesTest: public testing::Test {
  protected:
   KadServicesTest() : trans_handler_(), channel_manager_(&trans_handler_),
-      contact_(), crypto_(), node_id_(), service_(), datastore_(),
-      routingtable_(), validator_() {
+                      contact_(), crypto_(), node_id_(), service_(),
+                      datastore_(), routingtable_(), validator_() {
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     std::string priv_key, pub_key;
@@ -119,7 +119,8 @@ class KadServicesTest: public testing::Test {
         boost::bind(&KadServicesTest::GetRandCtcs, this, _1, _2, _3),
         boost::bind(&KadServicesTest::GetCtc, this, _1, _2),
         boost::bind(&KadServicesTest::GetKCtcs, this, _1, _2, _3),
-        boost::bind(&KadServicesTest::Ping, this, _1, _2)));
+        boost::bind(&KadServicesTest::Ping, this, _1, _2),
+        boost::bind(&KadServicesTest::RemoveContact, this, _1)));
     service_->set_signature_validator(&validator_);
     ContactInfo node_info;
     node_info.set_node_id(node_id_.String());
@@ -164,7 +165,7 @@ class KadServicesTest: public testing::Test {
     int kbuckets = routingtable_->KbucketSize();
     for (int i = 0; i < kbuckets; ++i) {
       std::vector<Contact> contacts_i;
-      routingtable_->GetContacts(i, &contacts_i, ex_ctcs);
+      routingtable_->GetContacts(i, ex_ctcs, &contacts_i);
       for (int j = 0; j < static_cast<int>(contacts_i.size()); ++j)
         all_contacts.push_back(contacts_i[j]);
     }
@@ -174,7 +175,7 @@ class KadServicesTest: public testing::Test {
   }
   void GetKCtcs(const kad::KadId &key, const std::vector<Contact> &ex_ctcs,
                 std::vector<Contact> *ctcs) {
-    routingtable_->FindCloseNodes(key, test_kadservice::K, ctcs, ex_ctcs);
+    routingtable_->FindCloseNodes(key, test_kadservice::K, ex_ctcs, ctcs);
   }
   void Ping(const Contact &ctc, VoidFunctorOneString callback) {
     boost::thread thrd(boost::bind(&KadServicesTest::ExePingCb, this,
@@ -187,6 +188,7 @@ class KadServicesTest: public testing::Test {
     resp.set_result(kRpcResultFailure);
     callback(resp.SerializeAsString());
   }
+  void RemoveContact(const KadId&) {}
 };
 
 TEST_F(KadServicesTest, BEH_KAD_ServicesPing) {

@@ -49,6 +49,8 @@ class KadId;
 typedef boost::function<int(Contact, const float&, const bool&)>  // NOLINT
     AddContactFunctor;
 
+typedef boost::function<void(const KadId&)> RemoveContactFunctor;  // NOLINT
+
 typedef boost::function<void(const boost::uint16_t&,
                              const std::vector<Contact>&,
                              std::vector<Contact>*)> GetRandomContactsFunctor;
@@ -81,37 +83,39 @@ struct NatDetectionPingData {
 class KadService : public KademliaService {
  public:
   KadService(const NatRpcs &nat_rpcs, boost::shared_ptr<DataStore> datastore,
-      const bool &hasRSAkeys, AddContactFunctor add_cts,
-      GetRandomContactsFunctor rand_cts, GetContactFunctor get_ctc,
-      GetKClosestFunctor get_kcts, PingFunctor ping);
+             const bool &hasRSAkeys, AddContactFunctor add_cts,
+             GetRandomContactsFunctor rand_cts, GetContactFunctor get_ctc,
+             GetKClosestFunctor get_kcts, PingFunctor ping,
+             RemoveContactFunctor remove_contact);
   void Ping(google::protobuf::RpcController *controller,
-      const PingRequest *request, PingResponse *response,
-      google::protobuf::Closure *done);
+            const PingRequest *request, PingResponse *response,
+            google::protobuf::Closure *done);
   void FindValue(google::protobuf::RpcController *controller,
-      const FindRequest *request, FindResponse *response,
-      google::protobuf::Closure *done);
+                 const FindRequest *request, FindResponse *response,
+                 google::protobuf::Closure *done);
   void FindNode(google::protobuf::RpcController *controller,
-      const FindRequest *request, FindResponse *response,
-      google::protobuf::Closure *done);
+                const FindRequest *request, FindResponse *response,
+                google::protobuf::Closure *done);
   void Store(google::protobuf::RpcController *controller,
-      const StoreRequest *request, StoreResponse *response,
-      google::protobuf::Closure *done);
+             const StoreRequest *request, StoreResponse *response,
+             google::protobuf::Closure *done);
   void Downlist(google::protobuf::RpcController *controller,
-      const DownlistRequest *request, DownlistResponse *response,
-      google::protobuf::Closure *done);
+                const DownlistRequest *request, DownlistResponse *response,
+                google::protobuf::Closure *done);
   void NatDetection(google::protobuf::RpcController *controller,
-      const NatDetectionRequest *request, NatDetectionResponse *response,
-      google::protobuf::Closure *done);
+                    const NatDetectionRequest *request,
+                    NatDetectionResponse *response,
+                    google::protobuf::Closure *done);
   void NatDetectionPing(google::protobuf::RpcController *controller,
-      const NatDetectionPingRequest *request,
-      NatDetectionPingResponse *response,
-      google::protobuf::Closure *done);
+                        const NatDetectionPingRequest *request,
+                        NatDetectionPingResponse *response,
+                        google::protobuf::Closure *done);
   void Bootstrap(google::protobuf::RpcController *controller,
-      const BootstrapRequest *request, BootstrapResponse *response,
-      google::protobuf::Closure *done);
+                 const BootstrapRequest *request, BootstrapResponse *response,
+                 google::protobuf::Closure *done);
   void Delete(google::protobuf::RpcController *controller,
-      const DeleteRequest *request, DeleteResponse *response,
-      google::protobuf::Closure *done);
+              const DeleteRequest *request, DeleteResponse *response,
+              google::protobuf::Closure *done);
   void Update(google::protobuf::RpcController *controller,
               const UpdateRequest *request,
               UpdateResponse *response,
@@ -135,26 +139,26 @@ class KadService : public KademliaService {
   FRIEND_TEST(KadServicesTest, BEH_KAD_UpdateValue);
   bool GetSender(const ContactInfo &sender_info, Contact *sender);
   void Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
-      struct NatDetectionData data);
+                                struct NatDetectionData data);
   void Bootstrap_NatDetection(const NatDetectionResponse *response,
-      struct NatDetectionData data);
+                              struct NatDetectionData data);
   void Bootstrap_NatDetectionPing(const NatDetectionPingResponse *response,
-      struct NatDetectionPingData data);
+                                  struct NatDetectionPingData data);
   void Bootstrap_NatDetectionRzPing(
       const NatDetectionPingResponse *response,
       struct NatDetectionPingData data);
   void SendNatDetection(struct NatDetectionData data);
   bool CheckStoreRequest(const StoreRequest *request, Contact *sender);
-  void StoreValueLocal(const std::string &key,
-      const std::string &value, Contact sender, const boost::int32_t &ttl,
-      const bool &publish, StoreResponse *response,
-      rpcprotocol::Controller *ctrl);
-  void StoreValueLocal(const std::string &key,
-      const SignedValue &value, Contact sender, const boost::int32_t &ttl,
-      const bool &publish, StoreResponse *response,
-      rpcprotocol::Controller *ctrl);
+  void StoreValueLocal(const std::string &key, const std::string &value,
+                       Contact sender, const boost::int32_t &ttl,
+                       const bool &publish, StoreResponse *response,
+                       rpcprotocol::Controller *ctrl);
+  void StoreValueLocal(const std::string &key, const SignedValue &value,
+                       Contact sender, const boost::int32_t &ttl,
+                       const bool &publish, StoreResponse *response,
+                       rpcprotocol::Controller *ctrl);
   bool CanStoreSignedValueHashable(const std::string &key,
-      const std::string &value, bool *hashable);
+                                   const std::string &value, bool *hashable);
   NatRpcs nat_rpcs_;
   boost::shared_ptr<DataStore> pdatastore_;
   bool node_joined_, node_hasRSAkeys_;
@@ -165,6 +169,7 @@ class KadService : public KademliaService {
   GetContactFunctor get_contact_;
   GetKClosestFunctor get_closestK_contacts_;
   PingFunctor ping_;
+  RemoveContactFunctor remove_contact_;
   base::SignatureValidator *signature_validator_;
   KadService(const KadService&);
   KadService& operator=(const KadService&);

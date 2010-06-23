@@ -63,12 +63,14 @@ class Callback {
 class NatDetectionTest: public testing::Test {
  protected:
   NatDetectionTest() : trans_handlers_(), transports_(),
-    channel_managerA_(NULL), channel_managerB_(NULL), channel_managerC_(NULL),
-    contactA_(), contactB_(), contactC_(), remote_contact_(), contact_strA_(""),
-    contact_strB_(""), contact_strC_(""), remote_node_id_(), serviceA_(),
-    serviceB_(), serviceC_(), datastoreA_(), datastoreB_(), datastoreC_(),
-      routingtableA_(), routingtableB_(), routingtableC_(), channelA_(),
-      channelB_(), channelC_() {
+                       channel_managerA_(NULL), channel_managerB_(NULL),
+                       channel_managerC_(NULL), contactA_(), contactB_(),
+                       contactC_(), remote_contact_(), contact_strA_(),
+                       contact_strB_(), contact_strC_(), remote_node_id_(),
+                       serviceA_(), serviceB_(), serviceC_(), datastoreA_(),
+                       datastoreB_(), datastoreC_(), routingtableA_(),
+                       routingtableB_(), routingtableC_(), channelA_(),
+                       channelB_(), channelC_() {
     boost::int16_t transport_id;
     for (boost::uint8_t i = 0; i < 3; ++i) {
       trans_handlers_.push_back(new transport::TransportHandler);
@@ -97,29 +99,30 @@ class NatDetectionTest: public testing::Test {
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         "aaa01");
     ASSERT_TRUE(channel_managerA_.RegisterNotifiersToTransport());
-    ASSERT_TRUE(trans_handlers_[0]->RegisterOnServerDown(boost::bind(
-      &NatDetectionTest::HandleDeadRVServer, this, _1)));
+    ASSERT_TRUE(trans_handlers_[0]->RegisterOnServerDown(
+                boost::bind(&NatDetectionTest::HandleDeadRVServer, this, _1)));
     ASSERT_EQ(0, trans_handlers_[0]->Start(0, transports_[0]));
     ASSERT_EQ(0, channel_managerA_.Start());
     boost::asio::ip::address local_ip;
     ASSERT_TRUE(base::GetLocalAddress(&local_ip));
 
     contactA_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
-        trans_handlers_[0]->listening_port(transports_[0]),
-        local_ip.to_string(),
-        trans_handlers_[0]->listening_port(transports_[0]));
+                        trans_handlers_[0]->listening_port(transports_[0]),
+                        local_ip.to_string(),
+                        trans_handlers_[0]->listening_port(transports_[0]));
     contactA_.SerialiseToString(&contact_strA_);
 
     datastoreA_.reset(new DataStore(kRefreshTime));
     routingtableA_.reset(new RoutingTable(contactA_.node_id(),
                                           test_nat_detection::K));
     serviceA_.reset(new KadService(NatRpcs(&channel_managerA_,
-      trans_handlers_[0]), datastoreA_, false,
+        trans_handlers_[0]), datastoreA_, false,
         boost::bind(&NatDetectionTest::AddCtc, this, _1, _2, _3, 1),
         boost::bind(&NatDetectionTest::GetRandCtcs, this, _1, _2, _3, 1),
         boost::bind(&NatDetectionTest::GetCtc, this, _1, _2, 1),
         boost::bind(&NatDetectionTest::GetKCtcs, this, _1, _2, _3, 1),
-        boost::bind(&NatDetectionTest::Ping, this, _1, _2)));
+        boost::bind(&NatDetectionTest::Ping, this, _1, _2),
+        boost::bind(&NatDetectionTest::RemoveContact, this, _1)));
     ContactInfo node_info;
     node_info.set_node_id(contactA_.node_id().String());
     node_info.set_ip(contactA_.host_ip());
@@ -130,24 +133,24 @@ class NatDetectionTest: public testing::Test {
     serviceA_->set_node_joined(true);
     node_info.Clear();
     channelA_.reset(new rpcprotocol::Channel(&channel_managerA_,
-      trans_handlers_[0]));
+                                             trans_handlers_[0]));
     channelA_->SetService(serviceA_.get());
     channel_managerA_.RegisterChannel(serviceA_->GetDescriptor()->name(),
-        channelA_.get());
+                                      channelA_.get());
 
     // Node B.
     hex_id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     ASSERT_TRUE(channel_managerB_.RegisterNotifiersToTransport());
-    ASSERT_TRUE(trans_handlers_[1]->RegisterOnServerDown(boost::bind(
-      &NatDetectionTest::HandleDeadRVServer, this, _1)));
+    ASSERT_TRUE(trans_handlers_[1]->RegisterOnServerDown(
+                boost::bind(&NatDetectionTest::HandleDeadRVServer, this, _1)));
     ASSERT_EQ(0, trans_handlers_[1]->Start(0, transports_[1]));
     ASSERT_EQ(0, channel_managerB_.Start());
 
     contactB_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
-        trans_handlers_[1]->listening_port(transports_[1]),
-        local_ip.to_string(),
-        trans_handlers_[1]->listening_port(transports_[1]));
+                        trans_handlers_[1]->listening_port(transports_[1]),
+                        local_ip.to_string(),
+                        trans_handlers_[1]->listening_port(transports_[1]));
     contactB_.SerialiseToString(&contact_strB_);
 
     datastoreB_.reset(new DataStore(kRefreshTime));
@@ -159,7 +162,8 @@ class NatDetectionTest: public testing::Test {
         boost::bind(&NatDetectionTest::GetRandCtcs, this, _1, _2, _3, 2),
         boost::bind(&NatDetectionTest::GetCtc, this, _1, _2, 2),
         boost::bind(&NatDetectionTest::GetKCtcs, this, _1, _2, _3, 2),
-        boost::bind(&NatDetectionTest::Ping, this, _1, _2)));
+        boost::bind(&NatDetectionTest::Ping, this, _1, _2),
+        boost::bind(&NatDetectionTest::RemoveContact, this, _1)));
     node_info.set_node_id(contactB_.node_id().String());
     node_info.set_ip(contactB_.host_ip());
     node_info.set_port(contactB_.host_port());
@@ -169,23 +173,23 @@ class NatDetectionTest: public testing::Test {
     serviceB_->set_node_joined(true);
     node_info.Clear();
     channelB_.reset(new rpcprotocol::Channel(&channel_managerB_,
-      trans_handlers_[1]));
+                                             trans_handlers_[1]));
     channelB_->SetService(serviceB_.get());
     channel_managerB_.RegisterChannel(serviceB_->GetDescriptor()->name(),
-        channelB_.get());
+                                      channelB_.get());
 
     // Node C.
     hex_id = "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
              "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
     ASSERT_TRUE(channel_managerC_.RegisterNotifiersToTransport());
-    ASSERT_TRUE(trans_handlers_[2]->RegisterOnServerDown(boost::bind(
-      &NatDetectionTest::HandleDeadRVServer, this, _1)));
+    ASSERT_TRUE(trans_handlers_[2]->RegisterOnServerDown(
+                boost::bind(&NatDetectionTest::HandleDeadRVServer, this, _1)));
     ASSERT_EQ(0, trans_handlers_[2]->Start(0, transports_[2]));
     ASSERT_EQ(0, channel_managerC_.Start());
     contactC_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
-        trans_handlers_[2]->listening_port(transports_[2]),
-        local_ip.to_string(),
-        trans_handlers_[2]->listening_port(transports_[2]));
+                        trans_handlers_[2]->listening_port(transports_[2]),
+                        local_ip.to_string(),
+                        trans_handlers_[2]->listening_port(transports_[2]));
     contactC_.SerialiseToString(&contact_strC_);
 
     datastoreC_.reset(new DataStore(kRefreshTime));
@@ -197,7 +201,8 @@ class NatDetectionTest: public testing::Test {
         boost::bind(&NatDetectionTest::GetRandCtcs, this, _1, _2, _3, 3),
         boost::bind(&NatDetectionTest::GetCtc, this, _1, _2, 3),
         boost::bind(&NatDetectionTest::GetKCtcs, this, _1, _2, _3, 3),
-        boost::bind(&NatDetectionTest::Ping, this, _1, _2)));
+        boost::bind(&NatDetectionTest::Ping, this, _1, _2),
+        boost::bind(&NatDetectionTest::RemoveContact, this, _1)));
     node_info.set_node_id(contactC_.node_id().String());
     node_info.set_ip(contactC_.host_ip());
     node_info.set_port(contactC_.host_port());
@@ -207,10 +212,10 @@ class NatDetectionTest: public testing::Test {
     serviceC_->set_node_joined(true);
     node_info.Clear();
     channelC_.reset(new rpcprotocol::Channel(&channel_managerC_,
-      trans_handlers_[2]));
+                                             trans_handlers_[2]));
     channelC_->SetService(serviceC_.get());
     channel_managerC_.RegisterChannel(serviceC_->GetDescriptor()->name(),
-        channelC_.get());
+                                      channelC_.get());
 
     // Add node C's details to node B's routing table
     ASSERT_EQ(routingtableB_->AddContact(contactC_), 0);
@@ -288,9 +293,8 @@ class NatDetectionTest: public testing::Test {
     }
     return result;
   }
-  void GetRandCtcs(const size_t &count,
-      const std::vector<Contact> &ex_ctcs, std::vector<Contact> *ctcs,
-      const boost::uint16_t &rt_id) {
+  void GetRandCtcs(const size_t &count, const std::vector<Contact> &ex_ctcs,
+                  std::vector<Contact> *ctcs,  const boost::uint16_t &rt_id) {
     ctcs->clear();
     std::vector<Contact> all_contacts;
     boost::uint16_t kbuckets;
@@ -306,11 +310,11 @@ class NatDetectionTest: public testing::Test {
     for (boost::uint16_t i = 0; i < kbuckets; ++i) {
       std::vector<kad::Contact> contacts_i;
       switch (rt_id) {
-        case 1: routingtableA_->GetContacts(i, &contacts_i, ex_ctcs);
+        case 1: routingtableA_->GetContacts(i, ex_ctcs, &contacts_i);
                 break;
-        case 2: routingtableB_->GetContacts(i, &contacts_i, ex_ctcs);
+        case 2: routingtableB_->GetContacts(i, ex_ctcs, &contacts_i);
                 break;
-        case 3: routingtableC_->GetContacts(i, &contacts_i, ex_ctcs);
+        case 3: routingtableC_->GetContacts(i, ex_ctcs, &contacts_i);
                 break;
       }
       for (size_t j = 0; j < contacts_i.size(); ++j)
@@ -323,20 +327,20 @@ class NatDetectionTest: public testing::Test {
   void GetKCtcs(const KadId &key, const std::vector<Contact> &ex_ctcs,
                 std::vector<Contact> *ctcs, const boost::uint16_t &rt_id) {
     switch (rt_id) {
-      case 1: routingtableA_->FindCloseNodes(key, test_nat_detection::K, ctcs,
-                                             ex_ctcs);
+      case 1: routingtableA_->FindCloseNodes(key, test_nat_detection::K,
+                                             ex_ctcs, ctcs);
               break;
-      case 2: routingtableB_->FindCloseNodes(key, test_nat_detection::K, ctcs,
-                                             ex_ctcs);
+      case 2: routingtableB_->FindCloseNodes(key, test_nat_detection::K,
+                                             ex_ctcs, ctcs);
               break;
-      case 3: routingtableC_->FindCloseNodes(key, test_nat_detection::K, ctcs,
-                                             ex_ctcs);
+      case 3: routingtableC_->FindCloseNodes(key, test_nat_detection::K,
+                                             ex_ctcs, ctcs);
               break;
     }
   }
   void Ping(const Contact &ctc, VoidFunctorOneString callback) {
     boost::thread thrd(boost::bind(&NatDetectionTest::ExePingCb, this,
-        ctc.node_id(), callback));
+                                   ctc.node_id(), callback));
   }
   void ExePingCb(const kad::KadId&, VoidFunctorOneString callback) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -345,6 +349,7 @@ class NatDetectionTest: public testing::Test {
     callback(resp.SerializeAsString());
   }
   void HandleDeadRVServer(const bool&) {}
+  void RemoveContact(const KadId&) {}
 };
 
 TEST_F(NatDetectionTest, BEH_KAD_NatDetPing) {

@@ -443,6 +443,12 @@ class KNode {
   * @return type of nat
   */
   NatType host_nat_type();
+  /**
+  * Returns a boolean indicating if the node will have to recheck its NAT type
+  * when it knows more nodes.
+  * @return recheck happening
+  */
+  bool recheck_nat_type();
  private:
   boost::shared_ptr<KNodeImpl> pimpl_;
 };

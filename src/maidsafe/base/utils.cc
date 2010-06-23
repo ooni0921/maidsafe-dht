@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/scoped_array.hpp>
+#include <boost/thread/mutex.hpp>
 #include <ctype.h>
 #include <maidsafe/cryptopp/integer.h>
 #include <maidsafe/cryptopp/osrng.h>
@@ -43,15 +44,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace base {
 
+CryptoPP::AutoSeededX917RNG<CryptoPP::AES> rng;
+boost::mutex m;
+
 boost::int32_t RandomInt32() {
   boost::int32_t result(0);
   bool success = false;
   while (!success) {
-    static CryptoPP::AutoSeededX917RNG< CryptoPP::AES > rng;
+    boost::mutex::scoped_lock loch_datldo(m);
     CryptoPP::Integer rand_num(rng, 32);
     if (rand_num.IsConvertableToLong()) {
       result =  static_cast<boost::int32_t>(
-          rand_num.AbsoluteValue().ConvertToLong());
+                    rand_num.AbsoluteValue().ConvertToLong());
       success = true;
     }
   }
@@ -70,11 +74,13 @@ std::string IntToString(const int &value) {
 std::string RandomString(const size_t &length) {
   std::string random_string;
   random_string.reserve(length);
-  static CryptoPP::AutoSeededX917RNG< CryptoPP::AES > random_number_generator;
   while (random_string.size() < length) {
     size_t iter_length = std::min(length - random_string.size(), 65536U);
     boost::scoped_array<byte> random_bytes(new byte[iter_length + 1]);
-    random_number_generator.GenerateBlock(random_bytes.get(), iter_length);
+    {
+      boost::mutex::scoped_lock loch_datldo(m);
+      rng.GenerateBlock(random_bytes.get(), iter_length);
+    }
     std::string random_substring(iter_length, 0);
     for (size_t i = 0; i < iter_length; ++i) {
       random_bytes[i] = random_bytes[i] % 122;

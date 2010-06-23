@@ -149,7 +149,7 @@ Contact::Contact(const Contact &other)
 
 bool Contact::Equals(const Contact &other) const {
   return (node_id_ == other.node_id_) ||
-          ((host_ip_ == other.host_ip_) && (host_port_ == other.host_port_));
+         (host_ip_ == other.host_ip_ && host_port_ == other.host_port_);
 }
 
 Contact& Contact::operator=(const Contact &other) {

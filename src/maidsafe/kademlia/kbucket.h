@@ -52,8 +52,8 @@ class KBucket {
   // Returns a list containing up to the first count number of contacts
   // excluding the list of contacts provided.
   void GetContacts(const boost::uint16_t &count,
-      const std::vector<Contact> &exclude_contacts,
-      std::vector<Contact> *contacts);
+                   const std::vector<Contact> &exclude_contacts,
+                   std::vector<Contact> *contacts);
   // remove the existing contact with the specified node_id
   void RemoveContact(const KadId &node_id, const bool &force);
   // Tests whether the specified key (i.e. node ID) is in the range
@@ -76,6 +76,7 @@ class KBucket {
   KadId range_min_, range_max_;
   boost::uint16_t K_;
 };
+
 }  // namespace kad
 
 #endif  // MAIDSAFE_KADEMLIA_KBUCKET_H_
