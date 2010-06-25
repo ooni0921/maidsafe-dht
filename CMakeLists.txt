@@ -94,6 +94,7 @@ SET(SOURCE_DIR ${${PROJECT_NAME}_ROOT}/src)
 
 IF(NOT MAIDSAFE_TEST_TYPE)
   SET(MAIDSAFE_TEST_TYPE "BEH" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
+  SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: Behavioural")
 ELSE()
   IF(${MAIDSAFE_TEST_TYPE} MATCHES _)
     SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: All")
@@ -876,7 +877,7 @@ ENDIF()
 
 ###################################################################################################
 MESSAGE("")
-MESSAGE("Test type:" ${MAIDSAFE_TEST_TYPE_MESSAGE})
+MESSAGE("${MAIDSAFE_TEST_TYPE_MESSAGE}")
 MESSAGE("")
 MESSAGE("    To include all tests,                ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=ALL")
 MESSAGE("    To include behavioural tests,        ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=BEH")
