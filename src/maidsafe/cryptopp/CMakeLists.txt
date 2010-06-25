@@ -98,16 +98,14 @@ IF(MSVC)
             RUNTIME DESTINATION bin
             LIBRARY DESTINATION bin
             ARCHIVE DESTINATION lib)
-
 ELSE()
-
-IF(NOT MINGW)
-  SET_TARGET_PROPERTIES(cryptest PROPERTIES
-                          DEBUG_OUTPUT_NAME cryptest${CMAKE_DEBUG_POSTFIX}
-                          RELWITHDEBINFO_OUTPUT_NAME cryptest${CMAKE_RELWITHDEBINFO_POSTFIX}
-                          MINSIZEREL_OUTPUT_NAME cryptest${CMAKE_MINSIZEREL_POSTFIX})
-ENDIF()
-    INSTALL(TARGETS cryptopp_static # cryptopp
+  IF(NOT MINGW)
+    SET_TARGET_PROPERTIES(cryptest PROPERTIES
+                            DEBUG_OUTPUT_NAME cryptest${CMAKE_DEBUG_POSTFIX}
+                            RELWITHDEBINFO_OUTPUT_NAME cryptest${CMAKE_RELWITHDEBINFO_POSTFIX}
+                            MINSIZEREL_OUTPUT_NAME cryptest${CMAKE_MINSIZEREL_POSTFIX})
+  ENDIF()
+  INSTALL(TARGETS cryptopp_static # cryptopp
             RUNTIME DESTINATION bin
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib)

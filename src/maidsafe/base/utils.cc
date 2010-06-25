@@ -44,18 +44,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace base {
 
-CryptoPP::AutoSeededX917RNG<CryptoPP::AES> rng;
-boost::mutex m;
+CryptoPP::AutoSeededX917RNG<CryptoPP::AES> g_random_number_generator;
+boost::mutex g_random_number_generator_mutex;
 
 boost::int32_t RandomInt32() {
   boost::int32_t result(0);
   bool success = false;
   while (!success) {
-    boost::mutex::scoped_lock loch_datldo(m);
-    CryptoPP::Integer rand_num(rng, 32);
+    boost::mutex::scoped_lock lock(g_random_number_generator_mutex);
+    CryptoPP::Integer rand_num(g_random_number_generator, 32);
     if (rand_num.IsConvertableToLong()) {
-      result =  static_cast<boost::int32_t>(
-                    rand_num.AbsoluteValue().ConvertToLong());
+      result = static_cast<boost::int32_t>(
+               rand_num.AbsoluteValue().ConvertToLong());
       success = true;
     }
   }
@@ -78,8 +78,8 @@ std::string RandomString(const size_t &length) {
     size_t iter_length = std::min(length - random_string.size(), 65536U);
     boost::scoped_array<byte> random_bytes(new byte[iter_length + 1]);
     {
-      boost::mutex::scoped_lock loch_datldo(m);
-      rng.GenerateBlock(random_bytes.get(), iter_length);
+      boost::mutex::scoped_lock lock(g_random_number_generator_mutex);
+      g_random_number_generator.GenerateBlock(random_bytes.get(), iter_length);
     }
     std::string random_substring(iter_length, 0);
     for (size_t i = 0; i < iter_length; ++i) {
@@ -191,7 +191,7 @@ std::string IpAsciiToBytes(const std::string &decimal_ip) {
     }
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << e.what() << std::endl;
+    DLOG(ERROR) << e.what() << " - Decimal IP: " << decimal_ip << std::endl;
   }
   return "";
 }

@@ -1,2 +1,0 @@
-maidsafe-dht library and c++ API 
-

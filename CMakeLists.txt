@@ -55,8 +55,10 @@ IF(CMAKE_BUILD_TYPE_DIR MATCHES "Win_MSVC")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}\tdel ${CMAKE_CACHEFILE}\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"Visual Studio 9 2008\"\n\n")
 ELSEIF(CMAKE_BUILD_TYPE_DIR MATCHES "kdev")
-  SET(CMAKE_BUILD_TYPE_DIR ${CMAKE_BUILD_TYPE})
   SET(CMAKE_BUILD_TYPE_DIR Release)
+  SET(ERROR_MESSAGE_CMAKE_PATH "   cmake ..\\..")
+  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\tdel ${CMAKE_CACHEFILE}\n")
+  SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"Unix Makefiles\"\n\n")
   SET(KDEV 1)
 ELSEIF(UNIX)
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}\trm ${CMAKE_CACHEFILE}\n")
@@ -92,6 +94,17 @@ SET(SOURCE_DIR ${${PROJECT_NAME}_ROOT}/src)
 
 IF(NOT MAIDSAFE_TEST_TYPE)
   SET(MAIDSAFE_TEST_TYPE "BEH" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
+ELSE()
+  IF(${MAIDSAFE_TEST_TYPE} MATCHES _)
+    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: All")
+  ELSEIF(${MAIDSAFE_TEST_TYPE} MATCHES BEH)
+    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: Behavioural")
+  ELSEIF(${MAIDSAFE_TEST_TYPE} MATCHES FUNC)
+    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: Functional")
+  ELSE()
+    SET(MAIDSAFE_TEST_TYPE "_" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
+    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: All")
+  ENDIF()
 ENDIF()
 
 ENABLE_TESTING()
@@ -204,6 +217,7 @@ SET(REQUIRED_BOOST_COMPONENTS date_time filesystem program_options regex system 
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindBoost.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Boost_LIBRARY_DIRS})
 
 ###################################################################################################
 # Google Log library search - Glog can't currently be compiled on Windows with MinGW              #
@@ -212,7 +226,8 @@ IF((NOT WIN32) OR MSVC)
   INCLUDE(${${PROJECT_NAME}_ROOT}/build//maidsafe_FindGlog.cmake)
   IF(Glog_FOUND)
     SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Glog_INCLUDE_DIR})
-    SET(LIBS_DIRS ${LIBS_DIRS} ${Glog_LIBRARY_DIR} ${Glog_LIBRARY_DIR_DEBUG})
+    SET(LIBS_DIRS ${LIBS_DIRS} ${Glog_LIBRARY_DIR})
+    SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Glog_LIBRARY_DIR_DEBUG})
   ENDIF()
 ENDIF()
 
@@ -221,7 +236,8 @@ ENDIF()
 ###################################################################################################
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGtest.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gtest_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR} ${Gtest_LIBRARY_DIR_DEBUG})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gtest_LIBRARY_DIR_DEBUG})
 
 ###################################################################################################
 # Protocol Buffers library search                                                                 #
@@ -231,7 +247,8 @@ FILE(GLOB TEST_PROTO_FILES RELATIVE ${${PROJECT_NAME}_SOURCE_DIR} "${${PROJECT_N
 SET(PROTO_FILES ${PROTO_FILES} ${TEST_PROTO_FILES})
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindProtobuf.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Protobuf_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Protobuf_LIBRARY_DIR} ${Protobuf_LIBRARY_DIR_DEBUG})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Protobuf_LIBRARY_DIR})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Protobuf_LIBRARY_DIR_DEBUG})
 
 ###################################################################################################
 # Python library search                                                                           #
@@ -267,6 +284,7 @@ FOREACH(library ${SYS_LIB})
     MESSAGE("-- Found library ${CURRENT_LIB}")
     GET_FILENAME_COMPONENT(CURRENT_LIBRARY_DIR ${CURRENT_LIB} PATH)
     SET(LIBS_DIRS ${LIBS_DIRS} ${CURRENT_LIBRARY_DIR})
+    SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${CURRENT_LIBRARY_DIR})
   ELSE()
     SET(ERROR_MESSAGE "\nCould not find library ${library}.  Run\n")
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}${ERROR_MESSAGE_CMAKE_PATH} -DADD_LIBRARY_DIR=<Path to ${library} directory>")
@@ -281,11 +299,11 @@ ELSE()
   SET(SYS_LIB ${SYS_LIB} ${Glog_LIBRARY} ${Protobuf_LIBRARY})
 ENDIF()
 
-SET(LIBS_DIRS ${LIBS_DIRS} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+SET(LIBS_DIRS ${LIBS_DIRS})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG})
 LIST(REMOVE_DUPLICATES LIBS_DIRS)
-IF(MSVC)
-  LINK_DIRECTORIES(${LIBS_DIRS})
-ENDIF()
+LIST(REMOVE_DUPLICATES LIBS_DIRS_DEBUG)
+LINK_DIRECTORIES(${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
 
 INCLUDE_DIRECTORIES(${${PROJECT_NAME}_SOURCE_DIR})
 LIST(REMOVE_DUPLICATES INCLUDE_DIRS)
@@ -408,7 +426,6 @@ ADD_SUBDIRECTORY(${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/cryptopp ${CMAKE_BINARY_
 ###################################################################################################
 # All Platforms:  Add Test Exes and Create all maidsafe_dht libs                                  #
 ###################################################################################################
-
 ADD_EXECUTABLE(TESTbase ${T_MAIN} ${T_BASE_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTkademlia ${T_MAIN} ${T_KADEMLIA_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(TESTknode "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/testknode.cc" ${MAIDSAFE_H})
@@ -575,10 +592,22 @@ IF(MSVC)
   STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
   STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
 
-  # defining UDT_STATIC prevents declaring __declspec for UDT API functions
+  # Given a link dir of "a/b/c", MSVC adds "a/b/c/" AND "a/b/c/CMAKE_BUILD_TYPE" as link dirs, so we
+  # can't just use "LINK_DIRECTORIES" as some Google debug libs have the same name as the release version.
+  FOREACH(LIBS_DIR ${LIBS_DIRS})
+    STRING(REPLACE "\\" "\\\\" LIBS_DIR ${LIBS_DIR})
+    SET(LINKER_LIBS_DIRS_RELEASE "${LINKER_LIBS_DIRS_RELEASE} /LIBPATH:\"${LIBS_DIR}\"")
+  ENDFOREACH()
+  FOREACH(LIBS_DIR_DEBUG ${LIBS_DIRS_DEBUG})
+    STRING(REPLACE "\\" "\\\\" LIBS_DIR_DEBUG ${LIBS_DIR_DEBUG})
+    SET(LINKER_LIBS_DIRS_DEBUG "${LINKER_LIBS_DIRS_DEBUG} /LIBPATH:\"${LIBS_DIR_DEBUG}\"")
+  ENDFOREACH()
   SET_TARGET_PROPERTIES(TESTbase TESTkademlia TESTknode TESTnatpmp TESTrpcprotocol TESTtransport TESTupnp kaddemo_static benchmark_static TESTboost PROPERTIES
-      LINK_FLAGS "/STACK:1048576"
-      LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG")
+                          LINK_FLAGS "/STACK:1048576"
+                          LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
+                          LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
+                          LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
+                          LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
 
   # Next version of CMake accommodates per-build-type STATIC_LIBRARY_FLAGS.  Until then, this has no effect.
   SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
@@ -692,7 +721,7 @@ ELSEIF(WIN32 AND NOT MSVC)
   SET(MAIDSAFE_DHT_CXX_FLAGS "-Wall -Wextra -pedantic  -D_WIN32_WINNT=0x0501 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -DWIN32_LEAN_AND_MEAN -D__MINGW__  -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501")
   IF(CMAKE_BUILD_TYPE MATCHES "Debug")
-	     SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp PROPERTIES LINK_FLAGS "-lgcov  -pg -fprofile-arcs -ftest-coverage")
+    SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp PROPERTIES LINK_FLAGS "-lgcov  -pg -fprofile-arcs -ftest-coverage")
   ENDIF()
 
   SET_TARGET_PROPERTIES(TESTbase TESTtransport TESTrpcprotocol TESTkademlia TESTknode TESTnatpmp TESTupnp kaddemo_static benchmark_static PROPERTIES LINK_FLAGS "-mthreads ")
@@ -833,33 +862,34 @@ IF(UNIX)
 ENDIF()
 
 IF(NOT INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX "/usr")
+  IF(MINGW)
+    SET(CMAKE_INSTALL_PREFIX "/MinGW")
+  ELSEIF(NOT MSVC)
+    SET(CMAKE_INSTALL_PREFIX "/usr")
+  ENDIF()
 ELSE()
   IF(WIN32)
-    SET(CMAKE_INSTALL_PREFIX "c:/MinGW")
     STRING(REPLACE "\\" "/" INSTALL_PREFIX ${INSTALL_PREFIX})
   ENDIF()
   SET(CMAKE_INSTALL_PREFIX "${INSTALL_PREFIX}")
 ENDIF()
 
-  IF (MINGW)
-  	SET(CMAKE_INSTALL_PREFIX "c:/MinGW")
-  ENDIF()
 ###################################################################################################
 MESSAGE("")
-MESSAGE("Package version is set to \"${pddate}\"")
+MESSAGE(${MAIDSAFE_TEST_TYPE_MESSAGE})
+MESSAGE("")
+MESSAGE("    To include all tests,                ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=ALL")
+MESSAGE("    To include behavioural tests,        ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=BEH")
+MESSAGE("    To include functional tests,        ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=FUNC")
 MESSAGE("================================================================================")
 MESSAGE("")
-MESSAGE("Tests included: \"${MAIDSAFE_TEST_TYPE}\"")
+MESSAGE("Install prefix is set to \"${CMAKE_INSTALL_PREFIX}\"")
 MESSAGE("")
-MESSAGE("    To include all tests,                     ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=_")
-MESSAGE("    To include behavioural tests,           ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=BEH")
-MESSAGE("    To include functional tests,           ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=FUNC")
-MESSAGE("================================================================================")
-MESSAGE("")
-MESSAGE("Install prefix is set to ${CMAKE_INSTALL_PREFIX}")
-MESSAGE("")
-MESSAGE("    To alter this (e.g. to /usr/local),  ${ERROR_MESSAGE_CMAKE_PATH} -DINSTALL_PREFIX=/usr/local")
+IF(WIN32)
+  MESSAGE("    To alter this (e.g. to c:\\dht),       ${ERROR_MESSAGE_CMAKE_PATH} -DINSTALL_PREFIX=c:\\dht")
+ELSE()
+  MESSAGE("    To alter this (e.g. to /usr),           ${ERROR_MESSAGE_CMAKE_PATH} -DINSTALL_PREFIX=/usr")
+ENDIF()
 MESSAGE("================================================================================")
 MESSAGE("")
 
@@ -935,6 +965,7 @@ FOREACH(MAIDSAFE_INSTALL_FILE ${MAIDSAFE_TRANS_INSTALL_FILES})
   ENDIF()
   SET(ABS_MAIDSAFE_TRANS_INSTALL_FILES ${ABS_MAIDSAFE_TRANS_INSTALL_FILES} ${${PROJECT_NAME}_SOURCE_DIR}/${MAIDSAFE_INSTALL_FILE})
 ENDFOREACH()
+EXECUTE_PROCESS(COMMAND CMD /C "${${PROJECT_NAME}_ROOT}/build/Win_MSVC/extract_includes.bat > NUL 2>&1")
 
 IF(MSVC)
   INSTALL(TARGETS maidsafe_dht_static # maidsafe_dht
@@ -958,26 +989,21 @@ INSTALL(FILES ${ABS_MAIDSAFE_RPC_INSTALL_FILES} DESTINATION include/maidsafe/rpc
 INSTALL(FILES ${ABS_MAIDSAFE_TRANS_INSTALL_FILES} DESTINATION include/maidsafe/transport)
 
 IF(CMAKE_BUILD_TYPE MATCHES Release)
-  SET(CPACK_PACKAGE_VERSION_PATCH ${pddate})
-  SET(CPACK_PACKAGE_VERSION "0.1.${pddate}")
   SET(CPACK_PACKAGE_VERSION_MAJOR "0")
   SET(CPACK_PACKAGE_VERSION_MINOR "1")
+  SET(CPACK_PACKAGE_VERSION_PATCH ${pddate})
+  SET(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
   SET(CPACK_PACKAGE_NAME "maidsafe_dht")
-  SET(CPACK_PACKAGE_CONTACT "info@maidsafe.net")
+  SET(CPACK_PACKAGE_CONTACT "dev@maidsafe.net")
   SET(CPACK_PACKAGE_VENDOR "maidsafe.net")
-  SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Perpetual Data - Client and Vault applications")
+  SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Implementation of Kademlia DHT")
   SET(CPACK_PACKAGE_INSTALL_DIRECTORY "maidsafe")
-  SET(CPACK_PACKAGE_DESCRIPTION_FILE "${${PROJECT_NAME}_ROOT}/docs/description.txt")
-  SET(CPACK_RESOURCE_FILE_LICENSE "${${PROJECT_NAME}_ROOT}/docs/LICENSE.txt")
   SET(CPACK_RESOURCE_FILE_README "${${PROJECT_NAME}_ROOT}/docs/readme.txt")
-  SET(CPACK_RESOURCE_FILE_WELCOME "${${PROJECT_NAME}_ROOT}/docs/welcome.txt")
-
-  MESSAGE("Install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
-  MESSAGE("================================================================================")
-
   IF(UNIX)
     SET(CPACK_SET_DESTDIR on)
     SET(CPACK_GENERATOR DEB;RPM;TGZ)
+    MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
+    MESSAGE("================================================================================")
   ELSE()
     SET(CPACK_GENERATOR ZIP)
   ENDIF()

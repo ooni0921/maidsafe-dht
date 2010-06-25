@@ -246,7 +246,7 @@ TEST(UtilsTest, BEH_BASE_NetworkInterfaces) {
   ASSERT_NE(static_cast<boost::uint32_t>(0), alldevices.size());
   for (unsigned int n = 0; n < alldevices.size(); n++) {
     base::DeviceStruct ds = alldevices[n];
-    printf("%s\n", ds.device_interface.c_str());
+    printf("%d - %s\n", n, ds.ip_address.to_string().c_str());
   }
 }
 
