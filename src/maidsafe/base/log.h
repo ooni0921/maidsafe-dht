@@ -29,33 +29,32 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_BASE_LOG_H_
 #define MAIDSAFE_BASE_LOG_H_
 
-#ifdef HAVE_GLOG
-// For M$VC, we need to include windows.h which in turn includes WinGDI.h
-// which defines ERROR (which conflicts with Glog's ERROR definition)
-#ifdef __MSVC__
-#include <windows.h>
-#undef ERROR
-#endif
-#include <glog/logging.h>
+  #ifdef HAVE_GLOG
+  // For M$VC, we need to include windows.h which in turn includes WinGDI.h
+  // which defines ERROR (which conflicts with Glog's ERROR definition)
+    #ifdef __MSVC__
+      #include <windows.h>
+      #undef ERROR
+    #endif
+    #include <glog/logging.h>
+  #else
+    #include <iostream>  // NOLINT
+    namespace google {
+      inline void InitGoogleLogging(char*) {}  // NOLINT
+    }  // namespace google
 
-#else
-#include <iostream>  // NOLINT
-namespace google {
-inline void InitGoogleLogging(char*) {}  // NOLINT
-}  // namespace google
+    class LogMessageVoidify {
+      public:
+    LogMessageVoidify() {}
+    void operator &(std::ostream&) {}
+    };
 
-class LogMessageVoidify {
- public:
-  LogMessageVoidify() {}
-  void operator &(std::ostream&) {}
-};
-
-#define LOG(severity) std::cerr
-#ifndef NDEBUG
-  #define DLOG(severity) std::cerr
-#else
-  #define DLOG(severity) true ? (void) 0 : LogMessageVoidify() & LOG(severity)
-#endif
-#endif
+    #define LOG(severity) std::cerr
+    #ifndef NDEBUG
+      #define DLOG(severity) std::cerr
+    #else
+      #define DLOG(severity) true ? (void) 0 : LogMessageVoidify() & LOG(severity)
+    #endif
+  #endif
 
 #endif  // MAIDSAFE_BASE_LOG_H_
