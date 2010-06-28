@@ -53,7 +53,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #ifndef NDEBUG
       #define DLOG(severity) std::cerr
     #else
-      #define DLOG(severity) true ? (void) 0 : LogMessageVoidify() & LOG(severity)
+    #define DLOG(severity) true ? (void) 0 : LogMessageVoidify() & LOG(severity)
     #endif
   #endif
 
