@@ -1356,6 +1356,20 @@ void CUDTUnited::updateMux(CUDTSocket* s, const CUDTSocket* ls)
       i->second->m_Status = CUDTSocket::CLOSED;
       i->second->m_TimeStamp = CTimer::getTime();
       self->m_ClosedSockets[i->first] = i->second;
+
+      // remove from listener's queue
+      map<UDTSOCKET, CUDTSocket*>::iterator ls = self->m_Sockets.find(i->second->m_ListenSocket);
+      if (ls == self->m_Sockets.end())
+      {
+         ls = self->m_ClosedSockets.find(i->second->m_ListenSocket);
+         if (ls == self->m_ClosedSockets.end())
+            continue;
+      }
+
+      CGuard::enterCS(ls->second->m_AcceptLock);
+      ls->second->m_pQueuedSockets->erase(i->second->m_SocketID);
+      ls->second->m_pAcceptSockets->erase(i->second->m_SocketID);
+      CGuard::leaveCS(ls->second->m_AcceptLock);
    }
    self->m_Sockets.clear();
 

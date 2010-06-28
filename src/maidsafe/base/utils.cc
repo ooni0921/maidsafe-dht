@@ -220,7 +220,7 @@ std::string IpBytesToAscii(const std::string &bytes_ip) {
 }
 
 void IpNetToAscii(boost::uint32_t address, char *ip_buffer) {
-  // TODO(dan): warning thrown on 64-bit machine
+  // TODO(Team): warning thrown on 64-bit machine
   const int sizer = 15;
   #ifdef __MSVC__
     _snprintf(ip_buffer, sizer, "%u.%u.%u.%u", (address>>24)&0xFF,
