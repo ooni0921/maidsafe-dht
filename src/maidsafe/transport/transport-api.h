@@ -52,6 +52,7 @@ class RpcMessage;
 
 namespace transport {
 
+// return types for sending data
   enum TransportCondition {
   kSucess            = 0,
   kRemoteUnreachable = 1,
@@ -66,23 +67,29 @@ namespace transport {
   kError             = 10
   };
 
+// Default Types, if you want more you will need to comment this out and
+// recreate the enums to suit your needs.
   enum DataType {
     kString      = 0,
     kFile        = 1,
     kPing        = 2,
-    kProxyPing   = 3
+    kProxyPing   = 3,
+    kRPC         = 4
   };
 
+// Rendezvous for nat traversal
+// kKClosest is a kademlia implementation issue (you may or not want)
   enum ConnectionType {
     kRendezvous  = 1,
     kKClosest    = 2
   };
 
+
 /*
 Protocol implementation (use Google protobufs for serialisation)
 _______________________________________________________________
-Type   | 
-(enum) | 
+Type   |
+(enum) |
 _______________________________________________________________
 */
 // This is a partially implmented base clase which is inherited by
@@ -92,13 +99,12 @@ public:
   virtual ~Transport() {}
   virtual TransportCondition Ping(const std::string &remote_ip,
                                   const boost::uint16_t &remote_port) = 0;
-  virtual TransportCondition Send(const rpcprotocol::RpcMessage &data,
-                                  const boost::uint32_t &connection_id,
-                                  const bool &new_socket) = 0;
-  virtual TransportCondition Send(const std::string &data,
+  virtual TransportCondition Send(DataType,
+                                  const std::string &data,
                                   const std::string &remote_ip,
                                   const boost::uint16_t &remote_port) = 0;
-  virtual TransportCondition Send(const std::string &data,
+  virtual TransportCondition Send(DataType,
+                                  const std::string &data,
                                   const std::string &remote_ip,
                                   const boost::uint16_t &remote_port,
                                   const std::string &rendezvous_ip,
@@ -113,32 +119,45 @@ public:
                                   const std::string &id,
                                   ConnectionType &connection_type) = 0;
   virtual TransportCondition KillConnection(const std::string &id) = 0;
-// accessors and mutators here !
-  virtual bool stopped() { return stopped_; }
   virtual bool peer_address(struct sockaddr *peer_addr) = 0;
+  virtual boost::uint16_t listening_port() = 0;
+// accessors
+  virtual bool stopped() { return stopped_; }
+  virtual bool nat_pnp() { return nat_pnp_; }
   virtual bool GetPeerAddr(const boost::uint32_t &connection_id,
                            struct sockaddr *peer_address) = 0;
-  virtual boost::uint16_t listening_port() = 0;
-  virtual bool set_upnp(bool upnp) { upnp_ = upnp; }
   virtual bool upnp() { return upnp_; }
-  virtual bool set_nat_pnp(bool nat_pnp) { nat_pnp_ = nat_pnp; }
-  virtual bool nat_pnp() { return nat_pnp_; }
+  virtual void set_nat_pnp(bool nat_pnp) { nat_pnp_ = nat_pnp; }
+  virtual bool rendezvous() { return rendezvous_; }
+  virtual bool local_port_only() { return local_port_only_; }
+
+// mutators
+  virtual void set_upnp(bool upnp) { upnp_ = upnp; }
   virtual bool set_rendezvous(const std::string &my_rendezvous_ip,
                               const boost::uint16_t &my_rendezvous_port);
-  virtual bool rendezvous() { return rendezvous_; }
-  virtual bool set_local_port_only(bool local_port_only)
+  virtual void set_local_port_only(bool local_port_only)
                                 { local_port_only_ = local_port_only; }
-  virtual bool local_port_only() { return local_port_only_; }
+
 // Signals (boost::signals2)
   typedef boost::signals2::signal<void(const std::string&,
                                       const boost::uint32_t&,
                                       const boost::int16_t&,
-                                      const float &)> SignalMessageReceived;
-// Connections
+                                      const float &)>
+                                      SignalMessageReceived;
+  typedef boost::signals2::signal<void(ConnectionType,
+                                       const std::string&,
+                                       const boost::uint16_t)>
+                                       SignalConnectionDown;
+ // Connections
   boost::signals2::connection connect_message_recieved(const
                                           SignalMessageReceived::slot_type &
                                           SignalMessageReceived){
     return SignalMessageReceived_.connect(SignalMessageReceived);
+  }
+  boost::signals2::connection connect_connection_down(ConnectionType,
+                                           SignalConnectionDown::slot_type &
+                                           SignalConnectionDown) {
+    return SignalConnectionDown_.connect(SignalConnectionDown);
   }
 
 protected:
@@ -149,6 +168,7 @@ protected:
                                    const boost::uint16_t &my_rendezvous_port);
   virtual void StopPingRendezvous();
   SignalMessageReceived SignalMessageReceived_;
+  SignalConnectionDown SignalConnectionDown_;
   bool upnp_;
   bool nat_pnp_;
   bool rendezvous_;

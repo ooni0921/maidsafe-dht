@@ -25,7 +25,7 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "maidsafe/transport/transportudt.h"
+
 #include <boost/scoped_array.hpp>
 #include <boost/lexical_cast.hpp>
 #include <exception>
@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/base/log.h"
 #include "maidsafe/base/online.h"
 #include "maidsafe/base/routingtable.h"
+#include "maidsafe/transport/transportudt.h"
 #include "maidsafe/protobuf/transport_message.pb.h"
 #include "maidsafe/protobuf/rpcmessage.pb.h"
 #include "maidsafe/udt/udt.h"
@@ -41,9 +42,9 @@ namespace transport {
 
 struct IncomingMessages {
   IncomingMessages(const boost::uint32_t &id, const boost::int16_t &transid)
-      : msg(), raw_data(), connection_id(id), transport_id(transid), rtt(0) {}
+      : msg(), raw_data(), connection_id(id), rtt(0) {}
   IncomingMessages()
-      : msg(), raw_data(), connection_id(0), transport_id(0), rtt(0) {}
+      : msg(), raw_data(), connection_id(0), rtt(0) {}
   rpcprotocol::RpcMessage msg;
   std::string raw_data;
   boost::uint32_t connection_id;
@@ -68,7 +69,7 @@ TransportUDT::TransportUDT()
 
 TransportUDT::~TransportUDT() {
   if (!stop_)
-    Stop();
+    StopListening();
 }
 
 
@@ -95,7 +96,7 @@ TransportCondition TransportUDT::StartListening(const boost::uint16_t &port) {
   std::string service = boost::lexical_cast<std::string>(port);
   if (0 != getaddrinfo(NULL, service.c_str(), &addrinfo_hints_,
       &addrinfo_res_)) {
-    return TransportCondition::InvalidAddress;
+    return TransportCondition::kInvalidAddress;
   }
   listening_socket_ = UDT::socket(addrinfo_res_->ai_family,
       addrinfo_res_->ai_socktype, addrinfo_res_->ai_protocol);
@@ -107,7 +108,7 @@ TransportCondition TransportUDT::StartListening(const boost::uint16_t &port) {
     DLOG(WARNING) << "(" << listening_port_ << ") UDT bind error: " <<
         UDT::getlasterror().getErrorMessage() << std::endl;
     freeaddrinfo(addrinfo_res_);
-    return TransportCondition::NoSocket;
+    return TransportCondition::kNoSocket;
   }
   // Modify the port to reflect the port UDT has chosen
   struct sockaddr_in name;
@@ -120,7 +121,7 @@ TransportCondition TransportUDT::StartListening(const boost::uint16_t &port) {
     if (0 != getaddrinfo(NULL, service.c_str(), &addrinfo_hints_,
       &addrinfo_res_)) {
       freeaddrinfo(addrinfo_res_);
-      return TransportCondition::InvalidPort;
+      return TransportCondition::kInvalidPort;
     }
   }
 
@@ -128,7 +129,7 @@ TransportCondition TransportUDT::StartListening(const boost::uint16_t &port) {
     LOG(ERROR) << "Failed to start listening port "<< listening_port_ << ": " <<
         UDT::getlasterror().getErrorMessage() << std::endl;
     freeaddrinfo(addrinfo_res_);
-    return TransportCondition::InvalidPort;
+    return TransportCondition::kInvalidPort;
   }
   stop_ = false;
   // start the listening loop
@@ -148,10 +149,10 @@ TransportCondition TransportUDT::StartListening(const boost::uint16_t &port) {
     int result;
     result = UDT::close(listening_socket_);
     freeaddrinfo(addrinfo_res_);
-    return TransportCondition::NoSocket;
+    return TransportCondition::kNoSocket;
   }
   current_id_ = base::GenerateNextTransactionId(current_id_);
-  return TransportCondition::Sucess;
+  return TransportCondition::kSucess;
 }
 
 TransportCondition TransportUDT::Send(const std::string &data,
@@ -183,7 +184,7 @@ TransportCondition TransportUDT::Send(const std::string &data,
     }
   }*/
 
-  if (type == kString) {
+  if (DataType == kString) {
     int64_t data_size = data.size();
     OutgoingData out_data(skt, data_size/*, connection_id, is_rpc*/);
     memcpy(out_data.data.get(),
@@ -193,7 +194,7 @@ TransportCondition TransportUDT::Send(const std::string &data,
       outgoing_queue_.push_back(out_data);
     }
     send_cond_.notify_one();
-  } else if (type == kFile) {
+  } else if (DataType == kFile) {
     char *file_name = const_cast<char*>(static_cast<const char*>(data.c_str()));
     std::fstream ifs(file_name, std::ios::in | std::ios::binary);
     ifs.seekg(0, std::ios::end);
@@ -202,14 +203,14 @@ TransportCondition TransportUDT::Send(const std::string &data,
     // send file size information
     if (UDT::ERROR == UDT::send(skt, reinterpret_cast<char*>(&data_size),
         sizeof(int64_t), 0)) {
-      return TransportCondition::InvalidData;
+      return TransportCondition::kInvalidData;
     }
     // send the file
     if (UDT::ERROR == UDT::sendfile(skt, ifs, 0, data_size)) {
-      return TransportCondition::InvalidData;
+      return TransportCondition::kInvalidData;
     }
   }
-  return TransportCondition::Sucess;
+  return TransportCondition::kSucess;
 }
 
 void TransportUDT::StopListening() {
@@ -712,7 +713,7 @@ void TransportUDT::PingHandle() {
       UDT::close(skt);
       bool dead_rendezvous_server = false;
       // it is not dead, no nead to return the ip and port
-      SignalServerDown_(dead_rendezvous_server, "", 0);
+      SignalConnectionDown_(kRendezvous, "", 0);
       boost::this_thread::sleep(boost::posix_time::seconds(8));
     } else {
       // retrying two more times to connect to make sure
@@ -735,12 +736,12 @@ void TransportUDT::PingHandle() {
         // there is no need to call rendezvous_notifier_
         if (stop_) return;
         bool dead_rendezvous_server = true;
-        SignalServerDown_(dead_rendezvous_server, my_rendezvous_ip_,
+        SignalConnectionDown_(kRendezvous, my_rendezvous_ip_,
           my_rendezvous_port_);
       } else {
         base::OnlineController::Instance()->SetOnline(listening_port_, true);
         bool dead_rendezvous_server = false;
-        SignalServerDown_(dead_rendezvous_server, "", 0);
+        SignalConnectionDown_(kRendezvous, "", 0);
         boost::this_thread::sleep(boost::posix_time::seconds(8));
       }
     }
@@ -839,7 +840,7 @@ TransportCondition TransportUDT::Send(const rpcprotocol::RpcMessage &data,
   if (data.IsInitialized()) {
     std::string ser_msg;
     msg.SerializeToString(&ser_msg);
-    return Send(ser_msg, kString/*, connection_id, new_socket, true*/);
+    return Send(kString, ser_msg);
   } else {
     {
       boost::mutex::scoped_lock guard(msg_hdl_mutex_);
@@ -848,14 +849,14 @@ TransportCondition TransportUDT::Send(const rpcprotocol::RpcMessage &data,
       if (it != send_sockets_.end())
         send_sockets_.erase(it);
     }
-    return TransportCondition::Error;
+    return TransportCondition::kError;
   }
 }
 
-TransportCondition TransportUDT::Send(const std::string &data,
-                       const boost::uint32_t) {
+TransportCondition TransportUDT::Send(const DataType &type,
+                                      const std::string &data) {
   if (data != "") {
-    return Send(data, kString);
+    return Send(kString, data);
   } else {
     {
       boost::mutex::scoped_lock guard(msg_hdl_mutex_);

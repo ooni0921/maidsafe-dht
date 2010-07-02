@@ -54,6 +54,7 @@ class RpcMessage;
 
 namespace transport {
 
+
 class HolePunchingMsg;
 struct IncomingMessages;
 
@@ -99,7 +100,7 @@ class TransportUDT : public Transport {
  public:
   TransportUDT();
   ~TransportUDT();
-  enum DataType { kString, kFile };
+//   enum DataType { kString, kFile };
   TransportType transport_type() { return kUdt; }
   boost::int16_t transport_id() { return transport_id_; }
   void set_transport_id(const boost::int16_t &transport_id) {
@@ -119,7 +120,7 @@ class TransportUDT : public Transport {
   TransportCondition StartListening(const boost::uint16_t & port);
   int StartLocal(const boost::uint16_t &port);
   void CloseConnection(const boost::uint32_t &connection_id);
-  void Stop();
+  void StopListening();
   inline bool is_stopped() const { return stop_; }
   bool peer_address(struct sockaddr *peer_addr);
   bool GetPeerAddr(const boost::uint32_t &connection_id,
@@ -149,7 +150,7 @@ class TransportUDT : public Transport {
   void AddIncomingConnection(UdtSocket udt_socket,
                              boost::uint32_t *connection_id);
   void HandleRendezvousMsgs(const HolePunchingMsg &message);
-  TransportCondition Send(const std::string &data, DataType type);
+  TransportCondition Send(const DataType &type, std::string &data);
   void SendHandle();
   int Connect(const std::string &peer_address, const boost::uint16_t &peer_port,
               UdtSocket *udt_socket);
