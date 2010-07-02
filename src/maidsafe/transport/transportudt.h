@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/signals2/signal.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/thread.hpp>
 #include <maidsafe/transport/transport-api.h>
@@ -76,21 +77,23 @@ struct IncomingData {
 
 struct OutgoingData {
   OutgoingData()
-      : udt_socket(), data_size(0), data_sent(0), data(NULL), sent_size(false),
-        connection_id(0), is_rpc(false) {}
-  OutgoingData(UdtSocket udt_socket, boost::int64_t data_size,
-               boost::uint32_t connection_id, bool is_rpc)
+      : udt_socket(), data_size(0), data_sent(0), data(NULL), sent_size(false)/*,
+        connection_id(0), is_rpc(false)*/ {}
+  OutgoingData(UdtSocket udt_socket, boost::int64_t data_size/*,
+               boost::uint32_t connection_id, bool is_rpc*/)
       : udt_socket(udt_socket), data_size(data_size), data_sent(0),
-        data(new char[data_size]), sent_size(false),
-        connection_id(connection_id), is_rpc(is_rpc) {}
+        data(new char[data_size]), sent_size(false)/*,
+        connection_id(connection_id), is_rpc(is_rpc)*/ {}
   UdtSocket udt_socket;
   boost::int64_t data_size;
   boost::int64_t data_sent;
   boost::shared_array<char> data;
   bool sent_size;
-  boost::uint32_t connection_id;
-  bool is_rpc;
+//   boost::uint32_t connection_id;
+//   bool is_rpc;
 };
+
+
 
 class TransportUDT : public Transport {
  public:
@@ -103,37 +106,18 @@ class TransportUDT : public Transport {
     transport_id_ = transport_id;
   }
   static void CleanUp();
-  int ConnectToSend(const std::string &remote_ip,
-                    const boost::uint16_t &remote_port,
-                    const std::string &local_ip,
-                    const boost::uint16_t &local_port,
-                    const std::string &rendezvous_ip,
-                    const boost::uint16_t &rendezvous_port,
-                    const bool &keep_connection,
-                    boost::uint32_t *connection_id);
-  int Send(const rpcprotocol::RpcMessage &data,
-           const boost::uint32_t &connection_id, const bool &new_socket);
-  int Send(const std::string &data, const boost::uint32_t &connection_id,
-           const bool &new_socket);
-  int Start(const boost::uint16_t & port);
+
+  TransportCondition Send(const rpcprotocol::RpcMessage &data,
+                          const boost::uint32_t &connection_id,
+                          const bool &new_socket);
+  TransportCondition Send(const std::string &data, const std::string &remote_ip,
+                          const boost::uint16_t &remote_port);
+  TransportCondition Send(const std::string &data, const std::string &remote_ip,
+                          const boost::uint16_t &remote_port,
+                          const std::string &rendezvous_ip,
+                          const boost::uint16_t &rendezvous_port);
+  TransportCondition StartListening(const boost::uint16_t & port);
   int StartLocal(const boost::uint16_t &port);
-  bool RegisterOnRPCMessage(
-      boost::function<void(const rpcprotocol::RpcMessage&,
-                           const boost::uint32_t&,
-                           const boost::int16_t&,
-                           const float &)> on_rpcmessage);
-  bool RegisterOnMessage(
-      boost::function<void(const std::string&,
-                           const boost::uint32_t&,
-                           const boost::int16_t&,
-                           const float &)> on_message);
-  bool RegisterOnSend(
-      boost::function<void(const boost::uint32_t&,
-                           const bool&)> on_send);
-  bool RegisterOnServerDown(
-      boost::function<void(const bool&,
-                           const std::string&,
-                           const boost::uint16_t&)> on_server_down);
   void CloseConnection(const boost::uint32_t &connection_id);
   void Stop();
   inline bool is_stopped() const { return stop_; }
@@ -156,13 +140,16 @@ class TransportUDT : public Transport {
  private:
   TransportUDT& operator=(const TransportUDT&);
   TransportUDT(TransportUDT&);
+  // needed for UDT to set up a connection to send to
+  int ConnectToSend(const std::string &remote_ip,
+                    const boost::uint16_t &remote_port,
+                    const std::string &rendezvous_ip,
+                    const boost::uint16_t &rendezvous_port);
   void AddIncomingConnection(UdtSocket udt_socket);
   void AddIncomingConnection(UdtSocket udt_socket,
                              boost::uint32_t *connection_id);
   void HandleRendezvousMsgs(const HolePunchingMsg &message);
-  int Send(const std::string &data, DataType type,
-           const boost::uint32_t &connection_id, const bool &new_socket,
-           const bool &is_rpc);
+  TransportCondition Send(const std::string &data, DataType type);
   void SendHandle();
   int Connect(const std::string &peer_address, const boost::uint16_t &peer_port,
               UdtSocket *udt_socket);
@@ -171,16 +158,7 @@ class TransportUDT : public Transport {
   void ReceiveHandler();
   void MessageHandler();
   volatile bool stop_;
-  boost::function<void(const rpcprotocol::RpcMessage&,
-                       const boost::uint32_t&,
-                       const boost::int16_t&,
-                       const float&)> rpc_message_notifier_;
-  boost::function<void(const std::string&,
-                       const boost::uint32_t&,
-                       const boost::int16_t&,
-                       const float&)> message_notifier_;
-  boost::function<void(const bool&, const std::string&,
-                       const boost::uint16_t&)> server_down_notifier_;
+
   boost::shared_ptr<boost::thread> accept_routine_,
                                    recv_routine_,
                                    send_routine_,
@@ -205,10 +183,10 @@ class TransportUDT : public Transport {
   boost::uint32_t last_id_;
   std::set<boost::uint32_t> data_arrived_;
   std::map<boost::uint32_t, struct sockaddr> ips_from_connections_;
-  boost::function<void(const boost::uint32_t&, const bool&)> send_notifier_;
   std::map<boost::uint32_t, UdtSocket> send_sockets_;
   TransportType transport_type_;
   boost::int16_t transport_id_;
+
 };
 
 }  // namespace transport

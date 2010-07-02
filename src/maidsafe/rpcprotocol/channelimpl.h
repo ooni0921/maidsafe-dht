@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "maidsafe/base/utils.h"
 #include "maidsafe/maidsafe-dht_config.h"
-#include "maidsafe/transport/transporthandler-api.h"
+#include "maidsafe/transport/transportudt.h"
 
 namespace rpcprotocol {
 
@@ -113,9 +113,9 @@ struct RpcInfo {
 class ChannelImpl {
  public:
   ChannelImpl(ChannelManager *channelmanager,
-              transport::TransportHandler *transport_handler);
+              transport::TransportUDT *transport_);
   ChannelImpl(ChannelManager *channelmanager,
-              transport::TransportHandler *transport_handler,
+              transport::TransportUDT *transport_,
               const boost::int16_t &transport_id, const std::string &remote_ip,
               const boost::uint16_t &remote_port, const std::string &local_ip,
               const boost::uint16_t &local_port,
@@ -133,10 +133,10 @@ class ChannelImpl {
                      const boost::int16_t &transport_id,
                      const float &rtt);
  private:
+
   void SendResponse(const google::protobuf::Message *response, RpcInfo info);
   std::string GetServiceName(const std::string &full_name);
-  transport::TransportHandler *transport_handler_;
-  boost::int16_t transport_id_;
+  transport::TransportUDT *transport_;
   ChannelManager *pmanager_;
   google::protobuf::Service *pservice_;
   std::string remote_ip_, local_ip_, rv_ip_;
@@ -144,6 +144,7 @@ class ChannelImpl {
   ChannelImpl(const ChannelImpl&);
   ChannelImpl& operator=(const ChannelImpl&);
   boost::uint32_t id_;
+  boost::signals2::connection RPC_connection_;
 };
 }  // namespace
 #endif  // MAIDSAFE_RPCPROTOCOL_CHANNELIMPL_H_

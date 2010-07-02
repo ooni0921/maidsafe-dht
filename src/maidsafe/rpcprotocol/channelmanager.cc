@@ -95,9 +95,6 @@ void ChannelManager::RemoveChannelId(const boost::uint32_t &id) {
   pimpl_->RemoveChannelId(id);
 }
 
-bool ChannelManager::RegisterNotifiersToTransport() {
-  return pimpl_->RegisterNotifiersToTransport();
-}
 
 RpcStatsMap ChannelManager::RpcTimings() {
   return pimpl_->RpcTimings();

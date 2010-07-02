@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/rpcprotocol/channelimpl.h"
 #include "maidsafe/rpcprotocol/channel-api.h"
-#include "maidsafe/transport/transporthandler-api.h"
+#include "maidsafe/transport/transportudt.h"
 
 namespace rpcprotocol {
 
@@ -117,8 +117,8 @@ void Controller::message_info(std::string *service, std::string *method) const {
 }
 
 Channel::Channel(ChannelManager *channelmanager,
-                 transport::TransportHandler *transport_handler)
-    : pimpl_(new ChannelImpl(channelmanager, transport_handler)) {}
+                 transport::TransportUDT *transport)
+    : pimpl_(new ChannelImpl(channelmanager, transport)) {}
 
 Channel::Channel(ChannelManager *channelmanager,
                  transport::TransportHandler *transport_handler,

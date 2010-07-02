@@ -50,7 +50,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/protobuf/general_messages.pb.h"
 #include "maidsafe/protobuf/kademlia_service.pb.h"
 #include "maidsafe/upnp/upnpclient.h"
-#include "maidsafe/transport/transporthandler-api.h"
+#include "maidsafe/transport/transportudt.h"
 
 namespace kad {
 class ContactInfo;
@@ -251,13 +251,13 @@ struct BootstrapArgs {
 class KNodeImpl {
  public:
   KNodeImpl(rpcprotocol::ChannelManager* channel_manager,
-            transport::TransportHandler *transport_handler, NodeType type,
+            transport::TransportUDT *transport, NodeType type,
             const std::string &private_key, const std::string &public_key,
             const bool &port_forwarded, const bool &use_upnp,
             const boost::uint16_t &k);
   // constructor used to set up parameters k, alpha, and beta for kademlia
   KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
-            transport::TransportHandler *transport_handler, NodeType type,
+            transport::TransportUDT *transport, NodeType type,
             const boost::uint16_t &k, const boost::uint16_t &alpha,
             const boost::uint16_t &beta, const boost::uint32_t &refresh_time,
             const std::string &private_key, const std::string &public_key,
@@ -452,7 +452,7 @@ class KNodeImpl {
                pendingcts_mutex_;
   boost::shared_ptr<base::CallLaterTimer> ptimer_;
   rpcprotocol::ChannelManager *pchannel_manager_;
-  transport::TransportHandler *transport_handler_;
+  transport::TransportUDT *transport_;
   boost::int16_t transport_id_;
   boost::shared_ptr<rpcprotocol::Channel> pservice_channel_;
   boost::shared_ptr<DataStore> pdata_store_;

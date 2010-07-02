@@ -31,14 +31,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace transport {
 
-TCPConnection::TCPConnection(boost::asio::io_service &io_service,  // NOLINT
-    boost::function<void(const boost::uint32_t&, const bool&, const bool&,
-    const boost::system::error_code&)> send_notifier,
-    boost::function<void(const std::string, const boost::uint32_t&,
-    const boost::system::error_code&)> read_notifier)
+TCPConnection::TCPConnection(boost::asio::io_service &io_service) //NOLINT
     : socket_(io_service), in_data_(), out_data_(), tmp_data_(),
-      in_data_size_(0), connection_id_(0), send_notifier_(send_notifier),
-      read_notifier_(read_notifier), out_port_(0), send_once_(true),
+      in_data_size_(0), connection_id_(0),
+      out_port_(0), send_once_(true),
       sending_rpc_(false), closed_(false), receiving_(false) {
 }
 

@@ -46,7 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 namespace transport {
-class TransportHandler;
+class TransportUDT;
 }  // namespace transport
 
 
@@ -157,7 +157,7 @@ class Channel : public google::protobuf::RpcChannel {
   * @param transport_handler Pointer to a TransportHandler object
   */
   Channel(ChannelManager *channelmanager,
-          transport::TransportHandler *transport_handler);
+          transport::TransportUDT *transport);
   /**
   * Constructor. Used for the client that is going to send an RPC.
   * @param channelmanager Pointer to a ChannelManager object
@@ -171,8 +171,8 @@ class Channel : public google::protobuf::RpcChannel {
   * the RPC
   */
   Channel(ChannelManager *channelmanager,
-          transport::TransportHandler *transport_handler,
-          const boost::int16_t &transport_id, const std::string &remote_ip,
+          transport::TransportUDT *transport,
+          const std::string &remote_ip,
           const boost::uint16_t &remote_port, const std::string &local_ip,
           const boost::uint16_t &local_port, const std::string &rendezvous_ip,
           const boost::uint16_t &rendezvous_port);

@@ -35,7 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "maidsafe/rpcprotocol/channelmanager-api.h"
 #include "maidsafe/protobuf/kademlia_service.pb.h"
-#include "maidsafe/transport/transporthandler-api.h"
+#include "maidsafe/transport/transportudt.h"
 #include "maidsafe/maidsafe-dht_config.h"
 
 namespace rpcprotocol {
@@ -52,7 +52,7 @@ class KadId;
 class KadRpcs {
  public:
   KadRpcs(rpcprotocol::ChannelManager *channel_manager,
-      transport::TransportHandler *transport_handler);
+      transport::TransportUDT *transport);
   void FindNode(const KadId &key, const std::string &ip,
       const boost::uint16_t &port, const std::string &rendezvous_ip,
       const boost::uint16_t &rendezvous_port, FindResponse *resp,
@@ -104,7 +104,7 @@ class KadRpcs {
   KadRpcs& operator=(const KadRpcs&);
   ContactInfo info_;
   rpcprotocol::ChannelManager *pchannel_manager_;
-  transport::TransportHandler *transport_handler_;
+  transport::TransportUDT *transport_;
 };
 }  // namespace kad
 

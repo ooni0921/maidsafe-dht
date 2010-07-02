@@ -123,11 +123,6 @@ class ChannelManager {
   * and the notifier to now when a message has been sent.
   * @return True if it succeeds in registering the notifiers, False otherwise
   */
-  bool RegisterNotifiersToTransport();
-  /**
-  * Creates a new id for the pending requests.
-  * @return the id created
-  */
   boost::uint32_t CreateNewId();
   /**
   * Adds a new pending request after an RPC has been sent.

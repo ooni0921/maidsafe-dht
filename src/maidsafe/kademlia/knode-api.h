@@ -56,7 +56,7 @@ class ChannelManager;
 
 
 namespace transport {
-class TransportHandler;
+class TransportUDT;
 }  // namespace transport
 
 
@@ -97,7 +97,7 @@ class KNode {
   * @param k Maximum number of elements in the node's kbuckets
   */
   KNode(rpcprotocol::ChannelManager *channel_manager,
-        transport::TransportHandler *transport_handler, NodeType type,
+        transport::TransportUDT *transport, NodeType type,
         const std::string &private_key, const std::string &public_key,
         const bool &port_forwarded, const bool &use_upnp,
         const boost::uint16_t &k);
@@ -124,7 +124,7 @@ class KNode {
   * for NAT traversal
   */
   KNode(rpcprotocol::ChannelManager *channel_manager,
-        transport::TransportHandler *transport_handler, NodeType type,
+        transport::TransportUDT *transport, NodeType type,
         const boost::uint16_t &k, const boost::uint16_t &alpha,
         const boost::uint16_t &beta, const boost::uint32_t &refresh_time,
         const std::string &private_key, const std::string &public_key,

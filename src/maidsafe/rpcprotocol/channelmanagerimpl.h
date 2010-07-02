@@ -65,7 +65,7 @@ struct PendingTimeOut {
 
 class ChannelManagerImpl {
  public:
-  explicit ChannelManagerImpl(transport::TransportHandler *transport_handler);
+  explicit ChannelManagerImpl(transport::TransportUDT *transport);
   ~ChannelManagerImpl();
   void RegisterChannel(const std::string &service_name, Channel* channel);
   void UnRegisterChannel(const std::string &service_name);
@@ -109,6 +109,8 @@ class ChannelManagerImpl {
   RpcStatsMap rpc_timings_;
   boost::condition_variable delete_channels_cond_;
   boost::uint16_t online_status_id_;
+  boost::signals2::connection send_data_confirm_;
+
 };
 }  // namespace rpcprotocol
 #endif  // MAIDSAFE_RPCPROTOCOL_CHANNELMANAGERIMPL_H_

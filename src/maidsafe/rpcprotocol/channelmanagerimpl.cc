@@ -38,9 +38,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rpcprotocol {
 
 ChannelManagerImpl::ChannelManagerImpl(
-    transport::TransportHandler *transport_handler)
-        : transport_handler_(transport_handler),
-          is_started_(false),
+    transport::TransportUDT* transport)
+        : is_started_(false),
           ptimer_(new base::CallLaterTimer),
           req_mutex_(),
           channels_mutex_(),
@@ -56,7 +55,10 @@ ChannelManagerImpl::ChannelManagerImpl(
           channels_ids_(),
           rpc_timings_(),
           delete_channels_cond_(),
-          online_status_id_(0) {}
+          online_status_id_(0) {
+//   send_data_confirm_ = transport->connect_send(
+//       boost::bind(&ChannelManagerImpl::RequestSent, this, _1, _2));
+         }
 
 ChannelManagerImpl::~ChannelManagerImpl() {
   Stop();
@@ -381,17 +383,6 @@ void ChannelManagerImpl::OnlineStatusChanged(const bool&) {
   // TODO(anyone) handle connection loss
 }
 
-bool ChannelManagerImpl::RegisterNotifiersToTransport() {
-  if (is_started_) {
-    return true;  // Everything has already been registered
-  }
-  if (transport_handler_->RegisterOnRPCMessage(
-    boost::bind(&ChannelManagerImpl::MessageArrive, this, _1, _2, _3, _4))) {
-      return transport_handler_->RegisterOnSend(boost::bind(
-        &ChannelManagerImpl::RequestSent, this, _1, _2));
-  }
-  return false;
-}
 
 RpcStatsMap ChannelManagerImpl::RpcTimings() {
   boost::mutex::scoped_lock lock(timings_mutex_);

@@ -37,7 +37,7 @@ namespace transport {
 TransportTCP::TransportTCP()
     : transport_id_(-1), listening_port_(0), outgoing_port_(0), current_id_(0),
       io_service_(), acceptor_(io_service_), stop_(true),
-      rpc_message_notifier_(), message_notifier_(), service_routine_(),
+      service_routine_(),
       connections_(), conn_mutex_(), msg_handler_mutex_(),
       rpcmsg_handler_mutex_(), send_handler_mutex_(), peer_addr_(),
       new_connection_() {}
@@ -50,9 +50,7 @@ TransportTCP::~TransportTCP() {
 int TransportTCP::Start(const boost::uint16_t &port) {
   if (!stop_)
     return 1;
-  if ((rpc_message_notifier_.empty() && message_notifier_.empty()) ||
-       send_notifier_.empty())
-    return 1;
+
   listening_port_ = port;
   boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),
     listening_port_);
@@ -74,9 +72,9 @@ int TransportTCP::Start(const boost::uint16_t &port) {
     return 1;
   }
 
-  new_connection_.reset(new TCPConnection(io_service_,
-    boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
-    boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
+  new_connection_.reset(new TCPConnection(io_service_));
+//     boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
+//     boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
 
   acceptor_.async_accept(new_connection_->Socket(), peer_addr_,
     boost::bind(&TransportTCP::HandleAccept, this,
@@ -99,9 +97,7 @@ int TransportTCP::Start(const boost::uint16_t &port) {
 int TransportTCP::StartLocal(const boost::uint16_t &port) {
   if (!stop_)
     return 1;
-  if ((rpc_message_notifier_.empty() && message_notifier_.empty()) ||
-       send_notifier_.empty())
-    return 1;
+
   listening_port_ = port;
   boost::asio::ip::tcp::endpoint endpoint(
     boost::asio::ip::address_v4::loopback(),
@@ -126,9 +122,9 @@ int TransportTCP::StartLocal(const boost::uint16_t &port) {
     return 1;
   }
 
-  new_connection_.reset(new TCPConnection(io_service_,
-    boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
-    boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
+  new_connection_.reset(new TCPConnection(io_service_));
+//     boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
+//     boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
 
   acceptor_.async_accept(new_connection_->Socket(),
     boost::bind(&TransportTCP::HandleAccept, this,
@@ -177,40 +173,12 @@ void TransportTCP::CloseConnection(const boost::uint32_t &connection_id) {
   }
 }
 
-bool TransportTCP::RegisterOnMessage(boost::function<void(const std::string&,
-      const boost::uint32_t&, const boost::int16_t&,
-      const float &)> on_message) {
-  if (stop_) {
-    message_notifier_ = on_message;
-    return true;
-  }
-  return false;
-}
-
-bool TransportTCP::RegisterOnRPCMessage(boost::function < void(
-      const rpcprotocol::RpcMessage&, const boost::uint32_t&,
-      const boost::int16_t&, const float &) > on_rpcmessage) {
-  if (stop_) {
-    rpc_message_notifier_ = on_rpcmessage;
-    return true;
-  }
-  return false;
-}
-
-bool TransportTCP::RegisterOnSend(boost::function < void(const boost::uint32_t&,
-      const bool&) > on_send) {
-  if (stop_) {
-    send_notifier_ = on_send;
-    return true;
-  }
-  return false;
-}
 
 bool TransportTCP::CanConnect(const std::string &ip,
       const boost::uint16_t &port) {
   if (stop_)
     return false;
-  TCPConnection conn(io_service_, 0, 0);
+  TCPConnection conn(io_service_);
   boost::asio::ip::tcp::endpoint addr;
   std::string dec_lip;
   if (ip.size() == 4)
@@ -273,9 +241,9 @@ void TransportTCP::HandleAccept(const boost::system::error_code &ec) {
     current_id_ = base::GenerateNextTransactionId(current_id_);
   }
   new_connection_->StartReceiving();
-  new_connection_.reset(new TCPConnection(io_service_,
-    boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
-    boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
+  new_connection_.reset(new TCPConnection(io_service_));
+//     boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
+//     boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
 
   acceptor_.async_accept(new_connection_->Socket(), peer_addr_,
     boost::bind(&TransportTCP::HandleAccept, this,
@@ -303,7 +271,7 @@ void TransportTCP::HandleConnSend(const boost::uint32_t &connection_id,
   }
   if (rpc_sent) {
     boost::mutex::scoped_lock guard(send_handler_mutex_);
-    send_notifier_(connection_id, result);
+    SignalSend_(connection_id, result);
   }
   {
     boost::mutex::scoped_lock guard(conn_mutex_);
@@ -336,16 +304,12 @@ void TransportTCP::HandleConnRecv(const std::string &msg,
 
   TransportMessage t_msg;
   if (t_msg.ParseFromString(msg)) {
-    if (t_msg.has_rpc_msg() && !rpc_message_notifier_.empty()) {
+    if (t_msg.has_rpc_msg()) {
       boost::mutex::scoped_lock guard(rpcmsg_handler_mutex_);
-      rpc_message_notifier_(t_msg.rpc_msg(), connection_id, transport_id_, 0.0);
+      SignalRPCMessageReceived_(t_msg.rpc_msg(), connection_id, transport_id_, 0.0);
     }
-  } else if (!message_notifier_.empty()) {
-    boost::mutex::scoped_lock guard(msg_handler_mutex_);
-    message_notifier_(msg, connection_id, transport_id_, 0.0);
   } else {
-    LOG(WARNING) << "TCP(" << listening_port_ <<
-        ") Invalid Message received" << std::endl;
+      SignalMessageReceived_(msg, connection_id, transport_id_, 0.0);
   }
 
   {
@@ -391,9 +355,9 @@ int TransportTCP::ConnectToSend(const std::string &remote_ip,
       const boost::uint16_t&, const std::string&, const boost::uint16_t&,
       const bool &keep_connection,
       boost::uint32_t *connection_id) {
-  tcpconnection_ptr conn(new TCPConnection(io_service_,
-    boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
-    boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
+  tcpconnection_ptr conn(new TCPConnection(io_service_));
+//     boost::bind(&TransportTCP::HandleConnSend, this, _1, _2, _3, _4),
+//     boost::bind(&TransportTCP::HandleConnRecv, this, _1, _2, _3)));
   boost::asio::ip::tcp::endpoint addr;
   std::string dec_lip;
   if (remote_ip.size() == 4)

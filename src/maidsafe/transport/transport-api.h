@@ -34,6 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAIDSAFE_TRANSPORT_TRANSPORT_API_H_
 
 #include <boost/function.hpp>
+#include <boost/cstdint.hpp>
+#include <boost/signals2/signal.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
 #include <string>
 
@@ -50,64 +52,108 @@ class RpcMessage;
 
 namespace transport {
 
+  enum TransportCondition {
+  kSucess            = 0,
+  kRemoteUnreachable = 1,
+  kNoConnection      = 2,
+  kNoNetwork         = 3,
+  kInvalidIP         = 4,
+  kInvalidPort       = 5,
+  kInvalidData       = 6,
+  kNoSocket          = 7,
+  kInvalidAddress    = 8,
+  kNoRendezvous      = 9,
+  kError             = 10
+  };
+
+  enum DataType {
+    kString      = 0,
+    kFile        = 1,
+    kPing        = 2,
+    kProxyPing   = 3
+  };
+
+  enum ConnectionType {
+    kRendezvous  = 1,
+    kKClosest    = 2
+  };
+
+/*
+Protocol implementation (use Google protobufs for serialisation)
+_______________________________________________________________
+Type   | 
+(enum) | 
+_______________________________________________________________
+*/
+// This is a partially implmented base clase which is inherited by
+// the different transports such as UDT / TCP etc.
 class Transport {
- public:
+public:
   virtual ~Transport() {}
-  virtual TransportType transport_type() = 0;
-  virtual boost::int16_t transport_id() = 0;
-  virtual void set_transport_id(const boost::int16_t &id) = 0;
-  virtual int ConnectToSend(const std::string &remote_ip,
-                            const boost::uint16_t &remote_port,
-                            const std::string &local_ip,
-                            const boost::uint16_t &local_port,
-                            const std::string &rendezvous_ip,
-                            const boost::uint16_t &rendezvous_port,
-                            const bool &keep_connection,
-                            boost::uint32_t *connection_id) = 0;
-  virtual int Send(const rpcprotocol::RpcMessage &data,
-                   const boost::uint32_t &connection_id,
-                   const bool &new_socket) = 0;
-  virtual int Send(const std::string &data,
-                   const boost::uint32_t &connection_id,
-                   const bool &new_socket) = 0;
-  virtual int Start(const boost::uint16_t &port) = 0;
-  virtual int StartLocal(const boost::uint16_t &port) = 0;
-  virtual bool RegisterOnRPCMessage(
-      boost::function<void(const rpcprotocol::RpcMessage&,
-                           const boost::uint32_t&,
-                           const boost::int16_t&,
-                           const float&)> on_rpcmessage) = 0;
-  virtual bool RegisterOnMessage(
-      boost::function<void(const std::string&,
-                           const boost::uint32_t&,
-                           const boost::int16_t&,
-                           const float&)> on_message) = 0;
-  virtual bool RegisterOnSend(
-      boost::function<void(const boost::uint32_t&, const bool&)> on_send) = 0;
-  virtual bool RegisterOnServerDown(
-      boost::function <void(const bool&,
-                            const std::string&,
-                            const boost::uint16_t&)> on_server_down) = 0;
+  virtual TransportCondition Ping(const std::string &remote_ip,
+                                  const boost::uint16_t &remote_port) = 0;
+  virtual TransportCondition Send(const rpcprotocol::RpcMessage &data,
+                                  const boost::uint32_t &connection_id,
+                                  const bool &new_socket) = 0;
+  virtual TransportCondition Send(const std::string &data,
+                                  const std::string &remote_ip,
+                                  const boost::uint16_t &remote_port) = 0;
+  virtual TransportCondition Send(const std::string &data,
+                                  const std::string &remote_ip,
+                                  const boost::uint16_t &remote_port,
+                                  const std::string &rendezvous_ip,
+                                  const boost::uint16_t &rendezvous_port) = 0;
+  virtual TransportCondition StartListening(const boost::uint16_t &port,
+                                            const std::string &ip) = 0;
   virtual void CloseConnection(const boost::uint32_t &connection_id) = 0;
-  virtual void Stop() = 0;
-  virtual bool is_stopped() const = 0;
+  virtual void StopListening() = 0;
+  virtual void KeepConnectionAlive(const std::string &remote_ip,
+                                  const boost::uint16_t &remote_port,
+                                  const boost::uint16_t &refresh_time,
+                                  const std::string &id,
+                                  ConnectionType &connection_type) = 0;
+  virtual TransportCondition KillConnection(const std::string &id) = 0;
+// accessors and mutators here !
+  virtual bool stopped() { return stopped_; }
   virtual bool peer_address(struct sockaddr *peer_addr) = 0;
   virtual bool GetPeerAddr(const boost::uint32_t &connection_id,
                            struct sockaddr *peer_address) = 0;
-  virtual bool ConnectionExists(const boost::uint32_t &connection_id) = 0;
-  virtual bool HasReceivedData(const boost::uint32_t &connection_id,
-                               boost::int64_t *size) = 0;
   virtual boost::uint16_t listening_port() = 0;
-  virtual void StartPingRendezvous(
-      const bool &directly_connected, const std::string &my_rendezvous_ip,
-      const boost::uint16_t &my_rendezvous_port) = 0;
-  virtual void StopPingRendezvous() = 0;
-  virtual bool CanConnect(const std::string &ip,
-                          const boost::uint16_t &port) = 0;
-  virtual bool IsAddressUsable(const std::string &local_ip,
-                               const std::string &remote_ip,
-                               const boost::uint16_t &remote_port) = 0;
-  virtual bool IsPortAvailable(const boost::uint16_t &port) = 0;
+  virtual bool set_upnp(bool upnp) { upnp_ = upnp; }
+  virtual bool upnp() { return upnp_; }
+  virtual bool set_nat_pnp(bool nat_pnp) { nat_pnp_ = nat_pnp; }
+  virtual bool nat_pnp() { return nat_pnp_; }
+  virtual bool set_rendezvous(const std::string &my_rendezvous_ip,
+                              const boost::uint16_t &my_rendezvous_port);
+  virtual bool rendezvous() { return rendezvous_; }
+  virtual bool set_local_port_only(bool local_port_only)
+                                { local_port_only_ = local_port_only; }
+  virtual bool local_port_only() { return local_port_only_; }
+// Signals (boost::signals2)
+  typedef boost::signals2::signal<void(const std::string&,
+                                      const boost::uint32_t&,
+                                      const boost::int16_t&,
+                                      const float &)> SignalMessageReceived;
+// Connections
+  boost::signals2::connection connect_message_recieved(const
+                                          SignalMessageReceived::slot_type &
+                                          SignalMessageReceived){
+    return SignalMessageReceived_.connect(SignalMessageReceived);
+  }
+
+protected:
+  virtual void StartPingRendezvous(const std::string &my_rendezvous_ip,
+                                   const boost::uint16_t &my_rendezvous_port);
+  virtual void StartPingRendezvous(const bool &directly_connected,
+                                   const std::string &my_rendezvous_ip,
+                                   const boost::uint16_t &my_rendezvous_port);
+  virtual void StopPingRendezvous();
+  SignalMessageReceived SignalMessageReceived_;
+  bool upnp_;
+  bool nat_pnp_;
+  bool rendezvous_;
+  bool local_port_only_;
+  bool stopped_;
 };
 
 }  // namespace transport

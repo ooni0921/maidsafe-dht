@@ -31,21 +31,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 
 KNode::KNode(rpcprotocol::ChannelManager *channel_manager,
-             transport::TransportHandler *transport_handler,
+             transport::TransportUDT *transport,
              NodeType type, const std::string &private_key,
              const std::string &public_key, const bool &port_forwarded,
              const bool &use_upnp, const boost::uint16_t &k)
-      : pimpl_(new KNodeImpl(channel_manager, transport_handler, type,
+      : pimpl_(new KNodeImpl(channel_manager, transport, type,
                private_key, public_key, port_forwarded, use_upnp, k)) {}
 
 KNode::KNode(rpcprotocol::ChannelManager *channel_manager,
-             transport::TransportHandler *transport_handler,
+             transport::TransportUDT *transport,
              NodeType type, const boost::uint16_t &k,
              const boost::uint16_t &alpha, const boost::uint16_t &beta,
              const boost::uint32_t &refresh_time,
              const std::string &private_key, const std::string &public_key,
              const bool &port_forwarded, const bool &use_upnp)
-      : pimpl_(new KNodeImpl(channel_manager, transport_handler, type, k, alpha,
+      : pimpl_(new KNodeImpl(channel_manager, transport, type, k, alpha,
                beta, refresh_time, private_key, public_key, port_forwarded,
                use_upnp)) {}
 

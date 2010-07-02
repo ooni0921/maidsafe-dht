@@ -60,11 +60,7 @@ class TCPConnection
   * @param read_notifier boost function that will be called when a complete
   * message has been read
   */
-  TCPConnection(boost::asio::io_service &io_service,  // NOLINT
-    boost::function<void(const boost::uint32_t&, const bool&, const bool&,
-      const boost::system::error_code&)> send_notifier,
-    boost::function<void(const std::string, const boost::uint32_t&,
-      const boost::system::error_code&)> read_notifier);
+  TCPConnection(boost::asio::io_service &io_service); //NOLINT
   /**
   * Starts the asynchronous operation to read data from the socket.  Returns
   * immediately.  The result of the operation is notified in the read_notifier

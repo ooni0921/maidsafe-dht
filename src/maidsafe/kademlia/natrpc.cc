@@ -27,13 +27,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/kademlia/natrpc.h"
 #include "maidsafe/rpcprotocol/channel-api.h"
-#include "maidsafe/transport/transporthandler-api.h"
+#include "maidsafe/transport/transportudt.h"
 
 namespace kad {
 
 NatRpcs::NatRpcs(rpcprotocol::ChannelManager *ch_manager,
-  transport::TransportHandler *transport_handler) :
-  pchannel_manager_(ch_manager), transport_handler_(transport_handler) {}
+  transport::TransportUDT *transport) :
+  pchannel_manager_(ch_manager), transport_(transport) {}
 
 void NatRpcs::NatDetection(const std::string &newcomer,
       const std::string &bootstrap_node, const boost::uint32_t type,
@@ -46,8 +46,8 @@ void NatRpcs::NatDetection(const std::string &newcomer,
   args.set_bootstrap_node(bootstrap_node);
   args.set_type(type);
   args.set_sender_id(sender_id);
-  rpcprotocol::Channel channel(pchannel_manager_, transport_handler_,
-                               ctler->transport_id(), remote_ip, remote_port,
+  rpcprotocol::Channel channel(pchannel_manager_, transport_,
+                               remote_ip, remote_port,
                                "", 0, rendezvous_ip, rendezvous_port);
   if (type == 2)
     ctler->set_timeout(18);
@@ -63,8 +63,8 @@ void NatRpcs::NatDetectionPing(const std::string &remote_ip,
   args.set_ping("nat_detection_ping");
   rpcprotocol::Controller controller;
   controller.set_timeout(kRpcNatPingTimeout);
-  rpcprotocol::Channel channel(pchannel_manager_, transport_handler_,
-                               ctler->transport_id(), remote_ip, remote_port,
+  rpcprotocol::Channel channel(pchannel_manager_, transport_,
+                               remote_ip, remote_port,
                                "", 0, rendezvous_ip, rendezvous_port);
   KademliaService::Stub service(&channel);
   service.NatDetectionPing(ctler, &args, resp, callback);
