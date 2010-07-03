@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/thread/thread.hpp>
 #include <gtest/gtest.h>
 #include <list>
+#include <iostream>
 #include <string>
 #include "maidsafe/transport/transport-api.h"
 #include "maidsafe/transport/transporthandler-api.h"
@@ -47,35 +48,25 @@ TEST_F(TransportTest, BEH_TRANS_start_bare_node) {
 
   boost::int16_t node1_port;
   transport::TransportUDT node1;
-  ASSERT_EQ(0, node1.Start(0));
+  ASSERT_EQ(0, node1.StartListening(0, ""));
   ASSERT_FALSE(node1.is_stopped());
   node1_port = node1.listening_port();
+  std::cout << node1_port << std::endl;
   ASSERT_NE(0, node1_port);
-  node1.Stop();
+  node1.StopListening();
   ASSERT_TRUE(node1.is_stopped());
 }
 
-TEST_F(TransportTest, BEH_TRANS_start_managed_node) {
-  transport::TransportHandler node1_handler, node2_handler;
-  transport::TransportUDT node1, node2;
-  boost::int16_t node1_id, node1_port = 0;
-  ASSERT_EQ(0, node1_handler.Register(&node1, &node1_id));
-  ASSERT_EQ(0, node1_handler.Start(0, node1_id));
-  ASSERT_FALSE(node1_handler.is_stopped(node1_id));
-  node1_port = node1_handler.listening_port(node1_port);
-  ASSERT_NE(0, node1_port);
-  node1_handler.Stop(node1_id);
-  ASSERT_TRUE(node1_handler.is_stopped(node1_id));
-}
+
 
 TEST_F(TransportTest, BEH_TRANS_start_1_send_from_100) {
 // set up a node type
   transport::TransportUDT recieving_node;
-  ASSERT_TRUE(recieving_node.Start(0));
+  ASSERT_TRUE(recieving_node.StartListening(0, ""));
 // OK get port we started on (binds to all addresses)
 
   boost::int16_t recieving_node_port = recieving_node.listening_port();
-  recieving_node.
+
 // vector of nodes of right type
   std::vector<transport::TransportUDT*> nodes;
   for (int i = 0 ; i < 100 ; ++i) {
@@ -85,14 +76,14 @@ TEST_F(TransportTest, BEH_TRANS_start_1_send_from_100) {
 // stop them all, just for a laugh;
 std::vector<transport::TransportUDT*>::iterator node;
 for (node=nodes.begin(); node != nodes.end(); ++node) {
-  ASSERT_EQ(0, (*node)->Start(0));
+  ASSERT_EQ(0, (*node)->StartListening(0, ""));
    ASSERT_FALSE((*node)->is_stopped());
   int node_port = (*node)->listening_port();
   ASSERT_NE(0, node_port);
-  (*node)->Stop();
+  (*node)->StopListening();
   ASSERT_TRUE((*node)->is_stopped());
   // send some info to recieving_node
-  (*node)->
+ // (*node)->
 }
 
 

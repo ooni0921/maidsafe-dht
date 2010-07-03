@@ -39,7 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/base/calllatertimer.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/rpcprotocol/channelimpl.h"
-#include "maidsafe/transport/transport-api.h"
+#include "maidsafe/transport/transportudt.h"
 
 namespace rpcprotocol {
 

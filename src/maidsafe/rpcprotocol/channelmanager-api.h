@@ -52,7 +52,7 @@ class Stats;
 
 
 namespace transport {
-class TransportHandler;
+class TransportUDT;
 }  // namespace transport
 
 
@@ -82,9 +82,9 @@ class ChannelManager {
  public:
   /**
   * Constructor
-  * @param ptransport_handler Pointer to a transport handler object.
+  * @param ptransport_handler Pointer to the selected transport object.
   */
-  explicit ChannelManager(transport::TransportHandler *transport_handler);
+  explicit ChannelManager(transport::TransportUDT *transport);
   ~ChannelManager();
   /**
   * Registers a channel and identifies it with the name of the RPC service that

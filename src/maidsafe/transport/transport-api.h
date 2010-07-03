@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/function.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/signals2/signal.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
 #include <string>
@@ -64,7 +65,8 @@ namespace transport {
   kNoSocket          = 7,
   kInvalidAddress    = 8,
   kNoRendezvous      = 9,
-  kError             = 10
+  kNoResources       = 10,
+  kError             = 11
   };
 
 // Default Types, if you want more you will need to comment this out and
@@ -98,17 +100,23 @@ class Transport {
 public:
   virtual ~Transport() {}
   virtual TransportCondition Ping(const std::string &remote_ip,
-                                  const boost::uint16_t &remote_port) = 0;
-  virtual TransportCondition Send(DataType,
-                                  const std::string &data,
+                                  const boost::uint16_t &remote_port);
+  virtual TransportCondition Send(const std::string &data,
                                   const std::string &remote_ip,
                                   const boost::uint16_t &remote_port) = 0;
-  virtual TransportCondition Send(DataType,
-                                  const std::string &data,
+  virtual TransportCondition Send(const std::string &data,
                                   const std::string &remote_ip,
                                   const boost::uint16_t &remote_port,
                                   const std::string &rendezvous_ip,
                                   const boost::uint16_t &rendezvous_port) = 0;
+  virtual TransportCondition SendFile(const boost::filesystem::path &path,
+                                  const std::string &remote_ip,
+                                  const boost::uint16_t &remote_port);
+  virtual TransportCondition SendFile(const boost::filesystem::path &path,
+                                  const std::string &remote_ip,
+                                  const boost::uint16_t &remote_port,
+                                  const std::string &rendezvous_ip,
+                                  const boost::uint16_t &rendezvous_port);                                
   virtual TransportCondition StartListening(const boost::uint16_t &port,
                                             const std::string &ip) = 0;
   virtual void CloseConnection(const boost::uint32_t &connection_id) = 0;
@@ -117,8 +125,8 @@ public:
                                   const boost::uint16_t &remote_port,
                                   const boost::uint16_t &refresh_time,
                                   const std::string &id,
-                                  ConnectionType &connection_type) = 0;
-  virtual TransportCondition KillConnection(const std::string &id) = 0;
+                                  ConnectionType &connection_type);
+  virtual TransportCondition KillConnection(const std::string &id);
   virtual bool peer_address(struct sockaddr *peer_addr) = 0;
   virtual boost::uint16_t listening_port() = 0;
 // accessors
@@ -141,8 +149,7 @@ public:
 // Signals (boost::signals2)
   typedef boost::signals2::signal<void(const std::string&,
                                       const boost::uint32_t&,
-                                      const boost::int16_t&,
-                                      const float &)>
+                                      const boost::int16_t&)>
                                       SignalMessageReceived;
   typedef boost::signals2::signal<void(ConnectionType,
                                        const std::string&,

@@ -100,24 +100,23 @@ class TransportUDT : public Transport {
  public:
   TransportUDT();
   ~TransportUDT();
-//   enum DataType { kString, kFile };
-  TransportType transport_type() { return kUdt; }
-  boost::int16_t transport_id() { return transport_id_; }
-  void set_transport_id(const boost::int16_t &transport_id) {
-    transport_id_ = transport_id;
-  }
+  
   static void CleanUp();
 
-  TransportCondition Send(const rpcprotocol::RpcMessage &data,
-                          const boost::uint32_t &connection_id,
-                          const bool &new_socket);
-  TransportCondition Send(const std::string &data, const std::string &remote_ip,
-                          const boost::uint16_t &remote_port);
-  TransportCondition Send(const std::string &data, const std::string &remote_ip,
-                          const boost::uint16_t &remote_port,
-                          const std::string &rendezvous_ip,
-                          const boost::uint16_t &rendezvous_port);
-  TransportCondition StartListening(const boost::uint16_t & port);
+  virtual TransportCondition Send(const std::string &data,
+                                  const std::string &remote_ip,
+                                  const boost::uint16_t &remote_port);
+  virtual TransportCondition Send(const std::string &data,
+                                  const std::string &remote_ip,
+                                  const boost::uint16_t &remote_port,
+                                  const std::string &rendezvous_ip,
+                                  const boost::uint16_t &rendezvous_port);
+  virtual TransportCondition SendFile(const boost::filesystem::path &path,
+                                  const std::string &remote_ip,
+                                  const boost::uint16_t &remote_port);
+  virtual TransportCondition Send(const DataType &type,const std::string &data);
+  TransportCondition StartListening(const boost::uint16_t & port,
+                                            const std::string &ip);
   int StartLocal(const boost::uint16_t &port);
   void CloseConnection(const boost::uint32_t &connection_id);
   void StopListening();
@@ -150,7 +149,6 @@ class TransportUDT : public Transport {
   void AddIncomingConnection(UdtSocket udt_socket,
                              boost::uint32_t *connection_id);
   void HandleRendezvousMsgs(const HolePunchingMsg &message);
-  TransportCondition Send(const DataType &type, std::string &data);
   void SendHandle();
   int Connect(const std::string &peer_address, const boost::uint16_t &peer_port,
               UdtSocket *udt_socket);
@@ -185,8 +183,7 @@ class TransportUDT : public Transport {
   std::set<boost::uint32_t> data_arrived_;
   std::map<boost::uint32_t, struct sockaddr> ips_from_connections_;
   std::map<boost::uint32_t, UdtSocket> send_sockets_;
-  TransportType transport_type_;
-  boost::int16_t transport_id_;
+
 
 };
 
