@@ -120,7 +120,7 @@ message DeleteResponse {
 };
 
 message UpdateRequest {
-  required string key = 1;
+  required bytes key = 1;
   required SignedValue new_value = 2;
   required SignedValue old_value = 3;
   required int32 ttl = 4;
