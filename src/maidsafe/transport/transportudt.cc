@@ -194,6 +194,14 @@ TransportCondition TransportUDT::Send(const std::string &data,
 //   return TransportCondition::kSucess;
 // }
 
+virtual TransportCondition Ping(const std::string &remote_ip,
+                                  const boost::uint16_t &remote_port,
+                                  const std::string &rendezvous_ip,
+                                  const boost::uint16_t &rendezvous_port){
+
+}
+
+
 void TransportUDT::StopListening() {
   if (stop_)
     return;
@@ -1082,6 +1090,9 @@ int TransportUDT::StartLocal(const boost::uint16_t &port) {
   current_id_ = base::GenerateNextTransactionId(current_id_);
   return 0;
 }
+
+
+
 
 bool TransportUDT::IsPortAvailable(const boost::uint16_t &port) {
   struct addrinfo addrinfo_hints;

@@ -103,20 +103,21 @@ class TransportUDT : public Transport {
   
   static void CleanUp();
 
-  virtual TransportCondition Send(const std::string &data,
-                                  const std::string &remote_ip,
-                                  const boost::uint16_t &remote_port);
-  virtual TransportCondition Send(const std::string &data,
-                                  const std::string &remote_ip,
-                                  const boost::uint16_t &remote_port,
-                                  const std::string &rendezvous_ip,
-                                  const boost::uint16_t &rendezvous_port);
-  virtual TransportCondition SendFile(const boost::filesystem::path &path,
-                                  const std::string &remote_ip,
-                                  const boost::uint16_t &remote_port);
-  virtual TransportCondition Send(const DataType &type,const std::string &data);
+  TransportCondition Send(const std::string &data,
+                          const std::string &remote_ip,
+                          const boost::uint16_t &remote_port);
+  TransportCondition Send(const std::string &data,
+                          const std::string &remote_ip,
+                          const boost::uint16_t &remote_port,
+                          const std::string &rendezvous_ip,
+                          const boost::uint16_t &rendezvous_port);
+  TransportCondition SendFile(const boost::filesystem::path &path,
+                              const std::string &remote_ip,
+                              const boost::uint16_t &remote_port);
+  TransportCondition Send(const DataType &type,const std::string &data);
   TransportCondition StartListening(const boost::uint16_t & port,
-                                            const std::string &ip);
+                                    const std::string &ip);
+
   int StartLocal(const boost::uint16_t &port);
   void CloseConnection(const boost::uint32_t &connection_id);
   void StopListening();
@@ -138,13 +139,14 @@ class TransportUDT : public Transport {
                        const boost::uint16_t &remote_port);
   bool IsPortAvailable(const boost::uint16_t &port);
  private:
+  TransportCondition ConnectToSend(const std::string &remote_ip,
+                                   const boost::uint16_t &remote_port,
+                                   const std::string &rendezvous_ip,
+                                   const boost::uint16_t &rendezvous_port);
   TransportUDT& operator=(const TransportUDT&);
   TransportUDT(TransportUDT&);
   // needed for UDT to set up a connection to send to
-  int ConnectToSend(const std::string &remote_ip,
-                    const boost::uint16_t &remote_port,
-                    const std::string &rendezvous_ip,
-                    const boost::uint16_t &rendezvous_port);
+
   void AddIncomingConnection(UdtSocket udt_socket);
   void AddIncomingConnection(UdtSocket udt_socket,
                              boost::uint32_t *connection_id);

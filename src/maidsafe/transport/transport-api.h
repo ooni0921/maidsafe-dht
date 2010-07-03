@@ -100,7 +100,9 @@ class Transport {
 public:
   virtual ~Transport() {}
   virtual TransportCondition Ping(const std::string &remote_ip,
-                                  const boost::uint16_t &remote_port);
+                                  const boost::uint16_t &remote_port,
+                                  const std::string &rendezvous_ip,
+                                  const boost::uint16_t &rendezvous_port);
   virtual TransportCondition Send(const std::string &data,
                                   const std::string &remote_ip,
                                   const boost::uint16_t &remote_port) = 0;
