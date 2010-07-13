@@ -75,7 +75,12 @@ std::string RandomString(const size_t &length) {
   std::string random_string;
   random_string.reserve(length);
   while (random_string.size() < length) {
+#ifdef MAIDSAFE_APPLE
+     size_t iter_length = (length - random_string.size()) < 65536U ?
+                          (length - random_string.size()) : 65536U;
+#else
     size_t iter_length = std::min(length - random_string.size(), 65536U);
+#endif
     boost::scoped_array<byte> random_bytes(new byte[iter_length + 1]);
     {
       boost::mutex::scoped_lock lock(g_random_number_generator_mutex);
