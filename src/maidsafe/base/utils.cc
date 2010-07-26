@@ -79,7 +79,7 @@ std::string RandomString(const size_t &length) {
      size_t iter_length = (length - random_string.size()) < 65536U ?
                           (length - random_string.size()) : 65536U;
 #else
-    size_t iter_length = std::min(length - random_string.size(), 65536U);
+    size_t iter_length = std::min(length - random_string.size(), size_t(65536));
 #endif
     boost::scoped_array<byte> random_bytes(new byte[iter_length + 1]);
     {
