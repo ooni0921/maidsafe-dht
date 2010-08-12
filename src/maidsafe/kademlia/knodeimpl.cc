@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/assert.hpp>
 #include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <google/protobuf/descriptor.h>
 #include <algorithm>
@@ -154,7 +155,7 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
       is_joined_(false), prouting_table_(), node_id_(), fake_kClientId_(),
       host_ip_(), type_(type), host_port_(0), rv_ip_(),
       rv_port_(0), bootstrapping_nodes_(), K_(k), alpha_(kAlpha), beta_(kBeta),
-      refresh_routine_started_(false), kad_config_path_(), local_host_ip_(),
+      refresh_routine_started_(false), kad_config_path_(""), local_host_ip_(),
       local_host_port_(0), stopping_(false), port_forwarded_(port_forwarded),
       use_upnp_(use_upnp), contacts_to_add_(), addcontacts_routine_(),
       add_ctc_cond_(), private_key_(private_key), public_key_(public_key),
