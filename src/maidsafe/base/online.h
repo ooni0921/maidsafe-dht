@@ -48,7 +48,7 @@ class OnlineController {
   static OnlineController* Instance();
   boost::uint16_t RegisterObserver(const boost::uint16_t &group,
                                    const Observer &observer);
-  bool UnregisterObserver(boost::uint16_t id);
+  bool UnregisterObserver(const boost::uint16_t &id);
   void UnregisterGroup(const boost::uint16_t &group);
   void UnregisterAll();
   void SetOnline(const boost::uint16_t &group, const bool &online);
