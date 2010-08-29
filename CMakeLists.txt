@@ -191,7 +191,7 @@ ELSEIF(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
 ENDIF()
 
 # Create CTestCustom.cmake to avoid inclusion of coverage results from third-party code
-FILE(WRITE ${${PROJECT_NAME}_BINARY_DIR}/CTestCustom.cmake "SET(CTEST_CUSTOM_COVERAGE_EXCLUDE \${CTEST_CUSTOM_COVERAGE_EXCLUDE} \"protobuf/\" \"tests/\" \"cryptopp/\"  \"libupnp/\" \"nat-pmp/\"  \"udt/\")\n")
+FILE(WRITE ${${PROJECT_NAME}_BINARY_DIR}/CTestCustom.cmake "SET(CTEST_CUSTOM_COVERAGE_EXCLUDE \${CTEST_CUSTOM_COVERAGE_EXCLUDE} \"protobuf/\" \"tests/\" \"cryptopp/\"  \"libupnp/\"  \"upnp/\" \"nat-pmp/\"  \"udt/\")\n")
 
 ###################################################################################################
 # Set default directories to be searched for included files and libs                              #
