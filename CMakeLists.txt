@@ -48,18 +48,11 @@ SET(ERROR_MESSAGE_CMAKE_PATH "cmake ../../..")
 GET_FILENAME_COMPONENT(CMAKE_BUILD_TYPE_DIR ${CMAKE_BINARY_DIR} NAME)
 
 # Variable MSVC is not set until after PROJECT command below
-SET(KDEV 0)
 IF(CMAKE_BUILD_TYPE_DIR MATCHES "Win_MSVC")
   SET(CMAKE_BUILD_TYPE_DIR Release)
   SET(ERROR_MESSAGE_CMAKE_PATH "   cmake ..\\..")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}\tdel ${CMAKE_CACHEFILE}\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"Visual Studio 9 2008\"\n\n")
-ELSEIF(CMAKE_BUILD_TYPE_DIR MATCHES "kdev")
-  SET(CMAKE_BUILD_TYPE_DIR Release)
-  SET(ERROR_MESSAGE_CMAKE_PATH "   cmake ..\\..")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\tdel ${CMAKE_CACHEFILE}\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"Unix Makefiles\"\n\n")
-  SET(KDEV 1)
 ELSEIF(UNIX)
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}\trm ${CMAKE_CACHEFILE}\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"CodeBlocks - Unix Makefiles\"\n\n")
@@ -86,7 +79,7 @@ OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
 # This call resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
 PROJECT(${PROJECT_NAME})
-SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR})
+SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
 
 SET(${PROJECT_NAME}_ROOT ${PROJECT_SOURCE_DIR})
 SET(${PROJECT_NAME}_SOURCE_DIR ${${PROJECT_NAME}_ROOT}/src)
@@ -125,7 +118,7 @@ IF(APPLE)
   SET(CMAKE_OSX_SYSROOT "/")
 ENDIF()
 
-EXECUTE_PROCESS(COMMAND svn info OUTPUT_VARIABLE SVN_INFO OUTPUT_STRIP_TRAILING_WHITESPACE)
+EXECUTE_PROCESS(COMMAND svn info ${${PROJECT_NAME}_SOURCE_DIR}/.. OUTPUT_VARIABLE SVN_INFO OUTPUT_STRIP_TRAILING_WHITESPACE)
 IF(SVN_INFO)
   STRING(REGEX REPLACE "\n" ";" SVN_INFO ${SVN_INFO})
   FOREACH(SVN_INFO_LINE ${SVN_INFO})
@@ -176,11 +169,9 @@ ELSE()
   SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Static library target dir.")
 ENDIF()
 
-IF(NOT ${KDEV})
-  SET(CMAKE_DEBUG_POSTFIX _d)
-  SET(CMAKE_RELWITHDEBINFO_POSTFIX _rwdi)
-  SET(CMAKE_MINSIZEREL_POSTFIX _msr)
-ENDIF()
+SET(CMAKE_DEBUG_POSTFIX _d)
+SET(CMAKE_RELWITHDEBINFO_POSTFIX _rwdi)
+SET(CMAKE_MINSIZEREL_POSTFIX _msr)
 
 IF(CMAKE_BUILD_TYPE MATCHES "Debug")
   SET(TEST_POSTFIX ${CMAKE_DEBUG_POSTFIX})
@@ -191,7 +182,7 @@ ELSEIF(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
 ENDIF()
 
 # Create CTestCustom.cmake to avoid inclusion of coverage results from third-party code
-FILE(WRITE ${${PROJECT_NAME}_BINARY_DIR}/CTestCustom.cmake "SET(CTEST_CUSTOM_COVERAGE_EXCLUDE \${CTEST_CUSTOM_COVERAGE_EXCLUDE} \"protobuf/\" \"tests/\" \"cryptopp/\"  \"libupnp/\"  \"upnp/\" \"nat-pmp/\"  \"udt/\")\n")
+FILE(WRITE ${${PROJECT_NAME}_BINARY_DIR}/CTestCustom.cmake "SET(CTEST_CUSTOM_COVERAGE_EXCLUDE \${CTEST_CUSTOM_COVERAGE_EXCLUDE} \"protobuf/\" \"tests/\" \"cryptopp/\"  \"libupnp/\"  \"upnp/\" \"nat-pmp/\"  \"udt/\")\n\n")
 
 ###################################################################################################
 # Set default directories to be searched for included files and libs                              #
@@ -445,7 +436,7 @@ ADD_EXECUTABLE(kaddemo_static ${T_DEMO_DIR} ${MAIDSAFE_H})
 ADD_EXECUTABLE(benchmark_static ${T_BENCHMARK_DIR} ${MAIDSAFE_H})
 
 # Force renaming of exes to match standard CMake library renaming policy
-IF((NOT MSVC) AND (NOT ${KDEV}))
+IF(NOT MSVC)
   SET_TARGET_PROPERTIES(TESTbase PROPERTIES
                           DEBUG_OUTPUT_NAME TESTbase${CMAKE_DEBUG_POSTFIX}
                           RELWITHDEBINFO_OUTPUT_NAME TESTbase${CMAKE_RELWITHDEBINFO_POSTFIX}
@@ -495,6 +486,11 @@ ADD_LIBRARY(maidsafe_dht_static STATIC ${DHT_SOURCE_FILES})
 #IF(NOT MSVC)
   SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES OUTPUT_NAME maidsafe_dht)
 #ENDIF()
+
+# When this target is built, it removes all .gcda files from the build directory and its subdirectories
+IF(UNIX)
+  ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${${PROJECT_NAME}_ROOT}/build/tools/clean_coverage.cmake)
+ENDIF()
 
 ###################################################################################################
 # Builds                                                                                          #
@@ -688,7 +684,7 @@ ENDIF()
 
 IF(UNIX)
   SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -ggdb -pg -fprofile-arcs -ftest-coverage")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem ${CMAKE_INCLUDE_PATH} -isystem  ${PROJECT_NAME}_SOURCE_DIR}/maidsafe/protobuf/ -W -Wall -Wextra -pedantic -pedantic-errors -std=c++0x -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem ${CMAKE_INCLUDE_PATH} -isystem ${PROJECT_NAME}_SOURCE_DIR}/maidsafe/protobuf/ -W -Wall -Wextra -pedantic -pedantic-errors -std=c++0x -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
@@ -921,7 +917,7 @@ INSTALL(FILES ${ABS_MAIDSAFE_PROTO_INSTALL_FILES} DESTINATION include/maidsafe/p
 INSTALL(FILES ${ABS_MAIDSAFE_RPC_INSTALL_FILES} DESTINATION include/maidsafe/rpcprotocol)
 INSTALL(FILES ${ABS_MAIDSAFE_TRANS_INSTALL_FILES} DESTINATION include/maidsafe/transport)
 
-IF(CMAKE_BUILD_TYPE MATCHES Release)
+IF(CMAKE_BUILD_TYPE MATCHES "Release")
   SET(CPACK_PACKAGE_VERSION_MAJOR "0")
   SET(CPACK_PACKAGE_VERSION_MINOR "1")
   SET(CPACK_PACKAGE_VERSION_PATCH ${pddate})

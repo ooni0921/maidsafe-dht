@@ -46,7 +46,7 @@ void GenerateRandomStrings(const int &string_count,
 
 }  // namespace test_utils
 
-TEST(UtilsTest, BEH_BASE_RandomStringMultiThread) {
+TEST(UtilsTest, FUNC_BASE_RandomStringMultiThread) {
   int thread_count(20);
   int string_count(1000);
   size_t string_size(4096);
