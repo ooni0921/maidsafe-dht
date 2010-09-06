@@ -37,10 +37,10 @@ Created by Julian Cain on 11/3/09.
 
 namespace natpmp {
 
-NatPmpClientImpl::NatPmpClientImpl(boost::asio::io_service & ios)
+NatPmpClientImpl::NatPmpClientImpl(boost::asio::io_service *ios)
     : m_public_ip_address_(boost::asio::ip::address_v4::any()),
       io_service_(ios),
-      retry_timer_(ios) {}
+      retry_timer_(*ios) {}
 
 NatPmpClientImpl::~NatPmpClientImpl() {
   // If the socket is valid call stop.
@@ -60,12 +60,12 @@ void NatPmpClientImpl::Start() {
         "Attempted to start nat-pmp client while socket is in use.");
   } else {
     // Allocate the socket.
-    socket_.reset(new boost::asio::ip::udp::socket(io_service_));
+    socket_.reset(new boost::asio::ip::udp::socket(*io_service_));
 
     boost::system::error_code ec;
 
     // Obtain the default gateway/route.
-    m_gateway_address_ = base::Gateway::DefaultRoute(io_service_, ec);
+    m_gateway_address_ = base::Gateway::DefaultRoute(*io_service_, ec);
 
     if (ec) {
       throw std::runtime_error(ec.message());
@@ -125,7 +125,7 @@ void NatPmpClientImpl::SendMappingRequest(boost::uint16_t protocol,
                                           boost::uint16_t private_port,
                                           boost::uint16_t public_port,
                                           boost::uint32_t lifetime) {
-  io_service_.post(boost::bind(&NatPmpClientImpl::DoSendMappingRequest,
+  io_service_->post(boost::bind(&NatPmpClientImpl::DoSendMappingRequest,
       this, protocol, private_port, public_port, lifetime));
 }
 
