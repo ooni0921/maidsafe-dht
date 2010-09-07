@@ -297,7 +297,7 @@ void TransportUDT::ReceiveHandler() {
   tv.tv_usec = 1000;
   UDT::UDSET readfds;
   while (true) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1));
     {
       boost::mutex::scoped_lock guard(recv_mutex_);
       while (incoming_sockets_.empty() && !stop_) {
@@ -542,7 +542,7 @@ bool TransportUDT::HasReceivedData(const boost::uint32_t &connection_id,
 
 void TransportUDT::SendHandle() {
   while (true) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1));
     {
       boost::mutex::scoped_lock guard(send_mutex_);
       while (outgoing_queue_.empty() && !stop_) {
@@ -774,7 +774,7 @@ void TransportUDT::AcceptConnHandler() {
     if (UDT::INVALID_SOCK == (recver = UDT::accept(listening_socket_,
         reinterpret_cast<sockaddr*>(&clientaddr), &addrlen))) {
       if (UDT::getlasterror().getErrorCode() == CUDTException::EASYNCRCV) {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1));
         continue;
       } else {
         DLOG(ERROR) << "(" << listening_port_ << ") UDT::accept error: " <<
@@ -790,7 +790,7 @@ void TransportUDT::AcceptConnHandler() {
     } else {
       UDT::close(recver);
     }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1));
   }
 }
 
@@ -824,7 +824,7 @@ void TransportUDT::MessageHandler() {
         message_notifier_(msg.raw_data, msg.connection_id, transport_id(),
                           msg.rtt);
       ips_from_connections_.erase(msg.connection_id);
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      boost::this_thread::sleep(boost::posix_time::milliseconds(1));
     }
   }
 }
