@@ -78,7 +78,7 @@ std::string Crypto::SecurePassword(const std::string &password,
   byte purpose = 0;
   boost::uint16_t iter = (pin % 1000) + 1000;
   CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA512> pbkdf;
-  CryptoPP::SecByteBlock derived(32);
+  CryptoPP::SecByteBlock derived(AES256_KeySize + AES256_IVSize);
   pbkdf.DeriveKey(derived, derived.size(), purpose,
                   reinterpret_cast<const byte*>(password.data()),
                   password.size(), reinterpret_cast<const byte*>(salt.data()),
