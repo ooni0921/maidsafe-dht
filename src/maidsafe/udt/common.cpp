@@ -35,13 +35,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 05/25/2010
+   Yunhong Gu, last updated 07/25/2010
 *****************************************************************************/
 
 
 #ifndef WIN32
    #include <cstring>
    #include <cerrno>
+   #include <unistd.h>
 #else
    #include <winsock2.h>
    #include <ws2tcpip.h>
@@ -49,6 +50,7 @@ written by
       #include <wspiapi.h>
    #endif
 #endif
+#
 #include <cmath>
 #include "md5.h"
 #include "common.h"
@@ -90,8 +92,8 @@ CTimer::~CTimer()
 void CTimer::rdtsc(uint64_t &x)
 {
    #ifdef WIN32
-      //HANDLE hCurThread = ::GetCurrentThread(); 
-      //DWORD_PTR dwOldMask = ::SetThreadAffinityMask(hCurThread, 1); 
+      //HANDLE hCurThread = ::GetCurrentThread();
+      //DWORD_PTR dwOldMask = ::SetThreadAffinityMask(hCurThread, 1);
       BOOL ret = QueryPerformanceCounter((LARGE_INTEGER *)&x);
       //SetThreadAffinityMask(hCurThread, dwOldMask);
 
@@ -235,19 +237,19 @@ uint64_t CTimer::getTime()
       return t.tv_sec * 1000000ULL + t.tv_usec;
    #else
       LARGE_INTEGER ccf;
-      HANDLE hCurThread = ::GetCurrentThread(); 
+      HANDLE hCurThread = ::GetCurrentThread();
       DWORD_PTR dwOldMask = ::SetThreadAffinityMask(hCurThread, 1);
       if (QueryPerformanceFrequency(&ccf))
       {
          LARGE_INTEGER cc;
          if (QueryPerformanceCounter(&cc))
          {
-            SetThreadAffinityMask(hCurThread, dwOldMask); 
+            SetThreadAffinityMask(hCurThread, dwOldMask);
             return (cc.QuadPart * 1000000ULL / ccf.QuadPart);
          }
       }
 
-      SetThreadAffinityMask(hCurThread, dwOldMask); 
+      SetThreadAffinityMask(hCurThread, dwOldMask);
       return GetTickCount() * 1000ULL;
    #endif
 }
@@ -282,6 +284,15 @@ void CTimer::waitForEvent()
       pthread_mutex_unlock(&m_EventLock);
    #else
       WaitForSingleObject(m_EventCond, 1);
+   #endif
+}
+
+void CTimer::sleep()
+{
+   #ifndef WIN32
+      usleep(10);
+   #else
+      Sleep(1);
    #endif
 }
 
@@ -329,6 +340,42 @@ void CGuard::leaveCS(pthread_mutex_t& lock)
    #endif
 }
 
+void CGuard::createMutex(pthread_mutex_t& lock)
+{
+   #ifndef WIN32
+      pthread_mutex_init(&lock, NULL);
+   #else
+      lock = CreateMutex(NULL, false, NULL);
+   #endif
+}
+
+void CGuard::releaseMutex(pthread_mutex_t& lock)
+{
+   #ifndef WIN32
+      pthread_mutex_destroy(&lock);
+   #else
+      CloseHandle(lock);
+   #endif
+}
+
+void CGuard::createCond(pthread_cond_t& cond)
+{
+   #ifndef WIN32
+      pthread_cond_init(&cond, NULL);
+   #else
+      cond = CreateEvent(NULL, false, false, NULL);
+   #endif
+}
+
+void CGuard::releaseCond(pthread_cond_t& cond)
+{
+   #ifndef WIN32
+      pthread_cond_destroy(&cond);
+   #else
+      CloseHandle(cond);
+   #endif
+
+}
 
 //
 CUDTException::CUDTException(int major, int minor, int err):
@@ -459,7 +506,7 @@ const char* CUDTException::getErrorMessage()
 
       case 5:
         m_strMsg = "Operation not supported";
- 
+
         switch (m_iMinor)
         {
         case 1:
@@ -508,6 +555,10 @@ const char* CUDTException::getErrorMessage()
 
         case 12:
            m_strMsg += ": Message is too large to send (it must be less than the UDT send buffer size)";
+           break;
+
+        case 13:
+           m_strMsg += ": Invalid epoll ID";
            break;
 
         default:
@@ -605,6 +656,7 @@ const int CUDTException::ESTREAMILL = 5009;
 const int CUDTException::EDGRAMILL = 5010;
 const int CUDTException::EDUPLISTEN = 5011;
 const int CUDTException::ELARGEMSG = 5012;
+const int CUDTException::EINVPOLLID = 5013;
 const int CUDTException::EASYNCFAIL = 6000;
 const int CUDTException::EASYNCSND = 6001;
 const int CUDTException::EASYNCRCV = 6002;

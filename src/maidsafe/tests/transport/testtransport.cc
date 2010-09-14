@@ -1788,6 +1788,10 @@ TEST_F(TransportTest, BEH_TRANS_CheckPortAvailable) {
   ASSERT_FALSE(node2_handler.IsPortAvailable(lp_node1_handler, node2_id));
   ASSERT_TRUE(node2_handler.IsPortAvailable(lp_node1_handler+1, node2_id));
   node1_handler.Stop(node1_id);
+  ASSERT_FALSE(node2_handler.IsPortAvailable(lp_node1_handler, node2_id));
+  // Listening socket takes 3 seconds to close - allow UDT garbage collector to
+  // iterate twice also
+  boost::this_thread::sleep(boost::posix_time::seconds(9));
   ASSERT_TRUE(node2_handler.IsPortAvailable(lp_node1_handler, node2_id));
 }
 

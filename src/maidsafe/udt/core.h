@@ -96,6 +96,11 @@ public: //API
    static int64_t recvfile(UDTSOCKET u, std::fstream& ofs, const int64_t& offset, const int64_t& size, const int& block = 7280000);
    static int select(int nfds, ud_set* readfds, ud_set* writefds, ud_set* exceptfds, const timeval* timeout);
    static int selectEx(const std::vector<UDTSOCKET>& fds, std::vector<UDTSOCKET>* readfds, std::vector<UDTSOCKET>* writefds, std::vector<UDTSOCKET>* exceptfds, int64_t msTimeOut);
+   static int epoll_create();
+   static int epoll_add(const int eid, const std::set<UDTSOCKET>* socks, const std::set<SYSSOCKET>* locals = NULL);
+   static int epoll_remove(const int eid, const std::set<UDTSOCKET>* socks, const std::set<SYSSOCKET>* locals = NULL);
+   static int epoll_wait(const int eid, std::set<UDTSOCKET>* readfds, std::set<UDTSOCKET>* writefds, int64_t msTimeOut, std::set<SYSSOCKET>* lrfds = NULL, std::set<SYSSOCKET>* wrfds = NULL);
+   static int epoll_release(const int eid);
    static CUDTException& getlasterror();
    static int perfmon(UDTSOCKET u, CPerfMon* perf, bool clear = true);
 
@@ -400,8 +405,10 @@ private: // Timers
    volatile uint64_t m_ullSYNInt;		// SYN interval
    volatile uint64_t m_ullACKInt;		// ACK interval
    volatile uint64_t m_ullNAKInt;		// NAK interval
-   volatile uint64_t m_ullMinEXPInt;		// Minimum EXP interval
+   volatile uint64_t m_ullEXPInt;		// EXP interval
    volatile int64_t m_llLastRspTime;		// time stamp of last response from the peer
+
+   uint64_t m_ullMinExpInt;			// timeout lower bound threshold: too small timeout can cause problem
 
    int m_iPktCount;				// packet counter for ACK
    int m_iLightACKCount;			// light ACK counter
@@ -417,6 +424,11 @@ private: // for UDP multiplexer
    uint32_t m_piSelfIP[4];			// local UDP IP address
    CSNode* m_pSNode;				// node information for UDT list used in snd queue
    CRNode* m_pRNode;                            // node information for UDT list used in rcv queue
+
+private: // for epoll
+   std::set<int> m_sPollID;                     // set of epoll ID to trigger
+   void addEPoll(const int eid);
+   void removeEPoll(const int eid);
 };
 
 
