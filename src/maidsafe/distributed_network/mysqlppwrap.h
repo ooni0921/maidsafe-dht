@@ -28,6 +28,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_DISTRIBUTED_NETWORK_MYSQLPPWRAP_H_
 #define MAIDSAFE_DISTRIBUTED_NETWORK_MYSQLPPWRAP_H_
 
+#include <mysql++/mysql++.h>
+
 #include <string>
 #include <vector>
 
@@ -35,10 +37,20 @@ namespace net_client {
 
 class MySqlppWrap {
  public:
+  MySqlppWrap();
+  int Init(const std::string &db, const std::string &server,
+           const std::string &user, const std::string &pass,
+           const std::string &table);
   int Insert(const std::string &key, const std::string &value);
-  int Update(const std::string &key, const std::string &value);
+  int Update(const std::string &key, const std::string &value,
+             const std::string &new_value);
   int Delete(const std::string &key, const std::string &value);
   int Get(const std::string &key, std::vector<std::string> *value);
+
+ private:
+  mysqlpp::Connection connection_;
+  bool connected_;
+  std::string table_;
 };
 
 }  // namespace net_client
