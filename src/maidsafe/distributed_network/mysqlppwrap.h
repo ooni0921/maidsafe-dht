@@ -28,7 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_DISTRIBUTED_NETWORK_MYSQLPPWRAP_H_
 #define MAIDSAFE_DISTRIBUTED_NETWORK_MYSQLPPWRAP_H_
 
-#include <mysql++/mysql++.h>
+#include <mysql++.h>
 
 #include <string>
 #include <vector>

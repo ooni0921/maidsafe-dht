@@ -31,107 +31,148 @@
 #                                                                              #
 #  Written by maidsafe.net team                                                #
 #                                                                              #
-#  Significant contribution made by Stephan Menzel                             #
-#                                                                              #
 #==============================================================================#
 #                                                                              #
-#  Module used to locate MysqlPP libs and headers.                             #
+#  Module used to locate MySQL++ libs and headers.                             #
 #                                                                              #
-#  If using MSVC, finds only Mysqlpp libs which have been compiled using       #
-#  dynamically-linked C runtime library (i.e. with /MD set rather than /MT)    #
-#                                                                              #
-#  Settable variables to aid with finding Mysqlpp are:                         #
+#  Settable variables to aid with finding MySQL++ are:                         #
 #    MYSQLPP_LIB_DIR, MYSQLPP_INC_DIR and MYSQLPP_ROOT_DIR                     #
 #                                                                              #
 #  Variables set and cached by this module are:                                #
-#    Mysqlpp_INCLUDE_DIR, Mysqlpp_LIBRARY_DIR, Mysqlpp_LIBRARY                 #
+#    Mysqlpp_INCLUDE_DIR, Mysqlpp_LIBRARY_DIR, Mysqlpp_LIBRARY and             #
+#    Mysqlpp_FOUND                                                             #
 #                                                                              #
 #  For MSVC, Mysqlpp_LIBRARY_DIR_DEBUG and Mysqlpp_LIBRARY_DEBUG are also set  #
 #  and cached.                                                                 #
 #                                                                              #
 #==============================================================================#
 
-
-UNSET(WARNING_MESSAGE)
-UNSET(Mysqlpp_INCLUDE_DIR CACHE)
-UNSET(Mysqlpp_LIBRARY_DIR CACHE)
-UNSET(Mysqlpp_LIBRARY_DIR_DEBUG CACHE)
-UNSET(Mysqlpp_LIBRARY CACHE)
-UNSET(Mysqlpp_LIBRARY_DEBUG CACHE)
-
-IF(MYSQLPP_LIB_DIR)
-  SET(MYSQLPP_LIB_DIR ${MYSQLPP_LIB_DIR} CACHE PATH "Path to Mysqlpp libraries directory" FORCE)
-ENDIF()
-IF(MYSQLPP_INC_DIR)
-  SET(MYSQLPP_INC_DIR ${MYSQLPP_INC_DIR} CACHE PATH "Path to Mysqlpp include directory" FORCE)
-ENDIF()
-IF(MYSQLPP_ROOT_DIR)
-  SET(MYSQLPP_ROOT_DIR ${MYSQLPP_ROOT_DIR} CACHE PATH "Path to Mysqlpp root directory" FORCE)
-ENDIF()
-
 IF(MSVC)
-  IF(CMAKE_CL_64)
-    SET(MYSQLPP_LIBPATH_SUFFIX msvc/x64/Release)
-  ELSE()
-    SET(MYSQLPP_LIBPATH_SUFFIX msvc/gtest-md/Release)
-  ENDIF()
+  INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindMysql.cmake)
 ELSE()
-  SET(MYSQLPP_LIBPATH_SUFFIX lib lib64)
+  SET(Mysql_FOUND TRUE)
 ENDIF()
 
-FIND_LIBRARY(Mysqlpp_LIBRARY NAMES mysqlpp PATHS ${MYSQLPP_LIB_DIR} ${MYSQLPP_ROOT_DIR} PATH_SUFFIXES ${MYSQLPP_LIBPATH_SUFFIX})
-IF(MSVC)
-  IF(CMAKE_CL_64)
-    SET(MYSQLPP_LIBPATH_SUFFIX msvc/x64/Debug)
-  ELSE()
-    SET(MYSQLPP_LIBPATH_SUFFIX msvc/mysqlpp-md/Debug)
-  ENDIF()
-  FIND_LIBRARY(Mysqlpp_LIBRARY_DEBUG NAMES mysqlppd mysqlpp-mdd PATHS ${MYSQLPP_LIB_DIR} ${MYSQLPP_ROOT_DIR} PATH_SUFFIXES ${MYSQLPP_LIBPATH_SUFFIX})
-ENDIF()
-
-FIND_PATH(Mysqlpp_INCLUDE_DIR mysql++/mysql++.h PATHS ${MYSQLPP_INC_DIR} ${MYSQLPP_ROOT_DIR}/include)
-
-GET_FILENAME_COMPONENT(MYSQLPP_LIBRARY_DIR ${Mysqlpp_LIBRARY} PATH)
-SET(Mysqlpp_LIBRARY_DIR ${MYSQLPP_LIBRARY_DIR} CACHE PATH "Path to Mysqlpp libraries directory" FORCE)
-IF(MSVC)
-  GET_FILENAME_COMPONENT(MYSQLPP_LIBRARY_DIR_DEBUG ${Mysqlpp_LIBRARY_DEBUG} PATH)
-  SET(Mysqlpp_LIBRARY_DIR_DEBUG ${MYSQLPP_LIBRARY_DIR_DEBUG} CACHE PATH "Path to Mysqlpp debug libraries directory" FORCE)
-ENDIF()
-
-IF(NOT Mysqlpp_LIBRARY)
-  SET(WARNING_MESSAGE TRUE)
-  MESSAGE("-- Did not find Mysql++ library")
-ELSE()
-  MESSAGE("-- Found Mysql++ library")
-ENDIF()
-
-IF(MSVC)
-  IF(NOT Mysqlpp_LIBRARY_DEBUG)
-    SET(WARNING_MESSAGE TRUE)
-    MESSAGE("-- Did not find Mysql++ Debug library")
-  ELSE()
-    MESSAGE("-- Found Mysql++ Debug library")
-  ENDIF()
-ENDIF()
-
-IF(NOT Mysqlpp_INCLUDE_DIR)
-  SET(WARNING_MESSAGE TRUE)
-  MESSAGE("-- Did not find Mysql++ library headers")
-ENDIF()
-
-IF(WARNING_MESSAGE)
-  SET(WARNING_MESSAGE "   You can download it at http://tangentsoft.net/mysql++/\n")
-  SET(WARNING_MESSAGE "${WARNING_MESSAGE}   If Mysql++ is already installed, run:\n")
-  SET(WARNING_MESSAGE "${WARNING_MESSAGE}   ${ERROR_MESSAGE_CMAKE_PATH} -DMYSQLPP_LIB_DIR=<Path to mysql++ lib directory> and/or")
-  SET(WARNING_MESSAGE "${WARNING_MESSAGE}\n   ${ERROR_MESSAGE_CMAKE_PATH} -DMYSQLPP_INC_DIR=<Path to mysql++ include directory> and/or")
-  SET(WARNING_MESSAGE "${WARNING_MESSAGE}\n   ${ERROR_MESSAGE_CMAKE_PATH} -DMYSQLPP_ROOT_DIR=<Path to mysql++ root directory>")
-  MESSAGE("${WARNING_MESSAGE}")
-  SET(Mysqlpp_FOUND FALSE CACHE INTERNAL "Found Mysql++ library and headers" FORCE)
+IF(Mysql_FOUND)
+  UNSET(WARNING_MESSAGE)
   UNSET(Mysqlpp_INCLUDE_DIR CACHE)
   UNSET(Mysqlpp_LIBRARY_DIR CACHE)
   UNSET(Mysqlpp_LIBRARY_DIR_DEBUG CACHE)
   UNSET(Mysqlpp_LIBRARY CACHE)
   UNSET(Mysqlpp_LIBRARY_DEBUG CACHE)
-ELSE()
-  SET(Mysqlpp_FOUND TRUE CACHE INTERNAL "Found Mysql++ library and headers" FORCE)
+  UNSET(Mysqlpp_FOUND CACHE)
+
+  IF(MYSQLPP_LIB_DIR)
+    SET(MYSQLPP_LIB_DIR ${MYSQLPP_LIB_DIR} CACHE PATH "Path to MySQL++ libraries directory" FORCE)
+  ENDIF()
+  IF(MYSQLPP_INC_DIR)
+    SET(MYSQLPP_INC_DIR ${MYSQLPP_INC_DIR} CACHE PATH "Path to MySQL++ include directory" FORCE)
+  ENDIF()
+  IF(MYSQLPP_ROOT_DIR)
+    SET(MYSQLPP_ROOT_DIR ${MYSQLPP_ROOT_DIR} CACHE PATH "Path to MySQL++ root directory" FORCE)
+  ENDIF()
+
+  IF(MSVC)
+    SET(MYSQLPP_LIBPATH_SUFFIX lib)
+  ELSE()
+    SET(MYSQLPP_LIBPATH_SUFFIX lib lib64)
+  ENDIF()
+
+  FIND_LIBRARY(Mysqlpp_LIBRARY NAMES mysqlpp PATHS ${MYSQLPP_LIB_DIR} ${MYSQLPP_ROOT_DIR} PATH_SUFFIXES ${MYSQLPP_LIBPATH_SUFFIX})
+  IF(MSVC)
+    FIND_LIBRARY(Mysqlpp_LIBRARY_DEBUG NAMES mysqlpp_d PATHS ${MYSQLPP_LIB_DIR} ${MYSQLPP_ROOT_DIR} PATH_SUFFIXES ${MYSQLPP_LIBPATH_SUFFIX})
+  ENDIF()
+
+  FIND_PATH(Mysqlpp_INCLUDE_DIR mysql++.h PATHS ${MYSQLPP_INC_DIR}/mysql++ ${MYSQLPP_INC_DIR} ${MYSQLPP_ROOT_DIR}/include)
+
+  GET_FILENAME_COMPONENT(MYSQLPP_LIBRARY_DIR ${Mysqlpp_LIBRARY} PATH)
+  SET(Mysqlpp_LIBRARY_DIR ${MYSQLPP_LIBRARY_DIR} CACHE PATH "Path to MySQL++ libraries directory" FORCE)
+
+  IF(MSVC)
+    GET_FILENAME_COMPONENT(MYSQLPP_LIBRARY_DIR_DEBUG ${Mysqlpp_LIBRARY_DEBUG} PATH)
+    SET(Mysqlpp_LIBRARY_DIR_DEBUG ${MYSQLPP_LIBRARY_DIR_DEBUG} CACHE PATH "Path to MySQL++ debug libraries directory" FORCE)
+
+    FIND_FILE(MYSQLPP_DLL mysqlpp.dll PATHS ${Mysqlpp_LIBRARY_DIR})
+    FIND_FILE(MYSQLPP_DLL_DEBUG mysqlpp_d.dll PATHS ${Mysqlpp_LIBRARY_DIR_DEBUG})
+    UNSET(COPIED_MYSQLPP_DLL_DEBUG CACHE)
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E copy ${MYSQLPP_DLL_DEBUG} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/)
+    FIND_FILE(COPIED_MYSQLPP_DLL_DEBUG mysqlpp_d.dll PATHS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/)
+    UNSET(COPIED_MYSQLPP_DLL_RELEASE CACHE)
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E copy ${MYSQLPP_DLL} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release/)
+    FIND_FILE(COPIED_MYSQLPP_DLL_RELEASE mysqlpp.dll PATHS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release/)
+    UNSET(COPIED_MYSQLPP_DLL_RELWITHDEBINFO CACHE)
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E copy ${MYSQLPP_DLL} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/RelWithDebInfo/)
+    FIND_FILE(COPIED_MYSQLPP_DLL_RELWITHDEBINFO mysqlpp.dll PATHS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/RelWithDebInfo/)
+    UNSET(COPIED_MYSQLPP_DLL_MINSIZEREL CACHE)
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E copy ${MYSQLPP_DLL} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/MinSizeRel/)
+    FIND_FILE(COPIED_MYSQLPP_DLL_MINSIZEREL mysqlpp.dll PATHS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/MinSizeRel/)
+
+    IF(NOT MYSQLPP_DLL)
+      SET(WARNING_MESSAGE TRUE)
+      MESSAGE("-- Did not find MySQL++ DLL")
+    ENDIF()
+
+    IF(NOT MYSQLPP_DLL_DEBUG)
+      SET(WARNING_MESSAGE TRUE)
+      MESSAGE("-- Did not find MySQL++ Debug DLL")
+    ENDIF()
+
+    IF(NOT WARNING_MESSAGE AND NOT COPIED_MYSQLPP_DLL_DEBUG)
+      SET(WARNING_MESSAGE TRUE)
+      MESSAGE("-- Failed to copy MySQL++ Debug DLL to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/")
+    ENDIF()
+
+    IF(NOT WARNING_MESSAGE AND NOT COPIED_MYSQLPP_DLL_RELEASE)
+      SET(WARNING_MESSAGE TRUE)
+      MESSAGE("-- Failed to copy MySQL++ DLL to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release/")
+    ENDIF()
+
+    IF(NOT WARNING_MESSAGE AND NOT COPIED_MYSQLPP_DLL_RELWITHDEBINFO)
+      SET(WARNING_MESSAGE TRUE)
+      MESSAGE("-- Failed to copy MySQL++ DLL to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/RelWithDebInfo/")
+    ENDIF()
+
+    IF(NOT WARNING_MESSAGE AND NOT COPIED_MYSQLPP_DLL_MINSIZEREL)
+      SET(WARNING_MESSAGE TRUE)
+      MESSAGE("-- Failed to copy MySQL++ DLL to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/MinSizeRel/")
+    ENDIF()
+  ENDIF()
+
+  IF(NOT Mysqlpp_LIBRARY)
+    SET(WARNING_MESSAGE TRUE)
+    MESSAGE("-- Did not find MySQL++ library")
+  ELSE()
+    MESSAGE("-- Found MySQL++ library")
+  ENDIF()
+
+  IF(MSVC)
+    IF(NOT Mysqlpp_LIBRARY_DEBUG)
+      SET(WARNING_MESSAGE TRUE)
+      MESSAGE("-- Did not find MySQL++ Debug library")
+    ELSE()
+      MESSAGE("-- Found MySQL++ Debug library")
+    ENDIF()
+  ENDIF()
+
+  IF(NOT Mysqlpp_INCLUDE_DIR)
+    SET(WARNING_MESSAGE TRUE)
+    MESSAGE("-- Did not find MySQL++ library headers")
+  ENDIF()
+
+  IF(WARNING_MESSAGE)
+    SET(WARNING_MESSAGE "   You can download it at http://tangentsoft.net/mysql++/\n")
+    SET(WARNING_MESSAGE "${WARNING_MESSAGE}   If MySQL++ is already installed, run:\n")
+    SET(WARNING_MESSAGE "${WARNING_MESSAGE}   ${ERROR_MESSAGE_CMAKE_PATH} -DMYSQLPP_LIB_DIR=<Path to MySQL++ lib directory> and/or")
+    SET(WARNING_MESSAGE "${WARNING_MESSAGE}\n   ${ERROR_MESSAGE_CMAKE_PATH} -DMYSQLPP_INC_DIR=<Path to MySQL++ include directory> and/or")
+    SET(WARNING_MESSAGE "${WARNING_MESSAGE}\n   ${ERROR_MESSAGE_CMAKE_PATH} -DMYSQLPP_ROOT_DIR=<Path to MySQL++ root directory>")
+    MESSAGE("${WARNING_MESSAGE}")
+    SET(Mysqlpp_FOUND FALSE CACHE INTERNAL "Found MySQL++ library and headers" FORCE)
+    UNSET(Mysqlpp_INCLUDE_DIR CACHE)
+    UNSET(Mysqlpp_LIBRARY_DIR CACHE)
+    UNSET(Mysqlpp_LIBRARY_DIR_DEBUG CACHE)
+    UNSET(Mysqlpp_LIBRARY CACHE)
+    UNSET(Mysqlpp_LIBRARY_DEBUG CACHE)
+  ELSE()
+    SET(Mysqlpp_FOUND TRUE CACHE INTERNAL "Found MySQL++ library and headers" FORCE)
+  ENDIF()
 ENDIF()

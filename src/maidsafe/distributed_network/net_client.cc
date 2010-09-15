@@ -25,10 +25,20 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <signal.h>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include "maidsafe/base/log.h"
 #include "maidsafe/base/utils.h"
 #include "maidsafe/distributed_network/mysqlppwrap.h"
+#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/protobuf/general_messages.pb.h"
+
+namespace fs = boost::filesystem;
 
 namespace net_client {
+
+static const boost::uint16_t K = 4;
 
 void RunSmallTest() {
   MySqlppWrap msw;
@@ -152,8 +162,136 @@ void RunSmallTest() {
 
 }  // namespace net_client
 
-int main() {
-  net_client::RunSmallTest();
+class JoinCallback {
+ public:
+  JoinCallback() : mutex_(),
+                   cond_var_(),
+                   result_arrived_(false),
+                   success_(false) {}
+  void AssessResult(const std::string &result) {
+    base::GeneralResponse message;
+    boost::mutex::scoped_lock lock(mutex_);
+    success_ = true;
+    if (!message.ParseFromString(result)) {
+      DLOG(ERROR) << "Can't parse join response." << std::endl;
+      success_ = false;
+    }
+    if (success_ && !message.IsInitialized()) {
+      DLOG(ERROR) << "Join response isn't initialised." << std::endl;
+      success_ = false;
+    }
+    if (success_ && message.result() != kad::kRpcResultSuccess) {
+      DLOG(ERROR) << "Join failed." << std::endl;
+      success_ = false;
+    }
+    result_arrived_ = true;
+    cond_var_.notify_one();
+  }
+  bool result_arrived() const { return result_arrived_; }
+  bool JoinedNetwork() {
+    boost::mutex::scoped_lock lock(mutex_);
+    try {
+      bool wait_success = cond_var_.timed_wait(lock,
+          boost::posix_time::milliseconds(30000),
+          boost::bind(&JoinCallback::result_arrived, this));
+      if (!wait_success) {
+        DLOG(ERROR) << "Failed to wait for join callback." << std::endl;
+        return false;
+      }
+    }
+    catch(const std::exception &e) {
+      DLOG(ERROR) << "Error waiting to join: " << e.what() << std::endl;
+      return false;
+    }
+    return success_;
+  }
+ private:
+  boost::mutex mutex_;
+  boost::condition_variable cond_var_;
+  bool result_arrived_, success_;
+};
+
+bool KadConfigOK() {
+  base::KadConfig kadconfig;
+  fs::path kadconfig_path("/.kadconfig");
+  try {
+    fs::ifstream input(kadconfig_path.string().c_str(),
+                       std::ios::in | std::ios::binary);
+    if (!kadconfig.ParseFromIstream(&input)) {
+      return false;
+    }
+    input.close();
+    if (kadconfig.contact_size() == 0)
+      return false;
+  }
+  catch(const std::exception &) {
+    return false;
+  }
+  return true;
+}
+
+volatile int ctrlc_pressed = 0;
+
+void CtrlcHandler(int b) {
+  b = 1;
+  ctrlc_pressed = b;
+}
+
+int main(int argc, char **argv) {
+  google::InitGoogleLogging(argv[0]);
+#ifndef HAVE_GLOG
+  bool FLAGS_logtostderr;
+#endif
+  FLAGS_logtostderr = true;
+
+  if (!KadConfigOK()) {
+    DLOG(ERROR) << "Can't find .kadconfig" << std::endl;
+    return 1;
+  }
+
+  // Create required objects
+  transport::TransportHandler transport_handler;
+  transport::TransportUDT transport_udt;
+  boost::int16_t transport_id;
+  transport_handler.Register(&transport_udt, &transport_id);
+  rpcprotocol::ChannelManager channel_manager(&transport_handler);
+  crypto::RsaKeyPair rsa_key_pair;
+  rsa_key_pair.GenerateKeys(4096);
+  kad::KNode node(&channel_manager, &transport_handler, kad::CLIENT,
+                  rsa_key_pair.private_key(), rsa_key_pair.public_key(),
+                  false, false, net_client::K);
+  node.set_transport_id(transport_id);
+  if (!channel_manager.RegisterNotifiersToTransport() ||
+      !transport_handler.RegisterOnServerDown(boost::bind(
+      &kad::KNode::HandleDeadRendezvousServer, &node, _1))) {
+    return 2;
+  }
+  if (0 != transport_handler.Start(0, transport_id) ||
+      0 != channel_manager.Start()) {
+    return 3;
+  }
+
+  // Join the test network
+  JoinCallback callback;
+  node.Join("/.kadconfig",
+            boost::bind(&JoinCallback::AssessResult, &callback, _1));
+  if (!callback.JoinedNetwork()) {
+    transport_handler.Stop(transport_id);
+    channel_manager.Stop();
+    return 4;
+  }
+  printf("Node info: %s", node.contact_info().DebugString().c_str());
+  printf("=====================================\n");
+  printf("Press Ctrl+C to exit\n");
+  printf("=====================================\n\n");
+  signal(SIGINT, CtrlcHandler);
+  while (!ctrlc_pressed) {
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+  transport_handler.StopPingRendezvous();
+  node.Leave();
+  transport_handler.Stop(transport_id);
+  channel_manager.Stop();
   return 0;
 }
 
