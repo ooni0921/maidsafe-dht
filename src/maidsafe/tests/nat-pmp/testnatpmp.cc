@@ -32,7 +32,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/nat-pmp/natpmpclient.h"
 
 class NATPMPTest : public testing::Test {

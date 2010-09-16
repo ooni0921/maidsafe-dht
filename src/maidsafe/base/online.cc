@@ -53,7 +53,7 @@ boost::uint16_t OnlineController::RegisterObserver(
   return id;
 }
 
-bool OnlineController::UnregisterObserver(const boost::uint16_t &id) {
+bool OnlineController::UnregisterObserver(boost::uint16_t id) {
   boost::mutex::scoped_lock loch(ol_mutex_);
   std::map<boost::uint16_t, GroupedObserver>::iterator it = observers_.find(id);
   if (it != observers_.end()) {
