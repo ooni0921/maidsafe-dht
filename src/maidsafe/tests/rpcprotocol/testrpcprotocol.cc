@@ -26,6 +26,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <boost/thread/mutex.hpp>
 #include <gtest/gtest.h>
 #include <google/protobuf/descriptor.h>
 #include <algorithm>
@@ -114,64 +115,115 @@ class MirrorTestService : public tests::MirrorTest {
 
 class ResultHolder {
  public:
-  ResultHolder() : ping_res(), op_res(), mirror_res() {
-    ping_res.set_result("");
-    op_res.set_result(-1);
-    mirror_res.set_mirrored_string("-");
+  ResultHolder() : ping_result_(),
+                   op_result_(),
+                   mirror_result_(),
+                   result_arrived_(false),
+                   mutex_(),
+                   cond_var_() {
+    op_result_.set_result(-1);
+    mirror_result_.set_mirrored_string("-");
   }
-  void GetPingRes(const tests::PingResponse *response,
-      rpcprotocol::Controller *ctrl) {
-    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kCancelled) {
-      LOG(INFO) << "Ping RPC canceled by the client" << std::endl;
+  void HandlePingResponse(const tests::PingResponse *response,
+                          const rpcprotocol::Controller *controller) {
+    boost::mutex::scoped_lock lock(mutex_);
+    if (controller->Failed() &&
+        controller->ErrorText() == rpcprotocol::kCancelled) {
+      LOG(INFO) << "Ping RPC canceled by the client." << std::endl;
+      result_arrived_ = true;
+      cond_var_.notify_one();
       return;
     }
-    LOG(INFO) << "Received result -- waiting for 1 second" << std::endl;
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
+//    boost::this_thread::sleep(boost::posix_time::seconds(1));
     if (response->IsInitialized()) {
-      ping_res.set_result(response->result());
-      ping_res.set_pong(response->pong());
+      ping_result_.set_result(response->result());
+      ping_result_.set_pong(response->pong());
     } else {
-      ping_res.set_result("F");
+      ping_result_.set_result("F");
     }
+    result_arrived_ = true;
+    cond_var_.notify_one();
   }
-  void GetOpResult(const tests::BinaryOpResponse *response,
-      rpcprotocol::Controller *ctrl) {
-    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kCancelled) {
-      LOG(INFO) << "BinaryOperation RPC canceled by the client" << std::endl;
+  void HandleOpResponse(const tests::BinaryOpResponse *response,
+                        const rpcprotocol::Controller *controller) {
+    boost::mutex::scoped_lock lock(mutex_);
+    if (controller->Failed() &&
+        controller->ErrorText() == rpcprotocol::kCancelled) {
+      LOG(INFO) << "BinaryOperation RPC cancelled by the client" << std::endl;
+      result_arrived_ = true;
+      cond_var_.notify_one();
       return;
     }
-    if (response->IsInitialized()) {
-      op_res.set_result(response->result());
-    } else {
-      op_res.set_result(-2);
-    }
+    if (response->IsInitialized())
+      op_result_.set_result(response->result());
+    else
+      op_result_.set_result(-2);
+    result_arrived_ = true;
+    cond_var_.notify_one();
   }
-  void GetMirrorResult(const tests::StringMirrorResponse *response,
-      rpcprotocol::Controller *ctrl) {
-    if (ctrl->Failed() && ctrl->ErrorText() == rpcprotocol::kCancelled) {
-      LOG(INFO) << "Mirror RPC canceled by the client" << std::endl;
+  void HandleMirrorResponse(const tests::StringMirrorResponse *response,
+                            const rpcprotocol::Controller *controller) {
+    boost::mutex::scoped_lock lock(mutex_);
+    if (controller->Failed() &&
+        controller->ErrorText() == rpcprotocol::kCancelled) {
+      LOG(INFO) << "Mirror RPC cancelled by the client." << std::endl;
+      result_arrived_ = true;
+      cond_var_.notify_one();
       return;
     }
     if (response->IsInitialized()) {
       if (response->has_mirrored_string())
-        mirror_res.set_mirrored_string(response->mirrored_string());
+        mirror_result_.set_mirrored_string(response->mirrored_string());
       else
-        mirror_res.set_mirrored_string("+");
+        mirror_result_.set_mirrored_string("+");
     } else {
-      mirror_res.set_mirrored_string("+");
+      mirror_result_.set_mirrored_string("+");
     }
+    result_arrived_ = true;
+    cond_var_.notify_one();
   }
   void Reset() {
-    ping_res.Clear();
-    ping_res.set_result("");
-    op_res.Clear();
-    op_res.set_result(-1);
-    mirror_res.Clear();
-    mirror_res.set_mirrored_string("-");
+    boost::mutex::scoped_lock lock(mutex_);
+    ping_result_.Clear();
+    op_result_.Clear();
+    op_result_.set_result(-1);
+    mirror_result_.Clear();
+    mirror_result_.set_mirrored_string("-");
+    result_arrived_ = false;
   }
-  tests::PingResponse ping_res;
-  tests::BinaryOpResponse op_res;
-  tests::StringMirrorResponse mirror_res;
+  tests::PingResponse ping_result() {
+    boost::mutex::scoped_lock lock(mutex_);
+    return ping_result_;
+  }
+  tests::BinaryOpResponse op_result() {
+    boost::mutex::scoped_lock lock(mutex_);
+    return op_result_;
+  }
+  tests::StringMirrorResponse mirror_result() {
+    boost::mutex::scoped_lock lock(mutex_);
+    return mirror_result_;
+  }
+  bool result_arrived() const { return result_arrived_; }
+  void WaitForResponse(const boost::posix_time::milliseconds &timeout) {
+    boost::mutex::scoped_lock lock(mutex_);
+    try {
+      bool wait_success = cond_var_.timed_wait(lock, timeout,
+                          boost::bind(&ResultHolder::result_arrived, this));
+      if (!wait_success) {
+        LOG(INFO) << "Failed to wait for result." << std::endl;
+      }
+    }
+    catch(const std::exception &e) {
+      LOG(INFO) << "Error waiting for result: " << e.what() << std::endl;
+    }
+  }
+ private:
+  tests::PingResponse ping_result_;
+  tests::BinaryOpResponse op_result_;
+  tests::StringMirrorResponse mirror_result_;
+  bool result_arrived_;
+  boost::mutex mutex_;
+  boost::condition_variable cond_var_;
 };
 
 inline void HandleDeadServer(const bool &, const std::string &,
@@ -266,15 +318,14 @@ TEST_F(RpcProtocolTest, BEH_RPC_RegisterAChannel) {
   req.set_port(client_transport_handler->listening_port(client_transport_id));
   ResultHolder resultholder;
   google::protobuf::Closure *done = google::protobuf::NewCallback<ResultHolder,
-      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetPingRes, &resp, &controller);
+      const tests::PingResponse*, const rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::HandlePingResponse, &resp, &controller);
   stubservice.Ping(&controller, &req, &resp, done);
-  while (resultholder.ping_res.result().empty())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
 
-  ASSERT_EQ("S", resultholder.ping_res.result());
-  ASSERT_TRUE(resultholder.ping_res.has_pong());
-  ASSERT_EQ("pong", resultholder.ping_res.pong());
+  ASSERT_EQ("S", resultholder.ping_result().result());
+  ASSERT_TRUE(resultholder.ping_result().has_pong());
+  ASSERT_EQ("pong", resultholder.ping_result().pong());
   ASSERT_FALSE(controller.Failed());
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
   RpcProtocolTest::client_chann_manager->ClearCallLaters();
@@ -323,14 +374,13 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
   req1.set_port(client_transport_handler->listening_port(client_transport_id));
   ResultHolder resultholder;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
-      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetPingRes, &resp1, &controller);
+      const tests::PingResponse*, const rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::HandlePingResponse, &resp1, &controller);
   stubservice1.Ping(&controller, &req1, &resp1, done1);
-  while (resultholder.ping_res.result().empty())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ("S", resultholder.ping_res.result());
-  ASSERT_TRUE(resultholder.ping_res.has_pong());
-  ASSERT_EQ("pong", resultholder.ping_res.pong());
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
+  ASSERT_EQ("S", resultholder.ping_result().result());
+  ASSERT_TRUE(resultholder.ping_result().has_pong());
+  ASSERT_EQ("pong", resultholder.ping_result().pong());
   ASSERT_FALSE(controller.Failed());
   resultholder.Reset();
   controller.Reset();
@@ -344,14 +394,14 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
   req2.set_port(client_transport_handler->listening_port(client_transport_id));
   rpcprotocol::Controller controller2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
-      const tests::BinaryOpResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetOpResult, &resp2, &controller2);
+      const tests::BinaryOpResponse*, const rpcprotocol::Controller*>(
+      &resultholder, &ResultHolder::HandleOpResponse, &resp2, &controller2);
   controller2.set_timeout(6);
   stubservice2.Add(&controller2, &req2, &resp2, done2);
-  while (resultholder.op_res.result() == -1)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(5, resultholder.op_res.result());
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(12000));
+  ASSERT_EQ(5, resultholder.op_result().result());
   ASSERT_FALSE(controller2.Failed());
+  resultholder.Reset();
   controller2.Reset();
 
   std::string test_string;
@@ -367,13 +417,12 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
   req3.set_port(client_transport_handler->listening_port(client_transport_id));
   rpcprotocol::Controller controller3;
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<ResultHolder,
-      const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
-      &resultholder, &ResultHolder::GetMirrorResult, &resp3, &controller3);
+      const tests::StringMirrorResponse*, const rpcprotocol::Controller*>(
+      &resultholder, &ResultHolder::HandleMirrorResponse, &resp3, &controller3);
   controller3.set_timeout(1);
   stubservice3.Mirror(&controller3, &req3, &resp3, done3);
-  while (resultholder.mirror_res.mirrored_string() == "-")
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-  if ("+" != resultholder.mirror_res.mirrored_string()) {
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
+  if ("+" != resultholder.mirror_result().mirrored_string()) {
     RpcProtocolTest::server_chann_manager->ClearCallLaters();
     RpcProtocolTest::client_chann_manager->ClearCallLaters();
     FAIL() << "Operation did not time out.";
@@ -391,20 +440,19 @@ TEST_F(RpcProtocolTest, FUNC_RPC_MultipleChannelsRegistered) {
   req4.set_port(client_transport_handler->listening_port(client_transport_id));
   rpcprotocol::Controller controller4;
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<ResultHolder,
-      const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
-      &resultholder, &ResultHolder::GetMirrorResult, &resp4, &controller4);
+      const tests::StringMirrorResponse*, const rpcprotocol::Controller*>(
+      &resultholder, &ResultHolder::HandleMirrorResponse, &resp4, &controller4);
   controller4.set_timeout(70);
   stubservice4.Mirror(&controller4, &req4, &resp4, done4);
 
-  while (resultholder.mirror_res.mirrored_string() == "-")
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  if ("+" == resultholder.mirror_res.mirrored_string()) {
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(140000));
+  if ("+" == resultholder.mirror_result().mirrored_string()) {
     RpcProtocolTest::server_chann_manager->ClearCallLaters();
     RpcProtocolTest::client_chann_manager->ClearCallLaters();
     FAIL() << "Result of mirror RPC is incorrect.";
   }
   ASSERT_EQ("9876543210",
-            resultholder.mirror_res.mirrored_string().substr(0, 10));
+            resultholder.mirror_result().mirrored_string().substr(0, 10));
   ASSERT_FALSE(controller4.Failed());
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
   RpcProtocolTest::client_chann_manager->ClearCallLaters();
@@ -447,12 +495,11 @@ TEST_F(RpcProtocolTest, BEH_RPC_ServerAndClientAtSameTime) {
 
   ResultHolder resultholder;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
-      const tests::BinaryOpResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetOpResult, &resp1, &controller1);
+      const tests::BinaryOpResponse*, const rpcprotocol::Controller*>(
+      &resultholder, &ResultHolder::HandleOpResponse, &resp1, &controller1);
   stubservice1.Add(&controller1, &req1, &resp1, done1);
-  while (resultholder.op_res.result() == -1)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(5, resultholder.op_res.result());
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
+  ASSERT_EQ(5, resultholder.op_result().result());
   ASSERT_FALSE(controller1.Failed());
   resultholder.Reset();
 
@@ -464,12 +511,11 @@ TEST_F(RpcProtocolTest, BEH_RPC_ServerAndClientAtSameTime) {
   req2.set_ip("127.0.0.1");
   req2.set_port(client_transport_handler->listening_port(client_transport_id));
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
-      const tests::BinaryOpResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetOpResult, &resp2, &controller2);
+      const tests::BinaryOpResponse*, const rpcprotocol::Controller*>(
+      &resultholder, &ResultHolder::HandleOpResponse, &resp2, &controller2);
   stubservice2.Multiplyl(&controller2, &req2, &resp2, done2);
-  while (resultholder.op_res.result() == -1)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(16, resultholder.op_res.result());
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
+  ASSERT_EQ(16, resultholder.op_result().result());
   ASSERT_FALSE(controller2.Failed());
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
   RpcProtocolTest::client_chann_manager->ClearCallLaters();
@@ -492,12 +538,12 @@ TEST_F(RpcProtocolTest, BEH_RPC_Timeout) {
   req.set_port(client_transport_handler->listening_port(client_transport_id));
   ResultHolder resultholder;
   google::protobuf::Closure *done = google::protobuf::NewCallback<ResultHolder,
-      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetPingRes, &resp, &controller);
+      const tests::PingResponse*, const rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::HandlePingResponse, &resp, &controller);
   stubservice.Ping(&controller, &req, &resp, done);
   boost::this_thread::sleep(boost::posix_time::seconds(timeout + 1));
-  ASSERT_EQ("F", resultholder.ping_res.result());
-  ASSERT_FALSE(resultholder.ping_res.has_pong());
+  ASSERT_EQ("F", resultholder.ping_result().result());
+  ASSERT_FALSE(resultholder.ping_result().has_pong());
   ASSERT_TRUE(controller.Failed());
   ASSERT_EQ(rpcprotocol::kTimeOut, controller.ErrorText());
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
@@ -527,13 +573,13 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   req1.set_port(client_transport_handler->listening_port(client_transport_id));
   ResultHolder resultholder;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
-      const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
-      &resultholder, &ResultHolder::GetMirrorResult, &resp1, &controller);
+      const tests::StringMirrorResponse*, const rpcprotocol::Controller*>(
+      &resultholder, &ResultHolder::HandleMirrorResponse, &resp1, &controller);
   stubservice1.Mirror(&controller, &req1, &resp1, done1);
   ASSERT_TRUE(client_chann_manager->DeletePendingRequest(
       controller.request_id()));
   boost::this_thread::sleep(boost::posix_time::seconds(11));
-  ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
+  ASSERT_EQ(std::string("-"), resultholder.mirror_result().mirrored_string());
   ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
   controller.Reset();
   ASSERT_TRUE(controller.ErrorText().empty());
@@ -549,13 +595,13 @@ TEST_F(RpcProtocolTest, FUNC_RPC_DeletePendingRequest) {
   req2.set_port(5555);
   tests::MirrorTest::Stub stubservice2(&out_channel2);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
-      const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
-      &resultholder, &ResultHolder::GetMirrorResult, &resp2, &controller);
+      const tests::StringMirrorResponse*, const rpcprotocol::Controller*>(
+      &resultholder, &ResultHolder::HandleMirrorResponse, &resp2, &controller);
   stubservice2.Mirror(&controller, &req2, &resp2, done2);
   ASSERT_TRUE(client_chann_manager->DeletePendingRequest(
               controller.request_id()));
   boost::this_thread::sleep(boost::posix_time::seconds(4));
-  ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
+  ASSERT_EQ(std::string("-"), resultholder.mirror_result().mirrored_string());
   ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
   ASSERT_FALSE(client_chann_manager->DeletePendingRequest(1));
 }
@@ -567,7 +613,7 @@ TEST_F(RpcProtocolTest, BEH_RPC_CancelPendingRequest) {
   service_channel.SetService(&mirrorservice);
   server_chann_manager->RegisterChannel(mirrorservice.GetDescriptor()->name(),
       &service_channel);
-  // Sending rpc to an existing server, but cancelin it before response arrives
+  // Sending rpc to an existing server, but cancel it before response arrives
   rpcprotocol::Controller controller;
   controller.set_timeout(10);
   rpcprotocol::Channel out_channel1(client_chann_manager,
@@ -583,15 +629,15 @@ TEST_F(RpcProtocolTest, BEH_RPC_CancelPendingRequest) {
   req1.set_port(client_transport_handler->listening_port(client_transport_id));
   ResultHolder resultholder;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
-      const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
-      &resultholder, &ResultHolder::GetMirrorResult, &resp1, &controller);
+      const tests::StringMirrorResponse*, const rpcprotocol::Controller*>(
+      &resultholder, &ResultHolder::HandleMirrorResponse, &resp1, &controller);
   stubservice1.Mirror(&controller, &req1, &resp1, done1);
   ASSERT_TRUE(client_chann_manager->CancelPendingRequest(
               controller.request_id()));
   ASSERT_FALSE(client_chann_manager->CancelPendingRequest(
                controller.request_id()));
 //  boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-//  ASSERT_EQ(std::string("-"), resultholder.mirror_res.mirrored_string());
+//  ASSERT_EQ(std::string("-"), resultholder.mirror_result().mirrored_string());
 //  ASSERT_EQ(rpcprotocol::kCancelled, controller.ErrorText());
   controller.Reset();
   ASSERT_EQ(std::string(""), controller.ErrorText());
@@ -609,8 +655,8 @@ TEST_F(RpcProtocolTest, BEH_RPC_CancelPendingRequest) {
   req2.set_port(5555);
   tests::MirrorTest::Stub stubservice2(&out_channel2);
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
-      const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
-      &resultholder, &ResultHolder::GetMirrorResult, &resp2,
+      const tests::StringMirrorResponse*, const rpcprotocol::Controller*>(
+      &resultholder, &ResultHolder::HandleMirrorResponse, &resp2,
       p_controller.get());
   stubservice2.Mirror(&controller, &req2, &resp2, done2);
   ASSERT_TRUE(client_chann_manager->CancelPendingRequest(
@@ -643,12 +689,11 @@ TEST_F(RpcProtocolTest, BEH_RPC_ResetTimeout) {
   req.set_not_pause(true);
   ResultHolder resultholder;
   google::protobuf::Closure *done = google::protobuf::NewCallback<ResultHolder,
-      const tests::StringMirrorResponse*, rpcprotocol::Controller*>(
-      &resultholder, &ResultHolder::GetMirrorResult, &resp, &controller);
+      const tests::StringMirrorResponse*, const rpcprotocol::Controller*>(
+      &resultholder, &ResultHolder::HandleMirrorResponse, &resp, &controller);
   stubservice.Mirror(&controller, &req, &resp, done);
-  while (resultholder.mirror_res.mirrored_string() == "-")
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  if ("+" == resultholder.mirror_res.mirrored_string()) {
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(40000));
+  if ("+" == resultholder.mirror_result().mirrored_string()) {
     RpcProtocolTest::server_chann_manager->ClearCallLaters();
     RpcProtocolTest::client_chann_manager->ClearCallLaters();
     FAIL() << "Result of mirror RPC is incorrect.";
@@ -696,15 +741,14 @@ TEST_F(RpcProtocolTest, FUNC_RPC_ChannelManagerLocalTransport) {
   req.set_port(local_transport_handler.listening_port(local_transport_id));
   ResultHolder resultholder;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
-      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetPingRes, &resp1, &controller);
+      const tests::PingResponse*, const rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::HandlePingResponse, &resp1, &controller);
   stubservice1.Ping(&controller, &req, &resp1, done1);
-  while (resultholder.ping_res.result().empty())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
 
-  ASSERT_EQ("S", resultholder.ping_res.result());
-  ASSERT_TRUE(resultholder.ping_res.has_pong());
-  ASSERT_EQ("pong", resultholder.ping_res.pong());
+  ASSERT_EQ("S", resultholder.ping_result().result());
+  ASSERT_TRUE(resultholder.ping_result().has_pong());
+  ASSERT_EQ("pong", resultholder.ping_result().pong());
   ASSERT_FALSE(controller.Failed());
   controller.Reset();
   resultholder.Reset();
@@ -716,13 +760,12 @@ TEST_F(RpcProtocolTest, FUNC_RPC_ChannelManagerLocalTransport) {
   tests::PingTest::Stub stubservice2(&out_channel2);
   tests::PingResponse resp2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
-      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetPingRes, &resp2, &controller);
+      const tests::PingResponse*, const rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::HandlePingResponse, &resp2, &controller);
   stubservice2.Ping(&controller, &req, &resp2, done2);
-  while (resultholder.ping_res.result().empty())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ("F", resultholder.ping_res.result());
-  ASSERT_FALSE(resultholder.ping_res.has_pong());
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
+  ASSERT_EQ("F", resultholder.ping_result().result());
+  ASSERT_FALSE(resultholder.ping_result().has_pong());
   ASSERT_TRUE(controller.Failed());
   ASSERT_EQ(rpcprotocol::kTimeOut, controller.ErrorText());
 
@@ -773,15 +816,14 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   req.set_port(local_transport_handler.listening_port(local_transport_id));
   ResultHolder resultholder;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<ResultHolder,
-      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetPingRes, &resp1, &controller);
+      const tests::PingResponse*, const rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::HandlePingResponse, &resp1, &controller);
   stubservice1.Ping(&controller, &req, &resp1, done1);
-  while (resultholder.ping_res.result().empty())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
 
-  ASSERT_EQ("S", resultholder.ping_res.result());
-  ASSERT_TRUE(resultholder.ping_res.has_pong());
-  ASSERT_EQ("pong", resultholder.ping_res.pong());
+  ASSERT_EQ("S", resultholder.ping_result().result());
+  ASSERT_TRUE(resultholder.ping_result().has_pong());
+  ASSERT_EQ("pong", resultholder.ping_result().pong());
   ASSERT_FALSE(controller.Failed());
   controller.Reset();
   resultholder.Reset();
@@ -793,13 +835,12 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   tests::PingTest::Stub stubservice2(&out_channel2);
   tests::PingResponse resp2;
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<ResultHolder,
-      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetPingRes, &resp2, &controller);
+      const tests::PingResponse*, const rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::HandlePingResponse, &resp2, &controller);
   stubservice2.Ping(&controller, &req, &resp2, done2);
-  while (resultholder.ping_res.result().empty())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ("F", resultholder.ping_res.result());
-  ASSERT_FALSE(resultholder.ping_res.has_pong());
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
+  ASSERT_EQ("F", resultholder.ping_result().result());
+  ASSERT_FALSE(resultholder.ping_result().has_pong());
   ASSERT_TRUE(controller.Failed());
   ASSERT_EQ(rpcprotocol::kTimeOut, controller.ErrorText());
 
@@ -822,15 +863,14 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   tests::PingTest::Stub stubservice3(&out_channel3);
   tests::PingResponse resp3;
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<ResultHolder,
-      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetPingRes, &resp3, &controller);
+      const tests::PingResponse*, const rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::HandlePingResponse, &resp3, &controller);
   stubservice3.Ping(&controller, &req, &resp3, done3);
-  while (resultholder.ping_res.result().empty())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
 
-  ASSERT_EQ("S", resultholder.ping_res.result());
-  ASSERT_TRUE(resultholder.ping_res.has_pong());
-  ASSERT_EQ("pong", resultholder.ping_res.pong());
+  ASSERT_EQ("S", resultholder.ping_result().result());
+  ASSERT_TRUE(resultholder.ping_result().has_pong());
+  ASSERT_EQ("pong", resultholder.ping_result().pong());
   ASSERT_FALSE(controller.Failed());
   controller.Reset();
   resultholder.Reset();
@@ -842,14 +882,13 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
   tests::PingTest::Stub stubservice4(&out_channel4);
   tests::PingResponse resp4;
   google::protobuf::Closure *done4 = google::protobuf::NewCallback<ResultHolder,
-      const tests::PingResponse*, rpcprotocol::Controller*>(&resultholder,
-      &ResultHolder::GetPingRes, &resp4, &controller);
+      const tests::PingResponse*, const rpcprotocol::Controller*>(&resultholder,
+      &ResultHolder::HandlePingResponse, &resp4, &controller);
   stubservice4.Ping(&controller, &req, &resp4, done4);
-  while (resultholder.ping_res.result().empty())
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ("S", resultholder.ping_res.result());
-  ASSERT_TRUE(resultholder.ping_res.has_pong());
-  ASSERT_EQ("pong", resultholder.ping_res.pong());
+  resultholder.WaitForResponse(boost::posix_time::milliseconds(10000));
+  ASSERT_EQ("S", resultholder.ping_result().result());
+  ASSERT_TRUE(resultholder.ping_result().has_pong());
+  ASSERT_EQ("pong", resultholder.ping_result().pong());
   ASSERT_FALSE(controller.Failed());
 
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
