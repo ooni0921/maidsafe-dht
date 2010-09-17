@@ -134,7 +134,6 @@ class ResultHolder {
       cond_var_.notify_one();
       return;
     }
-//    boost::this_thread::sleep(boost::posix_time::seconds(1));
     if (response->IsInitialized()) {
       ping_result_.set_result(response->result());
       ping_result_.set_pong(response->pong());
