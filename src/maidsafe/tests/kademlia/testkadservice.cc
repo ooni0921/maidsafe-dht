@@ -88,9 +88,10 @@ class Callback {
 
 class KadServicesTest: public testing::Test {
  protected:
-  KadServicesTest() : trans_handler_(), channel_manager_(&trans_handler_),
-                      contact_(), crypto_(), node_id_(), service_(),
-                      datastore_(), routingtable_(), validator_() {
+  KadServicesTest() : trans_handler_(), transport_id_(0),
+                      channel_manager_(&trans_handler_), contact_(), crypto_(),
+                      node_id_(), service_(), datastore_(), routingtable_(),
+                      validator_() {
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
     std::string priv_key, pub_key;

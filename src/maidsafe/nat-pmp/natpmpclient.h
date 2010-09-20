@@ -49,7 +49,8 @@ class NatPmpClient {
   * Constructor
   * @param ios The boost::asio::io_service object to use.
   */
-  explicit NatPmpClient(boost::asio::io_service *ios)  : io_service_(ios) {}
+  explicit NatPmpClient(boost::asio::io_service *ios) : io_service_(ios),
+                                                        impl_() {}
 
 /**
   * Destructor
@@ -88,6 +89,11 @@ class NatPmpClient {
  private:
 
   // ...
+  /**
+  * Copy constructor and equal operator.
+  */
+  NatPmpClient(const NatPmpClient &natpnp_client);
+  NatPmpClient &operator=(const NatPmpClient &natpnp_client);
 
  protected:
 

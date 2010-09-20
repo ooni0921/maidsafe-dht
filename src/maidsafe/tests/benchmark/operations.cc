@@ -47,7 +47,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace benchmark {
 
 Operations::Operations(kad::KNode *node)
-      : node_(node), cryobj_() {
+    : node_(node), cryobj_(), private_key_(), public_key_(),
+      public_key_signature_() {
   cryobj_.set_symm_algorithm(crypto::AES_256);
   cryobj_.set_hash_algorithm(crypto::SHA_512);
   crypto::RsaKeyPair kp;

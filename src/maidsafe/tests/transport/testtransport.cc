@@ -98,10 +98,10 @@ void send_string(TransportNode* node, int port, int repeat,
 
 class MessageHandler {
  public:
-  MessageHandler(): msgs(), raw_msgs(),
-    ids(), dead_server_(true), server_ip_(), server_port_(0), node_handler_(),
-    msgs_sent_(0), msgs_received_(0), msgs_confirmed_(0), target_msg_(),
-    keep_msgs_(true) {}
+  MessageHandler(): msgs(), raw_msgs(), ids(), raw_ids(), dead_server_(true),
+                    server_ip_(), server_port_(0), node_handler_(),
+                    msgs_sent_(0), msgs_received_(0), msgs_confirmed_(0),
+                    target_msg_(), keep_msgs_(true) {}
   void OnRPCMessage(const rpcprotocol::RpcMessage &msg,
                     const boost::uint32_t &connection_id,
                     const boost::int16_t transport_id,
@@ -121,12 +121,12 @@ class MessageHandler {
       node_handler_->CloseConnection(connection_id, transport_id);
   }
   void OnMessage(const std::string &msg, const boost::uint32_t &connection_id,
-      const boost::int16_t &, const float&) {
+                 const boost::int16_t &, const float&) {
     raw_msgs.push_back(msg);
     raw_ids.push_back(connection_id);
   }
   void OnDeadRendezvousServer(const bool &dead_server, const std::string &ip,
-    const boost::uint16_t &port) {
+                              const boost::uint16_t &port) {
     dead_server_ = dead_server;
     server_ip_ = ip;
     server_port_ = port;
@@ -148,8 +148,8 @@ class MessageHandler {
   std::string target_msg_;
   bool keep_msgs_;
  private:
-  /*MessageHandler(const MessageHandler&);
-  MessageHandler& operator=(const MessageHandler&);*/
+  MessageHandler(const MessageHandler&);
+  MessageHandler& operator=(const MessageHandler&);
 };
 
 class MessageHandlerEchoReq {

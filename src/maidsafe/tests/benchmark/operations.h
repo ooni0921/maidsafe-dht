@@ -64,6 +64,8 @@ class Operations {
   static kad::KadId GetModId(int iteration);
   static void PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings);
  private:
+  Operations(const Operations&);
+  Operations& operator=(const Operations&);
   void PingCallback(const std::string &result,
                     boost::shared_ptr<CallbackData> data);
   void GetNodeContactDetailsCallback(const std::string &result,

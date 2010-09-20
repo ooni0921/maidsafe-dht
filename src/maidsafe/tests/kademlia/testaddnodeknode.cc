@@ -48,7 +48,7 @@ namespace kad {
 class MessageHandler {
  public:
   MessageHandler(): msgs(), ids(), dead_server_(true), server_ip_(),
-                    server_port_(0), node_(NULL), msgs_sent_(0) {}
+                    server_port_(0), node_(NULL), id_(0), msgs_sent_(0) {}
   void OnMessage(const rpcprotocol::RpcMessage &msg,
                  const boost::uint32_t connection_id) {
     std::string message;
