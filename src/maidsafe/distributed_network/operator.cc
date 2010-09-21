@@ -38,7 +38,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/distributed_network/mysqlppwrap.h"
 #include "maidsafe/kademlia/knode-api.h"
 #include "maidsafe/protobuf/kademlia_service_messages.pb.h"
-#include "maidsafe/protobuf/signed_kadvalue.pb.h"
 
 namespace net_client {
 
@@ -53,7 +52,7 @@ Operator::Operator(boost::shared_ptr<kad::KNode> knode,
   crypto::Crypto co;
   public_key_signature_ = co.AsymSign(public_key_, "", private_key_,
                                       crypto::STRING_STRING);
-  int result = wrap_->Init("kademlia_network_test", "127.0.0.1", "root",
+  int result = wrap_->Init("kademlia_network_test", "178.79.141.45", "root",
                            "m41ds4f3", "kademliavalues");
   printf("Operator::Operator - DB init result: %d\n", result);
   {
@@ -134,13 +133,15 @@ void Operator::StoreValue(const std::string &key, const kad::SignedValue &sv) {
   kad::SignedRequest request_signature;
   CreateRequestSignature(key, &request_signature);
   kad::KadId ki_key(key);
+  Operation op(key, sv, kStore);
   knode_->StoreValue(ki_key, sv, request_signature, 24 * 60 * 60,
-                     boost::bind(&Operator::StoreCallback, this, key, sv, _1));
+                     boost::bind(&Operator::StoreValueCallback, this, op, _1));
+  boost::mutex::scoped_lock loch_voil(op_map_mutex_);
+  operation_map_.insert(op);
 }
 
-void Operator::StoreCallback(const std::string &key,
-                             const kad::SignedValue &sv,
-                             const std::string &ser_result) {
+void Operator::StoreValueCallback(const Operation &op,
+                                  const std::string &ser_result) {
   kad::StoreResponse response;
   bool success(false);
   if (response.ParseFromString(ser_result))
@@ -148,28 +149,41 @@ void Operator::StoreCallback(const std::string &key,
       success = true;
 
   if (success) {
-    int n = wrap_->Insert(key, sv.SerializeAsString());
+    int n = wrap_->Insert(op.key, op.signed_value.SerializeAsString());
     if (n == 0) {
       boost::mutex::scoped_lock loch_voil(values_map_mutex_);
-      ValuesMap::iterator it = values_map_.find(key);
-      (*it).second.second = 0;
+      std::pair<ValuesMap::iterator, ValuesMap::iterator> p =
+          values_map_.equal_range(op.key);
+      bool not_found(true);
+      while (p.first != p.second && not_found) {
+        if ((*p.first).second.first.SerializeAsString() ==
+            op.signed_value.SerializeAsString()) {
+          not_found = false;
+          (*p.first).second.second = -2;
+        } else {
+          ++p.first;
+        }
+      }
     }
   }
+  LogResult(op, kad::SignedValue(), success);
 }
 
 void Operator::FindValue(const std::string &key,
                          const std::vector<kad::SignedValue> &values,
                          bool mine) {
   kad::KadId ki_key(key);
+  Operation op(key, kad::SignedValue(), kFindValue);
   knode_->FindValue(ki_key, false,
                     boost::bind(&Operator::FindValueCallback, this,
-                                _1, key, values, mine));
+                                key, values, mine, op.start_time, _1));
 }
 
-void Operator::FindValueCallback(const std::string &ser_result,
-                                 const std::string &key,
+void Operator::FindValueCallback(const std::string &key,
                                  const std::vector<kad::SignedValue> &values,
-                                 bool mine) {
+                                 bool mine,
+                                 boost::posix_time::ptime &start_time,
+                                 const std::string &ser_result) {
   kad::FindResponse result_msg;
   if (!result_msg.ParseFromString(ser_result))
     return;
@@ -199,6 +213,109 @@ void Operator::FindValueCallback(const std::string &ser_result,
   }
 }
 
+void Operator::DeleteValue(const std::string &key, const kad::SignedValue &sv) {
+  kad::SignedRequest request_signature;
+  CreateRequestSignature(key, &request_signature);
+  kad::KadId ki_key(key);
+  Operation op(key, sv, kDelete);
+  knode_->DeleteValue(ki_key, sv, request_signature,
+                      boost::bind(&Operator::DeleteValueCallback, this, op,
+                                  _1));
+}
+
+void Operator::DeleteValueCallback(const Operation &op,
+                                   const std::string &ser_result) {
+  kad::DeleteResponse response;
+  bool success(false);
+  if (response.ParseFromString(ser_result))
+    if (response.result() == kad::kRpcResultSuccess)
+      success = true;
+
+  if (success) {
+    int n = wrap_->Delete(op.key, op.signed_value.SerializeAsString());
+    if (n == 0) {
+      boost::mutex::scoped_lock loch_voil(values_map_mutex_);
+      std::pair<ValuesMap::iterator, ValuesMap::iterator> p =
+          values_map_.equal_range(op.key);
+      bool not_found(true);
+      while (p.first != p.second && not_found) {
+        if ((*p.first).second.first.SerializeAsString() ==
+            op.signed_value.SerializeAsString()) {
+          not_found = false;
+          (*p.first).second.second = -2;
+        } else {
+          ++p.first;
+        }
+      }
+    }
+  }
+  LogResult(op, kad::SignedValue(), success);
+}
+
+void Operator::UpdateValue(const std::string &key,
+                           const kad::SignedValue &old_value,
+                           const kad::SignedValue &new_value) {
+  kad::SignedRequest request_signature;
+  CreateRequestSignature(key, &request_signature);
+  kad::KadId ki_key(key);
+  Operation op(key, old_value, kUpdate);
+  knode_->UpdateValue(ki_key, old_value, new_value, request_signature,
+                      24 * 60 * 60, boost::bind(&Operator::UpdateValueCallback,
+                                                this, op, new_value, _1));
+}
+
+void Operator::UpdateValueCallback(const Operation &op,
+                                   const kad::SignedValue &new_value,
+                                   const std::string &ser_result) {
+  kad::UpdateResponse response;
+  bool success(false);
+  if (response.ParseFromString(ser_result))
+    if (response.result() == kad::kRpcResultSuccess)
+      success = true;
+
+  std::string ser_old_value(op.signed_value.SerializeAsString());
+  if (success) {
+    int n = wrap_->Update(op.key, ser_old_value, new_value.SerializeAsString());
+    if (n == 0) {
+      boost::mutex::scoped_lock loch_voil(values_map_mutex_);
+      std::pair<ValuesMap::iterator, ValuesMap::iterator> p =
+          values_map_.equal_range(op.key);
+      bool not_found(true);
+      while (p.first != p.second && not_found) {
+        if ((*p.first).second.first.SerializeAsString() == ser_old_value) {
+          not_found = false;
+          (*p.first).second.second = 0;
+        } else {
+          ++p.first;
+        }
+      }
+    }
+  }
+  LogResult(op, new_value, success);
+}
+
+void Operator::FindKClosestNodes(const std::string &key) {
+  kad::KadId ki_key(key);
+  knode_->FindKClosestNodes(ki_key,
+      boost::bind(&Operator::FindKClosestNodesCallback, this, key, _1));
+}
+
+void Operator::FindKClosestNodesCallback(const std::string &key,
+                                         const std::string &ser_result) {
+  kad::FindResponse result_msg;
+  if (!result_msg.ParseFromString(ser_result))
+    return;
+
+  if (result_msg.result() == kad::kRpcResultFailure)
+    return;
+
+  if (result_msg.closest_nodes_size() == 0)
+    return;
+
+  for (int n = 0; n < result_msg.closest_nodes_size(); ++n) {
+  }
+}
+
 void Operator::CreateRequestSignature(const std::string &key,
                                       kad::SignedRequest *request) {
   request->set_signer_id(knode_->node_id().String());
@@ -209,4 +326,22 @@ void Operator::CreateRequestSignature(const std::string &key,
                                       "", crypto::STRING_STRING, true));
 }
 
+void Operator::LogResult(const Operation &original_op,
+                         const kad::SignedValue updated_signed_value,
+                         const bool &result) {
+  boost::mutex::scoped_lock loch_voil(op_map_mutex_);
+  OperationMap::index<by_timestamp>::type::iterator it =
+      operation_map_.get<by_timestamp>().find(original_op.start_time);
+  if (it == operation_map_.get<by_timestamp>().end()) {
+    printf("Didn't find operation.\n");
+    return;
+  }
+  Operation op = *it;
+  op.duration = boost::posix_time::microseconds(
+                    (boost::posix_time::microsec_clock::universal_time() - 
+                    original_op.start_time).total_microseconds());
+  op.result = result;
+  op.updated_signed_value = updated_signed_value;
+  operation_map_.get<by_timestamp>().replace(it, op);
+}
 }  // namespace net_client
