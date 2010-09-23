@@ -76,7 +76,6 @@ int MySqlppWrap::Update(const std::string &key, const std::string &old_value,
           << mysqlpp::escape << old_value << "'";
     mysqlpp::SimpleResult res = query.execute();
     if (res.rows() != 1) {
-      printf("AAAAAAAAA %llu\n", res.rows());
       return -1;
     }
   }
@@ -116,7 +115,8 @@ int MySqlppWrap::Delete(const std::string &key, const std::string &value) {
   }
 }
 
-int MySqlppWrap::Get(const std::string &key, std::vector<std::string> *values) {
+int MySqlppWrap::GetValues(const std::string &key,
+                           std::vector<std::string> *values) {
   if (!connected_) {
     printf("MySqlppWrap::Get - Not connected\n");
     return -2;
@@ -138,6 +138,32 @@ int MySqlppWrap::Get(const std::string &key, std::vector<std::string> *values) {
 
     for (size_t i = 0; i < res.num_rows(); ++i)
       values->push_back(static_cast<std::string>(res[i][0]));
+  }
+  catch(const std::exception &e) {
+    printf("%s\n", e.what());
+    return -1;
+  }
+  return 0;
+}
+
+int MySqlppWrap::GetKeys(std::vector<std::string> *keys) {
+  if (!connected_) {
+    printf("MySqlppWrap::Get - Not connected\n");
+    return -2;
+  }
+
+  keys->clear();
+  try {
+    mysqlpp::Query query = connection_.query();
+    query << "SELECT kadkey FROM " << table_;
+    mysqlpp::StoreQueryResult res = query.store();
+    if (!res) {
+      printf("Failed getting keys.\n");
+      return -1;
+    }
+
+    for (size_t i = 0; i < res.num_rows(); ++i)
+      keys->push_back(static_cast<std::string>(res[i][0]));
   }
   catch(const std::exception &e) {
     printf("%s\n", e.what());

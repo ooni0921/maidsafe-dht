@@ -35,12 +35,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "maidsafe/base/crypto.h"
 #include "maidsafe/protobuf/signed_kadvalue.pb.h"
 
 namespace mi = boost::multi_index;
@@ -89,7 +91,7 @@ struct Operation {
 };
 
 // Tags
-struct by_key {};
+struct by_operation_key {};
 struct by_timestamp {};
 struct by_duration {};
 struct by_operation {};
@@ -98,7 +100,7 @@ typedef boost::multi_index_container<
   Operation,
   mi::indexed_by<
     mi::ordered_non_unique<
-      mi::tag<by_key>,
+      mi::tag<by_operation_key>,
       BOOST_MULTI_INDEX_MEMBER(Operation, std::string, key)
     >,
     mi::ordered_unique<
@@ -117,12 +119,52 @@ typedef boost::multi_index_container<
   >
 > OperationMap;
 
+// Tags
+struct by_valuemap_key {};
+struct by_value {};
+struct by_key_value {};
+struct by_status {};
+
+struct KeyValue {
+  KeyValue() : key(), value(), status() {}
+  KeyValue(const std::string &skey, const std::string &svalue, int istatus)
+      : key(skey), value(svalue), status(istatus) {}
+  std::string key, value;
+  int status;
+};
+
+typedef boost::multi_index_container<
+  KeyValue,
+  mi::indexed_by<
+    mi::ordered_non_unique<
+      mi::tag<by_valuemap_key>,
+      BOOST_MULTI_INDEX_MEMBER(KeyValue, std::string, key)
+    >,
+    mi::ordered_unique<
+      mi::tag<by_value>,
+      BOOST_MULTI_INDEX_MEMBER(KeyValue, std::string, value)
+    >,
+    mi::ordered_unique<
+      mi::tag<by_key_value>,
+      mi::composite_key<
+        KeyValue,
+        BOOST_MULTI_INDEX_MEMBER(KeyValue, std::string, key),
+        BOOST_MULTI_INDEX_MEMBER(KeyValue, std::string, value)
+      >
+    >,
+    mi::ordered_non_unique<
+      mi::tag<by_status>,
+      BOOST_MULTI_INDEX_MEMBER(KeyValue, int, status)
+    >
+  >
+> ValuesMap;
+
+typedef ValuesMap::index<by_key_value>::type ValuesMapByKeyValue;
+typedef ValuesMap::index<by_valuemap_key>::type ValuesMapByKey;
+typedef ValuesMap::index<by_status>::type ValuesMapByStatus;
+
 class Operator {
  public:
-  typedef std::pair<kad::SignedValue, int> ValueStatus;
-  typedef std::pair<std::string, ValueStatus> ValuesMapPair;
-  typedef std::multimap<std::string, ValueStatus> ValuesMap;
-
   Operator(boost::shared_ptr<kad::KNode> knode, const std::string &public_key,
            const std::string &private_key);
   void Run();
@@ -132,10 +174,15 @@ class Operator {
   Operator(const Operator&);
   Operator &operator=(const Operator&);
 
-  int ChooseOperation();
-  void ExecuteOperation();
+  //
   void GenerateValues(int size);
   void ScheduleInitialOperations();
+  void ChooseOperation();
+  void FetchKeyValuesFromDb();
+  void SendStore();
+  void SendFind();
+  void SendUpdate();
+  void SendDelete();
 
   // Operations
   void StoreValue(const std::string &key, const kad::SignedValue &sv);
@@ -149,15 +196,11 @@ class Operator {
   void FindKClosestNodes(const std::string &key);
 
   // Operation Callbacks
-  void StoreValueCallback(const Operation &op,
-                          const std::string &ser_result);
-  void FindValueCallback(const std::string &key,
+  void StoreValueCallback(const Operation &op, const std::string &ser_result);
+  void FindValueCallback(const Operation &op,
                          const std::vector<kad::SignedValue> &values,
-                         bool mine,
-                         boost::posix_time::ptime &start_time,
-                         const std::string &ser_result);
-  void DeleteValueCallback(const Operation &op,
-                           const std::string &ser_result);
+                         bool mine, const std::string &ser_result);
+  void DeleteValueCallback(const Operation &op, const std::string &ser_result);
   void UpdateValueCallback(const Operation &op,
                            const kad::SignedValue &new_value,
                            const std::string &ser_result);
@@ -168,8 +211,11 @@ class Operator {
   void CreateRequestSignature(const std::string &key,
                               kad::SignedRequest *request);
   void LogResult(const Operation &original_op,
-                 const kad::SignedValue updated_signed_value,
+                 const kad::SignedValue &updated_signed_value,
                  const bool &result);
+  bool KeyMine(const std::string &key);
+  bool HashableKeyPair(const std::string &key, const std::string &sv,
+                       crypto::Crypto *co);
 
   boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<MySqlppWrap> wrap_;

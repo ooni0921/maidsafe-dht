@@ -45,7 +45,8 @@ class MySqlppWrap {
   int Update(const std::string &key, const std::string &value,
              const std::string &new_value);
   int Delete(const std::string &key, const std::string &value);
-  int Get(const std::string &key, std::vector<std::string> *value);
+  int GetValues(const std::string &key, std::vector<std::string> *value);
+  int GetKeys(std::vector<std::string> *keys);
 
  private:
   mysqlpp::Connection connection_;

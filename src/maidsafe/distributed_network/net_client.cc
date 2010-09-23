@@ -50,7 +50,7 @@ void RunSmallTest() {
   printf("Deleted %d previous entries.\n", n);
 
   std::vector<std::string> values;
-  n = msw.Get("", &values);
+  n = msw.GetValues("", &values);
   if (n != 0 || !values.empty()) {
     printf("Failed in Get #1: %d\n", n);
     return;
@@ -66,13 +66,13 @@ void RunSmallTest() {
     }
   }
 
-  n = msw.Get("", &values);
+  n = msw.GetValues("", &values);
   if (n != 0 || values.size() != size_t(10)) {
     printf("Failed in Get #2\n");
     return;
   }
 
-  n = msw.Get("key1", &values);
+  n = msw.GetValues("key1", &values);
   if (n != 0 || values.size() != size_t(10)) {
     printf("Failed in Get #3\n");
     return;
@@ -88,13 +88,13 @@ void RunSmallTest() {
     }
   }
 
-  n = msw.Get("", &values);
+  n = msw.GetValues("", &values);
   if (n != 0 || values.size() != size_t(15)) {
     printf("Failed in Get #4\n");
     return;
   }
 
-  n = msw.Get("key2", &values);
+  n = msw.GetValues("key2", &values);
   if (n != 0 || values.size() != size_t(5)) {
     printf("Failed in Get #5\n");
     return;
@@ -106,13 +106,13 @@ void RunSmallTest() {
     return;
   }
 
-  n = msw.Get("", &values);
+  n = msw.GetValues("", &values);
   if (n != 0 || values.size() != size_t(5)) {
     printf("Failed in Get #4\n");
     return;
   }
 
-  n = msw.Get("key2", &values);
+  n = msw.GetValues("key2", &values);
   if (n != 0 || values.size() != size_t(5)) {
     printf("Failed in Get #5\n");
     return;
@@ -124,7 +124,7 @@ void RunSmallTest() {
     return;
   }
 
-  n = msw.Get("key2", &values);
+  n = msw.GetValues("key2", &values);
   if (n != 0 || values.size() != size_t(5)) {
     printf("Failed in Get #5\n");
     return;
@@ -145,7 +145,7 @@ void RunSmallTest() {
     return;
   }
 
-  n = msw.Get("key2", &values);
+  n = msw.GetValues("key2", &values);
   if (n != 0 || values.size() != size_t(4)) {
     printf("Failed in Get #6\n");
     return;
@@ -159,6 +159,9 @@ void RunSmallTest() {
       return;
     }
   }
+
+  n = msw.Delete("", "");
+  printf("Deleted all(%d) entries to end the test.\n", n);
 }
 
 void StartTest(boost::shared_ptr<Operator> op, boost::shared_ptr<kad::KNode> kn,
