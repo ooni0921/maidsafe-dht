@@ -278,12 +278,16 @@ void KadService::Store(google::protobuf::RpcController *controller,
   if (!CheckStoreRequest(request, &sender)) {
     response->set_result(kRpcResultFailure);
   } else if (node_hasRSAkeys_) {
-    if (signature_validator_ == NULL ||
-        !signature_validator_->ValidateSignerId(
+    if (signature_validator_ == NULL) {
+      DLOG(WARNING) << "Null validator" << std::endl;
+      response->set_result(kRpcResultFailure);
+    } else if (!signature_validator_->ValidateSignerId(
             request->signed_request().signer_id(),
             request->signed_request().public_key(),
-            request->signed_request().signed_public_key()) ||
-        !signature_validator_->ValidateRequest(
+            request->signed_request().signed_public_key())) {
+      DLOG(WARNING) << "Failed to validate signer id" << std::endl;
+      response->set_result(kRpcResultFailure);
+    } else if (!signature_validator_->ValidateRequest(
             request->signed_request().signed_request(),
             request->signed_request().public_key(),
             request->signed_request().signed_public_key(), request->key())) {

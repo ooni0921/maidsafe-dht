@@ -65,23 +65,14 @@ enum OpType { kStore, kFindValue, kDelete, kUpdate, kFindNodes };
 
 struct Operation {
   Operation()
-      : key(),
-        signed_value(),
-        updated_signed_value(),
+      : key(), signed_value(), updated_signed_value(),
         start_time(boost::posix_time::microsec_clock::universal_time()),
-        duration(0),
-        op_type(kStore),
-        result(false) {}
-  Operation(const std::string &key,
-            const kad::SignedValue &signed_value,
+        duration(0), op_type(kStore), result(false) {}
+  Operation(const std::string &key, const kad::SignedValue &signed_value,
             const OpType &op_type)
-      : key(key),
-        signed_value(signed_value),
-        updated_signed_value(),
+      : key(key), signed_value(signed_value), updated_signed_value(),
         start_time(boost::posix_time::microsec_clock::universal_time()),
-        duration(0),
-        op_type(op_type),
-        result(false) {}
+        duration(0), op_type(op_type), result(false) {}
   std::string key;
   kad::SignedValue signed_value, updated_signed_value;
   boost::posix_time::ptime start_time;
@@ -119,6 +110,8 @@ typedef boost::multi_index_container<
   >
 > OperationMap;
 
+typedef OperationMap::index<by_timestamp>::type OperationMapByTimestamp;
+
 // Tags
 struct by_valuemap_key {};
 struct by_value {};
@@ -126,11 +119,11 @@ struct by_key_value {};
 struct by_status {};
 
 struct KeyValue {
-  KeyValue() : key(), value(), status() {}
+  KeyValue() : key(), value(), status(-1), searches(0) {}
   KeyValue(const std::string &skey, const std::string &svalue, int istatus)
-      : key(skey), value(svalue), status(istatus) {}
+      : key(skey), value(svalue), status(istatus), searches(0) {}
   std::string key, value;
-  int status;
+  int status, searches;
 };
 
 typedef boost::multi_index_container<
@@ -169,6 +162,7 @@ class Operator {
            const std::string &private_key);
   void Run();
   void Halt();
+  void WriteResultLog();
 
  private:
   Operator(const Operator&);
@@ -220,7 +214,7 @@ class Operator {
   boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<MySqlppWrap> wrap_;
   volatile bool halt_request_;
-  int operation_index_;
+  int operation_index_, fetch_count_, random_operations_;
   OperationMap operation_map_;
   ValuesMap values_map_;
   boost::mutex op_map_mutex_, values_map_mutex_;

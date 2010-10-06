@@ -164,9 +164,7 @@ void RunSmallTest() {
   printf("Deleted all(%d) entries to end the test.\n", n);
 }
 
-void StartTest(boost::shared_ptr<Operator> op, boost::shared_ptr<kad::KNode> kn,
-               const std::string &public_key, const std::string &private_key) {
-  op.reset(new Operator(kn, public_key, private_key));
+void StartTest(boost::shared_ptr<Operator> op) {
   op->Run();
 }
 
@@ -198,7 +196,7 @@ bool WriteKadConfig() {
 
 bool KadConfigOK() {
   base::KadConfig kadconfig;
-  fs::path kadconfig_path("/.kadconfig");
+  fs::path kadconfig_path("/tmp/.kadconfig");
   try {
     fs::ifstream input(kadconfig_path.string().c_str(),
                        std::ios::in | std::ios::binary);
@@ -206,8 +204,10 @@ bool KadConfigOK() {
       return WriteKadConfig();
     }
     input.close();
-    if (kadconfig.contact_size() == 0)
+    if (kadconfig.contact_size() == 0) {
+      printf("Found fuck all!!\n");
       return WriteKadConfig();
+    }
   }
   catch(const std::exception &) {
     return false;
@@ -341,7 +341,7 @@ int main(int, char **argv) {
 
   // Join the test network
   net_client::JoinCallback callback;
-  node->Join("/.kadconfig",
+  node->Join("/tmp/.kadconfig",
              boost::bind(&net_client::JoinCallback::AssessResult,
                          &callback, _1));
   if (!callback.JoinedNetwork()) {
@@ -350,9 +350,10 @@ int main(int, char **argv) {
     return 4;
   }
 
-  boost::shared_ptr<net_client::Operator> op;
-  boost::thread th(&net_client::StartTest, op, node, rsa_key_pair.public_key(),
-                   rsa_key_pair.private_key());
+  boost::shared_ptr<net_client::Operator> op(
+      new net_client::Operator(node, rsa_key_pair.public_key(),
+                               rsa_key_pair.private_key()));
+  boost::thread th(&net_client::StartTest, op);
 
   printf("Node info: %s", node->contact_info().DebugString().c_str());
   printf("=====================================\n");
@@ -368,6 +369,9 @@ int main(int, char **argv) {
   node->Leave();
   transport_handler.Stop(transport_id);
   channel_manager.Stop();
+
+  op->Halt();
+  op->WriteResultLog();
 
   return 0;
 }

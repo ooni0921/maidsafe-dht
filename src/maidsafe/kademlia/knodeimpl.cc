@@ -126,8 +126,7 @@ void SortLookupContact(std::list<LookupContact> *contact_list,
   }
 }
 
-void InsertKadContact(const KadId &key,
-                      const kad::Contact &new_contact,
+void InsertKadContact(const KadId &key, const kad::Contact &new_contact,
                       std::vector<kad::Contact> *contacts) {
   std::list<kad::Contact> contact_list(contacts->begin(), contacts->end());
   contact_list.push_back(new_contact);
@@ -317,19 +316,20 @@ void KNodeImpl::Join_Bootstrapping_Iteration(
       host_nat_type_ = DIRECT_CONNECTED;
     } else if (result_msg.nat_type() == 1) {
       // Direct connection
-      DLOG(INFO) << "Node is behind NAT of type 1\n";
+      DLOG(INFO) << "Node is behind NAT of type 1" << std::endl;
       rv_ip_ = "";
       rv_port_ = 0;
       host_nat_type_ = DIRECT_CONNECTED;
     } else if (result_msg.nat_type() == 2) {
       // need rendezvous server
-      DLOG(INFO) << "Node is behind NAT of type 2 (needs rendezvous server)\n";
+      DLOG(INFO) << "Node is behind NAT of type 2 (needs rendezvous server)"
+                 << std::endl;
       rv_ip_ = bootstrap_node.host_ip();
       rv_port_ = bootstrap_node.host_port();
       host_nat_type_ = RESTRICTED;
     } else if (result_msg.nat_type() == 3) {
       // behind symmetric router or no connection
-      DLOG(INFO) << "Node is behind NAT of type 3\n";
+      DLOG(INFO) << "Node is behind NAT of type 3" << std::endl;
       UPnPMap(local_host_port_);
       if (upnp_mapped_port_ != 0) {
         host_port_ = upnp_mapped_port_;
@@ -428,7 +428,7 @@ void KNodeImpl::Join_Bootstrapping(VoidFunctorOneString callback,
       UnRegisterKadService();
     }
     kadrpcs_.set_info(contact_info());
-    DLOG(WARNING) << "No more bootstrap contacts\n";
+    DLOG(WARNING) << "No more bootstrap contacts" << std::endl;
     std::string local_result_str(local_result.SerializeAsString());
     callback(local_result_str);
     return;
@@ -482,10 +482,10 @@ void KNodeImpl::Join_RefreshNode(VoidFunctorOneString callback,
   // Getting local IP and temporarily setting host_ip_ == local_host_ip_
   std::vector<std::string> local_ips = base::GetLocalAddresses();
   bool got_local_address = false;
-  for (unsigned int i = 0; i < bootstrapping_nodes_.size()
-       && !got_local_address; ++i) {
-    std::string remote_ip =
-        base::IpBytesToAscii(bootstrapping_nodes_[i].host_ip());
+  for (unsigned int i = 0; i < bootstrapping_nodes_.size() &&
+       !got_local_address; ++i) {
+    std::string remote_ip(
+        base::IpBytesToAscii(bootstrapping_nodes_[i].host_ip()));
     for (unsigned int j = 0; j < local_ips.size() && !got_local_address; ++j) {
       if (transport_handler_->IsAddressUsable(local_ips[j], remote_ip,
           bootstrapping_nodes_[i].host_port(), transport_id_)) {
@@ -743,19 +743,20 @@ boost::int16_t KNodeImpl::LoadBootstrapContacts() {
       std::ifstream input_(kad_config_path_.string().c_str(),
                            std::ios::in | std::ios::binary);
       if (!kad_config.ParseFromIstream(&input_)) {
-        DLOG(ERROR) << "Failed to parse kademlia config file\n";
+        DLOG(ERROR) << "Failed to parse kademlia config file" << std::endl;
         return -1;
       }
       input_.close();
       if (0 == kad_config.contact_size()) {
-        DLOG(ERROR) << "Kademlia config file has no bootstrap nodes\n";
+        DLOG(ERROR) << "Kademlia config file has no bootstrap nodes"
+                    << std::endl;
         return -1;
       }
     }
   }
   catch(const std::exception ex) {
     DLOG(ERROR) << "Failed to access kademlia config file " << kad_config_path_
-        << ". Error: " << ex.what() << std::endl;
+                << ". Error: " << ex.what() << std::endl;
     return -1;
   }
   bootstrapping_nodes_.clear();
@@ -863,7 +864,8 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
       store_value_result.set_result(kRpcResultFailure);
       SignedRequest *sreq = store_value_result.mutable_signed_request();
       *sreq = del_req;
-      DLOG(WARNING) << "Found during refresh that value has been deleted\n";
+      DLOG(WARNING) << "Found during refresh that value has been deleted"
+                    << std::endl;
     } else {
       // Failed to store min. number of copies
       // TODO(Fraser#5#): 2009-05-15 - Need to handle failure properly, i.e.
@@ -874,8 +876,8 @@ void KNodeImpl::StoreValue_IterativeStoreValue(
       //                  routing table.
       store_value_result.set_result(kRpcResultFailure);
       DLOG(ERROR) << "Successful Store rpc's " << callback_data.data->save_nodes
-        << "\nSuccessful Store rpc's required " <<
-        K_ * kMinSuccessfulPecentageStore << std::endl;
+                  << std::endl << "Successful Store rpc's required "
+                  << K_ * kMinSuccessfulPecentageStore << std::endl;
     }
     std::string store_value_result_str(store_value_result.SerializeAsString());
     callback_data.data->is_callbacked = true;
@@ -979,7 +981,8 @@ void KNodeImpl::StoreValue_ExecuteStoreRPCs(const std::string &result,
           }
           if (local_result && closest_nodes.size() >= K_) {
             closest_nodes.pop_back();
-            DLOG(INFO) << "StoreValue_ExecuteStoreRPCs storing locally\n";
+            DLOG(INFO) << "StoreValue_ExecuteStoreRPCs storing locally"
+                       << std::endl;
           }
         }
       }
@@ -1043,8 +1046,8 @@ void KNodeImpl::FindValue(const KadId &key, const bool &check_alternative_store,
       result_msg.set_result(kad::kRpcResultSuccess);
       *result_msg.mutable_alternative_value_holder() = contact_info();
       DLOG(INFO) << "In KNodeImpl::FindValue - node " <<
-        result_msg.alternative_value_holder().node_id().substr(0, 20) <<
-        " got value in alt store.\n";
+                 result_msg.alternative_value_holder().node_id().substr(0, 20)
+                 << " got value in alt store." << std::endl;
       std::string ser_find_result(result_msg.SerializeAsString());
       callback(ser_find_result);
       return;
@@ -1362,7 +1365,8 @@ void KNodeImpl::HandleDeadRendezvousServer(const bool &dead_server ) {
   if (stopping_)
     return;
   if (dead_server) {
-    DLOG(WARNING) << "(" << local_host_port_ << ")--Failed to ping RV server\n";
+    DLOG(WARNING) << "(" << local_host_port_ << ")--Failed to ping RV server"
+                  << std::endl;
     if (rv_ip_.empty() && rv_port_ == 0) {
       // node has no rendezvous server, it does not need to rejoin, just finding
       // out if it is offline by trying to connect with one of its contacts
@@ -1405,13 +1409,14 @@ void KNodeImpl::ReBootstrapping_Callback(const std::string &result) {
     // TODO(David): who should we inform if after trying to bootstrap again
     // because the rendezvous server died, the bootstrap operation fails?
     DLOG(WARNING) << "(" << local_host_port_ << ") -- Failed to rejoin ..."
-        << " Retrying.\n";
+                  << " Retrying."  << std::endl;
     is_joined_ = false;
     stopping_ = false;
     Join(node_id_, kad_config_path_.string(),
          boost::bind(&KNodeImpl::ReBootstrapping_Callback, this, _1));
   } else {
-    DLOG(INFO) << "(" << local_host_port_ << ") Rejoining successful.\n";
+    DLOG(INFO) << "(" << local_host_port_ << ") Rejoining successful."
+               << std::endl;
     is_joined_ = true;
     premote_service_->set_node_joined(true);
     premote_service_->set_node_info(contact_info());
@@ -1488,7 +1493,7 @@ ConnectionType KNodeImpl::CheckContactLocalAddress(const KadId &id,
 void KNodeImpl::UPnPMap(boost::uint16_t host_port) {
   // Get a UPnP mapping port
   upnp_mapped_port_ = 0;
-  DLOG(INFO) << "Initialising UPNP\n";
+  DLOG(INFO) << "Initialising UPNP" << std::endl;
   // ignore result, in case it's already initialised
   upnp_.InitControlPoint();
 
@@ -1505,7 +1510,7 @@ void KNodeImpl::UPnPMap(boost::uint16_t host_port) {
 }
 
 void KNodeImpl::UnMapUPnP() {
-  DLOG(INFO) << "Deleting the UPnP mapped port\n";
+  DLOG(INFO) << "Deleting the UPnP mapped port" << std::endl;
   upnp_.DeletePortMapping(upnp_mapped_port_, upnp::kUdp);
   upnp_mapped_port_ = 0;
 }
@@ -1551,7 +1556,7 @@ void KNodeImpl::CheckToInsert(const Contact &new_contact) {
   Contact last_seen;
   last_seen = prouting_table_->GetLastSeenContact(index);
   DLOG(INFO) << "Pinging last seen node in routing table to try to insert " <<
-    "to try to insert contact\n" << new_contact.DebugString();
+    "to try to insert contact" << std::endl << new_contact.DebugString();
   Ping(last_seen,
        boost::bind(&KNodeImpl::CheckToInsert_Callback, this, _1,
                    new_contact.node_id(), new_contact));
@@ -2493,7 +2498,7 @@ void KNodeImpl::DelValue_IterativeDeleteValue(
     } else {
       del_value_result.set_result(kRpcResultFailure);
       DLOG(ERROR) << "Successful Delete rpc's " << callback_data.data->del_nodes
-                  << "\nSuccessful Delete rpc's required "
+                  << std::endl << "Successful Delete rpc's required "
                   << K_ * kMinSuccessfulPecentageStore << std::endl;
     }
     std::string del_value_result_str(del_value_result.SerializeAsString());

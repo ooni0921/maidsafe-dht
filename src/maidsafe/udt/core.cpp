@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 09/13/2010
+   Yunhong Gu, last updated 09/23/2010
 *****************************************************************************/
 
 #ifndef WIN32
@@ -1296,7 +1296,10 @@ int64_t CUDT::sendfile(fstream& ifs, const int64_t& offset, const int64_t& size,
    // sending block by block
    while (tosend > 0)
    {
-      if (ifs.bad() || ifs.fail() || ifs.eof())
+      if (ifs.fail())
+         throw CUDTException(4, 4);
+
+      if (ifs.eof())
          break;
 
       unitsize = int((tosend >= block) ? block : tosend);
@@ -1367,8 +1370,8 @@ int64_t CUDT::recvfile(fstream& ofs, const int64_t& offset, const int64_t& size,
    // receiving... "recvfile" is always blocking
    while (torecv > 0)
    {
-      if (ofs.bad() || ofs.fail())
-         break;
+      if (ofs.fail())
+         throw CUDTException(4, 4);
 
       #ifndef WIN32
          pthread_mutex_lock(&m_RecvDataLock);

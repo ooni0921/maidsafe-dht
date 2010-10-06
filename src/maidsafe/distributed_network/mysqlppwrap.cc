@@ -136,8 +136,11 @@ int MySqlppWrap::GetValues(const std::string &key,
       return -1;
     }
 
-    for (size_t i = 0; i < res.num_rows(); ++i)
-      values->push_back(static_cast<std::string>(res[i][0]));
+    for (size_t i = 0; i < res.num_rows(); ++i) {
+      std::string s;
+      res[i][0].to_string(s);
+      values->push_back(s);
+    }
   }
   catch(const std::exception &e) {
     printf("%s\n", e.what());
@@ -162,8 +165,11 @@ int MySqlppWrap::GetKeys(std::vector<std::string> *keys) {
       return -1;
     }
 
-    for (size_t i = 0; i < res.num_rows(); ++i)
-      keys->push_back(static_cast<std::string>(res[i][0]));
+    for (size_t i = 0; i < res.num_rows(); ++i) {
+      std::string s;
+      res[i][0].to_string(s);
+      keys->push_back(s);
+    }
   }
   catch(const std::exception &e) {
     printf("%s\n", e.what());

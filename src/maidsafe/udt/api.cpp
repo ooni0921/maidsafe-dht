@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 09/13/2010
+   Yunhong Gu, last updated 09/28/2010
 *****************************************************************************/
 
 #ifdef WIN32
@@ -122,6 +122,7 @@ m_bClosing(false),
 m_GCStopLock(),
 m_GCStopCond(),
 m_InitLock(),
+m_iInstanceCount(0),
 m_bGCStatus(false),
 m_GCThread(),
 m_ClosedSockets()
@@ -176,6 +177,9 @@ int CUDTUnited::startup()
 {
    CGuard gcinit(m_InitLock);
 
+   if (m_iInstanceCount++ > 0)
+      return 0;
+
    // Global initialization code
    #ifdef WIN32
       WORD wVersionRequested;
@@ -211,6 +215,9 @@ int CUDTUnited::startup()
 int CUDTUnited::cleanup()
 {
    CGuard gcinit(m_InitLock);
+
+   if (--m_iInstanceCount > 0)
+      return 0;
 
    //destroy CTimer::EventLock
 

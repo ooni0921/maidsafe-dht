@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 04/07/2010
+   Yunhong Gu, last updated 09/28/2010
 *****************************************************************************/
 
 #ifndef __UDT_API_H__
@@ -234,6 +234,7 @@ private:
    pthread_cond_t m_GCStopCond;
 
    pthread_mutex_t m_InitLock;
+   int m_iInstanceCount;				// number of startup() called by application
    bool m_bGCStatus;					// if the GC thread is working (true)
 
    pthread_t m_GCThread;

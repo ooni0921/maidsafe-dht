@@ -91,7 +91,7 @@ boost::uint32_t CallLaterTimer::AddCallLater(const boost::uint64_t &msecs,
   call_later_id_ = (call_later_id_ + 1) % 32768;
   boost::shared_ptr<boost::asio::deadline_timer> timer(
       new boost::asio::deadline_timer(io_service_,
-      boost::posix_time::milliseconds(msecs)));
+          boost::posix_time::milliseconds(msecs)));
   std::pair<TimersMap::iterator, bool> p =
       timers_.insert(TimersMap::value_type(call_later_id_, timer));
   if (p.second) {

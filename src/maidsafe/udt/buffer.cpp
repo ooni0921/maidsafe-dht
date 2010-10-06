@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 08/06/2010
+   Yunhong Gu, last updated 09/23/2010
 *****************************************************************************/
 
 #include <cstring>
@@ -225,7 +225,7 @@ int CSndBuffer::readData(char** data, const int offset, int32_t& msgno, int& msg
    for (int i = 0; i < offset; ++ i)
       p = p->m_pNext;
 
-   if ((p->m_iTTL > 0) && ((CTimer::getTime() - p->m_OriginTime) / 1000 > (uint64_t)p->m_iTTL))
+   if ((p->m_iTTL >= 0) && ((CTimer::getTime() - p->m_OriginTime) / 1000 > (uint64_t)p->m_iTTL))
    {
       msgno = p->m_iMsgNo & 0x1FFFFFFF;
 
@@ -378,7 +378,7 @@ int CRcvBuffer::addData(CUnit* unit, int offset)
 
    if (NULL != m_pUnit[pos])
       return -1;
-
+   
    m_pUnit[pos] = unit;
 
    unit->m_iFlag = 1;
@@ -459,9 +459,6 @@ int CRcvBuffer::readBufferToFile(fstream& ofs, const int& len)
    }
 
    m_iStartPos = p;
-
-   if (ofs.fail())
-      throw CUDTException(4, 4);
 
    return len - rs;
 }
