@@ -316,14 +316,12 @@ TEST_F(TestKbucket, BEH_KAD_AddSameContact) {
   contacts.clear();
 
   size_t currsize = kbucket.Size();
-  Contact contact3(cry_obj.Hash("newid", "", crypto::STRING_STRING, false),
-    ip, 8880, ip, 8880);
+  Contact contact3(id[0], ip, 8880, ip, 8880);
   ASSERT_EQ(SUCCEED, kbucket.AddContact(contact3));
   ASSERT_EQ(currsize, kbucket.Size());
   Contact contact4;
   kbucket.GetContacts(1, ex_contacts, &contacts);
-  ASSERT_TRUE(kbucket.GetContact(KadId(cry_obj.Hash("newid",
-      "", crypto::STRING_STRING, false)), &contact4));
+  ASSERT_TRUE(kbucket.GetContact(id[0], &contact4));
   ASSERT_TRUE(contact4.Equals(contacts[0])) <<
       "the contact readded was not placed at the begging of the list";
 }
