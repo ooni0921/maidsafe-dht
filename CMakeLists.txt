@@ -35,6 +35,7 @@
 #                                                                              #
 #==============================================================================#
 
+
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
 MESSAGE("================================================================================\n")
 SET(CMAKE_CACHEFILE "${CMAKE_CACHEFILE_DIR}/CMakeCache.txt")
@@ -379,6 +380,13 @@ SET(ALL_FILES_TRANSPORT_DIR ${SOURCE_FILES_TRANSPORT_DIR} ${HEADER_FILES_TRANSPO
 SOURCE_GROUP("transport Source Files" FILES ${SOURCE_FILES_TRANSPORT_DIR})
 SOURCE_GROUP("transport Header Files" FILES ${HEADER_FILES_TRANSPORT_DIR})
 
+FILE(GLOB SOURCE_FILES_DBTRANSPORT_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/transport/*db*.cc")
+FILE(GLOB HEADER_FILES_DBTRANSPORT_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/transport/*db*.h")
+SET(ALL_FILES_DBTRANSPORT_DIR ${SOURCE_FILES_DBTRANSPORT_DIR} ${HEADER_FILES_DBTRANSPORT_DIR})
+SOURCE_GROUP("DB transport Source Files" FILES ${SOURCE_FILES_DBTRANSPORT_DIR})
+SOURCE_GROUP("DB transport Header Files" FILES ${HEADER_FILES_DBTRANSPORT_DIR})
+LIST(REMOVE_ITEM ALL_FILES_TRANSPORT_DIR ${ALL_FILES_DBTRANSPORT_DIR})
+
 FILE(GLOB SOURCE_FILES_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/*.cc")
 FILE(GLOB HEADER_FILES_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/*.h")
 LIST(REMOVE_ITEM SOURCE_FILES_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/upnp/upnpclientimpl.cc")
@@ -396,6 +404,10 @@ LIST(APPEND DHT_SOURCE_FILES ${ALL_FILES_BASE_DIR}
                              ${ALL_FILES_UPNP_DIR}
                              ${ALL_FILES_NATPMP_DIR}
                              ${ALL_FILES_MAIDSAFE_DIR})
+IF(Mysqlpp_FOUND)
+  LIST(APPEND DHT_SOURCE_FILES ${ALL_FILES_DBTRANSPORT_DIR})
+ENDIF()
+
 
 ####    TESTS    ####
 FILE(GLOB ALL_FILES_TEST_MAIN "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/*.cc"
@@ -407,20 +419,31 @@ FILE(GLOB ALL_FILES_TEST_BENCHMARK_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/t
 FILE(GLOB ALL_FILES_TEST_BOOST_DIR  "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/boost/*.cc")
 FILE(GLOB ALL_FILES_TEST_DEMO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/demo/*.cc"
                                   "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/demo/*.h")
-FILE(GLOB ALL_FILES_TEST_FUNCTIONALKADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/functionalkademlia/*.cc"
-                                                "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/functionalkademlia/*.h")
-LIST(REMOVE_ITEM ALL_FILES_TEST_FUNCTIONALKADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/functionalkademlia/testknodefunctional.cc")
+
+FILE(GLOB ALL_FILES_TEST_FUNCTIONALKADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/functionalkademlia/testknode.cc")
+FILE(GLOB ALL_FILES_TEST_DBFUNCTIONALKADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/functionalkademlia/testknodedb.cc")
+
 FILE(GLOB ALL_FILES_TEST_KADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/*.cc"
                                       "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/*.h")
+FILE(GLOB ALL_FILES_TEST_DBKADEMLIA_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/*db*.cc"
+                                        "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/*db*.h")
+LIST(REMOVE_ITEM ALL_FILES_TEST_KADEMLIA_DIR ${ALL_FILES_TEST_DBKADEMLIA_DIR})
 FILE(GLOB ALL_FILES_TEST_NATPMP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/nat-pmp/*.cc"
                                     "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/nat-pmp/*.h")
+
 FILE(GLOB ALL_FILES_TEST_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/*.cc"
                                       "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/*.h")
-SET(STYLE_RPCPROTO_DIR ${ALL_FILES_TEST_RPCPROTO_DIR})
-LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/testservices.pb.h")
-LIST(REMOVE_ITEM STYLE_RPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/testservices.pb.cc")
+FILE(GLOB ALL_FILES_TEST_DBRPCPROTO_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/*db*.cc"
+                                        "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/rpcprotocol/*db*.h")
+LIST(REMOVE_ITEM ALL_FILES_TEST_RPCPROTO_DIR ${ALL_FILES_TEST_DBRPCPROTO_DIR})
+SET(STYLE_RPCPROTO_DIR ${ALL_FILES_TEST_RPCPROTO_DIR} ${ALL_FILES_TEST_DBRPCPROTO_DIR})
+
 FILE(GLOB ALL_FILES_TEST_TRANSPORT_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/transport/*.cc"
                                        "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/transport/*.h")
+FILE(GLOB ALL_FILES_TEST_DBTRANSPORT_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/transport/*db*.cc"
+                                         "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/transport/*db*.h")
+LIST(REMOVE_ITEM ALL_FILES_TEST_TRANSPORT_DIR ${ALL_FILES_TEST_DBTRANSPORT_DIR})
+
 FILE(GLOB ALL_FILES_TEST_UPNP_DIR "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/upnp/*.cc"
                                   "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/upnp/*.h")
 IF(Mysqlpp_FOUND)
@@ -452,6 +475,10 @@ ADD_EXECUTABLE(kaddemo_static ${ALL_FILES_TEST_DEMO_DIR} ${HEADER_FILES_MAIDSAFE
 ADD_EXECUTABLE(benchmark_static ${ALL_FILES_TEST_BENCHMARK_DIR} ${HEADER_FILES_MAIDSAFE_DIR})
 IF(Mysqlpp_FOUND)
   ADD_EXECUTABLE(distributed_net_clients ${ALL_FILES_NETWORK_TEST_DIR} ${HEADER_FILES_MAIDSAFE_DIR})
+  ADD_EXECUTABLE(TESTkademlia_db ${ALL_FILES_TEST_MAIN} ${ALL_FILES_TEST_DBKADEMLIA_DIR} ${HEADER_FILES_MAIDSAFE_DIR})
+  ADD_EXECUTABLE(TESTknode_db ${ALL_FILES_TEST_DBFUNCTIONALKADEMLIA_DIR} ${HEADER_FILES_MAIDSAFE_DIR})
+  ADD_EXECUTABLE(TESTtransport_db ${ALL_FILES_TEST_MAIN} ${ALL_FILES_TEST_DBTRANSPORT_DIR} ${HEADER_FILES_MAIDSAFE_DIR})
+  ADD_EXECUTABLE(TESTrpcprotocol_db ${ALL_FILES_TEST_MAIN} ${ALL_FILES_TEST_DBRPCPROTO_DIR} ${HEADER_FILES_MAIDSAFE_DIR})
 ENDIF()
 
 # Force renaming of exes to match standard CMake library renaming policy
@@ -501,6 +528,22 @@ IF(NOT MSVC)
                             DEBUG_OUTPUT_NAME distributed_net_clients${CMAKE_DEBUG_POSTFIX}
                             RELWITHDEBINFO_OUTPUT_NAME distributed_net_clients${CMAKE_RELWITHDEBINFO_POSTFIX}
                             MINSIZEREL_OUTPUT_NAME distributed_net_clients${CMAKE_MINSIZEREL_POSTFIX})
+    SET_TARGET_PROPERTIES(TESTkademlia_db PROPERTIES
+                            DEBUG_OUTPUT_NAME TESTkademlia_db${CMAKE_DEBUG_POSTFIX}
+                            RELWITHDEBINFO_OUTPUT_NAME TESTkademlia_db${CMAKE_RELWITHDEBINFO_POSTFIX}
+                            MINSIZEREL_OUTPUT_NAME TESTkademlia_db${CMAKE_MINSIZEREL_POSTFIX})
+    SET_TARGET_PROPERTIES(TESTknode_db PROPERTIES
+                            DEBUG_OUTPUT_NAME TESTknode_db${CMAKE_DEBUG_POSTFIX}
+                            RELWITHDEBINFO_OUTPUT_NAME TESTknode_db${CMAKE_RELWITHDEBINFO_POSTFIX}
+                            MINSIZEREL_OUTPUT_NAME TESTknode_db${CMAKE_MINSIZEREL_POSTFIX})
+    SET_TARGET_PROPERTIES(TESTtransport_db PROPERTIES
+                            DEBUG_OUTPUT_NAME TESTtransport_db${CMAKE_DEBUG_POSTFIX}
+                            RELWITHDEBINFO_OUTPUT_NAME TESTtransport_db${CMAKE_RELWITHDEBINFO_POSTFIX}
+                            MINSIZEREL_OUTPUT_NAME TESTtransport_db${CMAKE_MINSIZEREL_POSTFIX})
+    SET_TARGET_PROPERTIES(TESTrpcprotocol_db PROPERTIES
+                            DEBUG_OUTPUT_NAME TESTrpcprotocol_db${CMAKE_DEBUG_POSTFIX}
+                            RELWITHDEBINFO_OUTPUT_NAME TESTrpcprotocol_db${CMAKE_RELWITHDEBINFO_POSTFIX}
+                            MINSIZEREL_OUTPUT_NAME TESTrpcprotocol_db${CMAKE_MINSIZEREL_POSTFIX})
   ENDIF()
 ENDIF()
 # Need to use __declspec(dllexport) in all API header files before adding SHARED library target
@@ -573,6 +616,10 @@ IF(NOT MSVC)
   TARGET_LINK_LIBRARIES(benchmark_static maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
   IF(Mysqlpp_FOUND)
     TARGET_LINK_LIBRARIES(distributed_net_clients maidsafe_dht_static udt_static cryptopp_static ${Mysqlpp_LIBRARY} ${SYS_LIB})
+    TARGET_LINK_LIBRARIES(TESTtransport_db maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARY} ${Mysqlpp_LIBRARY} ${SYS_LIB})
+    TARGET_LINK_LIBRARIES(TESTrpcprotocol_db maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARY} ${Mysqlpp_LIBRARY} ${SYS_LIB})
+    TARGET_LINK_LIBRARIES(TESTkademlia_db maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARY} ${Mysqlpp_LIBRARY} ${SYS_LIB})
+    TARGET_LINK_LIBRARIES(TESTknode_db maidsafe_dht_static udt_static cryptopp_static ${Gtest_LIBRARY} ${Mysqlpp_LIBRARY} ${SYS_LIB})
   ENDIF()
 ENDIF()
 
@@ -612,6 +659,7 @@ IF(MSVC)
                               ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/base/routingtable.h
                               ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/kademlia/testcontact.cc
                               ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/functionalkademlia/testknode.cc
+                              ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/functionalkademlia/testknodedb.cc
                               ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/nat-pmp/testnatpmp.cc
                               ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/tests/transport/testtransport.cc
                                 PROPERTIES COMPILE_FLAGS "/wd4503")
@@ -637,7 +685,7 @@ IF(MSVC)
                           LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
                           LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
   IF(Mysqlpp_FOUND)
-    SET_TARGET_PROPERTIES(distributed_net_clients PROPERTIES
+    SET_TARGET_PROPERTIES(distributed_net_clients TESTkademlia_db TESTknode_db TESTrpcprotocol_db TESTtransport_db PROPERTIES
                             LINK_FLAGS "/STACK:1048576"
                             LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
                             LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
@@ -665,6 +713,10 @@ IF(MSVC)
   TARGET_LINK_LIBRARIES(TESTboost ${SYS_LIB})
   IF(Mysqlpp_FOUND)
     TARGET_LINK_LIBRARIES(distributed_net_clients maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+    TARGET_LINK_LIBRARIES(TESTkademlia_db maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+    TARGET_LINK_LIBRARIES(TESTknode_db maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+    TARGET_LINK_LIBRARIES(TESTrpcprotocol_db maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
+    TARGET_LINK_LIBRARIES(TESTtransport_db maidsafe_dht_static udt_static cryptopp_static ${SYS_LIB})
   ENDIF()
 
 #  TARGET_LINK_LIBRARIES(maidsafe_dht udt_static cryptopp_static iphlpapi.lib)
@@ -684,6 +736,10 @@ IF(MSVC)
     TARGET_LINK_LIBRARIES(TESTboost debug ${DLIB})
     IF(Mysqlpp_FOUND)
       TARGET_LINK_LIBRARIES(distributed_net_clients debug ${DLIB})
+      TARGET_LINK_LIBRARIES(TESTkademlia_db debug ${DLIB})
+      TARGET_LINK_LIBRARIES(TESTknode_db debug ${DLIB})
+      TARGET_LINK_LIBRARIES(TESTrpcprotocol_db debug ${DLIB})
+      TARGET_LINK_LIBRARIES(TESTtransport_db debug ${DLIB})
     ENDIF()
 #    TARGET_LINK_LIBRARIES(maidsafe_dht debug ${DLIB})
 #    TARGET_LINK_LIBRARIES(kaddemo debug ${DLIB})
@@ -699,6 +755,10 @@ IF(MSVC)
   TARGET_LINK_LIBRARIES(TESTboost debug ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY_DEBUG} debug ${Gtest_LIBRARY_DEBUG})
   IF(Mysqlpp_FOUND)
     TARGET_LINK_LIBRARIES(distributed_net_clients debug ${Mysqlpp_LIBRARY_DEBUG} ${Mysql_LIBRARY_DEBUG})
+    TARGET_LINK_LIBRARIES(TESTkademlia_db debug ${Mysqlpp_LIBRARY_DEBUG} ${Mysql_LIBRARY_DEBUG} ${Gtest_LIBRARY_DEBUG})
+    TARGET_LINK_LIBRARIES(TESTknode_db debug ${Mysqlpp_LIBRARY_DEBUG} ${Mysql_LIBRARY_DEBUG} ${Gtest_LIBRARY_DEBUG})
+    TARGET_LINK_LIBRARIES(TESTrpcprotocol_db ${Mysqlpp_LIBRARY_DEBUG} ${Mysql_LIBRARY_DEBUG} debug ${Gtest_LIBRARY_DEBUG})
+    TARGET_LINK_LIBRARIES(TESTtransport_db ${Mysqlpp_LIBRARY_DEBUG} ${Mysql_LIBRARY_DEBUG} debug ${Gtest_LIBRARY_DEBUG})
   ENDIF()
 
   FOREACH(RLIB ${RELEASE_LIBS})
@@ -714,6 +774,10 @@ IF(MSVC)
     TARGET_LINK_LIBRARIES(TESTboost optimized ${RLIB})
     IF(Mysqlpp_FOUND)
       TARGET_LINK_LIBRARIES(distributed_net_clients optimized ${RLIB})
+      TARGET_LINK_LIBRARIES(TESTkademlia_db optimized ${RLIB})
+      TARGET_LINK_LIBRARIES(TESTknode_db optimized ${RLIB})
+      TARGET_LINK_LIBRARIES(TESTrpcprotocol_db optimized ${RLIB})
+      TARGET_LINK_LIBRARIES(TESTtransport_db optimized ${RLIB})
     ENDIF()
 #    TARGET_LINK_LIBRARIES(maidsafe_dht optimized ${RLIB})
 #    TARGET_LINK_LIBRARIES(kaddemo optimized ${RLIB})
@@ -729,6 +793,10 @@ IF(MSVC)
   TARGET_LINK_LIBRARIES(TESTboost optimized ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY_RELEASE} optimized ${Gtest_LIBRARY})
   IF(Mysqlpp_FOUND)
     TARGET_LINK_LIBRARIES(distributed_net_clients optimized ${Mysqlpp_LIBRARY} ${Mysql_LIBRARY})
+    TARGET_LINK_LIBRARIES(TESTkademlia_db optimized ${Mysqlpp_LIBRARY} ${Mysql_LIBRARY} ${Gtest_LIBRARY})
+    TARGET_LINK_LIBRARIES(TESTknode_db optimized ${Mysqlpp_LIBRARY} ${Mysql_LIBRARY} ${Gtest_LIBRARY})
+    TARGET_LINK_LIBRARIES(TESTrpcprotocol_db optimized ${Mysqlpp_LIBRARY} ${Mysql_LIBRARY} ${Gtest_LIBRARY})
+    TARGET_LINK_LIBRARIES(TESTtransport_db optimized ${Mysqlpp_LIBRARY} ${Mysql_LIBRARY} ${Gtest_LIBRARY})
   ENDIF()
 ENDIF()
 
@@ -782,12 +850,14 @@ SET(CTEST_CONTINUOUS_MINIMUM_INTERVAL 10)
 SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY true)
 IF(PYTHONINTERP_FOUND)
   IF(UNIX)
-    ADD_TEST(STYLE_CHECK_KAD python ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${STYLE_KADEMLIA} ${ALL_FILES_TEST_KADEMLIA_DIR} ${ALL_FILES_TEST_FUNCTIONALKADEMLIA_DIR})
+    ADD_TEST(STYLE_CHECK_KAD python ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${STYLE_KADEMLIA} ${ALL_FILES_TEST_DBKADEMLIA_DIR} ${ALL_FILES_TEST_DBFUNCTIONALKADEMLIA_DIR} ${ALL_FILES_TEST_KADEMLIA_DIR} ${ALL_FILES_TEST_FUNCTIONALKADEMLIA_DIR})
     SET_PROPERTY(TEST STYLE_CHECK_KAD PROPERTY LABELS Functional Kademlia CodingStyle)
     ADD_TEST(STYLE_CHECK_BASE python ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${ALL_FILES_BASE_DIR} ${ALL_FILES_TEST_BASE_DIR})
     SET_PROPERTY(TEST STYLE_CHECK_BASE PROPERTY LABELS Functional Base CodingStyle)
-    ADD_TEST(STYLE_CHECK_RPC python ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${ALL_FILES_RPCPROTO_DIR} ${STYLE_RPCPROTO_DIR})
+    ADD_TEST(STYLE_CHECK_RPC python ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${ALL_FILES_RPCPROTO_DIR} ${STYLE_RPCPROTO_DIR} ${ALL_FILES_TEST_RPCPROTO_DIR} ${ALL_FILES_TEST_DBRPCPROTO_DIR})
     SET_PROPERTY(TEST STYLE_CHECK_RPC PROPERTY LABELS Functional RpcProtocol CodingStyle)
+    ADD_TEST(STYLE_CHECK_TRANSPORT python ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${ALL_FILES_TRANSPORT_DIR} ${ALL_FILES_DBTRANSPORT_DIR} ${ALL_FILES_TEST_TRANSPORT_DIR} ${ALL_FILES_TEST_DBTRANSPORT_DIR})
+    SET_PROPERTY(TEST STYLE_CHECK_TRANSPORT PROPERTY LABELS Functional Transport CodingStyle)
   ELSE()
     STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${${PROJECT_NAME}_ROOT})
     ADD_TEST(STYLE_CHECK ${${PROJECT_NAME}_ROOT}/build/tools/run_cpplint.bat ${STYLE_CHECK_SOURCE})
@@ -795,24 +865,56 @@ IF(PYTHONINTERP_FOUND)
   ENDIF()
 ENDIF()
 
-SET(TEST_EXECUTABLES TESTupnp TESTnatpmp TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol TESTboost)
+IF(Mysqlpp_FOUND)
+  SET(TEST_EXECUTABLES TESTupnp TESTnatpmp TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol TESTknode_db TESTkademlia_db TESTtransport_db TESTrpcprotocol_db TESTboost)
+ELSE()
+  SET(TEST_EXECUTABLES TESTupnp TESTnatpmp TESTbase TESTknode TESTkademlia TESTtransport TESTrpcprotocol TESTboost)
+ENDIF()
 FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
-  IF(TEST_EXECUTABLE STREQUAL "TESTupnp")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_UPNP_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTnatpmp")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_NATPMP_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTbase")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_BASE_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTknode")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_FUNCTIONALKADEMLIA_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTkademlia")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_KADEMLIA_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTtransport")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_TRANSPORT_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTrpcprotocol")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_RPCPROTO_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTboost")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_BOOST_DIR})
+  IF(Mysqlpp_FOUND)
+    IF(TEST_EXECUTABLE STREQUAL "TESTknode_db")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_DBFUNCTIONALKADEMLIA_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTkademlia_db")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_DBKADEMLIA_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTtransport_db")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_DBTRANSPORT_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTrpcprotocol_db")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_DBRPCPROTO_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTupnp")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_UPNP_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTnatpmp")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_NATPMP_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTbase")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_BASE_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTknode")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_FUNCTIONALKADEMLIA_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTkademlia")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_KADEMLIA_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTtransport")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_TRANSPORT_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTrpcprotocol")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_RPCPROTO_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTboost")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_BOOST_DIR})
+    ENDIF()
+  ELSE()
+    IF(TEST_EXECUTABLE STREQUAL "TESTupnp")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_UPNP_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTnatpmp")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_NATPMP_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTbase")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_BASE_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTknode")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_FUNCTIONALKADEMLIA_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTkademlia")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_KADEMLIA_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTtransport")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_TRANSPORT_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTrpcprotocol")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_RPCPROTO_DIR})
+    ELSEIF(TEST_EXECUTABLE STREQUAL "TESTboost")
+      SET(GTEST_SOURCE_FILES ${ALL_FILES_TEST_BOOST_DIR})
+    ENDIF()
   ENDIF()
   FOREACH(GTEST_SOURCE_FILE ${GTEST_SOURCE_FILES})
     FILE(STRINGS ${GTEST_SOURCE_FILE} GTEST_NAMES REGEX ^TEST)
@@ -899,10 +1001,18 @@ SET(MAIDSAFE_PROTO_INSTALL_FILES
 SET(MAIDSAFE_RPC_INSTALL_FILES
       maidsafe/rpcprotocol/channel-api.h
       maidsafe/rpcprotocol/channelmanager-api.h)
-SET(MAIDSAFE_TRANS_INSTALL_FILES
-      maidsafe/transport/transport-api.h
-      maidsafe/transport/transporthandler-api.h
-      maidsafe/transport/transportudt.h)
+IF(Mysqlpp_FOUND)
+  SET(MAIDSAFE_TRANS_INSTALL_FILES
+        maidsafe/transport/transport-api.h
+        maidsafe/transport/transporthandler-api.h
+        maidsafe/transport/transportdb.h
+        maidsafe/transport/transportudt.h)
+ELSE()
+  SET(MAIDSAFE_TRANS_INSTALL_FILES
+        maidsafe/transport/transport-api.h
+        maidsafe/transport/transporthandler-api.h
+        maidsafe/transport/transportudt.h)
+ENDIF()
 # Check the script /build/Win_MSVC/extract_includes.bat matches this list
 FILE(STRINGS ${${PROJECT_NAME}_ROOT}/build/Win_MSVC/extract_includes.bat EXTRACT_INCLUDE_BAT)
 STRING(REPLACE "\\" "/" EXTRACT_INCLUDE_BAT "${EXTRACT_INCLUDE_BAT}")

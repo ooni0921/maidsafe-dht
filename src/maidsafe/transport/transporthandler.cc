@@ -110,8 +110,8 @@ void TransportHandler::Stop(const boost::int16_t &transport_id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(transport_id);
   if (it == transports_.end()) {
-    DLOG(ERROR) << "Stop: Couldn't find Transport matching ID: " <<
-        transport_id << "\n";
+    DLOG(ERROR) << "Stop: Couldn't find Transport matching ID: "
+                << transport_id << std::endl;
     return;
   }
 

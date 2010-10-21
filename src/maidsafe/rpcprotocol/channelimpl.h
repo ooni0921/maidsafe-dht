@@ -44,15 +44,8 @@ class ChannelManager;
 class ControllerImpl {
  public:
   ControllerImpl()
-      : timeout_(kRpcTimeout),
-        time_sent_(0),
-        time_received_(0),
-        rtt_(0.0),
-        failure_(),
-        request_id_(0),
-        transport_id_(0),
-        service_(),
-        method_() {}
+      : timeout_(kRpcTimeout), time_sent_(0), time_received_(0), rtt_(0.0),
+        failure_(), request_id_(0), transport_id_(0), service_(), method_() {}
   void SetFailed(const std::string &failure) { failure_ = failure; }
   void Reset();
   bool Failed() const { return !failure_.empty(); }
@@ -93,6 +86,7 @@ class ControllerImpl {
     *service = service_;
     *method = method_;
   }
+
  private:
   boost::uint64_t timeout_;
   boost::uint64_t time_sent_, time_received_;
@@ -132,6 +126,7 @@ class ChannelImpl {
                      const boost::uint32_t &connection_id,
                      const boost::int16_t &transport_id,
                      const float &rtt);
+
  private:
   void SendResponse(const google::protobuf::Message *response, RpcInfo info);
   std::string GetServiceName(const std::string &full_name);
@@ -145,5 +140,7 @@ class ChannelImpl {
   ChannelImpl& operator=(const ChannelImpl&);
   boost::uint32_t id_;
 };
-}  // namespace
+
+}  // namespace rpcprotocol
+
 #endif  // MAIDSAFE_RPCPROTOCOL_CHANNELIMPL_H_

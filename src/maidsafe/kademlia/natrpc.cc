@@ -32,15 +32,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kad {
 
 NatRpcs::NatRpcs(rpcprotocol::ChannelManager *ch_manager,
-  transport::TransportHandler *transport_handler) :
-  pchannel_manager_(ch_manager), transport_handler_(transport_handler) {}
+                 transport::TransportHandler *transport_handler)
+    : pchannel_manager_(ch_manager), transport_handler_(transport_handler) {}
 
 void NatRpcs::NatDetection(const std::string &newcomer,
-      const std::string &bootstrap_node, const boost::uint32_t type,
-      const std::string &sender_id, const std::string &remote_ip,
-      const boost::uint16_t &remote_port, const std::string &rendezvous_ip,
-      const boost::uint16_t &rendezvous_port, NatDetectionResponse *resp,
-      rpcprotocol::Controller *ctler, google::protobuf::Closure *callback) {
+                           const std::string &bootstrap_node,
+                           const boost::uint32_t type,
+                           const std::string &sender_id,
+                           const std::string &remote_ip,
+                           const boost::uint16_t &remote_port,
+                           const std::string &rendezvous_ip,
+                           const boost::uint16_t &rendezvous_port,
+                           NatDetectionResponse *resp,
+                           rpcprotocol::Controller *ctler,
+                           google::protobuf::Closure *callback) {
   NatDetectionRequest args;
   args.set_newcomer(newcomer);
   args.set_bootstrap_node(bootstrap_node);
@@ -56,9 +61,12 @@ void NatRpcs::NatDetection(const std::string &newcomer,
 }
 
 void NatRpcs::NatDetectionPing(const std::string &remote_ip,
-    const boost::uint16_t &remote_port, const std::string &rendezvous_ip,
-    const boost::uint16_t &rendezvous_port, NatDetectionPingResponse *resp,
-    rpcprotocol::Controller *ctler, google::protobuf::Closure *callback) {
+                               const boost::uint16_t &remote_port,
+                               const std::string &rendezvous_ip,
+                               const boost::uint16_t &rendezvous_port,
+                               NatDetectionPingResponse *resp,
+                               rpcprotocol::Controller *ctler,
+                               google::protobuf::Closure *callback) {
   NatDetectionPingRequest args;
   args.set_ping("nat_detection_ping");
   rpcprotocol::Controller controller;
@@ -69,4 +77,5 @@ void NatRpcs::NatDetectionPing(const std::string &remote_ip,
   KademliaService::Stub service(&channel);
   service.NatDetectionPing(ctler, &args, resp, callback);
 }
-}
+
+}  // namespace kad

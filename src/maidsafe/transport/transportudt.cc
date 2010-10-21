@@ -287,8 +287,8 @@ void TransportUDT::Stop() {
 }
 
 bool TransportUDT::peer_address(struct sockaddr* addr) {
-    *addr = peer_address_;
-    return true;
+  *addr = peer_address_;
+  return true;
 }
 
 void TransportUDT::ReceiveHandler() {
@@ -331,7 +331,7 @@ void TransportUDT::ReceiveHandler() {
           // save the remote peer address
           int peer_addr_size = sizeof(struct sockaddr);
           if (UDT::ERROR == UDT::getpeername((*it).second.udt_socket,
-              &peer_address_, &peer_addr_size)) {
+                                             &peer_address_, &peer_addr_size)) {
             continue;
           }
           if ((*it).second.expect_size == 0) {
@@ -575,15 +575,14 @@ void TransportUDT::SendHandle() {
         }
         if (it->data_sent < it->data_size) {
           int64_t ssize;
-          if (UDT::ERROR == (ssize = UDT::send(it->udt_socket,
-              it->data.get() + it->data_sent,
-              it->data_size - it->data_sent,
-              0))) {
+          if (UDT::ERROR ==
+              (ssize = UDT::send(it->udt_socket, it->data.get() + it->data_sent,
+                                 it->data_size - it->data_sent, 0))) {
             if (UDT::getlasterror().getErrorCode() !=
-                  CUDTException::EASYNCSND) {
-              DLOG(ERROR) << "(" << listening_port_ <<
-                  ") Error sending message data: " <<
-                  UDT::getlasterror().getErrorMessage() << std::endl;
+                CUDTException::EASYNCSND) {
+              DLOG(ERROR) << "(" << listening_port_
+                          << ") Error sending message data: "
+                          << UDT::getlasterror().getErrorMessage() << std::endl;
               if (it->is_rpc)
                 send_notifier_(it->connection_id, false);
               outgoing_queue_.erase(it);
@@ -676,8 +675,7 @@ void TransportUDT::HandleRendezvousMsgs(const HolePunchingMsg &message) {
 }
 
 void TransportUDT::StartPingRendezvous(
-    const bool &directly_connected,
-    const std::string &my_rendezvous_ip,
+    const bool &directly_connected, const std::string &my_rendezvous_ip,
     const boost::uint16_t &my_rendezvous_port) {
   my_rendezvous_port_ = my_rendezvous_port;
   if (my_rendezvous_ip.length() == 4)
@@ -854,7 +852,7 @@ int TransportUDT::Send(const rpcprotocol::RpcMessage &data,
 int TransportUDT::Send(const std::string &data,
                        const boost::uint32_t &connection_id,
                        const bool &new_socket) {
-  if (data != "") {
+  if (!data.empty()) {
     return Send(data, kString, connection_id, new_socket, false);
   } else {
     {
@@ -1178,4 +1176,5 @@ bool TransportUDT::RegisterOnServerDown(
   }
   return false;
 }
+
 }  // namespace transport

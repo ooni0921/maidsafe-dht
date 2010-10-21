@@ -227,15 +227,16 @@ void KNodeImpl::Bootstrap(const std::string &bootstrap_ip,
   data.rpc_ctrler = new rpcprotocol::Controller;
   // send RPC to a bootstrapping node candidate
   BootstrapResponse *resp = new BootstrapResponse;
-  google::protobuf::Closure *done = google::protobuf::NewCallback<
-      KNodeImpl, const BootstrapResponse*, struct BootstrapData>
+  google::protobuf::Closure *done =
+      google::protobuf::NewCallback<KNodeImpl, const BootstrapResponse*,
+                                    struct BootstrapData>
       (this, &KNodeImpl::Bootstrap_Callback, resp, data);
   if (dir_connected) {
     kadrpcs_.Bootstrap(fake_kClientId_, host_ip_, host_port_, bootstrap_ip,
-        bootstrap_port, type_, resp, data.rpc_ctrler, done);
+                       bootstrap_port, type_, resp, data.rpc_ctrler, done);
   } else {
     kadrpcs_.Bootstrap(node_id(), host_ip_, host_port_, bootstrap_ip,
-        bootstrap_port, type_, resp, data.rpc_ctrler, done);
+                       bootstrap_port, type_, resp, data.rpc_ctrler, done);
   }
 }
 

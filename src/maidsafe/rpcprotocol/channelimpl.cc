@@ -47,18 +47,10 @@ void ControllerImpl::Reset() {
 
 ChannelImpl::ChannelImpl(ChannelManager *channelmanager,
                          transport::TransportHandler *transport_handler)
-    : transport_handler_(transport_handler),
-      transport_id_(0),
-      pmanager_(channelmanager),
-      pservice_(0),
-      remote_ip_(),
-      local_ip_(),
-      rv_ip_(),
-      remote_port_(0),
-      local_port_(0),
-      rv_port_(0),
-      id_(0) {
-    pmanager_->AddChannelId(&id_);
+    : transport_handler_(transport_handler), transport_id_(0),
+      pmanager_(channelmanager), pservice_(0), remote_ip_(), local_ip_(),
+      rv_ip_(), remote_port_(0), local_port_(0), rv_port_(0), id_(0) {
+  pmanager_->AddChannelId(&id_);
 }
 
 ChannelImpl::ChannelImpl(ChannelManager *channelmanager,
@@ -70,17 +62,10 @@ ChannelImpl::ChannelImpl(ChannelManager *channelmanager,
                          const boost::uint16_t &local_port,
                          const std::string &rendezvous_ip,
                          const boost::uint16_t &rendezvous_port)
-    : transport_handler_(transport_handler),
-      transport_id_(transport_id),
-      pmanager_(channelmanager),
-      pservice_(0),
-      remote_ip_(),
-      local_ip_(),
-      rv_ip_(),
-      remote_port_(remote_port),
-      local_port_(local_port),
-      rv_port_(rendezvous_port),
-      id_(0) {
+    : transport_handler_(transport_handler), transport_id_(transport_id),
+      pmanager_(channelmanager), pservice_(0), remote_ip_(), local_ip_(),
+      rv_ip_(), remote_port_(remote_port), local_port_(local_port),
+      rv_port_(rendezvous_port), id_(0) {
   // To send we need ip in decimal dotted format
   if (remote_ip.size() == 4)
     remote_ip_ = base::IpBytesToAscii(remote_ip);
@@ -107,7 +92,9 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
                              google::protobuf::Message *response,
                              google::protobuf::Closure *done) {
     if ((remote_ip_.empty()) || (remote_port_ == 0)) {
-      DLOG(ERROR) << "ChannelImpl::CallMethod. No remote_ip or remote_port\n";
+      DLOG(ERROR) << "ChannelImpl::CallMethod(" << method->name()
+                  << "). No remote_ip or remote_port - " << remote_ip_ << ":"
+                  << remote_port_ << std::endl;
       done->Run();
       return;
     }
@@ -129,8 +116,9 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     ctrl->set_message_info(msg.service(), msg.method());
     ctrl->StartRpcTimer();
     if (0 == transport_handler_->ConnectToSend(remote_ip_, remote_port_,
-        local_ip_, local_port_, rv_ip_, rv_port_, true, &connection_id,
-        transport_id_)) {
+                                               local_ip_, local_port_, rv_ip_,
+                                               rv_port_, true, &connection_id,
+                                               transport_id_)) {
       req.connection_id = connection_id;
       // Set the RPC request timeout
       if (ctrl->timeout() != 0) {
@@ -146,16 +134,16 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
       pmanager_->AddTimeOutRequest(connection_id, msg.message_id(),
                                    req.timeout);
       if (0 != transport_handler_->Send(msg, connection_id, true,
-          transport_id_)) {
-        DLOG(WARNING) << transport_handler_->listening_port(transport_id_) <<
-          " --- Failed to send request with id " << msg.message_id()
-           << std::endl;
+                                        transport_id_)) {
+        DLOG(WARNING) << transport_handler_->listening_port(transport_id_)
+                      << " --- Failed to send request with id "
+                      << msg.message_id() << std::endl;
       }
     } else {
-      DLOG(WARNING) << transport_handler_->listening_port(transport_id_) <<
-          " --- Failed to connect to send rpc " << msg.method() << " to " <<
-          remote_ip_ << ":" << remote_port_ << " with id " << msg.message_id()
-          << std::endl;
+      DLOG(WARNING) << transport_handler_->listening_port(transport_id_)
+                    << " --- Failed to connect to send rpc " << msg.method()
+                    << " to " << remote_ip_ << ":" << remote_port_
+                    << " with id " << msg.message_id() << std::endl;
       ctrl->set_timeout(1);
       req.timeout = ctrl->timeout();
       req.ctrl = ctrl;
@@ -166,10 +154,10 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
       pmanager_->AddReqToTimer(msg.message_id(), req.timeout);
       return;
     }
-    DLOG(INFO) << transport_handler_->listening_port(transport_id_) <<
-      " --- Sending rpc " << msg.method() << " to " << remote_ip_ << ":" <<
-      remote_port_ << " connection_id = " << connection_id << " -- rpc_id = " <<
-      msg.message_id() << std::endl;
+    DLOG(INFO) << transport_handler_->listening_port(transport_id_)
+               << " --- Sending rpc " << msg.method() << " to " << remote_ip_
+               << ":" << remote_port_ << " connection_id = " << connection_id
+               << " -- rpc_id = " << msg.message_id() << std::endl;
 }
 
 std::string ChannelImpl::GetServiceName(const std::string &full_name) {
@@ -204,9 +192,9 @@ void ChannelImpl::HandleRequest(const RpcMessage &request,
   if (pservice_) {
     const google::protobuf::MethodDescriptor* method =
         pservice_->GetDescriptor()->FindMethodByName(request.method());
-    google::protobuf::Message* args  =
+    google::protobuf::Message* args =
         pservice_->GetRequestPrototype(method).New();
-    google::protobuf::Message* response  =
+    google::protobuf::Message* response =
         pservice_->GetResponsePrototype(method).New();
     if (!args->ParseFromString(request.args())) {
       transport_handler_->CloseConnection(connection_id, transport_id_);

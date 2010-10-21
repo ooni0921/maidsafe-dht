@@ -45,14 +45,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/udt/api.h"
 #include "maidsafe/base/network_interface.h"
 
+namespace test_udt_transport {
+
 class TransportNode {
  public:
   TransportNode(transport::TransportHandler *tnode_handler,
                 boost::int16_t transport_id)
-      : tnode_handler_(tnode_handler),
-        transport_id_(transport_id),
-        successful_conn_(0),
-        refused_conn_(0) {}
+      : tnode_handler_(tnode_handler), transport_id_(transport_id),
+        successful_conn_(0), refused_conn_(0) {}
   transport::TransportHandler *tnode_handler() { return tnode_handler_; }
   int successful_conn() { return successful_conn_; }
   int refused_conn() { return refused_conn_; }
@@ -66,7 +66,7 @@ class TransportNode {
 };
 
 void send_string(TransportNode* node, int port, int repeat,
-    rpcprotocol::RpcMessage msg, bool keep_conn, int our_port) {
+                 rpcprotocol::RpcMessage msg, bool keep_conn, int our_port) {
   boost::uint32_t id;
   boost::asio::ip::address local_address;
   std::string ip;
@@ -207,7 +207,7 @@ class MessageHandlerEchoResp {
  public:
   explicit MessageHandlerEchoResp(transport::TransportHandler *node)
       : node_(node), msgs(), ids(), dead_server_(true),
-      server_ip_(), server_port_(0), msgs_sent_(0) {}
+        server_ip_(), server_port_(0), msgs_sent_(0) {}
     void OnRPCMessage(const rpcprotocol::RpcMessage &msg,
                       const boost::uint32_t &connection_id,
                       const boost::int16_t transport_id,
@@ -243,12 +243,7 @@ class MessageHandlerEchoResp {
   MessageHandlerEchoResp& operator=(const MessageHandlerEchoResp&);
 };
 
-class TransportTest: public testing::Test {
- protected:
-  virtual ~TransportTest() {
-//    UDT::cleanup();
-  }
-};
+class TransportTest: public testing::Test {};
 
 TEST_F(TransportTest, BEH_TRANS_SendOneMessageFromOneToAnother) {
   boost::uint32_t id = 0;
@@ -1910,3 +1905,4 @@ TEST_F(TransportTest, BEH_TRANS_RegisterNotifiers) {
   node1_handler.Stop(node1_id);
 }
 
+}  // namespace test_udt_transport

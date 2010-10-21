@@ -42,6 +42,17 @@ class AlternativeStore;
 }
 
 namespace kad {
+
+namespace test_nat_detection_db {
+class NatDetectionTestDb_BEH_KAD_SendNatDet_Test;
+class NatDetectionTestDb_BEH_KAD_BootstrapNatDetRv_Test;
+class NatDetectionTestDb_FUNC_KAD_CompleteBootstrapNatDet_Test;
+}  // namespace test_nat_detection_db
+
+namespace test_kadservice_db {
+class KadServicesTestDb_BEH_KAD_UpdateValue_Test;
+}  // namespace   // namespace test_nat_detection_db
+
 class DataStore;
 class Contact;
 class KadId;
@@ -137,6 +148,15 @@ class KadService : public KademliaService {
   FRIEND_TEST(NatDetectionTest, BEH_KAD_BootstrapNatDetRv);
   FRIEND_TEST(NatDetectionTest, FUNC_KAD_CompleteBootstrapNatDet);
   FRIEND_TEST(KadServicesTest, BEH_KAD_UpdateValue);
+  friend class
+      test_nat_detection_db::NatDetectionTestDb_BEH_KAD_SendNatDet_Test;
+  friend class
+      test_nat_detection_db::NatDetectionTestDb_BEH_KAD_BootstrapNatDetRv_Test;
+  friend class
+      test_nat_detection_db::
+          NatDetectionTestDb_FUNC_KAD_CompleteBootstrapNatDet_Test;
+  friend class test_kadservice_db::KadServicesTestDb_BEH_KAD_UpdateValue_Test;
+
   bool GetSender(const ContactInfo &sender_info, Contact *sender);
   void Bootstrap_NatDetectionRv(const NatDetectionResponse *response,
                                 struct NatDetectionData data);
@@ -176,4 +196,5 @@ class KadService : public KademliaService {
 };
 
 }  // namespace kad
+
 #endif  // MAIDSAFE_KADEMLIA_KADSERVICE_H_

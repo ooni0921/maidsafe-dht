@@ -39,24 +39,12 @@ namespace rpcprotocol {
 
 ChannelManagerImpl::ChannelManagerImpl(
     transport::TransportHandler *transport_handler)
-        : transport_handler_(transport_handler),
-          is_started_(false),
-          ptimer_(new base::CallLaterTimer),
-          req_mutex_(),
-          channels_mutex_(),
-          id_mutex_(),
-          pend_timeout_mutex_(),
-          channels_ids_mutex_(),
-          timings_mutex_(),
-          current_request_id_(0),
-          current_channel_id_(0),
-          channels_(),
-          pending_req_(),
-          pending_timeout_(),
-          channels_ids_(),
-          rpc_timings_(),
-          delete_channels_cond_(),
-          online_status_id_(0) {}
+        : transport_handler_(transport_handler), is_started_(false),
+          ptimer_(new base::CallLaterTimer), req_mutex_(), channels_mutex_(),
+          id_mutex_(), pend_timeout_mutex_(), channels_ids_mutex_(),
+          timings_mutex_(), current_request_id_(0), current_channel_id_(0),
+          channels_(), pending_req_(), pending_timeout_(), channels_ids_(),
+          rpc_timings_(), delete_channels_cond_(), online_status_id_(0) {}
 
 ChannelManagerImpl::~ChannelManagerImpl() {
   Stop();
@@ -76,7 +64,7 @@ void ChannelManagerImpl::RemoveChannelId(const boost::uint32_t &id) {
 }
 
 bool ChannelManagerImpl::AddPendingRequest(const boost::uint32_t &request_id,
-      PendingReq req) {
+                                           PendingReq req) {
   if (!is_started_) {
     return false;
   }
@@ -114,6 +102,7 @@ bool ChannelManagerImpl::CancelPendingRequest(
   if (!is_started_) {
     return false;
   }
+
   std::map<boost::uint32_t, PendingReq>::iterator it;
   req_mutex_.lock();
   it = pending_req_.find(request_id);
@@ -121,18 +110,21 @@ bool ChannelManagerImpl::CancelPendingRequest(
     req_mutex_.unlock();
     return false;
   }
+
   boost::uint32_t connection_id = it->second.connection_id;
   boost::int16_t transport_id = it->second.transport_id;
   delete it->second.callback;
   pending_req_.erase(it);
   req_mutex_.unlock();
-  if (connection_id != 0)
+  if (connection_id != 0) {
     transport_handler_->CloseConnection(connection_id, transport_id);
+  }
+
   return true;
 }
 
 void ChannelManagerImpl::AddReqToTimer(const boost::uint32_t &request_id,
-    const boost::uint64_t &timeout) {
+                                       const boost::uint64_t &timeout) {
   if (!is_started_) {
     return;
   }
@@ -147,7 +139,7 @@ boost::uint32_t ChannelManagerImpl::CreateNewId() {
 }
 
 void ChannelManagerImpl::RegisterChannel(const std::string &service_name,
-      Channel* channel) {
+                                         Channel* channel) {
   boost::mutex::scoped_lock guard(channels_mutex_);
   channels_[service_name] = channel;
 }
@@ -163,8 +155,12 @@ int ChannelManagerImpl::Start() {
   std::list<boost::int16_t> udt_transports =
       transport_handler_->GetTransportIDByType(transport::kUdt);
 
-  if (udt_transports.empty())
-    return 1;
+  if (udt_transports.empty()) {
+    udt_transports =
+        transport_handler_->GetTransportIDByType(transport::kOther);
+    if (udt_transports.empty())
+      return 1;
+  }
 
   boost::int16_t udtID = udt_transports.front();
 
@@ -172,9 +168,10 @@ int ChannelManagerImpl::Start() {
     base::GenerateNextTransactionId(current_request_id_) +
     (transport_handler_->listening_port(udtID)*100);
   is_started_ = true;
-  online_status_id_ = base::OnlineController::Instance()->RegisterObserver(
-    transport_handler_->listening_port(udtID),
-    boost::bind(&ChannelManagerImpl::OnlineStatusChanged, this, _1));
+  online_status_id_ =
+      base::OnlineController::Instance()->RegisterObserver(
+          transport_handler_->listening_port(udtID),
+          boost::bind(&ChannelManagerImpl::OnlineStatusChanged, this, _1));
     return 0;
 }
 
@@ -192,8 +189,9 @@ int ChannelManagerImpl::Stop() {
   {
     boost::mutex::scoped_lock lock(channels_ids_mutex_);
     while (!channels_ids_.empty()) {
-      bool wait_result = delete_channels_cond_.timed_wait(lock,
-          boost::posix_time::seconds(10));
+      bool wait_result =
+          delete_channels_cond_.timed_wait(lock,
+                                           boost::posix_time::seconds(10));
       if (!wait_result)
         channels_ids_.clear();
     }
@@ -222,10 +220,10 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
       }
       struct sockaddr peer_addr;
       if (!transport_handler_->GetPeerAddr(connection_id, transport_id,
-          &peer_addr))
+                                           &peer_addr))
         return;
-      std::string peer_ip = base::NetworkInterface::SockaddrToAddress(
-                            &peer_addr).to_string();
+      std::string peer_ip =
+          base::NetworkInterface::SockaddrToAddress(&peer_addr).to_string();
       boost::uint16_t peer_port = ntohs(reinterpret_cast<struct sockaddr_in*>(
                                         &peer_addr)->sin_port);
       decoded_bootstrap.set_newcomer_ext_ip(peer_ip);
@@ -308,17 +306,18 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &request_id) {
     boost::int16_t transport_id = it->second.transport_id;
     boost::uint64_t timeout = it->second.timeout;
     if (transport_handler_->HasReceivedData(connection_id, transport_id,
-        &size_rec)) {
+                                            &size_rec)) {
       it->second.size_rec = size_rec;
       req_mutex_.unlock();
-      DLOG(INFO) << transport_handler_->listening_port(transport_id) <<
-          " -- Reseting timeout for RPC ID: " << request_id <<
-          ". Connection ID: " << connection_id << ". Received: " << size_rec;
+      DLOG(INFO) << transport_handler_->listening_port(transport_id)
+                 << " -- Reseting timeout for RPC ID: " << request_id
+                 << ". Connection ID: " << connection_id << ". Received: "
+                 << size_rec;
       AddReqToTimer(request_id, timeout);
     } else {
-      DLOG(INFO) << transport_handler_->listening_port(transport_id) <<
-          "Request " << request_id << " times out.  Connection ID: " <<
-          connection_id << std::endl;
+      DLOG(INFO) << transport_handler_->listening_port(transport_id)
+                 << " - Request " << request_id << " times out. Connection ID: "
+                 << connection_id << std::endl;
       // call back without modifying the response
       google::protobuf::Closure* done = (*it).second.callback;
       (*it).second.ctrl->SetFailed(kTimeOut);
@@ -355,7 +354,7 @@ void ChannelManagerImpl::ClearCallLaters() {
 }
 
 void ChannelManagerImpl::RequestSent(const boost::uint32_t &connection_id,
-    const bool &success) {
+                                     const bool &success) {
   std::map<boost::uint32_t, PendingTimeOut>::iterator it;
   boost::mutex::scoped_lock guard(pend_timeout_mutex_);
   it = pending_timeout_.find(connection_id);
@@ -369,7 +368,8 @@ void ChannelManagerImpl::RequestSent(const boost::uint32_t &connection_id,
 }
 
 void ChannelManagerImpl::AddTimeOutRequest(const boost::uint32_t &connection_id,
-    const boost::uint32_t &request_id, const int &timeout) {
+                                           const boost::uint32_t &request_id,
+                                           const int &timeout) {
   struct PendingTimeOut timestruct;
   timestruct.request_id = request_id;
   timestruct.timeout = timeout;
