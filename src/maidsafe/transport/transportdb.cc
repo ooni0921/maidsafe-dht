@@ -413,7 +413,11 @@ bool TransportDb::GetPeerAddr(const boost::uint32_t &id, struct sockaddr *s) {
   struct sockaddr_in ip4addr;
   ip4addr.sin_family = AF_INET;
   ip4addr.sin_port = htons(port);
+#ifdef MAIDSAFE_WIN32
+  ip4addr.sin_addr.s_addr = inet_addr(ip.c_str());
+#else
   inet_aton(ip.c_str(), &ip4addr.sin_addr);
+#endif
   *s = *((struct sockaddr*)&ip4addr);
 
   return true;

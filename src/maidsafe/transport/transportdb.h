@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_TRANSPORT_TRANSPORTDB_H_
 #define MAIDSAFE_TRANSPORT_TRANSPORTDB_H_
 
+#include <maidsafe/base/utils.h>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <mysql++.h>
@@ -44,7 +45,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <utility>
 
-#include "maidsafe/base/utils.h"
 #include "maidsafe/transport/transport-api.h"
 
 namespace net_client {

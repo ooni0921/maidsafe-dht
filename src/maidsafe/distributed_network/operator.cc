@@ -103,10 +103,10 @@ void Operator::GenerateValues(int size) {
       values_for_key = base::RandomUint32() % 10;
     std::string key(base::RandomString(64));
     for (boost::uint32_t t = 0; t < values_for_key; ++t) {
-      boost::uint16_t t(base::RandomUint32() % 1000);
-      std::string random_value(base::RandomString(20000 + t));
+      boost::uint16_t u(base::RandomUint32() % 1000);
+      std::string random_value(base::RandomString(20000 + u));
       while (values.find(random_value) != values.end())
-        random_value = base::RandomString(20000 + t);
+        random_value = base::RandomString(20000 + u);
 
       values.insert(random_value);
       kad::SignedValue sv;
