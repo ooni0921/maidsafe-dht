@@ -34,18 +34,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_TRANSPORT_TRANSPORTDB_H_
 #define MAIDSAFE_TRANSPORT_TRANSPORTDB_H_
 
-#include <maidsafe/base/utils.h>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
-#include <mysql++.h>
 #include <gtest/gtest_prod.h>
+#include <maidsafe/base/utils.h>
+#include <maidsafe/transport/transport-api.h>
 
 #include <list>
 #include <map>
 #include <string>
 #include <utility>
 
-#include "maidsafe/transport/transport-api.h"
+
+namespace mysqlpp {
+class Connection;
+}  // namespace mysqlpp
 
 namespace net_client {
 class MySqlppWrap;
@@ -93,7 +96,7 @@ class TransportDbHandler {
                    boost::uint16_t *port);
 
  private:
-  mysqlpp::Connection connection_;
+  boost::shared_ptr<mysqlpp::Connection> connection_;
   std::string table_;
 };
 

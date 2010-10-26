@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/transport/transportdb.h"
 
 #include <boost/lexical_cast.hpp>
+#include <mysql++.h>
 
 #include <list>
 #include <string>
@@ -44,19 +45,20 @@ namespace transport {
 /***************************** TransportDbHandler *****************************/
 
 TransportDbHandler::TransportDbHandler(const std::string &table)
-    : connection_(false), table_(table) {}
+    : connection_(new mysqlpp::Connection(false)), table_(table) {}
 
 int TransportDbHandler::CreateDb(const std::string &database,
                                  const std::string &ip,
                                  const boost::uint16_t &port) {
   try {
-    if (!connection_.connect(NULL, "127.0.0.1", "root", "m41ds4f3"))
+    if (!connection_->connect(NULL, "127.0.0.1", "root", "m41ds4f3"))
       return -1;
-    if (!connection_.select_db(database))
-      if (!connection_.create_db(database) || !connection_.select_db(database))
+    if (!connection_->select_db(database))
+      if (!connection_->create_db(database) ||
+          !connection_->select_db(database))
         return -1;
 
-    mysqlpp::Query query = connection_.query();
+    mysqlpp::Query query = connection_->query();
     query.exec("drop table " + table_);
     query.exec("drop table details");
     query.exec("create table " + table_ + "(message LONGBLOB NOT NULL,"
@@ -79,11 +81,11 @@ int TransportDbHandler::CreateDb(const std::string &database,
 int TransportDbHandler::GetMessages(std::list<db_mock::FetchedMessage> *msgs) {
   try {
     boost::uint64_t now(base::GetEpochNanoseconds());
-    mysqlpp::Query query = connection_.query();
+    mysqlpp::Query query = connection_->query();
     query << "LOCK TABLES " << table_ << " WRITE";
     mysqlpp::SimpleResult lock_res = query.execute();
 
-    query = connection_.query();
+    query = connection_->query();
     query << "SELECT message,sender_db FROM " << table_ << " where timestamp<"
           << now;
 
@@ -93,7 +95,7 @@ int TransportDbHandler::GetMessages(std::list<db_mock::FetchedMessage> *msgs) {
       return -1;
     }
 
-    query = connection_.query();
+    query = connection_->query();
     query << "DELETE FROM " << table_ << " where timestamp<" << now;
     mysqlpp::SimpleResult delete_res = query.execute();
     for (size_t i = 0; i < select_res.num_rows(); ++i) {
@@ -104,7 +106,7 @@ int TransportDbHandler::GetMessages(std::list<db_mock::FetchedMessage> *msgs) {
       msgs->push_back(fm);
     }
 
-    query = connection_.query();
+    query = connection_->query();
     query << "UNLOCK TABLES";
     lock_res = query.execute();
   }
@@ -140,10 +142,10 @@ int TransportDbHandler::InsertMessage(const std::string &peer_database,
 
 int TransportDbHandler::ShutDown(const std::string &database) {
   try {
-    mysqlpp::Query query = connection_.query();
+    mysqlpp::Query query = connection_->query();
 //    query.exec("drop table " + table_);
     query.exec("drop database " + database);
-    connection_.disconnect();
+    connection_->disconnect();
   }
   catch(const std::exception &e) {
     printf("%s\n", e.what());
