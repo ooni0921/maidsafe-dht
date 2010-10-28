@@ -247,18 +247,16 @@ class Env: public testing::Environment {
   }
 
   virtual void TearDown() {
-    printf("TestKNode, TearDown Starting..\n");
+    printf("TestKNode, TearDown Starting...\n");
     boost::this_thread::sleep(boost::posix_time::seconds(5));
 
 #ifdef WIN32
     HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hconsole, 7 | 0 << 4);
 #endif
-    printf("000000000\n");
     for (boost::int16_t i = kNetworkSize - 1; i >= 1; i--) {
       trans_handlers_[i]->StopPingRendezvous();
     }
-    printf("111111111\n");
     for (boost::int16_t i = kNetworkSize-1; i >= 0; i--) {
       LOG(INFO) << "stopping node " << i << std::endl;
       cb_.Reset();
@@ -267,7 +265,6 @@ class Env: public testing::Environment {
       trans_handlers_[i]->Stop(transport_ids_[i]);
       channel_managers_[i]->Stop();
     }
-    printf("2222222222\n");
     std::set<boost::uint16_t>::iterator it;
     for (it = ports_.begin(); it != ports_.end(); it++) {
       // Deleting the DBs in the app dir
@@ -281,7 +278,6 @@ class Env: public testing::Environment {
         LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
       }
     }
-    printf("3333333333\n");
     try {
       if (fs::exists(test_dir_))
         fs::remove_all(test_dir_);
@@ -289,7 +285,6 @@ class Env: public testing::Environment {
     catch(const std::exception &e) {
       LOG(ERROR) << "filesystem error: " << e.what() << std::endl;
     }
-    printf("4444444444\n");
     knodes_.clear();
     channel_managers_.clear();
     trans_handlers_.clear();
@@ -640,12 +635,11 @@ TEST_F(KNodeTestDb, FUNC_KAD_StoreAndLoadSmallValue) {
   cb_1.Reset();
 }
 
-/*
 TEST_F(KNodeTestDb, FUNC_KAD_StoreAndLoadBigValue) {
   // prepare big size of values
   kad::KadId key(cry_obj_.Hash("vcdrer434dccdwwt", "", crypto::STRING_STRING,
-      false));
-  std::string value = base::RandomString(1024 * 1024);  // 1MB
+                               false));
+  std::string value = base::RandomString(15 *1024 * 1024);  // 1MB
   kad::SignedValue sig_value;
   sig_value.set_value(value);
   // save key/value pair from a node
@@ -654,14 +648,15 @@ TEST_F(KNodeTestDb, FUNC_KAD_StoreAndLoadBigValue) {
   create_rsakeys(&pub_key, &priv_key);
   create_req(pub_key, priv_key, key.String(), &sig_pub_key, &sig_req);
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
-      crypto::STRING_STRING));
+                                                  crypto::STRING_STRING));
   kad::SignedRequest req;
   req.set_signer_id(knodes_[kTestK / 3]->node_id().String());
   req.set_public_key(pub_key);
   req.set_signed_public_key(sig_pub_key);
   req.set_signed_request(sig_req);
-  knodes_[kTestK / 3]->StoreValue(key, sig_value, req, 24*3600,
-    boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  knodes_[kTestK / 3]->StoreValue(key, sig_value, req, 24 * 3600,
+                                  boost::bind(&StoreValueCallback::CallbackFunc,
+                                              &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   // calculate number of nodes which hold this key/value pair
@@ -687,7 +682,8 @@ TEST_F(KNodeTestDb, FUNC_KAD_StoreAndLoadBigValue) {
   // load the value from the node
   FindCallback cb_1;
   knodes_[kTestK / 3]->FindValue(key, false,
-      boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
+                                 boost::bind(&FindCallback::CallbackFunc,
+                                             &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_LE(1U, cb_1.signed_values().size());
@@ -703,7 +699,8 @@ TEST_F(KNodeTestDb, FUNC_KAD_StoreAndLoadBigValue) {
   // load the value from another node
   FindCallback cb_2;
   knodes_[kTestK * 2 / 3]->FindValue(key, false,
-      boost::bind(&FindCallback::CallbackFunc, &cb_2, _1));
+                                     boost::bind(&FindCallback::CallbackFunc,
+                                                 &cb_2, _1));
   wait_result(&cb_2);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_2.result());
   ASSERT_LE(1U, cb_2.signed_values().size());
@@ -717,7 +714,6 @@ TEST_F(KNodeTestDb, FUNC_KAD_StoreAndLoadBigValue) {
   if (!got_value)
     FAIL();
 }
-*/
 
 TEST_F(KNodeTestDb, FUNC_KAD_StoreAndLoad100Values) {
   boost::int16_t count(100);

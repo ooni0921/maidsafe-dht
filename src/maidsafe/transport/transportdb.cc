@@ -72,7 +72,7 @@ int TransportDbHandler::CreateDb(const std::string &database,
       return -1;
   }
   catch(const std::exception &e) {
-    printf("%s\n", e.what());
+    printf("CreateDb - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -91,7 +91,7 @@ int TransportDbHandler::GetMessages(std::list<db_mock::FetchedMessage> *msgs) {
 
     mysqlpp::StoreQueryResult select_res = query.store();
     if (!select_res) {
-      printf("Failed getting values\n");
+      printf("TransportDbHandler::GetMessages - Failed getting values\n");
       return -1;
     }
 
@@ -111,7 +111,7 @@ int TransportDbHandler::GetMessages(std::list<db_mock::FetchedMessage> *msgs) {
     lock_res = query.execute();
   }
   catch(const std::exception &e) {
-    printf("%s\n", e.what());
+    printf("GetMessages - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -134,7 +134,7 @@ int TransportDbHandler::InsertMessage(const std::string &peer_database,
     c.disconnect();
   }
   catch(const std::exception &e) {
-    printf("%s\n", e.what());
+    printf("InsertMessage - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -148,7 +148,7 @@ int TransportDbHandler::ShutDown(const std::string &database) {
     connection_->disconnect();
   }
   catch(const std::exception &e) {
-    printf("%s\n", e.what());
+    printf("ShutDown - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -162,7 +162,7 @@ int TransportDbHandler::CheckPeerDb(const std::string &database) {
     c.disconnect();
   }
   catch(const std::exception &e) {
-    printf("%s\n", e.what());
+    printf("CheckPeerDb - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -180,7 +180,7 @@ int TransportDbHandler::PeerEndpoint(const std::string &database,
 
     mysqlpp::StoreQueryResult select_res = query.store();
     if (!select_res) {
-      printf("Failed getting endpoint\n");
+      printf("TransportDbHandler::PeerEndpoint - Failed getting endpoint\n");
       return -1;
     }
     select_res[0][0].to_string(*ip);
@@ -445,7 +445,12 @@ void TransportDb::StopPingRendezvous() {}
 
 bool TransportDb::CanConnect(const std::string &ip,
                              const boost::uint16_t &port) {
-  std::string peer_db(ip + boost::lexical_cast<std::string>(port));
+  std::string dec_lip;
+  if (ip.size() == 4)
+    dec_lip = base::IpBytesToAscii(ip);
+  else
+    dec_lip = ip;
+  std::string peer_db(dec_lip + boost::lexical_cast<std::string>(port));
   crypto::Crypto co;
   int n = db_handler_.CheckPeerDb(co.Hash(peer_db, "", crypto::STRING_STRING,
                                           true).substr(0, 31));

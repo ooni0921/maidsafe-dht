@@ -175,13 +175,14 @@ bool WriteKadConfig() {
     base::KadConfig::Contact *contact = kadconfig.add_contact();
     contact->set_ip("173.230.145.156");
     contact->set_node_id("916a6578803acd5ee57c5ffcba76e2e0688dcc079cf3912bab87d"
-        "43d5213cfedfb337ec8a62664fd85a11e02ca58724623abe17f1f699a43fcbe970c775"
-        "78266");
+                         "43d5213cfedfb337ec8a62664fd85a11e02ca58724623abe17f1f"
+                         "699a43fcbe970c77578266");
     contact->set_port(33818);
     contact->set_local_ip("173.230.145.156");
     contact->set_local_port(9000);
     boost::filesystem::fstream output(kadconfig_path.string().c_str(),
-        std::ios::out | std::ios::trunc | std::ios::binary);
+                                      std::ios::out | std::ios::trunc |
+                                      std::ios::binary);
     if (!kadconfig.SerializeToOstream(&output)) {
       output.close();
       return false;

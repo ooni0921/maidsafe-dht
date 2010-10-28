@@ -119,11 +119,14 @@ struct by_key_value {};
 struct by_status {};
 
 struct KeyValue {
-  KeyValue() : key(), value(), status(-1), searches(0) {}
+  KeyValue() : key(), value(), status(-1), searches(0),
+               selected_for_op(false) {}
   KeyValue(const std::string &skey, const std::string &svalue, int istatus)
-      : key(skey), value(svalue), status(istatus), searches(0) {}
+      : key(skey), value(svalue), status(istatus), searches(0),
+        selected_for_op(false) {}
   std::string key, value;
   int status, searches;
+  bool selected_for_op;
 };
 
 typedef boost::multi_index_container<

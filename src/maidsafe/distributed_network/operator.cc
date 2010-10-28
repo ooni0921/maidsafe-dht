@@ -61,13 +61,14 @@ Operator::Operator(boost::shared_ptr<kad::KNode> knode,
                                       crypto::STRING_STRING);
   int result = wrap_->Init("kademlia_network_test", "127.0.0.1", "root",
                            "m41ds4f3", "kademliavalues");
+  int vals(50);
   printf("Operator::Operator - DB init result: %d\n", result);
   {
     boost::progress_timer t;
-    GenerateValues(2000);
+    GenerateValues(vals);
   }
 
-  printf("Operator::Operator - Done generating 2000 values\n");
+  printf("Operator::Operator - Done generating %d values\n", vals);
 }
 
 void Operator::GenerateValues(int size) {
@@ -79,10 +80,14 @@ void Operator::GenerateValues(int size) {
   // Generate hashable values
   std::set<std::string> values;
   for (int n = 0; n < split; ++n) {
-    boost::uint16_t t(base::RandomUint32() % 1000);
-    std::string random_value(base::RandomString(20000 + t));
+    printf("ttttttttttttttttttttttttttttttttttttttttttttttttttttttt - %d\n", n);
+    std::string random_value(base::RandomString(2000 + (n % 10) * 100));
     while (values.find(random_value) != values.end())
-      random_value = base::RandomString(20000 + t);
+      random_value = base::RandomString(2000 + (n % 10) * 100);
+
+    for (int a = 0; a < 10; ++a) {
+      random_value += random_value;
+    }
 
     values.insert(random_value);
     kad::SignedValue sv;
@@ -117,14 +122,15 @@ void Operator::GenerateValues(int size) {
       values_map_.insert(KeyValue(key, sv.SerializeAsString(), -1));
     }
   }
+//  printf("ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt\n");
 }
 
 void Operator::Run() {
   ScheduleInitialOperations();
 //  timer_->AddCallLater(2 * 60 * 1000,
 //                       boost::bind(&Operator::FetchKeyValuesFromDb, this));
-//  timer_->AddCallLater(2 * 60 * 1000,
-//                       boost::bind(&Operator::ChooseOperation, this));
+  timer_->AddCallLater(30 * 1000,
+                       boost::bind(&Operator::ChooseOperation, this));
 }
 
 void Operator::Halt() {
@@ -181,7 +187,7 @@ void Operator::WriteResultLog() {
 }
 
 void Operator::ScheduleInitialOperations() {
-  for (int n = 0; n < 50; ++n) {
+  for (int n = 0; n < 15; ++n) {
     if (timer_->AddCallLater((1 + n) * 1000,
                              boost::bind(&Operator::SendStore, this)) ==
         std::numeric_limits<boost::uint32_t>::max())
@@ -192,24 +198,26 @@ void Operator::ScheduleInitialOperations() {
                        boost::bind(&Operator::FetchKeyValuesFromDb, this));
 //  timer_->AddCallLater(10 * 1000,
 //                       boost::bind(&Operator::ChooseOperation, this));
+//  printf("asjdhfjklasdhfjklasdhfjklhasdjkfhsadjklfhasjklhfasjklhfklasdhf\n");
 }
 
 void Operator::ChooseOperation() {
   ++random_operations_;
-  boost::uint16_t op(base::RandomUint32() % 4);
-  switch (op) {
-    case 0: SendStore(); break;
-    case 1: SendFind(); break;
-    case 2: SendUpdate(); break;
-    case 3: SendDelete(); break;
-  }
-  if (random_operations_ < 10)
-    timer_->AddCallLater(60 * 1000,
+//  boost::uint16_t op(base::RandomUint32() % 4);
+//  switch (op) {
+//    case 0: SendStore(); break;
+//    case 1: SendFind(); break;
+//    case 2: SendUpdate(); break;
+//    case 3:
+  SendDelete();
+//  break;
+//  }
+  if (random_operations_ < 5)
+    timer_->AddCallLater(30 * 1000,
                          boost::bind(&Operator::ChooseOperation, this));
 }
 
 void Operator::FetchKeyValuesFromDb() {
-  ++fetch_count_;
   std::vector<std::string> keys;
   wrap_->GetKeys(&keys);
   std::set<std::string> the_keys;
@@ -228,24 +236,41 @@ void Operator::FetchKeyValuesFromDb() {
     for (size_t n = 0; n < values.size(); ++n)
       signed_values[n].ParseFromString(values[n]);
     FindValue(keys[0], signed_values, mine);
+    ++fetch_count_;
   }
 
-  if (fetch_count_ < 25)
+  if (fetch_count_ < 10)
     timer_->AddCallLater(20 * 1000,
                          boost::bind(&Operator::FetchKeyValuesFromDb, this));
 }
 
 void Operator::SendStore() {
-  ValuesMapByStatus &vmbs_index = values_map_.get<by_status>();
-  std::pair<ValuesMapByStatus::iterator, ValuesMapByStatus::iterator> p =
-      vmbs_index.equal_range(-1);
   std::vector<KeyValue> kv_vector;
-  while (p.first != p.second) {
-    kv_vector.push_back(*p.first);
-    ++p.first;
+  {
+    boost::mutex::scoped_lock loch_tubleweed(values_map_mutex_);
+    ValuesMapByStatus &vmbs_index = values_map_.get<by_status>();
+    std::pair<ValuesMapByStatus::iterator, ValuesMapByStatus::iterator> p =
+        vmbs_index.equal_range(-1);
+    while (p.first != p.second) {
+      if (!(*p.first).selected_for_op)
+        kv_vector.push_back(*p.first);
+      ++p.first;
+    }
   }
   if (!kv_vector.empty()) {
+    std::string key, value;
     std::random_shuffle(kv_vector.begin(), kv_vector.end());
+    {
+      boost::mutex::scoped_lock loch_tubleweed(values_map_mutex_);
+      ValuesMapByKeyValue &vmbkv_index = values_map_.get<by_key_value>();
+      ValuesMapByKeyValue::iterator it  =
+          vmbkv_index.find(boost::tuple<std::string, std::string>(
+                               kv_vector[0].key, kv_vector[0].value));
+      if (it != vmbkv_index.end()) {
+        KeyValue kv = *it;
+        kv.selected_for_op = true;
+      }
+    }
     kad::SignedValue sv;
     sv.ParseFromString(kv_vector[0].value);
     StoreValue(kv_vector[0].key, sv);
@@ -299,8 +324,13 @@ void Operator::SendUpdate() {
       ++count;
     kad::SignedValue sv;
     sv.ParseFromString(kv_vector[count].value);
+
+    std::string random_value(base::RandomString(2270));
+    for (int a = 0; a < 10; ++a) {
+      random_value += random_value;
+    }
     kad::SignedValue new_value;
-    new_value.set_value(base::RandomString(base::RandomUint32()%500 + 20000));
+    new_value.set_value(random_value);
     new_value.set_value_signature(co.AsymSign(new_value.value(), "",
                                               private_key_,
                                               crypto::STRING_STRING));
@@ -368,6 +398,7 @@ void Operator::StoreValueCallback(const Operation &op,
       if (it != vmbkv_index.end()) {
         KeyValue kv = *it;
         kv.status = 0;
+        kv.selected_for_op = false;
         vmbkv_index.replace(it, kv);
       } else {
         success = false;
@@ -405,13 +436,10 @@ void Operator::FindValueCallback(const Operation &op,
   kad::FindResponse result_msg;
   bool success(true);
   if (!result_msg.ParseFromString(ser_result)) {
-    printf("\n\nAAAAA\n");
     success = false;
   } else if (result_msg.result() == kad::kRpcResultFailure) {
-    printf("\n\nBBBBB\n");
     success = false;
   } else if (size_t(result_msg.signed_values_size()) != values.size()) {
-    printf("\n\nCCCC\n");
     success = false;
   } else {
     std::set<std::string> a, b, c, d;
@@ -426,7 +454,6 @@ void Operator::FindValueCallback(const Operation &op,
     }
 
     if (a != c || b != d) {
-      printf("\n\nDDDD\n");
       success = false;
     } else if (mine) {
       int count = 0;
@@ -440,6 +467,7 @@ void Operator::FindValueCallback(const Operation &op,
         if (it != vmbkv_index.end()) {
           KeyValue kv = *it;
           ++kv.searches;
+          kv.selected_for_op = false;
           vmbkv_index.replace(it, kv);
         } else {
           ++count;
@@ -448,7 +476,6 @@ void Operator::FindValueCallback(const Operation &op,
 
       if (count != 0) {
         success = false;
-        printf("\n\nEEEE\n");
       }
     }
   }
@@ -494,6 +521,7 @@ void Operator::DeleteValueCallback(const Operation &op,
       if (it != vmbkv_index.end()) {
         KeyValue kv = *it;
         kv.status = -1;
+        kv.selected_for_op = false;
         vmbkv_index.replace(it, kv);
       } else {
         success = false;
@@ -545,6 +573,7 @@ void Operator::UpdateValueCallback(const Operation &op,
       if (it != vmbkv_index.end()) {
         KeyValue kv = *it;
         kv.status = 0;
+        kv.selected_for_op = false;
         vmbkv_index.replace(it, kv);
       } else {
         success = false;

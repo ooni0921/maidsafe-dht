@@ -29,15 +29,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/tests/kademlia/fake_callbacks.h"
+
+//#include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/base/log.h"
 #include "maidsafe/base/routingtable.h"
+#include "maidsafe/base/utils.h"
+#include "maidsafe/kademlia/contact.h"
+#include "maidsafe/kademlia/knode-api.h"
+#include "maidsafe/protobuf/rpcmessage.pb.h"
+#include "maidsafe/rpcprotocol/channelmanager-api.h"
 #include "maidsafe/transport/transportudt.h"
 #include "maidsafe/transport/transport-api.h"
-#include "maidsafe/rpcprotocol/channelmanager-api.h"
-#include "maidsafe/base/log.h"
-#include "maidsafe/protobuf/rpcmessage.pb.h"
 #include "maidsafe/transport/transporthandler-api.h"
+#include "maidsafe/tests/kademlia/fake_callbacks.h"
 
 namespace test_add_knode {
   static const boost::uint16_t K = 16;

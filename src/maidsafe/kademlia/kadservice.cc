@@ -272,6 +272,7 @@ void KadService::Store(google::protobuf::RpcController *controller,
   if (!node_joined_) {
     response->set_result(kRpcResultFailure);
     done->Run();
+    DLOG(WARNING) << "Not joined? How'd I get the message, then?" << std::endl;
     return;
   }
   Contact sender;

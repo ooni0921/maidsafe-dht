@@ -342,14 +342,16 @@ int main(int argc, char **argv) {
         &kad::KNode::HandleDeadRendezvousServer, &node, _1))) {
       return 1;
     }
-    if (0 != trans_handler.Start(port, transport_id) || 0!= chmanager.Start()) {
+    if (0 != trans_handler.Start(port, transport_id) ||
+        0 != chmanager.Start()) {
       printf("Unable to start node on port %d\n", port);
       return 1;
     }
     // setting kadconfig file if it was not in the options
     if (kadconfigpath.empty()) {
-      kadconfigpath = "KnodeInfo" + boost::lexical_cast<std::string>(
-         trans_handler.listening_port(transport_id));
+      kadconfigpath = "KnodeInfo" +
+                      boost::lexical_cast<std::string>(
+                          trans_handler.listening_port(transport_id));
       boost::filesystem::create_directories(kadconfigpath);
       kadconfigpath += "/.kadconfig";
     }
@@ -374,8 +376,9 @@ int main(int argc, char **argv) {
     test_kaddemo::JoinCallback callback;
     if (first_node)
       node.Join(kadconfigpath, vm["externalip"].as<std::string>(),
-          vm["externalport"].as<boost::uint16_t>(), boost::bind(
-          &test_kaddemo::JoinCallback::Callback, &callback, _1));
+                vm["externalport"].as<boost::uint16_t>(),
+                boost::bind(&test_kaddemo::JoinCallback::Callback,
+                            &callback, _1));
     else
       node.Join(kadconfigpath,
                 boost::bind(&test_kaddemo::JoinCallback::Callback,

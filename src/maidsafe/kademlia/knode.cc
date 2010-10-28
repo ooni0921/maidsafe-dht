@@ -140,19 +140,16 @@ bool KNode::GetContact(const KadId &id, Contact *contact) {
   return pimpl_->GetContact(id, contact);
 }
 
-bool KNode::FindValueLocal(const KadId &key,
-                           std::vector<std::string> *values) {
+bool KNode::FindValueLocal(const KadId &key, std::vector<std::string> *values) {
   return pimpl_->FindValueLocal(key, values);
 }
 
-bool KNode::StoreValueLocal(const KadId &key,
-                            const std::string &value,
+bool KNode::StoreValueLocal(const KadId &key, const std::string &value,
                             const boost::int32_t &ttl) {
   return pimpl_->StoreValueLocal(key, value, ttl);
 }
 
-bool KNode::RefreshValueLocal(const KadId &key,
-                              const std::string &value,
+bool KNode::RefreshValueLocal(const KadId &key, const std::string &value,
                               const boost::int32_t &ttl) {
   return pimpl_->RefreshValueLocal(key, value, ttl);
 }
@@ -223,6 +220,7 @@ boost::uint32_t KNode::KeyLastRefreshTime(const KadId &key,
                                           const std::string &value) {
   return pimpl_->KeyLastRefreshTime(key, value);
 }
+
 boost::uint32_t KNode::KeyExpireTime(const KadId &key,
                                      const std::string &value) {
   return pimpl_->KeyExpireTime(key, value);

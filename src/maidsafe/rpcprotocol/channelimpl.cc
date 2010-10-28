@@ -102,7 +102,9 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     msg.set_message_id(pmanager_->CreateNewId());
     msg.set_rpc_type(REQUEST);
     std::string ser_args;
+//    printf("AAAAAAAAAA\n");
     request->SerializeToString(&ser_args);
+//    printf("BBBBBBBBBB\n");
     msg.set_args(ser_args);
     msg.set_service(GetServiceName(method->full_name()));
     msg.set_method(method->name());
