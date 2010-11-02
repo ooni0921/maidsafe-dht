@@ -239,7 +239,7 @@ void KNode::set_alternative_store(base::AlternativeStore* alternative_store) {
   pimpl_->set_alternative_store(alternative_store);
 }
 
-base::AlternativeStore *KNode::alternative_store() {
+base::AlternativeStore* KNode::alternative_store() {
   return pimpl_->alternative_store();
 }
 
@@ -247,12 +247,10 @@ void KNode::set_signature_validator(base::SignatureValidator *validator) {
   pimpl_->set_signature_validator(validator);
 }
 
-void KNode::UpdateValue(const KadId &key,
-                        const SignedValue &old_value,
+void KNode::UpdateValue(const KadId &key, const SignedValue &old_value,
                         const SignedValue &new_value,
                         const SignedRequest &signed_request,
-                        boost::uint32_t ttl,
-                        VoidFunctorOneString callback) {
+                        boost::uint32_t ttl, VoidFunctorOneString callback) {
   pimpl_->UpdateValue(key, old_value, new_value, signed_request, ttl, callback);
 }
 

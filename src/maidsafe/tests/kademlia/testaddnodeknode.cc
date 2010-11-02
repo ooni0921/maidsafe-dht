@@ -30,7 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 
-//#include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/base/log.h"
 #include "maidsafe/base/routingtable.h"
 #include "maidsafe/base/utils.h"

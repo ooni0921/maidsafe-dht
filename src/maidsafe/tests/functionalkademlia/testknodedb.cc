@@ -484,7 +484,7 @@ TEST_F(KNodeTestDb, FUNC_KAD_ClientKnodeConnect) {
         knodes_[i]->host_port());
     all_nodes.push_back(node);
   }
-  kad::SortContactList(&all_nodes, key1);
+  kad::SortContactList(key1, &all_nodes);
   std::list<kad::Contact>::iterator it1, it2;
   it2= closest_nodes.begin();
   for (it1 = closest_nodes.begin(); it1 != closest_nodes.end(); it1++, it2++) {
@@ -510,10 +510,10 @@ TEST_F(KNodeTestDb, FUNC_KAD_ClientKnodeConnect) {
 
 TEST_F(KNodeTestDb, FUNC_KAD_FindClosestNodes) {
   kad::KadId key(cry_obj_.Hash("2evvnf3xssas21", "", crypto::STRING_STRING,
-      false));
+                               false));
   FindCallback cb_1;
-  knodes_[kTestK / 2]->FindKClosestNodes(key,
-      boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
+  knodes_[kTestK / 2]->FindKClosestNodes(
+      key, boost::bind(&FindCallback::CallbackFunc, &cb_1, _1));
   wait_result(&cb_1);
   // make sure the nodes returned are what we expect.
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
@@ -538,7 +538,7 @@ TEST_F(KNodeTestDb, FUNC_KAD_FindClosestNodes) {
         knodes_[i]->rendezvous_port());
     all_nodes.push_back(node);
   }
-  kad::SortContactList(&all_nodes, key);
+  kad::SortContactList(key, &all_nodes);
   std::list<kad::Contact>::iterator it1, it2;
   it2= closest_nodes.begin();
   for (it1 = closest_nodes.begin(); it1 != closest_nodes.end(); it1++, it2++) {
@@ -549,8 +549,8 @@ TEST_F(KNodeTestDb, FUNC_KAD_FindClosestNodes) {
 TEST_F(KNodeTestDb, FUNC_KAD_StoreAndLoadSmallValue) {
   // prepare small size of values
   kad::KadId key(cry_obj_.Hash("dccxxvdeee432cc", "", crypto::STRING_STRING,
-      false));
-  std::string value = base::RandomString(1024*5);  // 5KB
+                               false));
+  std::string value = base::RandomString(1024 * 5);  // 5KB
   kad::SignedValue sig_value;
   sig_value.set_value(value);
   // save key/value pair from a node
@@ -564,16 +564,18 @@ TEST_F(KNodeTestDb, FUNC_KAD_StoreAndLoadSmallValue) {
   req.set_signed_public_key(sig_pub_key);
   req.set_signed_request(sig_req);
 
-  knodes_[kTestK / 2]->StoreValue(key, sig_value, req, 24*3600,
-    boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  knodes_[kTestK / 2]->StoreValue(key, sig_value, req, 24 * 3600,
+                                  boost::bind(&StoreValueCallback::CallbackFunc,
+                                              &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultFailure, cb_.result());
   cb_.Reset();
 
   sig_value.set_value_signature(cry_obj_.AsymSign(value, "", priv_key,
       crypto::STRING_STRING));
-  knodes_[kTestK / 2]->StoreValue(key, sig_value, req, 24*3600,
-    boost::bind(&StoreValueCallback::CallbackFunc, &cb_, _1));
+  knodes_[kTestK / 2]->StoreValue(key, sig_value, req, 24 * 3600,
+                                  boost::bind(&StoreValueCallback::CallbackFunc,
+                                              &cb_, _1));
   wait_result(&cb_);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
   // calculate number of nodes which hold this key/value pair
@@ -618,7 +620,7 @@ TEST_F(KNodeTestDb, FUNC_KAD_StoreAndLoadSmallValue) {
   cb_1.Reset();
   ASSERT_TRUE(knodes_[0]->is_joined());
   knodes_[0]->FindValue(key, false, boost::bind(&FakeCallback::CallbackFunc,
-    &cb_1, _1));
+                                                &cb_1, _1));
   wait_result(&cb_1);
   ASSERT_EQ(kad::kRpcResultSuccess, cb_1.result());
   ASSERT_LE(1U, cb_1.signed_values().size());

@@ -149,22 +149,16 @@ TEST_F(TestKnodeFunctions, BEH_KNODE_StoreRefreshTTLValueLocal) {
   boost::uint32_t ttl(3600);
   node_->StoreValueLocal(key, value, ttl);
   ASSERT_EQ(ttl, node_->KeyValueTTL(key, value));
-  std::cout << node_->KeyLastRefreshTime(key, value) << std::endl;
-  std::cout << node_->KeyExpireTime(key, value) << std::endl;
+  boost::uint32_t rt = node_->KeyLastRefreshTime(key, value);
+  boost::uint32_t et = node_->KeyExpireTime(key, value);
   node_->RefreshValueLocal(key, value, ttl);
-  std::cout << node_->KeyLastRefreshTime(key, value) << std::endl;
-  std::cout << node_->KeyExpireTime(key, value) << std::endl;
+  ASSERT_EQ(rt, node_->KeyLastRefreshTime(key, value));
+  ASSERT_EQ(et, node_->KeyExpireTime(key, value));
   ASSERT_EQ(ttl, node_->KeyValueTTL(key, value));
   std::vector<std::string> values;
   ASSERT_TRUE(node_->FindValueLocal(key, &values));
   ASSERT_EQ(size_t(1), values.size());
   ASSERT_EQ(value, values.at(0));
-/*
-  boost::uint32_t node_->KeyLastRefreshTime(const KadId &key,
-                                            const std::string &value)
-  boost::uint32_t node_->KeyExpireTime(const KadId &key,
-                                       const std::string &value)
-*/
 }
 
 TEST_F(TestKnodeFunctions, BEH_KNODE_CheckContactLocalAddress) {
@@ -214,6 +208,9 @@ TEST_F(TestKnodeFunctions, BEH_KNODE_NodeInfo) {
   ASSERT_EQ(ci.local_port(), local_host_port);
   ASSERT_EQ(base::IpBytesToAscii(ci.rendezvous_ip()), rendezvous_ip);
   ASSERT_EQ(ci.rendezvous_port(), rendezvous_port);
+
+  ASSERT_FALSE(node_->recheck_nat_type());
+  ASSERT_EQ(DIRECT_CONNECTED, node_->host_nat_type());
 }
 
 }  // namespace test_kbucket

@@ -57,17 +57,23 @@ class ContactInfo;
 
 struct LookupContact;
 
+struct ContactAndTargetKey {
+  ContactAndTargetKey() : contact(), target_key(), contacted(false) {}
+  Contact contact;
+  KadId target_key;
+  bool contacted;
+};
+
+bool CompareContact(const ContactAndTargetKey &first,
+                    const ContactAndTargetKey &second);
+
 enum RemoteFindMethod { FIND_NODE, FIND_VALUE, BOOTSTRAP };
 
-void SortContactList(std::list<Contact> *contact_list,
-                     const KadId &target_key);
+void SortContactList(const KadId &target_key,
+                     std::list<Contact> *contact_list);
 
-void SortLookupContact(std::list<LookupContact> *contact_list,
-                       const KadId &target_key);
-
-// Add a kad Contact to the vector & sort ascending by kademlia distance to key.
-void InsertKadContact(const KadId &key, const kad::Contact &new_contact,
-                      std::vector<kad::Contact> *contacts);
+void SortLookupContact(const KadId &target_key,
+                       std::list<LookupContact> *contact_list);
 
 inline void dummy_callback(const std::string&) {}
 
@@ -306,6 +312,26 @@ struct UpdateCallbackArgs {
 };
 
 struct BootstrapData {
+  BootstrapData() : callback(), bootstrap_ip(), bootstrap_port(0),
+                    rpc_ctrler(NULL) {}
+  BootstrapData(VoidFunctorOneString cb, const std::string &bs_ip,
+                boost::uint16_t bs_port, rpcprotocol::Controller *ctrler)
+                : callback(cb), bootstrap_ip(bs_ip), bootstrap_port(bs_port),
+                  rpc_ctrler(ctrler) {}
+  BootstrapData(const BootstrapData &data)
+      : callback(data.callback), bootstrap_ip(data.bootstrap_ip),
+        bootstrap_port(data.bootstrap_port), rpc_ctrler(data.rpc_ctrler) {}
+  BootstrapData &operator=(const BootstrapData &data) {
+    if (this != &data) {
+      callback = data.callback;
+      bootstrap_ip = data.bootstrap_ip;
+      bootstrap_port = data.bootstrap_port;
+      delete rpc_ctrler;
+      rpc_ctrler = data.rpc_ctrler;
+    }
+    return *this;
+  }
+
   VoidFunctorOneString callback;
   std::string bootstrap_ip;
   boost::uint16_t bootstrap_port;
@@ -321,6 +347,14 @@ struct BootstrapArgs {
   bool is_callbacked, dir_connected;
 };
 
+namespace test_knodeimpl {
+class TestKNodeImpl_BEH_KNodeImpl_Destroy_Test;
+class TestKNodeImpl_BEH_KNodeImpl_Bootstrap_Callback_Test;
+class TestKNodeImpl_BEH_KNodeImpl_Join_Bootstrapping_Iteration_Test;
+class TestKNodeImpl_BEH_KNodeImpl_ExecuteRPCs_Test;
+class TestKNodeImpl_BEH_KNodeImpl_NotJoined_Test;
+}  // namespace test
+
 class KNodeImpl {
  public:
   KNodeImpl(rpcprotocol::ChannelManager* channel_manager,
@@ -335,52 +369,53 @@ class KNodeImpl {
             const boost::uint16_t &beta, const boost::uint32_t &refresh_time,
             const std::string &private_key, const std::string &public_key,
             const bool &port_forwarded, const bool &use_upnp);
-  ~KNodeImpl();
+  virtual ~KNodeImpl();
 
   void set_transport_id(const boost::int16_t &transport_id) {
     transport_id_ = transport_id;
   }
 
-  void Join(const KadId &node_id, const std::string &kad_config_file,
-            VoidFunctorOneString callback);
-  void Join(const std::string &kad_config_file, VoidFunctorOneString callback);
+  virtual void Join(const KadId &node_id, const std::string &kad_config_file,
+                    VoidFunctorOneString callback);
+  virtual void Join(const std::string &kad_config_file,
+                    VoidFunctorOneString callback);
 
   // Use this join for the first node in the network
-  void Join(const KadId &node_id, const std::string &kad_config_file,
-            const std::string &external_ip,
-            const boost::uint16_t &external_port,
-            VoidFunctorOneString callback);
-  void Join(const std::string &kad_config_file,
-            const std::string &external_ip,
-            const boost::uint16_t &external_port,
-            VoidFunctorOneString callback);
+  virtual void Join(const KadId &node_id, const std::string &kad_config_file,
+                    const std::string &external_ip,
+                    const boost::uint16_t &external_port,
+                    VoidFunctorOneString callback);
+  virtual void Join(const std::string &kad_config_file,
+                    const std::string &external_ip,
+                    const boost::uint16_t &external_port,
+                    VoidFunctorOneString callback);
 
   void Leave();
-  void StoreValue(const KadId &key, const SignedValue &signed_value,
-                  const SignedRequest &signed_request,
-                  const boost::int32_t &ttl,
-                  VoidFunctorOneString callback);
-  void StoreValue(const KadId &key, const std::string &value,
-                  const boost::int32_t &ttl, VoidFunctorOneString callback);
-  void DeleteValue(const KadId &key, const SignedValue &signed_value,
-                   const SignedRequest &signed_request,
-                   VoidFunctorOneString callback);
-  void UpdateValue(const KadId &key,
-                   const SignedValue &old_value,
-                   const SignedValue &new_value,
-                   const SignedRequest &signed_request,
-                   boost::uint32_t ttl,
-                   VoidFunctorOneString callback);
-  void FindValue(const KadId &key, const bool &check_alternative_store,
-                 VoidFunctorOneString callback);
+  virtual void StoreValue(const KadId &key, const SignedValue &signed_value,
+                          const SignedRequest &signed_request,
+                          const boost::int32_t &ttl,
+                          VoidFunctorOneString callback);
+  virtual void StoreValue(const KadId &key, const std::string &value,
+                          const boost::int32_t &ttl,
+                          VoidFunctorOneString callback);
+  virtual void DeleteValue(const KadId &key, const SignedValue &signed_value,
+                           const SignedRequest &signed_request,
+                           VoidFunctorOneString callback);
+  virtual void UpdateValue(const KadId &key, const SignedValue &old_value,
+                           const SignedValue &new_value,
+                           const SignedRequest &signed_request,
+                           boost::uint32_t ttl, VoidFunctorOneString callback);
+  virtual void FindValue(const KadId &key, const bool &check_alternative_store,
+                         VoidFunctorOneString callback);
   void GetNodeContactDetails(const KadId &node_id,
                              VoidFunctorOneString callback, const bool &local);
-  void FindKClosestNodes(const KadId &node_id, VoidFunctorOneString callback);
+  virtual void FindKClosestNodes(const KadId &node_id,
+                                 VoidFunctorOneString callback);
   void GetKNodesFromRoutingTable(const KadId &key,
                                  const std::vector<Contact> &exclude_contacts,
                                  std::vector<Contact> *close_nodes);
-  void Ping(const KadId &node_id, VoidFunctorOneString callback);
-  void Ping(const Contact &remote, VoidFunctorOneString callback);
+  virtual void Ping(const KadId &node_id, VoidFunctorOneString callback);
+  virtual void Ping(const Contact &remote, VoidFunctorOneString callback);
   int AddContact(Contact new_contact, const float & rtt, const bool &only_db);
   void RemoveContact(const KadId &node_id);
   bool GetContact(const KadId &id, Contact *contact);
@@ -435,6 +470,15 @@ class KNodeImpl {
   inline NatType host_nat_type() { return host_nat_type_; }
   inline bool recheck_nat_type() { return recheck_nat_type_; }
  private:
+  friend class test_knodeimpl::TestKNodeImpl_BEH_KNodeImpl_Destroy_Test;
+  friend class
+      test_knodeimpl::TestKNodeImpl_BEH_KNodeImpl_Bootstrap_Callback_Test;
+  friend class
+      test_knodeimpl::
+          TestKNodeImpl_BEH_KNodeImpl_Join_Bootstrapping_Iteration_Test;
+  friend class test_knodeimpl::TestKNodeImpl_BEH_KNodeImpl_ExecuteRPCs_Test;
+  friend class test_knodeimpl::TestKNodeImpl_BEH_KNodeImpl_NotJoined_Test;
+
   KNodeImpl &operator=(const KNodeImpl&);
   KNodeImpl(const KNodeImpl&);
   inline void CallbackWithFailure(VoidFunctorOneString callback);

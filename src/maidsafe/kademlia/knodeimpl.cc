@@ -31,37 +31,31 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <google/protobuf/descriptor.h>
+
 #include <algorithm>
 #include <iostream>  // NOLINT Fraser - required for handling .kadconfig file
 #include <fstream>  // NOLINT
 #include <vector>
-#include "maidsafe/base/log.h"
+
 #include "maidsafe/base/alternativestore.h"
 #include "maidsafe/base/crypto.h"
-#include "maidsafe/base/utils.h"
-#include "maidsafe/rpcprotocol/channelmanager-api.h"
-#include "maidsafe/rpcprotocol/channel-api.h"
-#include "maidsafe/base/routingtable.h"
-#include "maidsafe/transport/transport-api.h"
-#include "maidsafe/transport/transporthandler-api.h"
-#include "maidsafe/protobuf/contact_info.pb.h"
-#include "maidsafe/protobuf/signed_kadvalue.pb.h"
+#include "maidsafe/base/log.h"
 #include "maidsafe/base/online.h"
+#include "maidsafe/base/routingtable.h"
+#include "maidsafe/base/utils.h"
 #include "maidsafe/base/validationinterface.h"
 #include "maidsafe/kademlia/kadid.h"
 #include "maidsafe/kademlia/knodeimpl.h"
+#include "maidsafe/protobuf/contact_info.pb.h"
+#include "maidsafe/protobuf/signed_kadvalue.pb.h"
+#include "maidsafe/rpcprotocol/channelmanager-api.h"
+#include "maidsafe/transport/transport-api.h"
 
 namespace fs = boost::filesystem;
 
 namespace kad {
 
 // some tools which will be used in the implementation of KNode class
-struct ContactAndTargetKey {
-  ContactAndTargetKey() : contact(), target_key(), contacted(false) {}
-  Contact contact;
-  KadId target_key;
-  bool contacted;
-};
 
 bool CompareContact(const ContactAndTargetKey &first,
                     const ContactAndTargetKey &second) {
@@ -75,8 +69,8 @@ bool CompareContact(const ContactAndTargetKey &first,
 }
 
 // sort the contact list according the distance to the target key
-void SortContactList(std::list<Contact> *contact_list,
-                     const KadId &target_key) {
+void SortContactList(const KadId &target_key,
+                     std::list<Contact> *contact_list) {
   if (contact_list->empty()) {
     return;
   }
@@ -99,8 +93,8 @@ void SortContactList(std::list<Contact> *contact_list,
 }
 
 // sort the contact list according the distance to the target key
-void SortLookupContact(std::list<LookupContact> *contact_list,
-                       const KadId &target_key) {
+void SortLookupContact(const KadId &target_key,
+                       std::list<LookupContact> *contact_list) {
   if (contact_list->empty()) {
     return;
   }
@@ -123,18 +117,6 @@ void SortLookupContact(std::list<LookupContact> *contact_list,
     ctc.kad_contact = it1->contact;
     ctc.contacted = it1->contacted;
     contact_list->push_back(ctc);
-  }
-}
-
-void InsertKadContact(const KadId &key, const kad::Contact &new_contact,
-                      std::vector<kad::Contact> *contacts) {
-  std::list<kad::Contact> contact_list(contacts->begin(), contacts->end());
-  contact_list.push_back(new_contact);
-  SortContactList(&contact_list, key);
-  contacts->clear();
-  for (std::list<kad::Contact>::iterator it = contact_list.begin();
-       it != contact_list.end(); ++it) {
-    contacts->push_back(*it);
   }
 }
 
@@ -189,14 +171,8 @@ KNodeImpl::KNodeImpl(rpcprotocol::ChannelManager *channel_manager,
       signature_validator_(NULL), exclude_bs_contacts_() {}
 
 KNodeImpl::~KNodeImpl() {
-  if (is_joined_) {
-    UnRegisterKadService();
-    is_joined_ = false;
-    pdata_store_->Clear();
-  }
-  if (upnp_mapped_port_ != 0) {
-    UnMapUPnP();
-  }
+  if (is_joined_)
+    Leave();
 }
 
 inline void KNodeImpl::CallbackWithFailure(VoidFunctorOneString callback) {
@@ -256,7 +232,7 @@ void KNodeImpl::Join_Bootstrapping_Iteration_Client(
     host_ip_ = result_msg.newcomer_ext_ip();
     host_port_ = result_msg.newcomer_ext_port();
     DLOG(INFO) << "external address " << host_ip_ << ":" << host_port_
-        << std::endl;
+               << std::endl;
     transport_handler_->StartPingRendezvous(false, bootstrap_node.host_ip(),
         bootstrap_node.host_port(), transport_id_);
     kadrpcs_.set_info(contact_info());
@@ -559,10 +535,11 @@ void KNodeImpl::Join(const KadId &node_id, const std::string &kad_config_file,
   base::GeneralResponse local_result;
   std::string local_result_str;
   if (is_joined_ || !node_id.IsValid()) {
-    if (is_joined_)
+    if (is_joined_) {
       local_result.set_result(kRpcResultSuccess);
-    else
+    } else {
       local_result.set_result(kRpcResultFailure);
+    }
     local_result.SerializeToString(&local_result_str);
     callback(local_result_str);
     return;
@@ -617,9 +594,9 @@ void KNodeImpl::Join(const KadId &node_id, const std::string &kad_config_file,
   transport_handler_->StartPingRendezvous(true, rv_ip_, rv_port_,
                                           transport_id_);
   addcontacts_routine_.reset(new boost::thread(&KNodeImpl::CheckAddContacts,
-      this));
+                                               this));
   if (!refresh_routine_started_) {
-    ptimer_->AddCallLater(kRefreshTime*1000,
+    ptimer_->AddCallLater(kRefreshTime * 1000,
                           boost::bind(&KNodeImpl::RefreshRoutine, this));
     ptimer_->AddCallLater(2000, boost::bind(&KNodeImpl::RefreshValuesRoutine,
                                             this));
@@ -741,13 +718,13 @@ boost::int16_t KNodeImpl::LoadBootstrapContacts() {
   base::KadConfig kad_config;
   try {
     if (fs::exists(kad_config_path_)) {
-      std::ifstream input_(kad_config_path_.string().c_str(),
-                           std::ios::in | std::ios::binary);
-      if (!kad_config.ParseFromIstream(&input_)) {
+      std::ifstream input(kad_config_path_.string().c_str(),
+                          std::ios::in | std::ios::binary);
+      if (!kad_config.ParseFromIstream(&input)) {
         DLOG(ERROR) << "Failed to parse kademlia config file" << std::endl;
         return -1;
       }
-      input_.close();
+      input.close();
       if (0 == kad_config.contact_size()) {
         DLOG(ERROR) << "Kademlia config file has no bootstrap nodes"
                     << std::endl;
@@ -755,7 +732,7 @@ boost::int16_t KNodeImpl::LoadBootstrapContacts() {
       }
     }
   }
-  catch(const std::exception ex) {
+  catch(const std::exception &ex) {
     DLOG(ERROR) << "Failed to access kademlia config file " << kad_config_path_
                 << ". Error: " << ex.what() << std::endl;
     return -1;
@@ -786,8 +763,7 @@ void KNodeImpl::RefreshRoutine() {
 }
 
 void KNodeImpl::StoreValue_IterativeStoreValue(
-    const StoreResponse *response,
-    StoreCallbackArgs callback_data) {
+    const StoreResponse *response, StoreCallbackArgs callback_data) {
   if (!is_joined_ || stopping_ || callback_data.data->is_callbacked)
     // Only call back once and check if node is in process of leaving or
     // has left
@@ -1025,8 +1001,8 @@ void KNodeImpl::StoreValue(const KadId &key, const SignedValue &signed_value,
     return;
   }
   FindKClosestNodes(key, boost::bind(&KNodeImpl::StoreValue_ExecuteStoreRPCs,
-                    this, _1, key, "", signed_value, signed_request, true, ttl,
-                    callback));
+                                     this, _1, key, "", signed_value,
+                                     signed_request, true, ttl, callback));
 }
 
 void KNodeImpl::StoreValue(const KadId &key, const std::string &value,
@@ -1140,8 +1116,7 @@ void KNodeImpl::FindKClosestNodes(const KadId &node_id,
 }
 
 void KNodeImpl::GetKNodesFromRoutingTable(
-    const KadId &key,
-    const std::vector<Contact> &exclude_contacts,
+    const KadId &key, const std::vector<Contact> &exclude_contacts,
     std::vector<Contact> *close_nodes) {
   boost::mutex::scoped_lock gaurd(routingtable_mutex_);
   prouting_table_->FindCloseNodes(key, K_, exclude_contacts, close_nodes);
@@ -1680,9 +1655,9 @@ void KNodeImpl::SearchIteration(boost::shared_ptr<IterativeLookUpData> data) {
     SearchIteration_Callback(data);
 
   // sort the active contacts
-  SortContactList(&data->active_contacts, data->key);
+  SortContactList(data->key, &data->active_contacts);
   // sort the short_list
-  SortLookupContact(&data->short_list, data->key);
+  SortLookupContact(data->key, &data->short_list);
   // Wait for beta to start the iteration
   activeprobes_mutex_.lock();
   unsigned int remaining_of_iter = data->current_alpha.size();
@@ -2014,9 +1989,9 @@ void KNodeImpl::FinalIteration(boost::shared_ptr<IterativeLookUpData> data) {
   activeprobes_mutex_.unlock();
 
   // sort the active contacts
-  SortContactList(&data->active_contacts, data->key);
+  SortContactList(data->key, &data->active_contacts);
   // check whether thare are any closer nodes
-  SortLookupContact(&data->short_list, data->key);
+  SortLookupContact(data->key, &data->short_list);
 
   // check if there are closer nodes than the ones already seen and send the rpc
   int contacted = 0;
@@ -2403,11 +2378,15 @@ void KNodeImpl::DelValue_ExecuteDeleteRPCs(const std::string &result,
     local_result.set_result(kRpcResultFailure);
     std::string local_result_str(local_result.SerializeAsString());
     callback(local_result_str);
+    DLOG(WARNING) << "KNodeImpl::DelValue_ExecuteDeleteRPCs - No nodes."
+                  << std::endl;
   } else {
     DeleteResponse local_result;
     local_result.set_result(kRpcResultFailure);
     std::string local_result_str(local_result.SerializeAsString());
     callback(local_result_str);
+    DLOG(WARNING) << "KNodeImpl::DelValue_ExecuteDeleteRPCs - Invalid or fail."
+                  << std::endl;
   }
 }
 

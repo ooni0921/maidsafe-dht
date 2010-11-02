@@ -845,6 +845,7 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
 
   local_transport_handler.Stop(local_transport_id);
   chman.Stop();
+
   // starting transport
   ASSERT_TRUE(chman.RegisterNotifiersToTransport());
   chman.RegisterChannel(service.GetDescriptor()->name(), &service_channel);
@@ -892,6 +893,10 @@ TEST_F(RpcProtocolTest, FUNC_RPC_RestartLocalTransport) {
 
   RpcProtocolTest::server_chann_manager->ClearCallLaters();
   RpcProtocolTest::client_chann_manager->ClearCallLaters();
+
+  local_transport_handler.Stop(local_transport_id);
+  delete local_transport_handler.Get(local_transport_id);
+  chman.Stop();
 }
 
 TEST(RpcControllerTest, BEH_RPC_RpcController) {

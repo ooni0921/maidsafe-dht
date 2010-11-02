@@ -477,7 +477,7 @@ TEST_F(KNodeTest, FUNC_KAD_ClientKnodeConnect) {
         knodes_[i]->host_port());
     all_nodes.push_back(node);
   }
-  kad::SortContactList(&all_nodes, key1);
+  kad::SortContactList(key1, &all_nodes);
   std::list<kad::Contact>::iterator it1, it2;
   it2= closest_nodes.begin();
   for (it1 = closest_nodes.begin(); it1 != closest_nodes.end();
@@ -532,7 +532,7 @@ TEST_F(KNodeTest, FUNC_KAD_FindClosestNodes) {
         knodes_[i]->rendezvous_port());
     all_nodes.push_back(node);
   }
-  kad::SortContactList(&all_nodes, key);
+  kad::SortContactList(key, &all_nodes);
   std::list<kad::Contact>::iterator it1, it2;
   it2= closest_nodes.begin();
   for (it1 = closest_nodes.begin(); it1 != closest_nodes.end(); it1++, it2++) {
