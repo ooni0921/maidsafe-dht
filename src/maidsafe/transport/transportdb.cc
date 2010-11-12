@@ -51,12 +51,17 @@ int TransportDbHandler::CreateDb(const std::string &database,
                                  const std::string &ip,
                                  const boost::uint16_t &port) {
   try {
-    if (!connection_->connect(NULL, "127.0.0.1", "root", "m41ds4f3"))
+    if (!connection_->connect(NULL, "127.0.0.1", "root", "m41ds4f3")) {
+      printf("TransportDbHandler::CreateDb - couldn't connect\n");
       return -1;
+    }
     if (!connection_->select_db(database))
       if (!connection_->create_db(database) ||
-          !connection_->select_db(database))
+          !connection_->select_db(database)) {
+        printf("TransportDbHandler::CreateDb - couldn't create/select DB %s\n",
+               database.c_str());
         return -1;
+      }
 
     mysqlpp::Query query = connection_->query();
     query.exec("drop table " + table_);
@@ -68,11 +73,13 @@ int TransportDbHandler::CreateDb(const std::string &database,
                                     "port INT NOT NULL)");
     query << "INSERT INTO details VALUES('" << ip << "', " << port << ")";
     mysqlpp::SimpleResult res = query.execute();
-    if (res.rows() != 1)
+    if (res.rows() != 1) {
+      printf("TransportDbHandler::CreateDb - couldn't insert details\n");
       return -1;
+    }
   }
   catch(const std::exception &e) {
-    printf("CreateDb - %s\n", e.what());
+    printf("TransportDbHandler::CreateDb - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -111,7 +118,7 @@ int TransportDbHandler::GetMessages(std::list<db_mock::FetchedMessage> *msgs) {
     lock_res = query.execute();
   }
   catch(const std::exception &e) {
-    printf("GetMessages - %s\n", e.what());
+    printf("TransportDbHandler::GetMessages - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -134,7 +141,7 @@ int TransportDbHandler::InsertMessage(const std::string &peer_database,
     c.disconnect();
   }
   catch(const std::exception &e) {
-    printf("InsertMessage - %s\n", e.what());
+    printf("TransportDbHandler::InsertMessage - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -148,7 +155,7 @@ int TransportDbHandler::ShutDown(const std::string &database) {
     connection_->disconnect();
   }
   catch(const std::exception &e) {
-    printf("ShutDown - %s\n", e.what());
+    printf("TransportDbHandler::ShutDown - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -162,7 +169,7 @@ int TransportDbHandler::CheckPeerDb(const std::string &database) {
     c.disconnect();
   }
   catch(const std::exception &e) {
-    printf("CheckPeerDb - %s\n", e.what());
+    printf("TransportDbHandler::CheckPeerDb - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -191,7 +198,7 @@ int TransportDbHandler::PeerEndpoint(const std::string &database,
     c.disconnect();
   }
   catch(const std::exception &e) {
-    printf("%s\n", e.what());
+    printf("TransportDbHandler::PeerEndpoint - %s\n", e.what());
     return -1;
   }
   return 0;
@@ -225,8 +232,15 @@ boost::uint16_t TransportDb::listening_port() { return listening_port_; }
 
 int TransportDb::Start(const boost::uint16_t &port) {
   if (rpc_message_notifier_.empty() || server_down_notifier_.empty() ||
-      send_notifier_.empty())
+      send_notifier_.empty()) {
+    printf("TransportDb::Start - empty notifiers\n");
     return -1;
+  }
+
+  if (port == 0) {
+    printf("TransportDb::Start - port can't be zero\n");
+    return -1;
+  }
 
   stop_ = false;
   int n = SetupDb(port);
@@ -238,15 +252,18 @@ int TransportDb::Start(const boost::uint16_t &port) {
   return 0;
 }
 
+std::string TransportDb::GetDbName(const boost::uint16_t& port) {
+//   boost::asio::ip::address local_address;
+//   base::GetLocalAddress(&local_address);
+//   crypto::Crypto co;
+//   return co.Hash(local_address.to_string() +
+//                  boost::lexical_cast<std::string>(port), "",
+//                  crypto::STRING_STRING, true).substr(0, 31);
+  return "peer_" + boost::lexical_cast<std::string>(port);
+}
+
 int TransportDb::SetupDb(const boost::uint16_t &port) {
-  boost::asio::ip::address local_address;
-  base::GetLocalAddress(&local_address);
-  std::string peer_db(local_address.to_string() +
-                      boost::lexical_cast<std::string>(port));
-  crypto::Crypto co;
-  int n = db_handler_.CreateDb(co.Hash(peer_db, "", crypto::STRING_STRING,
-                                       true).substr(0, 31),
-                               local_address.to_string(), port);
+  int n = db_handler_.CreateDb(GetDbName(port), "127.0.0.1", port);
   if (n != 0)
     return n;
 
@@ -275,13 +292,7 @@ void TransportDb::Stop() {
   get_messages_routine_.join();
   clear_connections_routine_.join();
 
-  boost::asio::ip::address local_address;
-  base::GetLocalAddress(&local_address);
-  crypto::Crypto co;
-  std::string peer_db(co.Hash(local_address.to_string() +
-                              boost::lexical_cast<std::string>(listening_port_),
-                              "", crypto::STRING_STRING, true).substr(0, 31));
-  /*int n = */db_handler_.ShutDown(peer_db);
+  /*int n = */db_handler_.ShutDown(GetDbName(listening_port_));
 
 //  rpc_message_notifier_.clear();
 //  message_notifier_.clear();
@@ -289,7 +300,7 @@ void TransportDb::Stop() {
 //  send_notifier_.clear();
 }
 
-int TransportDb::ConnectToSend(const std::string &remote_ip,
+int TransportDb::ConnectToSend(const std::string&,
                                const boost::uint16_t &remote_port,
                                const std::string&, const boost::uint16_t&,
                                const std::string&, const boost::uint16_t&,
@@ -298,15 +309,13 @@ int TransportDb::ConnectToSend(const std::string &remote_ip,
   boost::mutex::scoped_lock loch_errochty(iddbmap_mutex_);
   *connection_id = 0;
   crypto::Crypto co;
-  std::string peer_db(co.Hash(remote_ip +
-                              boost::lexical_cast<std::string>(remote_port), "",
-                              crypto::STRING_STRING, true).substr(0, 31));
+  std::string peer_db(GetDbName(remote_port));
 
   if (db_handler_.CheckPeerDb(peer_db) != 0) {
     return -1;
   }
 
-  db_mock::ConnectionStatus cs(peer_db, remote_ip, remote_port, keep_alive);
+  db_mock::ConnectionStatus cs(peer_db, remote_port, keep_alive);
   *connection_id = ++id_;
   std::pair<IdDbMap::iterator, bool> p =
       id_database_map_.insert(IdDbPair(id_, cs));
@@ -343,13 +352,8 @@ int TransportDb::Send(const std::string &data,
 
   std::string my_db;
   crypto::Crypto co;
-  if ((*it).second.keep_alive) {
-    boost::asio::ip::address local_address;
-    base::GetLocalAddress(&local_address);
-    my_db = co.Hash(local_address.to_string() +
-                    boost::lexical_cast<std::string>(listening_port_),
-                    "", crypto::STRING_STRING, true).substr(0, 31);
-  }
+  if ((*it).second.keep_alive)
+    my_db = GetDbName(listening_port_);
 
   int n = db_handler_.InsertMessage((*it).second.database, data, my_db);
   if (n != 0) {
@@ -400,7 +404,7 @@ bool TransportDb::GetPeerAddr(const boost::uint32_t &id, struct sockaddr *s) {
 
   std::string ip;
   boost::uint16_t port(0);
-  if ((*it).second.ip.empty() || (*it).second.port == 0) {
+  if (/* (*it).second.ip.empty() || */ (*it).second.port == 0) {
     if (!(*it).second.database.empty()) {
       int n = db_handler_.PeerEndpoint((*it).second.database, &ip, &port);
       if (n != 0 || ip.empty() || port == 0) {
@@ -443,18 +447,9 @@ void TransportDb::StartPingRendezvous(const bool&, const std::string&,
 
 void TransportDb::StopPingRendezvous() {}
 
-bool TransportDb::CanConnect(const std::string &ip,
+bool TransportDb::CanConnect(const std::string&,
                              const boost::uint16_t &port) {
-  std::string dec_lip;
-  if (ip.size() == 4)
-    dec_lip = base::IpBytesToAscii(ip);
-  else
-    dec_lip = ip;
-  std::string peer_db(dec_lip + boost::lexical_cast<std::string>(port));
-  crypto::Crypto co;
-  int n = db_handler_.CheckPeerDb(co.Hash(peer_db, "", crypto::STRING_STRING,
-                                          true).substr(0, 31));
-  return n == 0 ? true : false;
+  return db_handler_.CheckPeerDb(GetDbName(port)) == 0;
 }
 
 bool TransportDb::IsAddressUsable(const std::string&, const std::string&,
@@ -476,8 +471,7 @@ void TransportDb::CheckForMessages() {
           int msg_id(0);
           if (!messages.front().senders_db.empty()) {
             boost::mutex::scoped_lock loch_errochty(iddbmap_mutex_);
-            db_mock::ConnectionStatus cs(messages.front().senders_db, "", 0,
-                                         false);
+            db_mock::ConnectionStatus cs(messages.front().senders_db, 0, false);
             std::pair<IdDbMap::iterator, bool> p =
                 id_database_map_.insert(IdDbPair(++id_, cs));
             if (!p.second)
@@ -490,8 +484,7 @@ void TransportDb::CheckForMessages() {
         int msg_id(0);
         if (!messages.front().senders_db.empty()) {
           boost::mutex::scoped_lock loch_errochty(iddbmap_mutex_);
-          db_mock::ConnectionStatus cs(messages.front().senders_db, "", 0,
-                                       false);
+          db_mock::ConnectionStatus cs(messages.front().senders_db, 0, false);
           std::pair<IdDbMap::iterator, bool> p =
               id_database_map_.insert(IdDbPair(++id_, cs));
           if (!p.second)

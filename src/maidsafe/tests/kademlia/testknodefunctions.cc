@@ -27,6 +27,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <google/protobuf/descriptor.h>
+#include <boost/filesystem.hpp>
+// #include "maidsafe/base/log.h"
+// #include "maidsafe/transport/transport-api.h"
 
 #include "maidsafe/base/alternativestore.h"
 #include "maidsafe/base/crypto.h"

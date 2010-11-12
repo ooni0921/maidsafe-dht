@@ -63,11 +63,11 @@ namespace transport {
 namespace db_mock {
 
 struct ConnectionStatus {
-  ConnectionStatus(const std::string &db, const std::string &lip,
+  ConnectionStatus(const std::string &db,  // const std::string &lip,
                    const boost::uint16_t lport, bool ka)
-      : database(db), ip(lip), port(lport), keep_alive(ka),
+      : database(db), /* ip(lip), */ port(lport), keep_alive(ka),
         timestamp(base::GetEpochTime()) {}
-  std::string database, ip;
+  std::string database;  //, ip;
   boost::uint16_t port;
   bool keep_alive;
   boost::uint32_t timestamp;
@@ -173,6 +173,7 @@ class TransportDb : public Transport {
   boost::thread get_messages_routine_;
   boost::thread clear_connections_routine_;
 
+  std::string GetDbName(const boost::uint16_t &port);
   int SetupDb(const boost::uint16_t &port);
   void SetupThreads();
   void CheckForMessages();
