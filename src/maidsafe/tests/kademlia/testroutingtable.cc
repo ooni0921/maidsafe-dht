@@ -636,8 +636,7 @@ TEST_F(TestRoutingTable, BEH_KAD_GetLastSeenContact) {
   }
   ASSERT_EQ(test_routing_table::K == 1 ? 1 : 2, routingtable.KbucketSize());
   ASSERT_EQ(2*(test_routing_table::K/2)+1, routingtable.Size());
-  contact_id = base::DecodeFromHex(
-      contacts_id_second[0]);
+  contact_id = base::DecodeFromHex(contacts_id_second[0]);
   kad::Contact last_second(contact_id,
                            ip, 8880 + test_routing_table::K / 2 + 2,
                            ip, 8880 + test_routing_table::K / 2 + 2);

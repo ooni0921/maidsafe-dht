@@ -54,6 +54,12 @@ class RpcMessage;
 
 namespace transport {
 
+namespace test_transporthandler {
+class TransportHandlerTest_BEH_TRANS_StopTransport_Test;
+class TransportHandlerTest_BEH_TRANS_StartLocalTransport_Test;
+class TransportHandlerTest_BEH_TRANS_StopAllTransport_Test;
+}  // namespace test_transporthandler
+
 class Transport;
 
 /**
@@ -79,7 +85,7 @@ class TransportHandler {
   * Unregister a transport
   *  @param transport_id The id of the transport to unregister
   */
-  void Remove(const boost::int16_t &transport_id);
+  void UnRegister(const boost::int16_t &transport_id);
 
   /** Retrieve a Transport pointer
   * @param transport_id The id of the transport to retrieve
@@ -107,7 +113,7 @@ class TransportHandler {
 
   /** Declares whether all transports are stopped or not
   */
-  bool AllAreStopped();
+  bool  AllAreStopped();
 
   /** Hands back the ID of a registered and running UDT Transport
   *  @param transport_type Type of transports to return
@@ -173,7 +179,9 @@ class TransportHandler {
   bool HasReceivedData(const boost::uint32_t &connection_id,
                        const boost::int16_t &transport_id,
                        boost::int64_t *size);
-  boost::uint16_t listening_port(const boost::int16_t &transport_id);
+  // boost::uint16_t listening_port(const boost::int16_t &transport_id);
+  bool listening_port(const boost::int16_t &transport_id,
+                      boost::uint16_t *listen_port);
   void StartPingRendezvous(const bool &directly_connected,
                            const std::string &my_rendezvous_ip,
                            const boost::uint16_t &my_rendezvous_port,
@@ -193,8 +201,14 @@ class TransportHandler {
  private:
   TransportHandler& operator=(const TransportHandler&);
   TransportHandler(TransportHandler&);
+  friend class test_transporthandler::
+                        TransportHandlerTest_BEH_TRANS_StopTransport_Test;
+  friend class test_transporthandler::
+                        TransportHandlerTest_BEH_TRANS_StartLocalTransport_Test;
+  friend class test_transporthandler::
+                        TransportHandlerTest_BEH_TRANS_StopAllTransport_Test;
   bool Registered(transport::Transport* transport_object);
-  std::map < boost::int16_t, transport::Transport* > transports_;
+  std::map<boost::int16_t, transport::Transport*> transports_;
   boost::int16_t next_id_;
   boost::int16_t started_count_;
   boost::function<void(const rpcprotocol::RpcMessage&,
@@ -207,7 +221,7 @@ class TransportHandler {
                        const float&)> message_notifier_;
   boost::function<void(const bool&,
                        const std::string&,
-                       const boost::uint16_t&)> server_down_notifier_;
+                       const boost::uint16_t&)>server_down_notifier_;
   boost::function<void(const boost::uint32_t&, const bool&)> send_notifier_;
 };
 

@@ -163,15 +163,23 @@ int ChannelManagerImpl::Start() {
   }
 
   boost::int16_t udtID = udt_transports.front();
-
+  boost::uint16_t lp_node;
+  if (!transport_handler_->listening_port(udtID, &lp_node)) {
+    DLOG(ERROR) << "Invalid Listening Port\n";
+    return 1;
+  }
   current_request_id_ =
     base::GenerateNextTransactionId(current_request_id_) +
-    (transport_handler_->listening_port(udtID)*100);
+    (lp_node*100);
   is_started_ = true;
+  if (!transport_handler_->listening_port(udtID, &lp_node)) {
+    DLOG(ERROR) << "Invalid Listening Port\n";
+    return 1;
+  }
   online_status_id_ =
       base::OnlineController::Instance()->RegisterObserver(
-          transport_handler_->listening_port(udtID),
-          boost::bind(&ChannelManagerImpl::OnlineStatusChanged, this, _1));
+          lp_node, boost::bind(&ChannelManagerImpl::OnlineStatusChanged,
+          this, _1));
     return 0;
 }
 
@@ -205,9 +213,11 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
                                        const boost::int16_t transport_id,
                                        const float &rtt) {
   RpcMessage decoded_msg = msg;
+  boost::uint16_t lp_node;
   if (decoded_msg.rpc_type() == REQUEST) {
     if (!decoded_msg.has_service() || !decoded_msg.has_method()) {
-      DLOG(ERROR) << transport_handler_->listening_port(transport_id) <<
+      if (transport_handler_->listening_port(transport_id, &lp_node))
+        DLOG(ERROR) << lp_node <<
           " --- request arrived cannot parse message\n";
       return;
     }
@@ -266,8 +276,9 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
         google::protobuf::Closure* done = (*it).second.callback;
         pending_req_.erase(decoded_msg.message_id());
         req_mutex_.unlock();
-        DLOG(INFO) << transport_handler_->listening_port(transport_id) <<
-        " --- Response arrived for " << service << "::" << method << " -- " <<
+        if (transport_handler_->listening_port(transport_id, &lp_node))
+          DLOG(INFO) << lp_node <<
+          " --- Response arrived for " << service << "::" << method << " -- " <<
         decoded_msg.message_id() << " -- RTT: " << rtt << " ms, duration: " <<
             duration << " ms" << std::endl;
         done->Run();
@@ -276,18 +287,21 @@ void ChannelManagerImpl::MessageArrive(const RpcMessage &msg,
         transport_handler_->CloseConnection(connection_id, transport_id);
       } else {
         req_mutex_.unlock();
-        DLOG(INFO) << transport_handler_->listening_port(transport_id) <<
+        if (transport_handler_->listening_port(transport_id, &lp_node))
+          DLOG(INFO) << lp_node <<
             " --- ChannelManager no callback for id " <<
             decoded_msg.message_id() << std::endl;
       }
     } else {
       req_mutex_.unlock();
-      DLOG(INFO) << transport_handler_->listening_port(transport_id) <<
+      if (transport_handler_->listening_port(transport_id, &lp_node))
+        DLOG(INFO) << lp_node <<
           " --- ChannelManager no request for id " <<
           decoded_msg.message_id() << std::endl;
     }
   } else {
-    DLOG(ERROR) << transport_handler_->listening_port(transport_id) <<
+    if (transport_handler_->listening_port(transport_id, &lp_node))
+      DLOG(ERROR) << lp_node <<
         " --- ChannelManager::MessageArrive " <<
         "unknown type of message received\n";
   }
@@ -298,6 +312,7 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &request_id) {
     return;
   }
   std::map<boost::uint32_t, PendingReq>::iterator it;
+  boost::uint16_t lp_node;
   req_mutex_.lock();
   it = pending_req_.find(request_id);
   if (it != pending_req_.end()) {
@@ -309,13 +324,15 @@ void ChannelManagerImpl::TimerHandler(const boost::uint32_t &request_id) {
                                             &size_rec)) {
       it->second.size_rec = size_rec;
       req_mutex_.unlock();
-      DLOG(INFO) << transport_handler_->listening_port(transport_id)
+      if (transport_handler_->listening_port(transport_id, &lp_node))
+        DLOG(INFO) << lp_node
                  << " -- Reseting timeout for RPC ID: " << request_id
                  << ". Connection ID: " << connection_id << ". Received: "
                  << size_rec;
       AddReqToTimer(request_id, timeout);
     } else {
-      DLOG(INFO) << transport_handler_->listening_port(transport_id)
+      if (transport_handler_->listening_port(transport_id, &lp_node))
+        DLOG(INFO) << lp_node
                  << " - Request " << request_id << " times out. Connection ID: "
                  << connection_id << std::endl;
       // call back without modifying the response

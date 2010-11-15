@@ -186,9 +186,12 @@ class Env: public testing::Environment {
     kad_config_file_ = dbs_[0] + "/.kadconfig";
     cb_.Reset();
     boost::asio::ip::address local_ip;
+    boost::uint16_t lp_node;
+    bool get_port;
+    get_port = trans_handlers_[0]->listening_port(transport_ids_[0], &lp_node);
     ASSERT_TRUE(base::GetLocalAddress(&local_ip));
     knodes_[0]->Join(kad_config_file_, local_ip.to_string(),
-                     trans_handlers_[0]->listening_port(transport_ids_[0]),
+                     lp_node,
                      boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
     wait_result(&cb_);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
@@ -1540,9 +1543,12 @@ TEST_F(KNodeTest, FUNC_KAD_Issue13Bootstrap) {
   std::string kad_config_file(test_dir_ + std::string("KNodeL/.kadconfig"));
   cb_.Reset();
   boost::asio::ip::address local_ip;
+  boost::uint16_t lp_node;
+  bool get_port;
+  get_port = thandlerL.listening_port(transport_ids_[0], &lp_node);
   EXPECT_TRUE(base::GetLocalAddress(&local_ip));
   nodeL.Join(kad_config_file, local_ip.to_string(),
-             thandlerL.listening_port(transport_ids_[0]),
+             lp_node,
              boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
   wait_result(&cb_);
   EXPECT_EQ(kad::kRpcResultSuccess, cb_.result());

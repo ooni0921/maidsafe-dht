@@ -288,7 +288,9 @@ TEST_F(TransportTestDb, BEH_TRANS_SendOneMessageFromOneToAnother) {
       boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
   ASSERT_EQ(0, node2_handler.Start(50001, node2_id));
 
-  boost::uint16_t lp_node2(node2_handler.listening_port(node2_id));
+  boost::uint16_t lp_node2;
+  bool get_port;
+  get_port = node2_handler.listening_port(node2_id, &lp_node2);
   rpcprotocol::RpcMessage msg;
   msg.set_rpc_type(rpcprotocol::REQUEST);
   msg.set_message_id(2000);
@@ -363,7 +365,9 @@ TEST_F(TransportTestDb, BEH_TRANS_SendMessagesFromManyToOne) {
        boost::bind(&MessageHandler::OnSend, &msg_handler[3], _1, _2)));
   ASSERT_EQ(0, node4_handler.Start(50003, node4_id));
 
-  boost::uint16_t lp_node4 = node4_handler.listening_port(node4_id);
+  boost::uint16_t lp_node4;
+  bool get_port;
+  get_port = node4_handler.listening_port(node4_id, &lp_node4);
   std::list<std::string> sent_msgs;
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
@@ -467,7 +471,9 @@ TEST_F(TransportTestDb, BEH_TRANS_SendMessagesFromManyToMany) {
   ASSERT_TRUE(node4_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler[3], _1, _2)));
   ASSERT_EQ(0, node4_handler.Start(50003, node4_id));
-  boost::uint16_t lp_node4 = node4_handler.listening_port(node4_id);
+  boost::uint16_t lp_node4;
+  bool get_port;
+  get_port = node4_handler.listening_port(node4_id, &lp_node4);
 
   ASSERT_TRUE(node5_handler.RegisterOnRPCMessage(
       boost::bind(&MessageHandler::OnRPCMessage,
@@ -478,7 +484,8 @@ TEST_F(TransportTestDb, BEH_TRANS_SendMessagesFromManyToMany) {
   ASSERT_TRUE(node5_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler[4], _1, _2)));
   ASSERT_EQ(0, node5_handler.Start(50004, node5_id));
-  boost::uint16_t lp_node5 = node5_handler.listening_port(node5_id);
+  boost::uint16_t lp_node5;
+  get_port = node5_handler.listening_port(node5_id, &lp_node5);
 
   ASSERT_TRUE(node6_handler.RegisterOnRPCMessage(
       boost::bind(&MessageHandler::OnRPCMessage,
@@ -489,7 +496,8 @@ TEST_F(TransportTestDb, BEH_TRANS_SendMessagesFromManyToMany) {
   ASSERT_TRUE(node6_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler[5], _1, _2)));
   ASSERT_EQ(0, node6_handler.Start(50005, node6_id));
-  boost::uint16_t lp_node6_handler = node6_handler.listening_port(node6_id);
+  boost::uint16_t lp_node6_handler;
+  get_port = node6_handler.listening_port(node6_id, &lp_node6_handler);
 
   std::string sent_msgs[3];
   rpcprotocol::RpcMessage rpc_msg;
@@ -577,7 +585,8 @@ TEST_F(TransportTestDb, BEH_TRANS_SendMessagesFromOneToMany) {
   ASSERT_TRUE(node2_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
   ASSERT_EQ(0, node2_handler.Start(50001, node2_id));
-  boost::uint16_t lp_node2 = node2_handler.listening_port(node2_id);
+  boost::uint16_t lp_node2;
+  bool get_port = node2_handler.listening_port(node2_id, &lp_node2);
 
   ASSERT_TRUE(node3_handler.RegisterOnRPCMessage(
       boost::bind(&MessageHandler::OnRPCMessage, &msg_handler[2],
@@ -588,7 +597,8 @@ TEST_F(TransportTestDb, BEH_TRANS_SendMessagesFromOneToMany) {
   ASSERT_TRUE(node3_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler[2], _1, _2)));
   ASSERT_EQ(0, node3_handler.Start(50002, node3_id));
-  boost::uint16_t lp_node3 = node3_handler.listening_port(node3_id);
+  boost::uint16_t lp_node3;
+  get_port = node3_handler.listening_port(node3_id, &lp_node3);
 
   ASSERT_TRUE(node4_handler.RegisterOnRPCMessage(
       boost::bind(&MessageHandler::OnRPCMessage,
@@ -599,7 +609,8 @@ TEST_F(TransportTestDb, BEH_TRANS_SendMessagesFromOneToMany) {
   ASSERT_TRUE(node4_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler[3], _1, _2)));
   ASSERT_EQ(0, node4_handler.Start(50003, node4_id));
-  boost::uint16_t lp_node4 = node4_handler.listening_port(node4_id);
+  boost::uint16_t lp_node4;
+  get_port = node4_handler.listening_port(node4_id, &lp_node4);
 
   std::string sent_msgs[3];
   std::string ip(local_address_.to_string());
@@ -717,7 +728,8 @@ TEST_F(TransportTestDb, FUNC_TRANS_Send1000Msgs) {
                     &msg_handler[i], _1, _2, _3)));
 
     ASSERT_EQ(0, nodes[i]->Start(50000 + i, transport_ids[i]));
-    ports[i] = nodes[i]->listening_port(transport_ids[i]);
+    bool get_port;
+    get_port = nodes[i]->listening_port(transport_ids[i], &ports[i]);
     if (i != 0) {
       TransportNode *tnode = new TransportNode(nodes[i], transport_ids[i]);
       thrd = new boost::thread(&send_string, tnode, ports[0], kRepeatSend,
@@ -846,7 +858,8 @@ TEST_F(TransportTestDb, BEH_TRANS_SendMessageFromOneToAnotherBidirectional) {
   ASSERT_TRUE(node2_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
   ASSERT_EQ(0, node2_handler.Start(50001, node2_id));
-  boost::uint16_t lp_node2 = node2_handler.listening_port(node2_id);
+  boost::uint16_t lp_node2;
+  bool get_port = node2_handler.listening_port(node2_id, &lp_node2);
 
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
@@ -936,7 +949,8 @@ TEST_F(TransportTestDb, BEH_TRANS_SendMsgsFromManyToOneBidirectional) {
   ASSERT_TRUE(node4_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler[3], _1, _2)));
   ASSERT_EQ(0, node4_handler.Start(50003, node4_id));
-  boost::uint16_t lp_node4 = node4_handler.listening_port(node4_id);
+  boost::uint16_t lp_node4;
+  bool get_port = node4_handler.listening_port(node4_id, &lp_node4);
 
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
@@ -1097,7 +1111,8 @@ TEST_F(TransportTestDb, FUNC_TRANS_StartStopTransport) {
   ASSERT_TRUE(node1_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler[0], _1, _2)));
   ASSERT_EQ(0, node1_handler.Start(50000, node1_id));
-  boost::uint16_t lp_node1_handler = node1_handler.listening_port(node1_id);
+  boost::uint16_t lp_node1_handler;
+  bool get_port = node1_handler.listening_port(node1_id, &lp_node1_handler);
 
   ASSERT_TRUE(node2_handler.RegisterOnRPCMessage(
       boost::bind(&MessageHandler::OnRPCMessage,
@@ -1108,7 +1123,8 @@ TEST_F(TransportTestDb, FUNC_TRANS_StartStopTransport) {
   ASSERT_TRUE(node2_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
   ASSERT_EQ(0, node2_handler.Start(50001, node2_id));
-  boost::uint16_t lp_node2 = node2_handler.listening_port(node2_id);
+  boost::uint16_t lp_node2;
+  get_port = node2_handler.listening_port(node2_id, &lp_node2);
 
   rpcprotocol::RpcMessage rpc_msg;
   rpc_msg.set_rpc_type(rpcprotocol::REQUEST);
@@ -1138,7 +1154,7 @@ TEST_F(TransportTestDb, FUNC_TRANS_StartStopTransport) {
     ASSERT_TRUE(node2_handler.RegisterOnSend(
         boost::bind(&MessageHandler::OnSend, &msg_handler[1], _1, _2)));
     ASSERT_EQ(0, node2_handler.Start(50001, node2_id));
-    lp_node2 = node2_handler.listening_port(node2_id);
+    get_port = node2_handler.listening_port(node2_id, &lp_node2);
 
     // Sending another message
     rpc_msg.clear_args();
@@ -1201,7 +1217,8 @@ TEST_F(TransportTestDb, BEH_TRANS_SendRespond) {
       boost::bind(&MessageHandlerEchoReq::OnDeadRendezvousServer,
                   &msg_handler1, _1, _2, _3)));
   ASSERT_EQ(0, node1_handler.Start(50000, node1_id));
-  boost::uint16_t lp_node1_handler = node1_handler.listening_port(node1_id);
+  boost::uint16_t lp_node1_handler;
+  bool get_port = node1_handler.listening_port(node1_id, &lp_node1_handler);
 
   ASSERT_TRUE(node2_handler.RegisterOnRPCMessage(
       boost::bind(&MessageHandlerEchoResp::OnRPCMessage, &msg_handler2,
@@ -1313,7 +1330,8 @@ TEST_F(TransportTestDb, BEH_TRANS_SendMultipleMsgsSameConnection) {
   ASSERT_TRUE(node2_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
   ASSERT_EQ(0, node2_handler.Start(50001, node2_id));
-  boost::uint16_t lp_node2 = node2_handler.listening_port(node2_id);
+  boost::uint16_t lp_node2;
+  bool get_port = node2_handler.listening_port(node2_id, &lp_node2);
 
   boost::uint32_t id;
   boost::asio::ip::address local_address;
@@ -1384,7 +1402,8 @@ TEST_F(TransportTestDb, BEH_TRANS_NoNotificationForInvalidMsgs) {
   ASSERT_TRUE(node1_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler1, _1, _2)));
   ASSERT_EQ(0, node1_handler.Start(50000, node1_id));
-  boost::uint16_t lp_node1_handler = node1_handler.listening_port(node1_id);
+  boost::uint16_t lp_node1_handler;
+  bool get_port = node1_handler.listening_port(node1_id, &lp_node1_handler);
 
   ASSERT_TRUE(node2_handler.RegisterOnRPCMessage(
       boost::bind(&MessageHandler::OnRPCMessage, &msg_handler2,
@@ -1475,7 +1494,8 @@ TEST_F(TransportTestDb, FUNC_TRANS_ClearConnections) {
   ASSERT_TRUE(node2_handler.RegisterOnSend(
       boost::bind(&MessageHandler::OnSend, &msg_handler2, _1, _2)));
   ASSERT_EQ(0, node2_handler.Start(50001, node2_id));
-  boost::uint16_t lp_node2 = node2_handler.listening_port(node2_id);
+  boost::uint16_t lp_node2;
+  bool get_port = node2_handler.listening_port(node2_id, &lp_node2);
 
   boost::uint32_t id;
   boost::asio::ip::address local_address;

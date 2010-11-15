@@ -67,7 +67,7 @@ struct ConnectionStatus {
                    const boost::uint16_t lport, bool ka)
       : database(db), /* ip(lip), */ port(lport), keep_alive(ka),
         timestamp(base::GetEpochTime()) {}
-  std::string database;  //, ip;
+  std::string database;  // , ip;
   boost::uint16_t port;
   bool keep_alive;
   boost::uint32_t timestamp;

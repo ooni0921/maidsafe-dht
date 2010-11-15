@@ -136,7 +136,7 @@ class KadServicesTestDb: public testing::Test {
   virtual void TearDown() {
     trans_handler_.StopAll();
     delete trans_handler_.Get(transport_id_);
-    trans_handler_.Remove(transport_id_);
+    trans_handler_.UnRegister(transport_id_);
     channel_manager_.Stop();
   }
 

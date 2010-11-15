@@ -87,9 +87,12 @@ class TestKnodeFunctions : public testing::Test {
     EXPECT_EQ(0, manager_->Start());
 
     boost::asio::ip::address local_ip;
+    boost::uint16_t lp_node;
+    bool get_port;
+    get_port = handler_->listening_port(transport_id_, &lp_node);
     ASSERT_TRUE(base::GetLocalAddress(&local_ip));
     node_->Join(test_dir_ + std::string(".kadconfig"), local_ip.to_string(),
-                handler_->listening_port(transport_id_),
+                lp_node,
                 boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
     wait_result(&cb_);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
@@ -123,7 +126,9 @@ TEST_F(TestKnodeFunctions, BEH_KNODE_GetKNodesFromRoutingTable) {
   KadId key(KadId::kRandomId);
   std::vector<Contact> exclude_contacts, close_nodes;
   node_->GetKNodesFromRoutingTable(key, exclude_contacts, &close_nodes);
+  std::cout << "Here after calling getnodefromroutingtable\n";
   ASSERT_TRUE(close_nodes.empty());
+  std::cout << "Here after calling close_nodes\n";
 }
 
 TEST_F(TestKnodeFunctions, BEH_KNODE_AddGetRemoveContact) {

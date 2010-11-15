@@ -110,6 +110,7 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
     msg.set_method(method->name());
 
     PendingReq req;
+    boost::uint16_t lp_node;
     req.args = response;
     req.callback = done;
     boost::uint32_t connection_id = 0;
@@ -137,13 +138,14 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
                                    req.timeout);
       if (0 != transport_handler_->Send(msg, connection_id, true,
                                         transport_id_)) {
-        DLOG(WARNING) << transport_handler_->listening_port(transport_id_)
-                      << " --- Failed to send request with id "
+         if (transport_handler_->listening_port(transport_id_, &lp_node))
+          DLOG(WARNING) << lp_node << " --- Failed to send request with id "
                       << msg.message_id() << std::endl;
       }
     } else {
-      DLOG(WARNING) << transport_handler_->listening_port(transport_id_)
-                    << " --- Failed to connect to send rpc " << msg.method()
+      if (transport_handler_->listening_port(transport_id_, &lp_node))
+        DLOG(WARNING) << lp_node << " --- Failed to connect to send rpc "
+                    << msg.method()
                     << " to " << remote_ip_ << ":" << remote_port_
                     << " with id " << msg.message_id() << std::endl;
       ctrl->set_timeout(1);
@@ -156,8 +158,9 @@ void ChannelImpl::CallMethod(const google::protobuf::MethodDescriptor *method,
       pmanager_->AddReqToTimer(msg.message_id(), req.timeout);
       return;
     }
-    DLOG(INFO) << transport_handler_->listening_port(transport_id_)
-               << " --- Sending rpc " << msg.method() << " to " << remote_ip_
+    if (transport_handler_->listening_port(transport_id_, &lp_node))
+      DLOG(INFO) << lp_node << " --- Sending rpc " << msg.method() << " to "
+               << remote_ip_
                << ":" << remote_port_ << " connection_id = " << connection_id
                << " -- rpc_id = " << msg.message_id() << std::endl;
 }
@@ -227,15 +230,18 @@ void ChannelImpl::SendResponse(const google::protobuf::Message *response,
   response_msg.set_message_id(info.rpc_id);
   response_msg.set_rpc_type(RESPONSE);
   std::string ser_response;
+  boost::uint16_t lp_node;
   response->SerializeToString(&ser_response);
   response_msg.set_args(ser_response);
   if (0 != transport_handler_->Send(response_msg, info.connection_id, false,
       info.transport_id)) {
-    DLOG(WARNING) << transport_handler_->listening_port(info.transport_id) <<
+    if (transport_handler_->listening_port(info.transport_id, &lp_node))
+      DLOG(WARNING) << lp_node <<
         " Failed to send response to connection " << info.connection_id
          << std::endl;
   }
-  DLOG(INFO) << transport_handler_->listening_port(info.transport_id) <<
+  if (transport_handler_->listening_port(info.transport_id, &lp_node))
+    DLOG(INFO) << lp_node <<
     " --- Response to req " << info.rpc_id << std::endl;
   delete response;
   delete info.ctrl;

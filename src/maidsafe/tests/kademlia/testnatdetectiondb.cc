@@ -86,7 +86,7 @@ class NatDetectionTestDb: public testing::Test {
   ~NatDetectionTestDb() {
     for (boost::uint8_t i = 0; i < 3; ++i) {
       delete trans_handlers_[i]->Get(transports_[i]);
-      trans_handlers_[i]->Remove(transports_[i]);
+      trans_handlers_[i]->UnRegister(transports_[i]);
       delete trans_handlers_[i];
     }
     transports_.clear();
@@ -107,10 +107,13 @@ class NatDetectionTestDb: public testing::Test {
     boost::asio::ip::address local_ip;
     ASSERT_TRUE(base::GetLocalAddress(&local_ip));
 
+    boost::uint16_t lp_node;
+    bool get_port;
+    get_port = trans_handlers_[0]->listening_port(transports_[0], &lp_node);
     contactA_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
-                        trans_handlers_[0]->listening_port(transports_[0]),
+                        lp_node,
                         local_ip.to_string(),
-                        trans_handlers_[0]->listening_port(transports_[0]));
+                        lp_node);
     contactA_.SerialiseToString(&contact_strA_);
 
     datastoreA_.reset(new DataStore(kRefreshTime));
@@ -149,10 +152,11 @@ class NatDetectionTestDb: public testing::Test {
     ASSERT_EQ(0, trans_handlers_[1]->Start(50001, transports_[1]));
     ASSERT_EQ(0, channel_managerB_.Start());
 
+    get_port = trans_handlers_[1]->listening_port(transports_[1], &lp_node);
     contactB_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
-                        trans_handlers_[1]->listening_port(transports_[1]),
+                        lp_node,
                         local_ip.to_string(),
-                        trans_handlers_[1]->listening_port(transports_[1]));
+                        lp_node);
     contactB_.SerialiseToString(&contact_strB_);
 
     datastoreB_.reset(new DataStore(kRefreshTime));
@@ -189,10 +193,11 @@ class NatDetectionTestDb: public testing::Test {
                                 this, _1)));
     ASSERT_EQ(0, trans_handlers_[2]->Start(50002, transports_[2]));
     ASSERT_EQ(0, channel_managerC_.Start());
+    get_port = trans_handlers_[2]->listening_port(transports_[2], &lp_node);
     contactC_ = Contact(base::DecodeFromHex(hex_id), local_ip.to_string(),
-                        trans_handlers_[2]->listening_port(transports_[2]),
+                        lp_node,
                         local_ip.to_string(),
-                        trans_handlers_[2]->listening_port(transports_[2]));
+                        lp_node);
     contactC_.SerialiseToString(&contact_strC_);
 
     datastoreC_.reset(new DataStore(kRefreshTime));

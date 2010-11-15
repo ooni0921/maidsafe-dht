@@ -348,10 +348,13 @@ int main(int argc, char **argv) {
       return 1;
     }
     // setting kadconfig file if it was not in the options
+    boost::uint16_t lp_node;
+    bool get_port;
+    get_port = trans_handler.listening_port(transport_id, &lp_node);
     if (kadconfigpath.empty()) {
       kadconfigpath = "KnodeInfo" +
                       boost::lexical_cast<std::string>(
-                          trans_handler.listening_port(transport_id));
+                          lp_node);
       boost::filesystem::create_directories(kadconfigpath);
       kadconfigpath += "/.kadconfig";
     }

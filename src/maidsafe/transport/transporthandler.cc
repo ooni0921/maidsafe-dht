@@ -35,33 +35,29 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/base/network_interface.h"
 
 namespace transport {
-TransportHandler::TransportHandler()
-    : transports_(), next_id_(0), started_count_(0), rpc_message_notifier_(),
-      message_notifier_(), server_down_notifier_(), send_notifier_() {}
+TransportHandler::TransportHandler() : transports_(),
+                                       next_id_(0),
+                                       started_count_(0),
+                                       rpc_message_notifier_(),
+                                       message_notifier_(),
+                                       server_down_notifier_(),
+                                       send_notifier_() {}
 
-TransportHandler::~TransportHandler() {}
-
-bool TransportHandler::Registered(transport::Transport *transport_object) {
-  bool found = false;
-  std::map< boost::int16_t, transport::Transport* >::iterator it =
-      transports_.begin();
-  while (it != transports_.end() || found) {
-    found = (it->second == transport_object);
-    ++it;
-  }
-  return found;
+TransportHandler::~TransportHandler() {
+  if (started_count_ == 0)
+        StopAll();
 }
 
 int TransportHandler::Register(transport::Transport *transport_object,
                                boost::int16_t *transport_id) {
-  if (Registered(transport_object)) {
+  if (IsRegistered(transport_object)) {
     DLOG(ERROR) << "Transport is already registered\n";
     return 1;
   }
-  std::pair< std::map< boost::int16_t, transport::Transport* >::iterator, bool >
+  std::pair<std::map<boost::int16_t, transport::Transport*>::iterator, bool>
       ret;
 
-  ret = transports_.insert(std::pair< boost::int16_t, transport::Transport* >
+  ret = transports_.insert(std::pair<boost::int16_t, transport::Transport*>
       (next_id_++, transport_object));  // NOLINT Alec
 
   /* Register callbacks for OnRPCMessage etc */
@@ -79,12 +75,17 @@ int TransportHandler::Register(transport::Transport *transport_object,
   return 0;
 }
 
-void TransportHandler::Remove(const boost::int16_t &transport_id) {
+void TransportHandler::UnRegister(const boost::int16_t &transport_id) {
   transports_.erase(transport_id);
 }
 
 Transport* TransportHandler::Get(const boost::int16_t &transport_id) {
-  return transports_.find(transport_id)->second;
+  std::map< boost::int16_t, transport::Transport* >::iterator it;
+  it = transports_.find(transport_id);
+  if (it != transports_.end())
+    return (*it).second;
+  else
+    return NULL;
 }
 
 int TransportHandler::Start(const boost::uint16_t &port,
@@ -109,14 +110,15 @@ int TransportHandler::Start(const boost::uint16_t &port,
 void TransportHandler::Stop(const boost::int16_t &transport_id) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(transport_id);
-  if (it == transports_.end()) {
-    DLOG(ERROR) << "Stop: Couldn't find Transport matching ID: "
+  if ((it == transports_.end()) || (0 == started_count_)) {
+    DLOG(ERROR) << "Stop: Couldn't find Transport matching ID:"
+                << "or No Transport started "
                 << transport_id << std::endl;
     return;
   }
 
   --started_count_;
-  return (*it).second->Stop();
+  (*it).second->Stop();
 }
 
 void TransportHandler::StopAll() {
@@ -359,15 +361,15 @@ bool TransportHandler::HasReceivedData(const boost::uint32_t &connection_id,
   return (*it).second->HasReceivedData(connection_id, size);
 }
 
-
-boost::uint16_t TransportHandler::listening_port(
-    const boost::int16_t &transport_id) {
+// boost::uint16_t TransportHandler::listening_port(
+bool TransportHandler::listening_port(const boost::int16_t &transport_id,
+                                       boost::uint16_t *listen_port) {
   std::map< boost::int16_t, transport::Transport* >::iterator it;
   it = transports_.find(transport_id);
   if (it == transports_.end())
     return false;
-
-  return (*it).second->listening_port();
+  *listen_port = (*it).second->listening_port();
+  return true;
 }
 
 void TransportHandler::StartPingRendezvous(
@@ -429,4 +431,5 @@ void TransportHandler::OnSend(const boost::uint32_t &connection_id,
     if (!send_notifier_.empty())
       send_notifier_(connection_id, success);
 }
+
 }  // namespace transport

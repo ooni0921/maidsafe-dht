@@ -86,9 +86,11 @@ class TestRefresh : public testing::Test {
     GeneralKadCallback callback;
     LOG(INFO) << "starting node 0" << std::endl;
     boost::asio::ip::address local_ip;
+    boost::uint16_t lp_node;
+    ASSERT_TRUE(trans_handlers_[0]->listening_port(0, &lp_node));
     ASSERT_TRUE(base::GetLocalAddress(&local_ip));
     nodes_[0]->Join(datadirs_[0] + "/.kadconfig",
-      local_ip.to_string(), trans_handlers_[0]->listening_port(0),
+      local_ip.to_string(), lp_node,
       boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
     wait_result(&callback);
     ASSERT_EQ(kRpcResultSuccess, callback.result());
@@ -131,7 +133,7 @@ class TestRefresh : public testing::Test {
       trans_handlers_[i]->Stop(0);
       ch_managers_[i]->Stop();
       delete trans_handlers_[i]->Get(transports_ids_[i]);
-      trans_handlers_[i]->Remove(transports_ids_[i]);
+      trans_handlers_[i]->UnRegister(transports_ids_[i]);
     }
     try {
       boost::filesystem::remove_all(test_dir_);
@@ -272,7 +274,7 @@ TEST_F(TestRefresh, FUNC_KAD_NewNodeinKClosest) {
   trans_handler.Stop(transport_id);
   ch_manager.Stop();
   delete trans_handler.Get(transport_id);
-  trans_handler.Remove(transport_id);
+  trans_handler.UnRegister(transport_id);
 }
 
 class TestRefreshSignedValues : public testing::Test {
@@ -325,8 +327,10 @@ class TestRefreshSignedValues : public testing::Test {
     LOG(INFO) << "starting node 0" << std::endl;
     boost::asio::ip::address local_ip;
     ASSERT_TRUE(base::GetLocalAddress(&local_ip));
+    boost::uint16_t lp_node;
+    ASSERT_TRUE(trans_handlers_[0]->listening_port(0, &lp_node));
     nodes_[0]->Join(datadirs_[0] + "/.kadconfig",
-      local_ip.to_string(), trans_handlers_[0]->listening_port(0),
+      local_ip.to_string(), lp_node,
       boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
     wait_result(&callback);
     ASSERT_EQ(kRpcResultSuccess, callback.result());
@@ -371,7 +375,7 @@ class TestRefreshSignedValues : public testing::Test {
       trans_handlers_[i]->Stop(0);
       ch_managers_[i]->Stop();
       delete trans_handlers_[i]->Get(transport_ids_[i]);
-      trans_handlers_[i]->Remove(transport_ids_[i]);
+      trans_handlers_[i]->UnRegister(transport_ids_[i]);
     }
     try {
       boost::filesystem::remove_all(test_dir_);
@@ -562,7 +566,7 @@ TEST_F(TestRefreshSignedValues, FUNC_KAD_NewRSANodeinKClosest) {
   trans_handler.Stop(transport_id);
   ch_manager.Stop();
   delete trans_handler.Get(transport_id);
-  trans_handler.Remove(transport_id);
+  trans_handler.UnRegister(transport_id);
 }
 
 TEST_F(TestRefreshSignedValues, FUNC_KAD_InformOfDeletedValue) {

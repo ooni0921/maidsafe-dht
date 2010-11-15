@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 
+// #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/base/log.h"
 #include "maidsafe/base/routingtable.h"
 #include "maidsafe/base/utils.h"
@@ -119,12 +120,14 @@ class TestKnodes : public testing::Test {
                   boost::bind(&MessageHandler::OnDeadRendezvousServer,
                               msg_handlers_[i], _1, _2, _3)));
       ASSERT_EQ(0, trans_handlers_[i]->Start(0, transports_[i]));
+      boost::uint16_t lp_node;
+      bool get_port;
+      get_port = trans_handlers_[i]->listening_port(transports_[i], &lp_node);
       printf("Listening port for Transport %d: %d\n", transports_[i],
-             trans_handlers_[i]->listening_port(transports_[i]));
+             lp_node);
       ASSERT_EQ(0, ch_managers_[i]->Start());
       datastore_dir_[i] = test_dir_ + "/Datastore" +
-                          boost::lexical_cast<std::string>(trans_handlers_[i]->
-                              listening_port(transports_[i]));
+                          boost::lexical_cast<std::string>(lp_node);
       boost::filesystem::create_directories(
           boost::filesystem::path(datastore_dir_[i]));
       nodes_.push_back(KNode(ch_managers_[i], trans_handlers_[i], VAULT, "",
@@ -140,7 +143,7 @@ class TestKnodes : public testing::Test {
       trans_handlers_[i]->Stop(transports_[i]);
       ch_managers_[i]->Stop();
       delete trans_handlers_[i]->Get(transports_[i]);
-      trans_handlers_[i]->Remove(transports_[i]);
+      trans_handlers_[i]->UnRegister(transports_[i]);
       delete trans_handlers_[i];
       delete ch_managers_[i];
       delete msg_handlers_[i];
@@ -179,11 +182,14 @@ TEST_F(TestKnodes, BEH_KAD_TestLastSeenNotReply) {
     id += "1";
   GeneralKadCallback callback;
   boost::asio::ip::address local_ip;
+  boost::uint16_t lp_node;
+  bool get_port;
   ASSERT_TRUE(base::GetLocalAddress(&local_ip));
   kad::KadId kadid(id, kad::KadId::kHex);
+  get_port = trans_handlers_[0]->listening_port(transports_[0], &lp_node);
   nodes_[0].Join(kadid, kconfig_file,
                  local_ip.to_string(),
-                 trans_handlers_[0]->listening_port(transports_[0]),
+                 lp_node,
                  boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
   wait_result(&callback);
   ASSERT_EQ(kRpcResultSuccess, callback.result());
@@ -273,11 +279,14 @@ TEST_F(TestKnodes, FUNC_KAD_TestLastSeenReplies) {
   }
   GeneralKadCallback callback;
   boost::asio::ip::address local_ip;
+  boost::uint16_t lp_node;
+  bool get_port;
   ASSERT_TRUE(base::GetLocalAddress(&local_ip));
   kad::KadId kid(id, kad::KadId::kHex), kid2(id2, kad::KadId::kHex);
+  get_port = trans_handlers_[0]->listening_port(transports_[0], &lp_node);
   nodes_[0].Join(kid, kconfig_file,
                  local_ip.to_string(),
-                 trans_handlers_[0]->listening_port(transports_[0]),
+                 lp_node,
                  boost::bind(&GeneralKadCallback::CallbackFunc, &callback, _1));
   wait_result(&callback);
   ASSERT_EQ(kRpcResultSuccess, callback.result());

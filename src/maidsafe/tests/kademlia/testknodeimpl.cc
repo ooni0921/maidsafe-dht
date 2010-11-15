@@ -27,7 +27,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/lexical_cast.hpp>
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 
 #include "maidsafe/base/alternativestore.h"
 #include "maidsafe/base/crypto.h"
@@ -110,8 +109,11 @@ class TestKNodeImpl : public testing::Test {
 
     boost::asio::ip::address local_ip;
     ASSERT_TRUE(base::GetLocalAddress(&local_ip));
+    boost::uint16_t lp_node;
+    bool get_port;
+    get_port = handler_->listening_port(transport_id_, &lp_node);
     node_->Join(test_dir_ + std::string(".kadconfig"), local_ip.to_string(),
-                handler_->listening_port(transport_id_),
+                lp_node,
                 boost::bind(&GeneralKadCallback::CallbackFunc, &cb_, _1));
     wait_result(&cb_);
     ASSERT_EQ(kad::kRpcResultSuccess, cb_.result());
@@ -190,9 +192,12 @@ TEST_F(TestKNodeImpl, BEH_KNodeImpl_Destroy) {
 
   boost::asio::ip::address local_ip;
   ASSERT_TRUE(base::GetLocalAddress(&local_ip));
+  boost::uint16_t lp_node;
+  bool get_port;
+  get_port = handler->listening_port(transport_id_, &lp_node);
   GeneralKadCallback cb;
   node->Join(test_dir + std::string(".kadconfig"), local_ip.to_string(),
-             handler->listening_port(transport_id_),
+             lp_node,
              boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
   wait_result(&cb);
   ASSERT_EQ(kad::kRpcResultSuccess, cb.result());
@@ -380,6 +385,7 @@ TEST_F(TestKNodeImpl, BEH_KNodeImpl_NotJoined) {
                                   true, 3600 * 24, SignedValue(),
                                   SignedRequest()));
   ASSERT_EQ("", svc.result());
+  node_->is_joined_ = true;
 }
 
 }  // namespace test_knodeimpl

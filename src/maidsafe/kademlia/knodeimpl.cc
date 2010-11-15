@@ -199,7 +199,7 @@ void KNodeImpl::Bootstrap(const std::string &bootstrap_ip,
                           const boost::uint16_t &bootstrap_port,
                           VoidFunctorOneString callback,
                           const bool &dir_connected) {
-  struct BootstrapData data = {callback, bootstrap_ip, bootstrap_port, NULL};
+  struct BootstrapData data(callback, bootstrap_ip, bootstrap_port, NULL);
   data.rpc_ctrler = new rpcprotocol::Controller;
   // send RPC to a bootstrapping node candidate
   BootstrapResponse *resp = new BootstrapResponse;
@@ -497,9 +497,23 @@ void KNodeImpl::Join(const KadId &node_id, const std::string &kad_config_file,
     callback(local_result_str);
     return;
   }
-  if (host_port_ == 0)
-    host_port_ = transport_handler_->listening_port(transport_id_);
-  local_host_port_ = transport_handler_->listening_port(transport_id_);
+  if (host_port_ == 0) {
+    if (!transport_handler_->listening_port(transport_id_, &host_port_)) {
+      DLOG(ERROR) << "Failed to get Listening Port :: " << std::endl;
+      base::GeneralResponse local_result;
+      local_result.set_result(kRpcResultFailure);
+      local_result.set_result(kRpcResultSuccess);
+      std::string local_result_str(local_result.SerializeAsString());
+      callback(local_result_str);
+      return;
+    }
+    // host_port_ = transport_handler_->listening_port(transport_id_);
+  }
+  if (!transport_handler_->listening_port(transport_id_, &local_host_port_)) {
+    DLOG(ERROR) << "Failed to get local host port :: " << std::endl;
+    return;
+  }
+  // local_host_port_ = transport_handler_->listening_port(transport_id_);
   // Adding the services
   RegisterKadService();
 
@@ -555,7 +569,11 @@ void KNodeImpl::Join(const KadId &node_id, const std::string &kad_config_file,
     callback(local_result_str);
     return;
   }
-  local_host_port_ = transport_handler_->listening_port(transport_id_);
+  if (!transport_handler_->listening_port(transport_id_, &local_host_port_)) {
+    DLOG(ERROR) << "Failed to get local host port :: " << std::endl;
+    return;
+  }
+  // local_host_port_ = transport_handler_->listening_port(transport_id_);
 
   if (use_upnp_) {
     UPnPMap(local_host_port_);
